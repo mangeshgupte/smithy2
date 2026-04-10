@@ -58,3 +58,7 @@ Idea: The human-AI interface is the bottleneck. Can't assess quality of changes.
 ## 2026-04-09 [via prompt]
 Directive: Operationalize the interface synthesis. Implement all 5 models: stoplight + uncertainty → commander's intent → AAR → compression layers.
 → partially done in heats 85-88 (stoplight, intent, AAR protocol). Remaining: forge-status, reporting.md, AAR to file.
+
+## 2026-04-09 [via prompt]
+Idea: Build a real project — an AI tutor that helps people learn. Focus on kids or adult university-level learning. First non-dogfood test of the Forge. Tests H5-H10 simultaneously.
+→ dispatched (15 heats, see anvil-to-forge.md)

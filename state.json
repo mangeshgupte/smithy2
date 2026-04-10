@@ -1,30 +1,30 @@
 {
   "project": "ai-coworker",
   "budget": {
-    "total_heats": 309,
-    "used": 115,
+    "total_heats": 329,
+    "used": 135,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
-    "research":       {"target": 0.14, "heats": 23, "progress": 0.88, "value_ema": 0.76},
-    "planning":       {"target": 0.10, "heats": 13, "progress": 0.78, "value_ema": 0.73},
-    "implementation": {"target": 0.08, "heats": 25, "progress": 0.92, "value_ema": 0.75},
-    "testing":        {"target": 0.24, "heats": 20, "progress": 0.75, "value_ema": 0.72},
-    "editing":        {"target": 0.22, "heats": 20, "progress": 0.78, "value_ema": 0.72},
-    "marketing":      {"target": 0.20, "heats": 14, "progress": 0.72, "value_ema": 0.71}
+    "research":       {"target": 0.14, "heats": 24, "progress": 0.88, "value_ema": 0.76},
+    "planning":       {"target": 0.10, "heats": 14, "progress": 0.80, "value_ema": 0.74},
+    "implementation": {"target": 0.08, "heats": 35, "progress": 0.93, "value_ema": 0.76},
+    "testing":        {"target": 0.24, "heats": 24, "progress": 0.78, "value_ema": 0.73},
+    "editing":        {"target": 0.22, "heats": 23, "progress": 0.80, "value_ema": 0.72},
+    "marketing":      {"target": 0.20, "heats": 16, "progress": 0.75, "value_ema": 0.72}
   },
   "allocator": {
     "integral": {
-      "research": 0.06,
+      "research": 0.05,
       "planning": 0.02,
-      "implementation": -0.30,
-      "testing": 0.15,
-      "editing": 0.10,
-      "marketing": 0.18
+      "implementation": -0.25,
+      "testing": 0.12,
+      "editing": 0.08,
+      "marketing": 0.15
     }
   },
   "queue": [
-    {"id": "t-036", "stage": "testing", "desc": "Run Forge on a real non-dogfood project for 10+ heats", "status": "pending", "priority": 1, "blocked_by": []},
+    {"id": "t-036", "stage": "testing", "desc": "Run Forge on a real non-dogfood project for 10+ heats", "status": "complete", "priority": 1, "blocked_by": []},
     {"id": "t-044", "stage": "implementation", "desc": "Repo map generation for non-dogfood projects", "status": "pending", "priority": 2, "blocked_by": []},
     {"id": "t-045", "stage": "implementation", "desc": "Lint→test→fix loop for implementation stage", "status": "pending", "priority": 2, "blocked_by": []},
     {"id": "t-046", "stage": "implementation", "desc": "Self-critique (Reflexion-style) per heat", "status": "pending", "priority": 2, "blocked_by": []},
@@ -35,9 +35,10 @@
     {"id": "i-009", "text": "Multiple personas as separate Claude Code sessions", "source": "prompt", "status": "done", "task_id": null},
     {"id": "i-010", "text": "Auto-replenish research when task queue is thin", "source": "prompt", "status": "done", "task_id": "t-025"},
     {"id": "i-011", "text": "No Telegram — use WhatsApp instead, defer messaging", "source": "inbox", "status": "done", "task_id": null},
-    {"id": "i-012", "text": "Human-AI interface research — oversight models from diverse domains", "source": "inbox", "status": "done", "task_id": null}
+    {"id": "i-012", "text": "Human-AI interface research", "source": "inbox", "status": "done", "task_id": null},
+    {"id": "i-013", "text": "Build AI tutor — first non-dogfood project", "source": "inbox", "status": "done", "task_id": "t-036"}
   ],
-  "inbox_cursor": 61,
+  "inbox_cursor": 65,
   "human_priorities": [],
-  "overall_progress": 0.81
+  "overall_progress": 0.82
 }

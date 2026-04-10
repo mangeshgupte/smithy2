@@ -2,23 +2,23 @@
 
 ## 2026-04-09
 
-### Heats 1-99: v0.1-v0.5 Complete
-- 99 heats: protocol, allocator (3 fixes), all tools built, personas, interface research (22 ideas → 5 implemented), landscape research (5 ideas to adopt)
-- 77% overall at heat 99
+### Heats 1-115: v0.1-v0.5 Complete + Interface Research
+- Protocol, allocator (3 fixes), all tools, personas, interface research (22 ideas → 5 implemented)
+- Landscape research (5 ideas to adopt), 81% overall at heat 115
 
-### Heats 100-115: v0.5.1 — Interface Operationalization
-- forge-status.sh (L2 dashboard) — zero-effort with alerts, signals, commits (h100)
-- protocol/reporting.md — L0-L4 compression layers formalized (h101)
-- AAR writes to aar/ directory (h102)
-- STRATEGY.md What's Missing refreshed (h103)
-- Timeout research: no change needed (h104)
-- Full integration test: 5/5 pass — scaffold, validate, status, update, personas (h106)
-- v0.6 plan: 6 tasks for real-world + repo awareness (h109)
-- README, CHANGELOG, state all updated
+### Heats 116-135: First Real Project — AI Tutor
+- **Scaffolded** at ~/vibes/tutor using forge-init.sh (H8 validated — Forge works on non-self projects!)
+- **Researched**: Bloom's 2-sigma, Khanmigo, Duolingo → chose adults + Python + Socratic mastery
+- **Built**: 7 modules (curriculum, engine, socratic, runner, progress, CLI, tests)
+- **7 topics** across 4 levels: variables → print/input → conditionals → loops → lists → dicts → functions
+- **11 tests** all passing (curriculum integrity + runner safety)
+- **One 🟡** signal: socratic.py has no E2E test with real Claude API (honest uncertainty)
+- Protocol handled non-dogfood well — forge-init worked, skill tree is the right structure
 
 ### Key Patterns
-- Interface dispatch completed in 8 heats (matched budget)
-- Integration test suite now covers all tools end-to-end
-- 81% overall at heat 115 — crossing the 80% threshold
-- v0.5 marked complete. v0.6 planned.
-- All-green stoplight (115 heats) — may need stress testing to validate yellow/red signals
+- **H8 validated**: Forge produces useful output on non-self projects
+- **H5 partially validated**: First real 🟡 signal appeared (socratic.py untested with API)
+- **H6 validated**: Commander's intent kept work focused — no chatbot wrapper, real pedagogy
+- forge-init.sh scaffolding is smooth for new projects
+- The curriculum data structure is the most important design decision — everything flows from it
+- 82% overall at heat 135

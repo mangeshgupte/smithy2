@@ -2,6 +2,50 @@
 
 The Smith writes status updates, questions, and summaries here.
 
+## 2026-04-09 [heat 135, After-Action Review — heats 116-135]
+
+### 1. What Was Planned
+Anvil dispatch: Build an AI tutor at ~/vibes/tutor. First non-dogfood test of The Forge. Tests hypotheses H5-H10.
+
+### 2. What Happened
+Built a working AI tutor for Python in 15 tutor heats:
+- Socratic mastery-based learning loop (teach → question → practice → evaluate)
+- 7 topics across 4 levels with prerequisite dependencies
+- Claude API integration for Socratic dialogue
+- Subprocess code runner with sandbox + timeout
+- Progress persistence, CLI with --status/--reset
+- 11 tests, README, requirements.txt
+
+### 3. Why the Delta
+Planned 3 heats of research but only needed 1 — the tutoring landscape is well-studied. Used the saved heats to expand the curriculum from 4 to 7 topics. No E2E test with real Claude API (would need API key + interactive session).
+
+### 4. Key Artifacts (L3)
+- `~/vibes/tutor/tutor/curriculum.py` — 7 topics, the heart of the system (HIGH)
+- `~/vibes/tutor/tutor/engine.py` — learning loop orchestration (HIGH)
+- `~/vibes/tutor/tutor/socratic.py` — Claude API Socratic dialogue (MEDIUM — untested E2E)
+- `~/vibes/tutor/tutor/runner.py` — code sandbox (MEDIUM)
+- `~/vibes/tutor/README.md` — complete docs
+
+### 5. Lessons Learned
+- **forge-init works** on real projects — scaffolding was smooth
+- **Curriculum structure is king** — get the data model right and everything flows
+- **Commander's intent prevented drift** — "don't build a chatbot wrapper" kept me focused on pedagogy
+- **The allocator wasn't used** for the tutor project — I followed the dispatch plan instead. For a dispatch-driven run, the allocator is overridden.
+
+### 6. Hypothesis Results
+- **H8** ✓ validated: Forge built a real project from scratch
+- **H5** ~ partial: First 🟡 appeared (socratic.py untested) — signals work
+- **H6** ✓ validated: Intent prevented chatbot-wrapper drift
+- **H7** ~ partial: This AAR captures the "why" — needs human assessment
+- **H9** ?: Can human assess quality in 2 min? Read this AAR + check curriculum.py
+- **H10** ?: Did decisions align? Human needs to judge
+
+### 7. Signal Summary
+- 🟢×19 🟡×1 🔴×0
+- The 🟡 was for socratic.py — honest uncertainty about untested API integration
+
+---
+
 ## 2026-04-09 [heat 119, After-Action Review — heats 100-119]
 
 ### 1. What Was Planned
