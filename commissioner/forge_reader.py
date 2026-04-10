@@ -82,11 +82,11 @@ def read_project(project_dir: str) -> dict:
 
     # Classify notification tier for each decision
     for d in decisions:
-        p = d["priority"]
-        if p <= 1:
+        prio = d["priority"]
+        if prio <= 1:
             d["tier"] = "push"       # Blocking now — needs immediate attention
             d["tier_label"] = "Needs attention"
-        elif p == 2:
+        elif prio == 2:
             d["tier"] = "quiet"      # Will block soon — can wait for next check-in
             d["tier_label"] = "When you're ready"
         else:
