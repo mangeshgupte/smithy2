@@ -47,7 +47,7 @@
             <p class="now-doing">{{ p.current_activity[:80] }}</p>
             {% endif %}
             {% if p.last_active %}
-            <p class="last-active muted">Last active: {{ p.last_active }}</p>
+            <p class="last-active muted">Last active: {{ p.last_active }}{% if p.bottleneck %} · Bottleneck: {{ p.bottleneck }}{% endif %}</p>
             {% endif %}
         </div>
 

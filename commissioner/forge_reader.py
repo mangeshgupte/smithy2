@@ -7,6 +7,18 @@ from pathlib import Path
 from datetime import datetime, timezone
 
 
+def _find_bottleneck(stages: dict) -> str:
+    """Find the stage with lowest progress (the bottleneck)."""
+    bottleneck = None
+    min_progress = 1.0
+    for sname, sdata in stages.items():
+        prog = sdata.get("progress", 0)
+        if prog < min_progress and sdata.get("heats", 0) > 0:
+            min_progress = prog
+            bottleneck = sname
+    return bottleneck
+
+
 def read_project(project_dir: str) -> dict:
     """Read all state from a Forge project directory."""
     p = Path(project_dir)
@@ -149,6 +161,7 @@ def read_project(project_dir: str) -> dict:
         "whats_missing": whats_missing[:5],
         "current_activity": current_activity,
         "last_active": last_active,
+        "bottleneck": _find_bottleneck(state.get("stages", {})),
         "queue": state.get("queue", []),
     }
 
