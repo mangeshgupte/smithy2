@@ -2,7 +2,7 @@
   "project": "ai-coworker",
   "budget": {
     "total_heats": 547,
-    "used": 535,
+    "used": 542,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -14,33 +14,33 @@
     },
     "planning": {
       "target": 0.21,
-      "heats": 28,
+      "heats": 29,
       "progress": 0.85,
-      "value_ema": 0.726
+      "value_ema": 0.718
     },
     "implementation": {
       "target": 0.049,
-      "heats": 167,
+      "heats": 169,
       "progress": 0.98,
-      "value_ema": 0.777
+      "value_ema": 0.789
     },
     "testing": {
       "target": 0.183,
-      "heats": 101,
+      "heats": 102,
       "progress": 0.88,
-      "value_ema": 0.808
+      "value_ema": 0.806
     },
     "editing": {
       "target": 0.183,
-      "heats": 141,
+      "heats": 143,
       "progress": 0.88,
-      "value_ema": 0.792
+      "value_ema": 0.766
     },
     "marketing": {
       "target": 0.219,
-      "heats": 71,
+      "heats": 72,
       "progress": 0.84,
-      "value_ema": 0.746
+      "value_ema": 0.732
     }
   },
   "allocator": {
@@ -48,7 +48,7 @@
       "research": 0.5,
       "planning": 0.5,
       "implementation": -0.5,
-      "testing": -0.037,
+      "testing": -0.038,
       "editing": -0.5,
       "marketing": 0.5
     }
@@ -452,7 +452,7 @@
       "id": "t-105",
       "stage": "implementation",
       "desc": "smithy update command: copy protocol files to existing project (replace forge-update.sh)",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": []
     },
@@ -460,7 +460,7 @@
       "id": "t-106",
       "stage": "implementation",
       "desc": "smithy repomap command: generate research/repo-map.md with file stats, dir structure, key files (replace forge-repomap.sh)",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -468,7 +468,7 @@
       "id": "t-107",
       "stage": "testing",
       "desc": "Test smithy update and repomap commands",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -476,7 +476,7 @@
       "id": "t-108",
       "stage": "editing",
       "desc": "Delete forge-*.sh scripts after CLI replacements are tested",
-      "status": "pending",
+      "status": "complete",
       "priority": 3,
       "blocked_by": []
     },
@@ -532,8 +532,32 @@
       "id": "t-115",
       "stage": "planning",
       "desc": "Plan remaining heats: update STRATEGY.md with visual design sprint results, reprioritize remaining tasks",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-116",
+      "stage": "editing",
+      "desc": "Update CHANGELOG v1.1 with smithy CLI additions (update, repomap, shell script removal)",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-117",
+      "stage": "marketing",
+      "desc": "Final AAR for heats 518-547: visual design sprint + CLI completion",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-118",
+      "stage": "testing",
+      "desc": "Final test + patrol before handoff",
+      "status": "in_progress",
+      "priority": 1,
       "blocked_by": []
     }
   ],
