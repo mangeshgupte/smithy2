@@ -1,3 +1,4 @@
 # Forge transient files
 .forge-checkpoint.json
+.forge-handoff.json
 .forge-output.log

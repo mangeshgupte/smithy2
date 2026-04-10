@@ -382,6 +382,73 @@ def process_inbox(ctx):
     _err(f"{len(entries)} new inbox entries")
 
 
+@cli.command("handoff")
+@click.argument("notes")
+@click.option("--next", "next_steps", default=None, help="What the next session should do first")
+@click.pass_context
+def handoff(ctx, notes, next_steps):
+    """Save session context for the next session. Called at budget exhaustion or manual handoff."""
+    from datetime import datetime
+    root = ctx.obj["root"]
+    state = load_state(root)
+
+    # Read last few worklog entries for context
+    worklog_path = root / "worklog.tsv"
+    recent_heats = []
+    if worklog_path.exists():
+        lines = worklog_path.read_text().strip().split("\n")
+        for line in lines[-5:]:
+            parts = line.split("\t")
+            if len(parts) >= 8:
+                recent_heats.append({"heat": parts[1], "stage": parts[2], "notes": parts[7]})
+
+    handoff_data = {
+        "timestamp": datetime.now().isoformat(),
+        "budget": state["budget"],
+        "overall_progress": state.get("overall_progress", 0),
+        "pending_tasks": [t for t in state.get("queue", []) if t["status"] == "pending"],
+        "recent_heats": recent_heats,
+        "human_priorities": state.get("human_priorities", []),
+        "context_notes": notes,
+        "next_steps": next_steps,
+    }
+
+    path = root / ".forge-handoff.json"
+    path.write_text(json.dumps(handoff_data, indent=2) + "\n")
+
+    _output(handoff_data)
+    _err(f"Handoff saved: {notes[:60]}")
+
+
+@cli.command("resume")
+@click.pass_context
+def resume(ctx):
+    """Resume from a previous session's handoff. Reads .forge-handoff.json."""
+    root = ctx.obj["root"]
+    path = root / ".forge-handoff.json"
+
+    if not path.exists():
+        _output({"has_handoff": False, "message": "No handoff file found — fresh start"})
+        _err("No handoff — starting fresh")
+        return
+
+    handoff_data = json.loads(path.read_text())
+
+    # Delete the handoff file (consumed)
+    path.unlink()
+
+    _output({
+        "has_handoff": True,
+        "context_notes": handoff_data.get("context_notes", ""),
+        "next_steps": handoff_data.get("next_steps"),
+        "pending_tasks": len(handoff_data.get("pending_tasks", [])),
+        "recent_heats": handoff_data.get("recent_heats", []),
+        "human_priorities": handoff_data.get("human_priorities", []),
+        "budget": handoff_data.get("budget", {}),
+    })
+    _err(f"Resumed from handoff: {handoff_data.get('context_notes', '')[:60]}")
+
+
 @cli.command("memory-write")
 @click.argument("note")
 @click.option("--heat", "heat_num", type=int, default=None, help="Heat number for context")
