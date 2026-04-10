@@ -163,6 +163,40 @@ class TestCompleteTask:
         assert result.exit_code != 0
 
 
+class TestInit:
+    def test_scaffolds_project(self, tmp_path, runner):
+        target = tmp_path / "new-project"
+        result = runner.invoke(cli, ["init", "my-project", "--target", str(target)])
+        data = json.loads(result.output)
+        assert data["project"] == "my-project"
+        assert (target / "state.json").exists()
+        assert (target / "worklog.tsv").exists()
+        assert (target / "identity.md").exists()
+        assert (target / "feedback.md").exists()
+
+    def test_validates_clean(self, tmp_path, runner):
+        target = tmp_path / "valid-project"
+        runner.invoke(cli, ["init", "test", "--target", str(target)])
+        result = runner.invoke(cli, ["--dir", str(target), "validate"])
+        data = json.loads(result.output)
+        assert data["valid"] is True
+
+    def test_with_personas(self, tmp_path, runner):
+        target = tmp_path / "persona-project"
+        result = runner.invoke(cli, ["init", "test", "--target", str(target), "--with-personas"])
+        data = json.loads(result.output)
+        assert data["personas"] is True
+        assert (target / "personas" / "anvil").is_dir()
+        assert (target / "personas" / "forge").is_dir()
+        assert (target / "dispatch" / "anvil-to-forge.md").exists()
+
+    def test_protocol_dir_created(self, tmp_path, runner):
+        target = tmp_path / "proto-project"
+        runner.invoke(cli, ["init", "test", "--target", str(target)])
+        assert (target / "protocol").is_dir()
+        assert (target / "research").is_dir()
+
+
 class TestProcessFeedback:
     def test_reads_new_entries(self, project, runner):
         result = runner.invoke(cli, ["--dir", str(project), "process-feedback"])
