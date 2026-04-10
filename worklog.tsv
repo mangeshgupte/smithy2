@@ -206,3 +206,7 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-10T03:25:00Z	210	implementation	generated	complete	0.7	🟢	Tutor: Create tab suggestion — detects recently completed topic with no cards, nudges creation
 2026-04-10T03:30:00Z	211	testing	generated	complete	0.7	🟢	Tutor: 63 tests pass, 9 routes 200, browse topics renders 34 items, create suggestion logic verified
 2026-04-10T03:35:00Z	212	editing	generated	complete	0.7	🟢	Memory consolidation, MEMORY_DAILY updated with heats 181-211
+2026-04-10T03:40:00Z	213	implementation	generated	complete	0.7	🟢	Tutor: exercise progress header with topic name, N of M, progress bar
+2026-04-10T03:45:00Z	214	implementation	generated	complete	0.8	🟢	Tutor: Socratic moments — AI follow-up questions for wrong answers instead of showing correct answer
+2026-04-10T03:50:00Z	215	implementation	generated	complete	0.7	🟢	Tutor: create card shortcut on completed topics in subject overview
+2026-04-10T03:55:00Z	216	testing	generated	complete	0.7	🟢	Tutor 63 tests pass, forge-validate all checks pass on ai-coworker project
