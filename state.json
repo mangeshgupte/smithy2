@@ -1,8 +1,8 @@
 {
   "project": "ai-coworker",
   "budget": {
-    "total_heats": 537,
-    "used": 517,
+    "total_heats": 547,
+    "used": 524,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -14,15 +14,15 @@
     },
     "planning": {
       "target": 0.21,
-      "heats": 26,
+      "heats": 27,
       "progress": 0.85,
-      "value_ema": 0.71
+      "value_ema": 0.737
     },
     "implementation": {
       "target": 0.049,
-      "heats": 157,
+      "heats": 162,
       "progress": 0.98,
-      "value_ema": 0.886
+      "value_ema": 0.778
     },
     "testing": {
       "target": 0.183,
@@ -38,18 +38,18 @@
     },
     "marketing": {
       "target": 0.219,
-      "heats": 68,
+      "heats": 69,
       "progress": 0.84,
-      "value_ema": 0.775
+      "value_ema": 0.752
     }
   },
   "allocator": {
     "integral": {
-      "research": 0.383,
+      "research": 0.5,
       "planning": 0.5,
       "implementation": -0.5,
-      "testing": -0.071,
-      "editing": -0.406,
+      "testing": -0.054,
+      "editing": -0.5,
       "marketing": 0.5
     }
   },
@@ -300,7 +300,7 @@
       "id": "t-086",
       "stage": "implementation",
       "desc": "Tutor: fix code-input textarea to use monospace font matching syntax.js",
-      "status": "pending",
+      "status": "complete",
       "priority": 3,
       "blocked_by": []
     },
@@ -340,7 +340,7 @@
       "id": "t-091",
       "stage": "planning",
       "desc": "Plan 20-heat sprint: audit current state, generate task backlog focused on visual design + polish",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 0,
       "blocked_by": []
     },
@@ -348,7 +348,7 @@
       "id": "t-092",
       "stage": "implementation",
       "desc": "Tutor: redesign subject cards with stronger visual hierarchy \u2014 larger accent bars, clearer progress, topic count badges",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": []
     },
@@ -356,7 +356,7 @@
       "id": "t-093",
       "stage": "implementation",
       "desc": "Tutor: polished empty states \u2014 illustrated messaging with guidance for no-cards, no-reviews, first-visit",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -364,7 +364,7 @@
       "id": "t-094",
       "stage": "implementation",
       "desc": "Tutor: consistent button styling \u2014 full-width primary CTA, secondary inline, standardized sizes",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -372,7 +372,7 @@
       "id": "t-095",
       "stage": "implementation",
       "desc": "Commissioner: richer activity feed \u2014 stage-colored left borders, signal dots, expandable heat details",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": []
     },
@@ -437,6 +437,54 @@
       "stage": "implementation",
       "desc": "Tutor: review session polish \u2014 card flip animation, confidence rating stars, session complete celebration",
       "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-104",
+      "stage": "marketing",
+      "desc": "Write AAR for heats 500-517 sprint + dispatch report to Anvil for new visual design sprint",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-105",
+      "stage": "implementation",
+      "desc": "smithy update command: copy protocol files to existing project (replace forge-update.sh)",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-106",
+      "stage": "implementation",
+      "desc": "smithy repomap command: generate research/repo-map.md with file stats, dir structure, key files (replace forge-repomap.sh)",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-107",
+      "stage": "testing",
+      "desc": "Test smithy update and repomap commands",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-108",
+      "stage": "editing",
+      "desc": "Delete forge-*.sh scripts after CLI replacements are tested",
+      "status": "pending",
+      "priority": 3,
+      "blocked_by": []
+    },
+    {
+      "id": "t-109",
+      "stage": "planning",
+      "desc": "Mid-sprint review: assess visual design progress, reprioritize remaining tasks, identify testing needs",
+      "status": "in_progress",
       "priority": 2,
       "blocked_by": []
     }
