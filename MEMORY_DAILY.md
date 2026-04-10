@@ -30,6 +30,7 @@
 ### Heat 49 [testing]: Data integrity — 8 automated checks all pass. Stage heats off by 1 (timing), all else exact.
 ### Heat 50 [testing]: Simulated auto-task heuristic — all 6 stages produce reasonable tasks. Fixed trigger: `<3` → `<=3`. Noted: implementation integral (-1.0) blocking t-021 which blocks 2 tasks.
 ### Heat 51 [planning]: **Critical fix** — integral recovery trap. Softened clamp ±1.0→±0.5, added unblocking override (+0.3 for tasks that unblock 2+). Implementation integral reset to -0.5.
+### Heat 52 [implementation]: t-021 done — .gitignore in scaffold + dogfood. **Unblocking override worked!** First impl heat since h38 (14 heats ago).
 
 ### Key Patterns
 - 10/10 human ideas processed and implemented

@@ -2,29 +2,29 @@
   "project": "ai-coworker",
   "budget": {
     "total_heats": 159,
-    "used": 51,
+    "used": 52,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
-    "research":       {"target": 0.17, "heats": 8, "progress": 0.70, "value_ema": 0.68},
-    "planning":       {"target": 0.18, "heats": 8, "progress": 0.65, "value_ema": 0.68},
-    "implementation": {"target": 0.08, "heats": 12, "progress": 0.75, "value_ema": 0.68},
-    "testing":        {"target": 0.22, "heats": 10, "progress": 0.55, "value_ema": 0.66},
-    "editing":        {"target": 0.19, "heats": 8, "progress": 0.55, "value_ema": 0.66},
+    "research":       {"target": 0.18, "heats": 8, "progress": 0.70, "value_ema": 0.68},
+    "planning":       {"target": 0.14, "heats": 8, "progress": 0.65, "value_ema": 0.68},
+    "implementation": {"target": 0.10, "heats": 13, "progress": 0.78, "value_ema": 0.69},
+    "testing":        {"target": 0.20, "heats": 10, "progress": 0.55, "value_ema": 0.66},
+    "editing":        {"target": 0.20, "heats": 8, "progress": 0.55, "value_ema": 0.66},
     "marketing":      {"target": 0.16, "heats": 6, "progress": 0.50, "value_ema": 0.66}
   },
   "allocator": {
     "integral": {
       "research": 0.12,
-      "planning": 0.19,
+      "planning": 0.15,
       "implementation": -0.50,
-      "testing": 0.24,
-      "editing": 0.22,
-      "marketing": 0.22
+      "testing": 0.21,
+      "editing": 0.23,
+      "marketing": 0.23
     }
   },
   "queue": [
-    {"id": "t-021", "stage": "implementation", "desc": "Add .gitignore to forge-init.sh scaffold", "status": "pending", "priority": 1, "blocked_by": []},
+    {"id": "t-021", "stage": "implementation", "desc": "Add .gitignore to forge-init.sh scaffold", "status": "complete", "priority": 1, "blocked_by": []},
     {"id": "t-023", "stage": "implementation", "desc": "Add --with-personas flag to forge-init.sh", "status": "pending", "priority": 3, "blocked_by": ["t-021"]},
     {"id": "t-025", "stage": "implementation", "desc": "Add auto-task generation to loop.md Step 4", "status": "pending", "priority": 2, "blocked_by": []},
     {"id": "t-026", "stage": "implementation", "desc": "Create forge-update.sh for protocol updates", "status": "pending", "priority": 2, "blocked_by": []},
