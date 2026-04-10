@@ -2,7 +2,7 @@
   "project": "ai-coworker",
   "budget": {
     "total_heats": 460,
-    "used": 451,
+    "used": 452,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 100,
+      "heats": 101,
       "progress": 0.98,
-      "value_ema": 0.859
+      "value_ema": 0.871
     },
     "testing": {
       "target": 0.183,
@@ -252,7 +252,7 @@
       "id": "t-080",
       "stage": "implementation",
       "desc": "Fix Teach It Back CTA: success \u2192 'Continue to Next Topic' as primary, 'Try Again' secondary/removed",
-      "status": "pending",
+      "status": "complete",
       "priority": 0,
       "blocked_by": []
     },
