@@ -2,31 +2,23 @@
 
 ## 2026-04-09
 
-### Heats 1-25: Bootstrap → v0.2 Complete
-- Protocol, allocator, DAG dependencies, forge-init.sh, SessionEnd hook
-- All ideas implemented, all v0.2 tasks complete
+### Heats 1-38: v0.1-v0.3 Complete
+- Protocol built, allocator validated, DAG deps, forge-init.sh, personas
+- All human ideas implemented, all version tasks complete through v0.3
 
-### Heats 26-38: v0.3 — Personas + Production
-- Persona system designed → built → consolidated to 2 (Anvil + Forge)
-- v0.3 mostly complete, dispatch system wired
-
-### Heats 39-53: v0.4 — Real-Project Readiness
-- Real-project readiness assessment: 5 gaps found, 4 tasks generated (h40)
-- Templates improved (h41), E2E tested (h43), documentation enhanced (h42, h45)
-- v0.4 plan: multi-project isolation, auto-task generation designed (h44, h47-48)
-- **Critical allocator fix**: integral clamp ±1.0→±0.5, unblocking override added (h51)
-- Implementation unblocked: t-021 done via override, first impl heat in 14 heats (h52)
-- Data integrity: 8 automated checks pass (h49), auto-task heuristic validated (h50)
-- Queue cleaned, protocol docs updated (h53)
-
-### Heat 54 [marketing]: FAQ/Troubleshooting in README + memory consolidation
-### Heat 55 [research]: Telegram bridge design — bash sidecar with curl+jq, no Python needed
-### Heat 56 [editing]: STRATEGY.md refresh to heat 56
-### Heat 57 [testing]: **Non-dogfood project test PASSED** — todo-cli scaffolded, 14 files, allocator bootstrap correct
+### Heats 39-59: v0.4 — Real-Project Readiness
+- Readiness assessment (h40): 5 gaps in forge-init.sh → all fixed
+- Templates improved (h41), E2E tested (h43), FAQ added (h54)
+- **Critical allocator fix (h51)**: soft clamp ±0.5, unblocking override
+- Auto-task generation designed (h47-48), simulated (h50), trigger fires at queue <=3 (h58)
+- Non-dogfood test passed (h57): todo-cli scaffold works, allocator bootstraps correctly
+- forge-update.sh planned (t-026), Telegram bridge designed (h55)
+- Unblocking override edge cases: 5/5 pass (h59)
+- v0.4 status update in outbox.md (h58)
 
 ### Key Patterns
-- **Unblocking override validated**: solved the integral recovery trap (h51-52)
-- Allocator runs 53 heats balanced across 6 stages with no human steering
-- 10/10 human ideas implemented
-- Context growing but manageable at 53 heats
-- Queue depth: 4 pending tasks (healthy)
+- Allocator balanced over 59 heats with no human steering
+- Unblocking override solved integral recovery trap — validated in practice and edge cases
+- Auto-task generation trigger works: queue replenished when <=3 pending
+- 10/10 human ideas processed
+- Context at ~60 heats — compression active, still functional

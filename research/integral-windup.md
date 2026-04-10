@@ -52,7 +52,7 @@ This means:
 - Recent errors still have full weight
 - No hard caps or arbitrary thresholds
 
-Combined with a clamp at ±1.0 for safety.
+Combined with a clamp at ±0.5 for safety (softened from ±1.0 in heat 51 to prevent recovery traps).
 
 ## Impact on Current State
 
