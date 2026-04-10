@@ -215,3 +215,6 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-10T04:10:00Z	219	implementation	t-046	complete	0.7	🟢	Self-critique (Reflexion): pre-commit review, edge case check, intent alignment, self-caught logging
 2026-04-10T04:15:00Z	220	implementation	t-045	complete	0.7	🟢	Lint→test→fix loop added to protocol: run tests before commit, fix failures in-heat
 2026-04-10T04:20:00Z	221	planning	generated	complete	0.7	🟢	Queue replenishment: 5 new tasks (t-055 to t-059) — commissioner notifications, tutor stats, testing, docs
+2026-04-10T04:25:00Z	222	testing	t-058	complete	0.8	🟢	17 card tests: create, query, SM-2 review, streak, drill gen. Full suite: 80 tests pass
+2026-04-10T04:30:00Z	223	implementation	t-056	complete	0.8	🟢	Per-card review tracking: session-level tracking, accurate strong/weak in Review Summary
+2026-04-10T04:35:00Z	224	editing	generated	complete	0.7	🟢	STRATEGY refresh to heat 224, state batch update, memory consolidation

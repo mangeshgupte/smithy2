@@ -1,6 +1,6 @@
 # Strategic Plan — The Forge
 
-*Updated after heat 218 | 2026-04-10*
+*Updated after heat 224 | 2026-04-10*
 
 ## Vision
 
@@ -45,7 +45,7 @@ An autonomous AI coworker that works in bounded 5-minute heats, self-directs acr
 | Editing | 87% | 37 | State updates, STRATEGY refreshes, memory consolidation. |
 | Marketing | 83% | 25 | AARs, dispatch reports. |
 
-**Overall progress**: ~90% | **Heats used**: 218 | **Wavefront phase**: finishing
+**Overall progress**: ~90% | **Heats used**: 224 | **Wavefront phase**: finishing
 
 ### What's Working
 
