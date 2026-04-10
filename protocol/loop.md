@@ -49,6 +49,8 @@ Read `protocol/allocator.md` and follow the algorithm to pick a stage.
 - If there are tasks in `queue` matching the chosen stage with status "pending": pick the highest-priority one and set its status to "in_progress".
 - If no matching tasks: generate one yourself based on the project's current needs. Add it to the queue with status "in_progress".
 
+Task IDs: queued tasks use `t-NNN` (e.g., t-005). Self-generated tasks use `"generated"` as the task_id in the worklog.
+
 ## Step 5: Execute (~4 minutes)
 
 **Checkpoint**: Before starting work, note the current git HEAD: `git rev-parse HEAD`. If the work breaks things (tests fail, code doesn't parse), you can roll back: `git reset --hard <saved-head>`. Log the outcome as "discard" in the worklog. Only use this for implementation and testing heats — research and planning always keep their output.

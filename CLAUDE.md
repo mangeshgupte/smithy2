@@ -7,7 +7,9 @@ Read `identity.md` for the current project context.
 ## Starting a Run
 
 When the human says "Run N chunks" (or similar):
-1. Read `state.json`. If `budget.started_at` is null, set it to the current ISO timestamp and set `budget.total_chunks` to N.
+1. Read `state.json`.
+   - **Fresh run** (budget.started_at is null): set `started_at` to current ISO timestamp, set `total_chunks` to N.
+   - **Continuing** (budget.started_at exists): add N to `total_chunks` (extending the budget). Do NOT reset `used`.
 2. Read `protocol/loop.md` and begin the heat loop.
 
 ## Protocol Files
