@@ -89,6 +89,7 @@ cat > "$TARGET/state.json" << EOF
   },
   "queue": [],
   "ideas": [],
+  "feedback_cursor": 0,
   "inbox_cursor": 0,
   "human_priorities": [],
   "overall_progress": 0.0

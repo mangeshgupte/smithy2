@@ -19,13 +19,14 @@ Read these files at the start of every heat:
 
 **Stuck detection**: Scan the queue for any tasks with status "in_progress". These are leftovers from a previous heat that was interrupted. Reset to "pending" so they can be re-picked.
 
-**Review-first-heat**: On the FIRST heat of a run (budget.used was just incremented from the previous session's total), check `feedback.md` for new entries. If new feedback exists:
+**Review-first-heat**: Check `feedback.md` for new entries (lines after `feedback_cursor`). If new feedback exists:
 1. This heat becomes a **review heat** (stage = "planning")
 2. Read the feedback carefully
 3. For each feedback item, examine the relevant code/output
-4. Generate prioritized fix tasks and add to the queue
+4. Generate prioritized fix tasks and add to the queue. Feedback tasks represent explicit human direction. They MUST be prioritized above allocator-generated tasks. Set priority 0.
 5. Annotate the feedback entry as processed: `→ reviewed in heat N, tasks created: t-XXX, t-YYY`
-6. Skip the allocator for this heat — the review IS the work
+6. Update `feedback_cursor` to the current line count of feedback.md
+7. Skip the allocator for this heat — the review IS the work
 
 If no new feedback in feedback.md, skip the review and proceed to Step 2 normally.
 

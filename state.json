@@ -1,7 +1,7 @@
 {
   "project": "ai-coworker",
   "budget": {
-    "total_heats": 180,
+    "total_heats": 270,
     "used": 180,
     "started_at": "2026-04-09T00:00:00Z"
   },
@@ -33,6 +33,7 @@
     {"id": "i-015", "text": "Iteration tooling — feedback.md + review-first-heat", "source": "inbox", "status": "done", "task_id": null},
     {"id": "i-016", "text": "Multi-subject tutor with Singapore Math", "source": "inbox", "status": "queued", "task_id": null}
   ],
+  "feedback_cursor": 27,
   "inbox_cursor": 81,
   "human_priorities": [],
   "overall_progress": 0.87
