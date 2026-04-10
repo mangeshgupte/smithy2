@@ -324,3 +324,4 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-10T13:55:00Z	328	editing	generated	complete	0.7	🟢	Final state update
 2026-04-10T14:00:00Z	329	marketing	generated	complete	0.7	🟢	Outbox AAR
 2026-04-10T14:05:00Z	330	marketing	generated	complete	0.8	🟢	Budget exhausted. Final commit.
+2026-04-10T15:00:00Z	331	planning	generated	complete	0.7	🟢	Stale queue fixed (t-060-065 marked complete), 5 new tasks (t-066-070), inbox cursor updated
