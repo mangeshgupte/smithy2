@@ -2,45 +2,36 @@
   "project": "ai-coworker",
   "budget": {
     "total_heats": 19,
-    "used": 12,
+    "used": 18,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
-    "research":       {"target": 0.29, "heats": 3, "progress": 0.5, "value_ema": 0.61},
-    "planning":       {"target": 0.14, "heats": 1, "progress": 0.3, "value_ema": 0.59},
-    "implementation": {"target": 0.07, "heats": 3, "progress": 0.5, "value_ema": 0.65},
-    "testing":        {"target": 0.22, "heats": 2, "progress": 0.2, "value_ema": 0.56},
-    "editing":        {"target": 0.19, "heats": 2, "progress": 0.3, "value_ema": 0.63},
-    "marketing":      {"target": 0.10, "heats": 1, "progress": 0.2, "value_ema": 0.59}
+    "research":       {"target": 0.26, "heats": 4, "progress": 0.5, "value_ema": 0.63},
+    "planning":       {"target": 0.16, "heats": 2, "progress": 0.4, "value_ema": 0.63},
+    "implementation": {"target": 0.11, "heats": 4, "progress": 0.55, "value_ema": 0.65},
+    "testing":        {"target": 0.18, "heats": 3, "progress": 0.3, "value_ema": 0.59},
+    "editing":        {"target": 0.18, "heats": 3, "progress": 0.35, "value_ema": 0.63},
+    "marketing":      {"target": 0.11, "heats": 2, "progress": 0.3, "value_ema": 0.62}
   },
   "allocator": {
     "integral": {
-      "research": 0.50,
-      "planning": -0.50,
-      "implementation": -0.80,
-      "testing": 0.40,
-      "editing": 0.25,
-      "marketing": 0.30
+      "research": 0.20,
+      "planning": -0.10,
+      "implementation": -0.40,
+      "testing": 0.20,
+      "editing": 0.15,
+      "marketing": 0.15
     }
   },
   "queue": [
-    {"id": "t-005", "stage": "implementation", "desc": "Add checkpoint file (.forge-checkpoint.json) before risky work", "status": "pending", "priority": 1},
+    {"id": "t-005", "stage": "implementation", "desc": "Add checkpoint file (.forge-checkpoint.json) before risky work", "status": "complete", "priority": 1},
     {"id": "t-006", "stage": "implementation", "desc": "SessionEnd hook for automatic memory distillation", "status": "pending", "priority": 2},
     {"id": "t-007", "stage": "implementation", "desc": "Project template script to scaffold Forge files in new directory", "status": "pending", "priority": 3},
     {"id": "t-009", "stage": "testing", "desc": "Fresh-session resume test", "status": "pending", "priority": 4},
-    {"id": "t-010", "stage": "editing", "desc": "Prune completed tasks/ideas from state.json", "status": "pending", "priority": 5},
     {"id": "t-011", "stage": "marketing", "desc": "Quick-start guide for new projects", "status": "pending", "priority": 6}
   ],
-  "ideas": [
-    {"id": "i-001", "text": "Effort allocation should depend on project stage and maximum benefit", "source": "prompt", "status": "done", "task_id": null},
-    {"id": "i-002", "text": "Keep CLAUDE.md short, move detail to protocol files", "source": "prompt", "status": "done", "task_id": null},
-    {"id": "i-003", "text": "Create STRATEGY.md with project state and main ideas, updated each heat", "source": "prompt", "status": "done", "task_id": null},
-    {"id": "i-004", "text": "Make inbox idea pipeline more robust with structured tracking", "source": "prompt", "status": "done", "task_id": null},
-    {"id": "i-005", "text": "Track progress per heat with visual/textual dashboard", "source": "prompt", "status": "done", "task_id": null},
-    {"id": "i-006", "text": "Idea status annotations inline in inbox.md", "source": "prompt", "status": "done", "task_id": null},
-    {"id": "i-007", "text": "Standardize vocabulary to heat everywhere instead of chunk", "source": "prompt", "status": "done", "task_id": null}
-  ],
+  "ideas": [],
   "inbox_cursor": 34,
   "human_priorities": [],
-  "overall_progress": 0.33
+  "overall_progress": 0.40
 }
