@@ -1,5 +1,25 @@
 # Changelog
 
+## v1.1 — Visual Design Sprint (heats 518-537)
+
+### Tutor Visual Redesign
+- **Subject cards**: 5px accent bars (was 3px), topic count badges, taller progress bars, stronger accent gradients
+- **Welcome card**: "Learn by Doing" copy, feature cards with icons + descriptions, contextual CTA (Start Learning / Continue / Resume)
+- **Empty states**: Card-style with dashed borders, emoji icons, rich messaging, guidance CTAs
+- **Button system**: 6 utility classes (btn-lg, btn-sm, btn-block, btn-stack, btn-green, btn-mt) — replacing inline styles
+- **Monospace fonts**: Unified font stack (JetBrains Mono → Fira Code → Cascadia Code), tab-size: 4, consistent line-height
+
+### Commissioner Visual Redesign
+- **Stage colors**: 6 distinct colors (purple research, blue planning, green implementation, yellow testing, orange editing, red marketing)
+- **Activity feed**: Stage-colored left borders on heat cards, colored stage badges, value color coding (green/yellow/red)
+- **Stage bars**: Color-coded progress fills in project detail view
+
+### Protocol Wired to CLI (heats 508-517)
+- All 3 protocol files rewritten: loop.md, logging.md, allocator.md
+- Zero manual state edits — all mutations go through smithy commands
+- 2 stress test heats passed with patrol clean
+- **New rule**: "NEVER directly edit state.json or worklog.tsv"
+
 ## v1.0 — Gas Town Patterns + 500-Heat Milestone (heats 481-500)
 
 ### Gas Town Integration Research
