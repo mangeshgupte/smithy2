@@ -66,8 +66,9 @@ CLAUDE.md              ← The brain (30-line hub)
 protocol/
   loop.md              ← 8-step heat loop
   allocator.md         ← Wavefront + PI controller + unblocking override
-  logging.md           ← Worklog, dashboards, memory protocol
-identity.md            ← Project context
+  logging.md           ← Worklog, dashboards, stoplight signals, self-critique
+  reporting.md         ← Information compression layers (L0-L4)
+identity.md            ← Project context + commander's intent
 STRATEGY.md            ← Living strategic plan (updated every ~5 heats)
 state.json             ← Budget, stages, queue, allocator state
 worklog.tsv            ← Append-only heat log
@@ -84,6 +85,11 @@ dispatch/              ← Inter-persona communication
   anvil-to-forge.md    ← Direction from Anvil
   forge-to-anvil.md    ← Reports from Forge
 hooks/                 ← SessionEnd hook for memory distillation
+aar/                   ← After-action reviews (generated at end of each run)
+forge-status.sh        ← Zero-effort dashboard (L2 reporting layer)
+forge-validate.sh      ← Automated state/protocol integrity checks
+forge-update.sh        ← Update protocol files in existing projects
+CHANGELOG.md           ← Version history
 ```
 
 ## Design Influences
