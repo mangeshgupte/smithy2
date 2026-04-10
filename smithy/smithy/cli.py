@@ -382,6 +382,44 @@ def process_inbox(ctx):
     _err(f"{len(entries)} new inbox entries")
 
 
+@cli.command("memory-write")
+@click.argument("note")
+@click.option("--heat", "heat_num", type=int, default=None, help="Heat number for context")
+@click.option("--stage", default=None, help="Stage for context")
+@click.pass_context
+def memory_write(ctx, note, heat_num, stage):
+    """Append a note to MEMORY_DAILY.md under today's date."""
+    from datetime import date
+    root = ctx.obj["root"]
+    path = root / "MEMORY_DAILY.md"
+
+    today = date.today().isoformat()
+    header = f"## {today}"
+
+    if path.exists():
+        content = path.read_text()
+    else:
+        content = "# Daily Memory\n"
+
+    # Check if today's header exists
+    if header not in content:
+        content += f"\n{header}\n"
+
+    # Build the entry
+    prefix = ""
+    if heat_num and stage:
+        prefix = f"[h{heat_num} {stage}] "
+    elif heat_num:
+        prefix = f"[h{heat_num}] "
+
+    entry = f"\n- {prefix}{note}\n"
+    content += entry
+
+    path.write_text(content)
+    _output({"date": today, "note": note, "heat": heat_num})
+    _err(f"Memory: {note[:60]}")
+
+
 @cli.command("init")
 @click.argument("project_name")
 @click.option("--target", default=".", help="Target directory")

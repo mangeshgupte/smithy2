@@ -2,7 +2,7 @@
   "project": "ai-coworker",
   "budget": {
     "total_heats": 480,
-    "used": 472,
+    "used": 473,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 103,
+      "heats": 104,
       "progress": 0.98,
-      "value_ema": 0.886
+      "value_ema": 0.86
     },
     "testing": {
       "target": 0.183,
@@ -292,7 +292,7 @@
       "id": "t-085",
       "stage": "implementation",
       "desc": "Smithy: add memory-write command (append to MEMORY_DAILY.md)",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },

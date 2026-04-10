@@ -466,3 +466,4 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-10T15:55:00Z	470	marketing	generated	complete	0.8	🟢	Budget exhausted. Final commit.
 2026-04-10T14:19:27Z	471	planning	generated	complete	0.7	🟢	4 tasks generated (t-084-087): smithy init tests, memory-write cmd, monospace fix, CHANGELOG
 2026-04-10T14:20:06Z	472	testing	t-084	complete	0.9	🟢	4 init tests: scaffold files, validates clean, with-personas, protocol dirs. Smithy now 23 tests.
+2026-04-10T14:20:38Z	473	implementation	t-085	complete	0.8	🟢	Smithy memory-write: append notes to MEMORY_DAILY.md with heat/stage context

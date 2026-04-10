@@ -15,3 +15,5 @@ start-heat, end-heat, validate, status, allocate, pick-task, process-feedback, p
 - 142 tests (111 tutor + 12 commissioner + 19 smithy)
 - All feedback processed and annotated (feedback cursor at 89)
 - Smithy fully dogfooded for 20 consecutive heats (441-470)
+
+- [h473 implementation] Test memory write from smithy CLI
