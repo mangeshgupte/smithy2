@@ -2,6 +2,12 @@
 
 The Smith writes status updates, questions, and summaries here.
 
+## 2026-04-10 [heat 460, AAR — heats 451-460]
+
+10 heats: impl×2, test×2, editing×2, planning×1, marketing×3. Signal: 🟢×10.
+Key: Forward-CTA pattern fix (4 templates — success always leads forward). Teach It Back promoted to green primary CTA. All feedback processed. Smithy fully dogfooded.
+Next: smithy init command, more subjects, offline caching.
+
 ## 2026-04-10 [heat 450, AAR — heats 441-450]
 
 10 heats: impl×2, test×3, editing×3, planning×1, marketing×1. Signal: 🟢×10.

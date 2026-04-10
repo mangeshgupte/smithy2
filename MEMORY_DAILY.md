@@ -2,24 +2,18 @@
 
 ## 2026-04-10
 
-### Heats 441-450: Smithy CLI Completed + Full Dogfooding
+### Heats 451-460: Forward-CTA Pattern Fix + Teach It Back Prominence
 
-**New smithy commands (h442):**
-- `smithy add-task <stage> <desc>` — auto-incrementing IDs (t-NNN), priority option
-- `smithy complete-task <task_id>` — marks task as complete with validation
-- `smithy commit <message>` — git add + commit with [stage] prefix from checkpoint
+**Feedback processed:**
+1. **Forward-CTA pattern bug** (h452): Success pages now lead forward — "Next Topic →" as primary on teach_back, topic_complete, review_summary, session. "Try Again" only on needs_work.
+2. **Teach It Back prominence** (h454): Promoted from secondary to green primary CTA on mastery screens. Sky Blue tutor-speech callout on topic preview: "You've mastered this. Can you teach it?"
 
-**Testing (h443-444):**
-- 19 smithy tests (5 new for add-task/complete-task)
-- Full system: 142 tests pass (111 tutor + 12 commissioner + 19 smithy)
-- smithy validate passes
+**Smithy dogfooding:**
+- All 10 heats used `smithy start-heat` / `smithy end-heat` for bookkeeping
+- `smithy add-task`, `smithy complete-task` used for queue management
+- No manual state.json edits needed (except fixing pre-existing stale tasks)
 
-**Dogfooding result:**
-- Successfully used smithy for all bookkeeping in heats 441-450
-- `start-heat` → `end-heat` flow works cleanly
-- `allocate` correctly recommends stages
-- No manual state.json edits needed (except fixing stale queue from previous runs)
-
-### Smithy CLI Summary
-11 commands: start-heat, end-heat, validate, status, allocate, pick-task, process-feedback, process-inbox, add-task, complete-task, commit
-19 tests, ~550 lines Python, installable via `pip install -e smithy/`
+### Key Stats
+- 142 total tests (111 tutor + 12 commissioner + 19 smithy)
+- All feedback processed and annotated
+- Forward-CTA rule established: after success, always lead forward
