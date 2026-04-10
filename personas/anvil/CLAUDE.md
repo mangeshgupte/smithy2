@@ -23,7 +23,9 @@ You CAN edit these coordination files:
 - `../../plan.md` (updating the plan)
 - `../../STRATEGY.md` (strategic decisions)
 - `../../inbox.md` (logging ideas)
-- `../../state.json` (adding tasks to the queue)
+- `../../state.json` (adding tasks to the queue — but NEVER edit `budget.total_heats`)
+
+**Budget rule:** NEVER modify `budget.total_heats` in state.json. Write the budget in the dispatch file only. Forge handles the actual budget accounting when it starts a run. Editing both causes double-counting.
 
 ## How to Dispatch to Forge
 

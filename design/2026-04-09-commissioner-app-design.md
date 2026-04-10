@@ -290,6 +290,112 @@ Anything older than "today" gets rolled up into natural-language summaries. Expa
 
 ---
 
+## Visual Design
+
+Adopts the Recall Rhino design system for visual consistency across the product family.
+
+### Color Palette (Recall Rhino)
+
+```
+PRIMARY & SECONDARY (Core Brand)
+  Recall Gray    #708090  — primary backgrounds, large panels,
+                            grounding color
+  Playful Teal   #00BCD4  — main accent, primary action buttons,
+                            active tabs, progress bar fills
+  Energy Orange  #FF9800  — secondary accent, CTAs, interactive
+                            elements, budget/alert highlights
+
+FEEDBACK
+  Focus Green    #4CAF50  — project running well, green stoplight,
+                            decisions resolved, heats complete
+  Review Yellow  #FFEB3B  — yellow stoplight, something worth
+                            knowing, moderate attention needed
+  Alert Red      #F44336  — red stoplight, blocked, needs you now,
+                            budget empty
+
+NEUTRAL
+  Clean White    #FFFFFF  — card backgrounds, input fields
+  Soft Black     #333333  — primary text, strong headings
+  Sky Blue       #ADD8E6  — subtle backgrounds, decorative
+                            gradients, informational containers
+```
+
+### How Colors Map to Commissioner Concepts
+
+| Concept | Color | Example |
+|---------|-------|---------|
+| Stoplight: running fine | Focus Green #4CAF50 | Green dot on project card |
+| Stoplight: worth knowing | Review Yellow #FFEB3B | Yellow dot, stage transition |
+| Stoplight: blocked/needs you | Alert Red #F44336 | Red dot, decision waiting |
+| Primary actions | Playful Teal #00BCD4 | "Start Review", "Go to projects" |
+| Secondary actions | Energy Orange #FF9800 | "+10 heats", "Add idea" |
+| Decision option buttons | Playful Teal #00BCD4 | [Adults] [Kids] tap targets |
+| Budget bars | Playful Teal fill #00BCD4 | Budget remaining visual |
+| Progress deltas (positive) | Focus Green #4CAF50 | "41% -> 54%" in briefing |
+| AI/Forge voice | Sky Blue bg #ADD8E6 | Notable section, Forge quotes |
+| Morning Briefing bg | Recall Gray #708090 | Grounding, calm catch-up feel |
+
+### Typography
+
+```
+Headings     System stack (-apple-system, BlinkMacSystemFont,
+             Segoe UI, Roboto) — bold/extrabold, 3xl-4xl
+Sections     Same stack — semibold, xl-2xl
+Body         Same stack — regular, 16px (base/lg) minimum
+Utility      Same stack — lighter weight, xs-sm
+```
+
+16px minimum body text — non-negotiable on mobile.
+
+### Card Surfaces
+
+```
+Background:   Clean White (#FFFFFF)
+Corner:       rounded-lg (0.5rem) for small elements,
+              rounded-2xl (1rem) for project cards
+Shadow:       shadow-md default, shadow-xl on hover
+Padding:      16-24px (4-6 units)
+Border:       none
+Gap:          16-32px (4-8 units) between elements
+```
+
+### Spacing & Layout
+
+```
+Container:    max-w-6xl on desktop, responsive to mobile
+Padding:      4-6 units base, 1.5-2rem for sections
+Gap:          4-8 units between elements
+Breakpoints:  sm (640px) — 2 columns
+              md (768px) — 2-3 columns
+              lg (1024px) — 3-4 columns
+```
+
+### Interactive States
+
+```
+Hover:        color transition, shadow increase,
+              subtle scale (hover:scale-105)
+Active/Focus: ring-2 with Playful Teal (focus:ring-[#00BCD4])
+Disabled:     gray out, opacity reduced, cursor-not-allowed
+Loading:      spinner animation (animate-spin) with teal border
+```
+
+### Animations
+
+| Event | Animation | Duration |
+|-------|-----------|----------|
+| Decision confirmed | Card border flashes Focus Green, scale pulse | 0.4s |
+| Decision undo | Card border flashes Review Yellow, subtle shake | 0.3s |
+| Forge voice appears | Slides up, fades in, Sky Blue bg | 0.3s |
+| Budget added | Bar fills with Playful Teal, smooth transition | 0.5s |
+| Notification badge | Number bounces on increment | 0.3s |
+
+### Progress Bars
+
+Fill with Playful Teal (#00BCD4). Sections change to Focus Green as stages reach completion. Stage progress bars on early-stage cards use the same pattern. Background track in Recall Gray at reduced opacity.
+
+---
+
 ## Open Questions
 
 1. **Offline support?** Field professionals may have spotty connectivity. Do decisions queue locally and sync when back online?

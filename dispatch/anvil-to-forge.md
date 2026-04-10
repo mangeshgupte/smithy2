@@ -2,6 +2,163 @@
 
 Anvil writes direction here. Forge reads on startup and uses it to guide autonomous work.
 
+## 2026-04-10 16:00 — Direction: Wire Smithy CLI Into Forge Runs (10 heats)
+
+### What We Decided
+The smithy CLI has 15 commands and 152 tests, but Forge is still manually editing state.json and worklog.tsv. That defeats the purpose. Every bookkeeping operation must go through the CLI so counters, cursors, and statuses are guaranteed correct.
+
+### Commander's Intent
+```json
+{
+  "intent": "Replace ALL manual state edits in the Forge protocol with smithy CLI calls",
+  "success_looks_like": "Forge can run 10+ heats without ever directly editing state.json or worklog.tsv — all mutations go through smithy commands",
+  "tone": "Critical infrastructure — break nothing, test everything",
+  "boundaries": ["The protocol files are the source of truth for how Forge works", "The smithy CLI is the only writer of state.json and worklog.tsv"],
+  "not_this": ["Don't add new CLI features — wire what exists", "Don't change the heat loop logic — just change how state is written"]
+}
+```
+
+### Implementation Plan
+
+**Heats 1-3: Rewrite protocol/loop.md to use smithy CLI**
+
+Replace every manual state edit with a smithy command:
+
+| Current (manual) | New (smithy CLI) |
+|---|---|
+| Read state.json, compute allocator math | `smithy allocate` → returns recommended stage |
+| Find ready task, set status to in_progress | `smithy pick-task <stage>` → returns task, marks in_progress |
+| Write checkpoint file | `smithy start-heat <stage> --task <task_id>` → writes checkpoint |
+| Increment budget.used, update stage stats, compute value_ema, append worklog | `smithy end-heat <value> <signal> "<notes>"` → all bookkeeping atomically |
+| Read feedback.md after cursor, update cursor | `smithy process-feedback` → returns new entries, updates cursor |
+| Read inbox.md after cursor, update cursor | `smithy process-inbox` → returns new entries, updates cursor |
+| git add + git commit | `smithy commit "[stage] description"` |
+| Check budget exhausted | `smithy status --json` → includes budget remaining |
+| Write handoff at end | `smithy handoff` |
+| Resume from handoff | `smithy resume` |
+| Validate state | `smithy patrol` |
+
+The protocol should read like:
+```
+Step 1: Load Context
+  Run `smithy resume` (if handoff exists)
+  Run `smithy patrol` (validate state)
+  Run `smithy status` (get current state)
+  Run `smithy process-feedback` (check for new feedback)
+  Run `smithy process-inbox` (check for new inbox messages)
+  Read identity.md, STRATEGY.md, MEMORY_DAILY.md (context — read-only)
+
+Step 3: Run the Allocator
+  Run `smithy allocate` → gives you the stage
+
+Step 4: Pick a Task
+  Run `smithy pick-task <stage>` → gives you the task
+
+Step 5: Execute
+  Run `smithy start-heat <stage> --task <task_id>`
+  Do the work (~4 minutes)
+  Run `smithy commit "[stage] description"`
+
+Step 6: Log the Heat
+  Run `smithy end-heat <value> <signal> "<notes>"`
+
+Step 8: Check Budget
+  Run `smithy status --json` → check budget.remaining
+  If 0: run `smithy handoff` and STOP
+  Else: go to Step 1
+```
+
+**Heats 4-5: Rewrite protocol/logging.md**
+- Remove all manual state.json update instructions
+- Remove manual worklog.tsv append instructions
+- Replace with: "Run `smithy end-heat` — it handles everything"
+- Keep the self-assessment guide and signal classification (those inform the *inputs* to smithy end-heat)
+
+**Heats 6-7: Rewrite protocol/allocator.md**
+- Remove inline allocator math (benefit scores, PI controller, integral updates)
+- Replace with: "Run `smithy allocate` — it runs the wavefront algorithm and returns the recommended stage"
+- Keep the *explanation* of how the allocator works (for understanding) but mark the math as "implemented in smithy CLI"
+
+**Heats 8-9: Stress test — run 2 real heats using the new protocol**
+- Run 2 actual heats on this project using only smithy commands for state changes
+- Verify: state.json is correct after each heat, worklog has right entries, no manual edits needed
+- Fix any gaps discovered
+
+**Heat 10: AAR + update all project templates**
+- Update `smithy init` scaffolding to generate protocol files that use smithy CLI
+- AAR covering: what worked, what needed fixing, any remaining gaps
+- Update README with the new workflow
+
+### Key Rule for Forge After This
+**NEVER directly edit state.json or worklog.tsv.** If you need to change state, there must be a smithy command for it. If no command exists, flag it — don't work around it.
+
+### Constraints
+- The smithy CLI is at `smithy/` — run via `uv run smithy <command>`
+- All existing tests must still pass after protocol changes
+- Run `smithy patrol` after each heat during the stress test to verify consistency
+
+### Budget
+10 heats
+
+## 2026-04-10 15:00 — Direction: Rename Everything (2 heats)
+
+### What We Decided
+Two renames across the entire codebase:
+1. **ai-coworker → Smithy** (the project name)
+2. **Commissioner → Bellows** (the UI app)
+
+### Commander's Intent
+```json
+{
+  "intent": "Rename consistently everywhere — code, docs, config, templates, dispatch, state files",
+  "success_looks_like": "No remaining references to 'ai-coworker' or 'Commissioner' anywhere except git history",
+  "tone": "Mechanical — find and replace, verify nothing breaks",
+  "boundaries": ["Don't rename the directory itself yet — just content references", "Don't change functionality"],
+  "not_this": ["Don't refactor anything else while renaming"]
+}
+```
+
+### Heat 1: Commissioner → Bellows
+- `commissioner/` directory rename to `bellows/`
+- `commissioner/app.py` — FastAPI title
+- `commissioner/pyproject.toml` — package name
+- `commissioner/templates/base.html` — page title
+- `commissioner/README.md` — all references
+- `design/2026-04-09-commissioner-app-design.md` — rename file + update content
+- `dispatch/chisel-to-forge.md` — all references
+- `dispatch/anvil-to-forge.md` — all references
+- `STRATEGY.md` — all references
+- `inbox.md` — all references
+- `outbox.md` — all references
+- `state.json` — task descriptions
+- `CHANGELOG.md` — all references
+- `feedback.md` — all references
+- `README.md` — all references
+
+### Heat 2: ai-coworker → Smithy
+- `STRATEGY.md` — project name, title, all references
+- `CLAUDE.md` — project references
+- `identity.md` — if it references ai-coworker
+- `state.json` — `"project": "smithy"`
+- `README.md` — all references
+- `CHANGELOG.md` — all references
+- `dispatch/*.md` — all references
+- `inbox.md` / `outbox.md` — all references
+- `personas/anvil/CLAUDE.md` — if it references ai-coworker
+- `personas/chisel/CLAUDE.md` — if it references ai-coworker
+- `personas/forge/CLAUDE.md` — if it references ai-coworker
+- `smithy/` CLI — if package references ai-coworker
+- `pyproject.toml` — if it exists at root
+- Verify: `grep -ri "ai-coworker" .` and `grep -ri "commissioner" .` return nothing (except git history)
+
+### Constraints
+- Run `smithy validate` (or equivalent) after to make sure nothing broke
+- Test that Bellows app still starts: `cd bellows && uv run uvicorn app:app --port 8080`
+- Commit each rename separately: `[editing] Rename Commissioner to Bellows` and `[editing] Rename ai-coworker to Smithy`
+
+### Budget
+2 heats
+
 ## 2026-04-10 14:00 — Direction: Adopt Gas Town Patterns (Approach B)
 
 ### What We Decided

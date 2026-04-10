@@ -110,3 +110,18 @@ Decision on t-055: APPROVE (task: Commissioner: notification tier logic (push/qu
 
 ## 2026-04-10 11:00 [via prompt]
 Directive: Prioritize visual design tasks in the next heats.
+
+## 2026-04-10 [via prompt]
+Decision: Project is now called **Smithy**. Forge, Anvil, Chisel are components of The Smithy.
+
+## 2026-04-10 [via prompt]
+Idea: Bookkeeping via tool calls — `smithy` Python CLI. LLM never directly edits state.json or worklog.tsv. All state mutations go through deterministic Python code with validation. Inspired by beads/gas town pattern.
+→ on hold pending Gas Town integration research
+
+## 2026-04-10 [via prompt]
+Idea: Smithy is converging with Gas Town architecture. Research whether to build on top of Gas Town (Forge as a polecat type), fork it, or stay independent. Answer determines whether smithy CLI targets flat files or Dolt.
+→ ✓ research complete in heats 481-485. Approach B recommended and approved.
+
+## 2026-04-10 [via prompt]
+Decision: Approach B confirmed — adopt Gas Town patterns into Smithy, stay independent. 15 heats for handoff, patrol, session cycling, docs.
+→ dispatched (15 heats, see anvil-to-forge.md)
