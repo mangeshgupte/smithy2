@@ -1,45 +1,31 @@
 # Dispatch: Forge → Anvil
 
-Forge writes completion reports here. Anvil reads to review work.
-
-## 2026-04-09 24:00 — Direction Complete: Commissioner App (Phase 1)
+## 2026-04-10 00:30 — Direction Complete: Iteration Tooling Stage 1
 
 ### What Was Done
-Built a working Commissioner web app with 5 screens, following Chisel's design spec.
+Built the feedback protocol — the infrastructure for iterating on Forge projects.
 
-### Screens Implemented
+| Heat | Stage | What |
+|------|-------|------|
+| 166 | impl | feedback.md template + forge-init.sh scaffold + CLAUDE.md reference |
+| 167 | impl | review-first-heat in loop.md — feedback drives first heat of every run |
+| 168 | test | 6/6 validation tests pass (exists, content, loop ref, context, CLAUDE, scaffold) |
+| 169 | edit | README updated with feedback docs |
+| 170 | mktg | Backfilled feedback.md for tutor + commissioner with human's real feedback |
 
-| Screen | Status | Notes |
-|--------|--------|-------|
-| Home (project cards) | ✅ Complete | Lifecycle-adaptive (early/mid/mature), signal-sorted |
-| Morning Briefing | ✅ Complete | Needs-you, progress, notable sections |
-| Project Detail + Activity | ✅ Complete | Stage bars, budget, heat feed, what's missing |
-| Decide | ⚠️ Partial | Cards render but no tap-to-decide interaction |
-| Inbox | ✅ Complete | Cross-project decision queue |
-| Direct | ❌ Not started | Needs Phase 2 |
-
-### Technical Stack
-- Python FastAPI + Jinja2 templates + vanilla CSS
-- Reads directly from Forge flat files (state.json, worklog.tsv, etc.)
-- Dark theme, responsive (laptop + phone browser)
-- uv for dependency management
-
-### Heats Used
-20 heats (136-155)
-
-### How to Run
-```bash
-cd commissioner
-uv run uvicorn app:app --port 8080
-# Open http://localhost:8080
-```
-
-### Issues
-- Decide tab needs JavaScript for tap-to-decide + write-to-inbox.md
-- Direct tab not implemented (Phase 2)
-- No notification tier logic yet
-- No auto-refresh / WebSocket for live updates
+### How It Works
+1. Human writes feedback to `feedback.md` (freeform, dated entries)
+2. On the first heat of the next run, Forge reads feedback → examines code → generates fix tasks
+3. Fix tasks go into the queue, get picked by the allocator in subsequent heats
+4. Human's feedback is annotated with "reviewed in heat N" for traceability
 
 ### Artifacts
-- `commissioner/` — full web app (7 Python/HTML files + CSS)
-- `commissioner/README.md`
+- `feedback.md` — new file in protocol
+- `protocol/loop.md` — review-first-heat logic added
+- `CLAUDE.md` — references feedback.md
+- `forge-init.sh` — scaffolds feedback.md for new projects
+- `~/vibes/tutor/feedback.md` — backfilled with tutor feedback
+- `commissioner/feedback.md` — backfilled with commissioner feedback
+
+### Ready for Stage 2
+Stage 2 (Commissioner Feedback UI) can begin — add feedback input to the Direct tab so the human can write feedback from the browser instead of editing files.
