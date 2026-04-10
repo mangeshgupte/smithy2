@@ -133,6 +133,36 @@ class TestPickTask:
         assert data["task"] is None
 
 
+class TestAddTask:
+    def test_adds_task(self, project, runner):
+        result = runner.invoke(cli, ["--dir", str(project), "add-task", "implementation", "Build feature Y"])
+        data = json.loads(result.output)
+        assert data["task"]["id"] == "t-002"  # t-001 exists, so next is t-002
+        assert data["task"]["status"] == "pending"
+
+    def test_auto_increments_id(self, project, runner):
+        runner.invoke(cli, ["--dir", str(project), "add-task", "research", "Research A"])
+        result = runner.invoke(cli, ["--dir", str(project), "add-task", "research", "Research B"])
+        data = json.loads(result.output)
+        assert data["task"]["id"] == "t-003"
+
+    def test_with_priority(self, project, runner):
+        result = runner.invoke(cli, ["--dir", str(project), "add-task", "testing", "Test X", "--priority", "0"])
+        data = json.loads(result.output)
+        assert data["task"]["priority"] == 0
+
+
+class TestCompleteTask:
+    def test_marks_complete(self, project, runner):
+        result = runner.invoke(cli, ["--dir", str(project), "complete-task", "t-001"])
+        data = json.loads(result.output)
+        assert data["task"]["status"] == "complete"
+
+    def test_not_found(self, project, runner):
+        result = runner.invoke(cli, ["--dir", str(project), "complete-task", "t-999"])
+        assert result.exit_code != 0
+
+
 class TestProcessFeedback:
     def test_reads_new_entries(self, project, runner):
         result = runner.invoke(cli, ["--dir", str(project), "process-feedback"])

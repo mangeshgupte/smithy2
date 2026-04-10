@@ -2,7 +2,7 @@
   "project": "ai-coworker",
   "budget": {
     "total_heats": 450,
-    "used": 442,
+    "used": 443,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -26,9 +26,9 @@
     },
     "testing": {
       "target": 0.183,
-      "heats": 53,
+      "heats": 54,
       "progress": 0.88,
-      "value_ema": 0.802
+      "value_ema": 0.801
     },
     "editing": {
       "target": 0.183,
@@ -48,7 +48,7 @@
       "research": 0.14,
       "planning": 0.374,
       "implementation": -0.5,
-      "testing": 0.031,
+      "testing": 0.022,
       "editing": -0.07,
       "marketing": 0.247
     }
@@ -226,7 +226,7 @@
       "id": "t-077",
       "stage": "implementation",
       "desc": "Smithy: commit command (git add + commit with [stage] prefix)",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -234,7 +234,7 @@
       "id": "t-078",
       "stage": "testing",
       "desc": "Smithy: test add-task, complete-task, commit commands",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": [
         "t-076"
