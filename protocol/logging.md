@@ -1,0 +1,71 @@
+# Logging Protocol
+
+## Append to worklog.tsv
+
+Add one row (tab-separated):
+```
+timestamp	chunk	stage	task_id	outcome	value	notes
+```
+
+- `timestamp`: ISO 8601 (e.g., 2026-04-09T14:35:00Z)
+- `chunk`: current chunk number (budget.used + 1)
+- `stage`: the stage worked on
+- `task_id`: the task ID (e.g., t-001) or "generated" if self-generated
+- `outcome`: "complete", "partial", or "blocked"
+- `value`: self-assessed productivity 0.0-1.0 (see Self-Assessment Guide below)
+- `notes`: one-line summary of what was accomplished
+
+## Update state.json
+
+- Increment `budget.used` by 1
+- Increment the chosen stage's `chunks` by 1
+- Update stage `progress` (your estimate of how complete this stage is for the project, 0.0-1.0)
+- Update stage `value_ema`: new_ema = 0.7 * old_ema + 0.3 * this_chunk_value
+- Update `overall_progress` (weighted average of stage progress)
+- If task is complete, set its status to "complete" in the queue
+- Store updated `allocator.integral` values
+
+## Append to MEMORY_DAILY.md
+
+Add 2-3 bullet points under today's date header:
+```markdown
+## 2026-04-09
+
+### Chunk 5 [implementation]
+- Built the X component
+- Discovered Y needs to be refactored
+- Next: wire up Z
+```
+
+## Write to outbox.md (if needed)
+
+Write when:
+- You have a question that blocks further work
+- You completed a significant milestone
+- You changed direction from what the human might expect
+- Budget is about to run out (last 3 chunks)
+
+Format:
+```markdown
+## 2026-04-09 14:35 [chunk 5, implementation]
+Completed the /users endpoint. Auth strategy is still TBD — went with JWT for now but flagging for your review.
+```
+
+## Self-Assessment Guide
+
+Rate each chunk's `value` honestly:
+- **0.9-1.0**: Major breakthrough, key feature complete, critical bug found and fixed
+- **0.7-0.8**: Solid progress, meaningful deliverable produced
+- **0.5-0.6**: Some progress but hit friction, partial results
+- **0.3-0.4**: Mostly setup/exploration, little tangible output
+- **0.1-0.2**: Stuck, wrong direction, had to backtrack
+- **0.0**: Complete waste — nothing useful produced
+
+## Progress Estimation Guide
+
+Estimate each stage's `progress` (0.0-1.0) based on what's needed for the current project:
+- **0.0**: Not started
+- **0.2**: Initial exploration done
+- **0.5**: Core work roughly half complete
+- **0.8**: Most work done, refinements remain
+- **1.0**: Stage is complete for current project scope
