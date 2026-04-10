@@ -1,7 +1,7 @@
 {
   "project": "ai-coworker",
   "budget": {
-    "total_heats": 517,
+    "total_heats": 537,
     "used": 517,
     "started_at": "2026-04-09T00:00:00Z"
   },
@@ -26,30 +26,30 @@
     },
     "testing": {
       "target": 0.183,
-      "heats": 98,
+      "heats": 99,
       "progress": 0.88,
       "value_ema": 0.817
     },
     "editing": {
       "target": 0.183,
-      "heats": 138,
+      "heats": 140,
       "progress": 0.88,
       "value_ema": 0.831
     },
     "marketing": {
       "target": 0.219,
-      "heats": 66,
+      "heats": 68,
       "progress": 0.84,
       "value_ema": 0.775
     }
   },
   "allocator": {
     "integral": {
-      "research": 0.329,
+      "research": 0.383,
       "planning": 0.5,
       "implementation": -0.5,
-      "testing": -0.074,
-      "editing": -0.374,
+      "testing": -0.071,
+      "editing": -0.406,
       "marketing": 0.5
     }
   },
@@ -333,6 +333,110 @@
       "stage": "editing",
       "desc": "Final STRATEGY + CHANGELOG update for heat 500 milestone",
       "status": "complete",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-091",
+      "stage": "planning",
+      "desc": "Plan 20-heat sprint: audit current state, generate task backlog focused on visual design + polish",
+      "status": "in_progress",
+      "priority": 0,
+      "blocked_by": []
+    },
+    {
+      "id": "t-092",
+      "stage": "implementation",
+      "desc": "Tutor: redesign subject cards with stronger visual hierarchy \u2014 larger accent bars, clearer progress, topic count badges",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-093",
+      "stage": "implementation",
+      "desc": "Tutor: polished empty states \u2014 illustrated messaging with guidance for no-cards, no-reviews, first-visit",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-094",
+      "stage": "implementation",
+      "desc": "Tutor: consistent button styling \u2014 full-width primary CTA, secondary inline, standardized sizes",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-095",
+      "stage": "implementation",
+      "desc": "Commissioner: richer activity feed \u2014 stage-colored left borders, signal dots, expandable heat details",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-096",
+      "stage": "implementation",
+      "desc": "Commissioner: enhanced budget visualization \u2014 segmented bar with stage breakdown, forecast line",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-097",
+      "stage": "implementation",
+      "desc": "Commissioner: decision card visual weight \u2014 priority badges, loading/success feedback on buttons",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-098",
+      "stage": "implementation",
+      "desc": "Commissioner: delightful empty states \u2014 illustration + contextual messaging for all-clear/no-projects",
+      "status": "pending",
+      "priority": 3,
+      "blocked_by": []
+    },
+    {
+      "id": "t-099",
+      "stage": "implementation",
+      "desc": "Tutor: exercise feedback animations \u2014 correct/wrong visual distinction with color flash + icon",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-100",
+      "stage": "testing",
+      "desc": "Visual regression check: verify both apps render correctly after design changes",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-101",
+      "stage": "editing",
+      "desc": "Update READMEs with visual design changes and current screenshots descriptions",
+      "status": "pending",
+      "priority": 3,
+      "blocked_by": []
+    },
+    {
+      "id": "t-102",
+      "stage": "marketing",
+      "desc": "CHANGELOG v1.0: visual design sprint summary + all improvements",
+      "status": "pending",
+      "priority": 3,
+      "blocked_by": []
+    },
+    {
+      "id": "t-103",
+      "stage": "implementation",
+      "desc": "Tutor: review session polish \u2014 card flip animation, confidence rating stars, session complete celebration",
+      "status": "pending",
       "priority": 2,
       "blocked_by": []
     }
