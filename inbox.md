@@ -71,3 +71,7 @@ Design: Commissioner App — mobile-first operational app for managing multiple 
 ## 2026-04-09 22:59 [via commissioner]
 Test from commissioner
 → ✓ test message — Commissioner Direct tab POST works end-to-end
+
+## 2026-04-10 [via prompt]
+Idea: Build iteration tooling in 3 stages. Stage 1: feedback.md + review-first-heat in protocol (ai-coworker). Stage 2: feedback UI in Commissioner Direct tab. Stage 3: multi-project Forge (deferred). Makes iteration on tutor/commissioner/ai-coworker frictionless.
+→ dispatched Stage 1 (5 heats on ai-coworker, see anvil-to-forge.md)

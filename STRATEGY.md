@@ -103,12 +103,8 @@ An autonomous AI coworker that works in bounded 5-minute heats, self-directs acr
 
 | # | Hypothesis | Status | Evidence |
 |---|-----------|--------|----------|
-| H8 | Forge produces useful output on non-self projects | ? untested | First real test: AI tutor project, starting now |
-| H9 | The human can assess quality in under 2 minutes per run | ? untested | Will measure during tutor project runs |
-| H10 | Forge's strategic decisions align with human intent | ? untested | Tutor project has a specific intent — check drift after 10 heats |
-| H5 | Stoplight signals compress oversight information | ? untested | Deployed heat 85, all green so far — real test comes with tutor project |
-| H6 | Commander's intent maintains strategic coherence | ? untested | First real test with tutor project intent |
-| H7 | AAR captures the "why" behind decisions | ? untested | Protocol in loop.md Step 8, will trigger at end of tutor run |
+| H5 | Stoplight signals compress oversight information | ~ early signal | 2 yellows surfaced real issues (heats 121, 142). Need more data. |
+| H7 | AAR captures the "why" behind decisions | ~ early signal | AARs generated for both project runs. Need human review of usefulness. |
 
 ### Parked
 
@@ -120,9 +116,13 @@ An autonomous AI coworker that works in bounded 5-minute heats, self-directs acr
 
 | # | Hypothesis | Status | Evidence |
 |---|-----------|--------|----------|
-| H1 | Wavefront allocation balances effort across stages | ✓ validated | 99 heats, no manual steering, all 6 stages covered |
+| H1 | Wavefront allocation balances effort across stages | ✓ validated | 155 heats, no manual steering, all 6 stages covered |
 | H2 | Prose-only orchestration (CLAUDE.md) scales | ✓ validated | Multi-session, 28KB cold start, session cycling works |
 | H3 | Dogfooding surfaces real protocol issues | ✓ validated | Consistency checks, windup fix, stuck detection — all found by running |
+| H8 | Forge produces useful output on non-self projects | ✓ validated | Tutor + Commissioner both functional. Human: "good for a first attempt" |
+| H9 | The human can assess quality quickly | ✓ validated | Human assessed both apps in minutes, gave directional feedback |
+| H10 | Forge's strategic decisions align with human intent | ✓ validated | Tutor followed "adults + Python + Socratic", Commissioner followed Chisel's spec |
+| H6 | Commander's intent maintains strategic coherence | ✓ validated | No drift observed across either 15-heat run |
 
 ## Risks & Unknowns
 
