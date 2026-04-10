@@ -52,8 +52,15 @@ Walkthrough of edge cases to verify the protocol handles them correctly.
 **Expected**: Smith noted git HEAD before work, detects failure, runs git reset --hard, logs "discard".
 **Result**: ✓ Validated in heat 14. Deliberate bad edit to allocator.md → detected via smoke check → git checkout rollback → formula restored correctly.
 
+## Scenario 11: Fresh Session Resume (Context Budget)
+**Setup**: New Claude Code session in the ai-coworker directory. Says "Run 5 heats."
+**Expected**: Reads CLAUDE.md → state.json → protocol files → resumes from heat 20+.
+**Measured**: Cold-start context = 28KB (~7000 tokens) across 8 files. Well within limits.
+**What a new session reads**: CLAUDE.md (1.6KB) → identity.md (1.6KB) → state.json (1.9KB) → STRATEGY.md (6.7KB) → protocol/ (14.2KB) → MEMORY_DAILY.md (1.8KB) → worklog.tsv + inbox.md
+**Result**: ✓ Protocol is self-contained. All state in flat files. New session can resume.
+
 ## Untested Edge Cases
-- Session restart (new Claude Code session resuming from state.json)
+- Live session restart (actually starting a new Claude session — tested conceptually, not live)
 - Concurrent inbox.md edits (human writes while Smith is mid-heat)
 - Very long inbox messages (> 100 lines)
 - Negative integral values causing stage scores to go deeply negative
