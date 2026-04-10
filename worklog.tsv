@@ -29,3 +29,8 @@ timestamp	heat	stage	task_id	outcome	value	notes
 2026-04-09T02:15:00Z	28	editing	t-016	complete	0.7	Protocol review: all files consistent after 25 heats
 2026-04-09T02:20:00Z	29	testing	t-015	complete	0.8	E2E test forge-init.sh: all files scaffold correctly
 2026-04-09T02:25:00Z	30	implementation	t-019	complete	0.7	Wavefront visualization in STRATEGY.md
+2026-04-09T02:30:00Z	31	research	t-018	complete	0.7	Value measurement research: composite score (git+task+self)
+2026-04-09T02:35:00Z	32	marketing	t-020	complete	0.8	How The Forge Works deep-dive doc
+2026-04-09T02:40:00Z	33	testing	generated	complete	0.7	Verified forge-init.sh copies latest features (DAG, anti-windup, checkpoint)
+2026-04-09T02:45:00Z	34	editing	generated	complete	0.7	Updated STRATEGY.md What's Working/Missing sections
+2026-04-09T02:50:00Z	35	planning	generated	complete	0.7	Next-wave planning: dogfood on a real project is the priority
