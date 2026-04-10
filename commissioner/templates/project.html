@@ -62,12 +62,13 @@
         {% if day.is_recent %}
         <div class="day-heats">
             {% for heat in day.heats|reverse %}
-            <details class="heat-card">
+            {% set val = heat.get('value', 0)|float %}
+            <details class="heat-card stage-border-{{ heat.get('stage', '') }}">
                 <summary class="heat-header">
                     <span class="heat-signal">{{ heat.get('signal', '🟢') }}</span>
                     <span class="heat-number">Heat {{ heat.get('heat', '?') }}</span>
                     <span class="heat-stage stage-{{ heat.get('stage', '') }}">{{ heat.get('stage', '') }}</span>
-                    <span class="heat-value">{{ heat.get('value', '') }}</span>
+                    <span class="heat-value {% if val >= 0.7 %}heat-value-high{% elif val >= 0.5 %}heat-value-mid{% else %}heat-value-low{% endif %}">{{ heat.get('value', '') }}</span>
                     <span class="heat-summary">{{ (heat.get('notes') or '')[:50] }}{% if (heat.get('notes') or '')|length > 50 %}...{% endif %}</span>
                 </summary>
                 <p class="heat-notes-full">{{ heat.get('notes') or '' }}</p>
@@ -79,11 +80,13 @@
             <summary class="day-expand">Show {{ day.count }} heats</summary>
             <div class="day-heats">
                 {% for heat in day.heats|reverse %}
-                <details class="heat-card">
+                {% set val = heat.get('value', 0)|float %}
+                <details class="heat-card stage-border-{{ heat.get('stage', '') }}">
                     <summary class="heat-header">
                         <span class="heat-signal">{{ heat.get('signal', '🟢') }}</span>
                         <span class="heat-number">Heat {{ heat.get('heat', '?') }}</span>
                         <span class="heat-stage stage-{{ heat.get('stage', '') }}">{{ heat.get('stage', '') }}</span>
+                        <span class="heat-value {% if val >= 0.7 %}heat-value-high{% elif val >= 0.5 %}heat-value-mid{% else %}heat-value-low{% endif %}">{{ heat.get('value', '') }}</span>
                         <span class="heat-summary">{{ (heat.get('notes') or '')[:50] }}{% if (heat.get('notes') or '')|length > 50 %}...{% endif %}</span>
                     </summary>
                     <p class="heat-notes-full">{{ heat.get('notes') or '' }}</p>
