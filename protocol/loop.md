@@ -10,6 +10,7 @@ Read these files at the start of every heat:
 - `state.json` — current heat count, budget, stage stats, queue, priorities
 - `identity.md` — commander's intent (reference for all decisions)
 - `STRATEGY.md` — strategic plan, current state, main ideas being tried
+- `feedback.md` — human feedback to act on (first heat of run = review heat)
 - `inbox.md` — check for new human messages (lines after `inbox_cursor`)
 - `MEMORY_DAILY.md` — recent working memory
 - `worklog.tsv` — last 10 entries for trajectory awareness
@@ -17,6 +18,16 @@ Read these files at the start of every heat:
 **Crash recovery**: If `.forge-checkpoint.json` exists, the previous heat was interrupted mid-work. Roll back: `git reset --hard <checkpoint.git_head>`. Delete the checkpoint file. Log the interrupted heat as "discard" in the worklog.
 
 **Stuck detection**: Scan the queue for any tasks with status "in_progress". These are leftovers from a previous heat that was interrupted. Reset to "pending" so they can be re-picked.
+
+**Review-first-heat**: On the FIRST heat of a run (budget.used was just incremented from the previous session's total), check `feedback.md` for new entries. If new feedback exists:
+1. This heat becomes a **review heat** (stage = "planning")
+2. Read the feedback carefully
+3. For each feedback item, examine the relevant code/output
+4. Generate prioritized fix tasks and add to the queue
+5. Annotate the feedback entry as processed: `→ reviewed in heat N, tasks created: t-XXX, t-YYY`
+6. Skip the allocator for this heat — the review IS the work
+
+If no new feedback in feedback.md, skip the review and proceed to Step 2 normally.
 
 ## Step 2: Process Inbox
 
