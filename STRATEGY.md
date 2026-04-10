@@ -1,6 +1,6 @@
 # Strategic Plan — The Forge
 
-*Updated after heat 25 | 2026-04-09*
+*Updated after heat 39 | 2026-04-09*
 
 ## Vision
 
@@ -29,14 +29,14 @@ An autonomous AI coworker that works in bounded 5-minute heats, self-directs acr
 
 | Stage | Progress | Heats | Notes |
 |-------|----------|--------|-------|
-| Research | 60% | 5 | Patterns, session cycling, automation, windup, beads DAG. |
-| Planning | 40% | 2 | v0.1 done, v0.2 planned and executed. |
-| Implementation | 65% | 7 | Protocol, pipeline, dashboard, checkpoint, DAG deps, forge-init, SessionEnd hook. |
-| Testing | 35% | 4 | Consistency, 11 scenarios, keep/discard live, fresh-session resume. |
-| Editing | 40% | 4 | Inbox convention, vocabulary, state pruning. |
-| Marketing | 35% | 3 | README with examples + quick-start guide. |
+| Research | 60% | 6 | Patterns, session cycling, automation, windup, beads DAG, value measurement. |
+| Planning | 50% | 5 | v0.1 done, v0.2 planned, v0.3 planned, persona system designed. |
+| Implementation | 75% | 12 | Protocol, pipeline, dashboard, checkpoint, DAG deps, forge-init, SessionEnd hook, personas. |
+| Testing | 45% | 7 | Consistency, 11 scenarios, keep/discard live, fresh-session resume, persona verification. |
+| Editing | 45% | 6 | Inbox convention, vocabulary, state pruning, protocol review, strategy refresh. |
+| Marketing | 40% | 4 | README with examples + quick-start guide, deep-dive doc. |
 
-**Overall progress**: ~50% | **Heats used**: 30 | **Wavefront phase**: middle
+**Overall progress**: ~53% | **Heats used**: 39 | **Wavefront phase**: middle
 
 ### Wavefront Visualization
 

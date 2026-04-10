@@ -1,26 +1,26 @@
 {
   "project": "ai-coworker",
   "budget": {
-    "total_heats": 119,
-    "used": 38,
+    "total_heats": 129,
+    "used": 39,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
     "research":       {"target": 0.20, "heats": 6, "progress": 0.60, "value_ema": 0.66},
     "planning":       {"target": 0.15, "heats": 5, "progress": 0.50, "value_ema": 0.65},
-    "implementation": {"target": 0.07, "heats": 12, "progress": 0.75, "value_ema": 0.68},
-    "testing":        {"target": 0.20, "heats": 6, "progress": 0.40, "value_ema": 0.62},
-    "editing":        {"target": 0.20, "heats": 6, "progress": 0.45, "value_ema": 0.63},
+    "implementation": {"target": 0.06, "heats": 12, "progress": 0.75, "value_ema": 0.68},
+    "testing":        {"target": 0.23, "heats": 7, "progress": 0.45, "value_ema": 0.64},
+    "editing":        {"target": 0.21, "heats": 6, "progress": 0.45, "value_ema": 0.63},
     "marketing":      {"target": 0.14, "heats": 4, "progress": 0.40, "value_ema": 0.64}
   },
   "allocator": {
     "integral": {
-      "research": 0.05,
-      "planning": 0.02,
-      "implementation": -0.35,
-      "testing": 0.10,
-      "editing": 0.08,
-      "marketing": 0.08
+      "research": 0.09,
+      "planning": 0.04,
+      "implementation": -0.54,
+      "testing": 0.16,
+      "editing": 0.12,
+      "marketing": 0.10
     }
   },
   "queue": [],
@@ -29,5 +29,5 @@
   ],
   "inbox_cursor": 41,
   "human_priorities": [],
-  "overall_progress": 0.52
+  "overall_progress": 0.53
 }

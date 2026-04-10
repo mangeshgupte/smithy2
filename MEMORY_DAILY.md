@@ -24,6 +24,9 @@
 - Quick-start guide in README
 - **All v0.2 tasks complete. Queue empty.**
 
+### Heats 39+: Production Hardening
+- Heat 39 [testing]: Persona system verification — found 2 stale references from Lens→Anvil consolidation, all paths valid
+
 ### Key Patterns
 - Human ideas implemented quickly (8/8 done)
 - Anti-windup decay makes allocator balanced
