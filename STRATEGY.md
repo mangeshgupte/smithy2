@@ -1,6 +1,6 @@
 # Strategic Plan — The Forge
 
-*Updated after heat 39 | 2026-04-09*
+*Updated after heat 46 | 2026-04-09*
 
 ## Vision
 
@@ -10,7 +10,7 @@ An autonomous AI coworker that works in bounded 5-minute heats, self-directs acr
 
 ### What Exists
 
-**Core protocol** (working, validated by 5-heat dogfood run):
+**Core protocol** (working, validated across 45 heats):
 - `CLAUDE.md` — 30-line hub pointing to protocol files
 - `protocol/loop.md` — 8-step heat loop with stuck detection, output redirection, keep/discard
 - `protocol/allocator.md` — wavefront model + PI controller for stage selection
@@ -18,114 +18,100 @@ An autonomous AI coworker that works in bounded 5-minute heats, self-directs acr
 
 **State infrastructure** (working):
 - `state.json` — budget, stage stats, task queue, allocator integral
-- `worklog.tsv` — append-only heat log (5 entries)
+- `worklog.tsv` — append-only heat log (45 entries)
 - `inbox.md` / `outbox.md` — async human-AI communication (dual-channel: file + prompt)
-- `MEMORY_DAILY.md` — 4-level memory hierarchy (L1 worklog → L2 daily → L3 weekly → L4 identity)
+- `MEMORY_DAILY.md` / `MEMORY_WEEKLY.md` — 4-level memory hierarchy
 
-**Research** (initial survey complete):
-- `research/autonomous-loop-patterns.md` — 8 patterns from autoresearch, Gas Town, NanoClaw, Memory Substrate
+**Persona system** (working, consolidated in heat 38):
+- Anvil — human interface (Lens hat + Strategy hat)
+- Forge — autonomous worker (runs all 6 stages)
+- `dispatch/` — flat-file inter-persona communication
+
+**Scaffolding** (working):
+- `forge-init.sh` — scaffold new projects with guided templates
+- `hooks/session-end-forge.sh` — automatic memory distillation on session end
+
+**Research** (8 artifacts):
+- Autonomous loop patterns, session cycling, automation, integral windup, beads DAG, value measurement, real-project readiness
 
 ### Stage Progress
 
 | Stage | Progress | Heats | Notes |
 |-------|----------|--------|-------|
-| Research | 60% | 6 | Patterns, session cycling, automation, windup, beads DAG, value measurement. |
-| Planning | 50% | 5 | v0.1 done, v0.2 planned, v0.3 planned, persona system designed. |
+| Research | 65% | 7 | Patterns, session cycling, automation, windup, beads DAG, value measurement, real-project readiness. |
+| Planning | 55% | 6 | v0.1-v0.3 planned, persona system designed, v0.4 multi-project isolation designed. |
 | Implementation | 75% | 12 | Protocol, pipeline, dashboard, checkpoint, DAG deps, forge-init, SessionEnd hook, personas. |
-| Testing | 45% | 7 | Consistency, 11 scenarios, keep/discard live, fresh-session resume, persona verification. |
-| Editing | 45% | 6 | Inbox convention, vocabulary, state pruning, protocol review, strategy refresh. |
-| Marketing | 40% | 4 | README with examples + quick-start guide, deep-dive doc. |
+| Testing | 50% | 8 | Consistency, 11 scenarios, keep/discard live, fresh-session resume, persona verification, E2E forge-init. |
+| Editing | 50% | 7 | Inbox convention, vocabulary, state pruning, protocol review, strategy refresh, template improvements. |
+| Marketing | 50% | 6 | README with examples + quick-start, deep-dive doc, SessionEnd hook docs, dashboard example. |
 
-**Overall progress**: ~53% | **Heats used**: 39 | **Wavefront phase**: middle
-
-### Wavefront Visualization
-
-```
-Heat  1····5····10···15···20···25···30
-      ╔═══╗
-  R   ║███║··█··········█····█·········  5 heats (60%)
-      ╠═══╬══╗
-  P   ║·█·║··║··········█·············  3 heats (45%)
-      ╠═══╬══╬═══╗
-  I   ║··█║··║█··║·█··█··███·········  8 heats (70%)
-      ║   ╠══╬═══╬═══╗
-  T   ║···║█·║···║█··█║█·············  5 heats (40%)
-      ║   ║  ╠═══╬═══╬══╗
-  E   ║···║·█║···║·██·║·█║···········  5 heats (45%)
-      ║   ║  ║   ╠═══╬══╬══╗
-  M   ║···║··║···║··█·║·█║··║········  3 heats (35%)
-      ╚═══╩══╩═══╩═══╩══╩══╝
-      bootstrap  build  harden  v0.3
-```
-
-The wavefront moves left-to-right through stages over time. Each `█` = 1 heat. Box edges show when each stage first became active.
+**Overall progress**: ~58% | **Heats used**: 45 | **Wavefront phase**: middle-to-late
 
 ### What's Working
 
-- Wavefront allocator with anti-windup (0.85 decay) — balanced across 6 stages
-- 30 heats across all stages, no hoarding, exploration rule fires correctly
+- Wavefront allocator with anti-windup (0.85 decay) — balanced across 6 stages over 45 heats
+- Exploration rule (every 5th heat picks second-highest) prevents local optima
 - DAG task dependencies (blocked_by) with ready detection
-- forge-init.sh scaffolds new projects in seconds
+- forge-init.sh scaffolds new projects with guided templates (E2E tested)
+- 2-persona system (Anvil + Forge) with dispatch files
 - SessionEnd hook wired for automatic memory distillation
 - Checkpoint file for crash recovery
-- Idea pipeline: capture → evaluate → track → acknowledge (8/8 human ideas done)
-- 28KB cold start — session cycling viable
-- Protocol modular and human-readable (reviewed at heat 28)
+- Idea pipeline: 10/10 human ideas processed
+- Protocol modular and human-readable
+- README comprehensive with examples, dashboard output, hook docs
 
 ### What's Missing
 
-- No messaging integration (inbox.md only, no Telegram/Slack) — v0.4
-- No episodic memory store (flat files only) — v0.6
+- No non-dogfood project attempted yet — **priority for v0.4**
+- No .gitignore in scaffold (t-021, ready)
+- No forge-update.sh for protocol updates (t-026, ready)
+- No auto-research trigger (t-025, ready)
+- No messaging integration (Telegram/Slack) — v0.5
+- No episodic memory store — v0.6
 - No hard timeout enforcement on heats
-- No /loop integration yet — v0.3
-- No non-dogfood project attempted yet
 
 ## Main Ideas Being Tried
 
 ### 1. Wavefront Resource Allocation
-**Status**: Validated in first run
-**Idea**: Instead of fixed phase buckets (early/middle/late with hardcoded percentages), compute dynamic targets from a dependency chain. Each stage's benefit = `prerequisite_readiness * (1 - own_progress)`. Effort naturally flows research → planning → implementation → testing → editing → marketing as each stage reaches sufficiency.
-**Result so far**: Works well. The allocator moved through all 5 stages in 5 heats with no manual steering. The PI controller prevents oscillation and the 0.05 floor prevents starvation.
-**Open question**: At what progress level should a stage be considered "done enough" to stop receiving allocation? Currently benefit approaches 0 as progress → 1.0, which is correct.
+**Status**: Validated (45 heats)
+**Result**: Works well. Effort naturally distributed across all 6 stages. PI controller with anti-windup prevents oscillation. Exploration rule prevents stagnation.
 
 ### 2. CLAUDE.md as the Entire Orchestrator
-**Status**: Validated in first run
-**Idea**: No Python, no SDK, no subprocess management. Claude Code reads CLAUDE.md and protocol files, follows the instructions, reads/writes flat files. The "program" is prose.
-**Result so far**: Works. Claude correctly follows the 8-step loop, computes allocator math inline, manages state.json, and commits each heat's work.
-**Open question**: Will this scale past ~50 heats in a single session? Context window may become a constraint. May need session-cycling (fresh Claude Code session, reads state, continues).
+**Status**: Validated (45 heats, multiple sessions)
+**Result**: Works. The Smith correctly follows protocol, computes allocator math inline, manages state. Session cycling confirmed viable at 28KB cold start.
+**Open question**: Approaching 50 heats in this session — context compression working but monitoring.
 
 ### 3. Self-Assessed Value Signal
-**Status**: In use, not yet validated
-**Idea**: The Smith rates each heat 0.0-1.0 for productivity. This feeds the allocator's value_ema, biasing toward stages where work has been productive.
-**Result so far**: Values assigned (0.7-0.8 range) but the signal hasn't meaningfully differentiated stages yet. Need more heats to see if it creates useful bias.
-**Open question**: Is self-assessment reliable enough? Could be biased toward "felt productive" vs "actually moved the needle."
+**Status**: In use, weakly validated
+**Result**: Values cluster in 0.7-0.8 range. Limited differentiation between stages. The signal feeds value_ema but doesn't strongly influence allocation compared to error and integral terms.
 
 ### 4. Dogfooding (Building Itself)
-**Status**: In progress
-**Idea**: The first project the Forge works on is the Forge itself. This surfaces protocol issues immediately — if the loop has a gap, the Smith hits it while running.
-**Result so far**: Effective. The consistency check in heat 5 found two real issues (run continuation semantics, task ID format). Research in heat 1 identified 5 gaps that were mostly fixed by heat 4.
+**Status**: Mature, approaching diminishing returns
+**Result**: 45 heats of self-improvement. Real-project readiness assessment (heat 40) found 5 concrete gaps. The protocol is solid enough to try non-dogfood use.
 
 ### 5. Dual-Channel Human Input + Idea Pipeline
-**Status**: Implemented (enhanced in heat 6)
-**Idea**: Human communicates via inbox.md (async) or prompt. Both processed the same way. Ideas flow through a 4-step pipeline: capture → evaluate (actionable/research/strategic/done) → track (ideas array in state.json with status and linked task_id) → acknowledge (outbox confirmation).
-**Result so far**: 4 ideas tracked so far, all status "done". Pipeline provides traceability from human input to action taken.
-**Open question**: Will the ideas array grow too large? May need pruning of "done" ideas after they're old enough.
+**Status**: Validated
+**Result**: 10 ideas tracked (all done). Pipeline provides full traceability from human input to action.
+
+### 6. Persona System
+**Status**: Implemented, lightly tested
+**Result**: Anvil (interface) + Forge (worker) with dispatch files. Consolidated from 3 to 2 personas after finding Lens/Anvil overlap. Verified in heat 39.
 
 ## Risks & Unknowns
 
-1. **Context window scaling**: A 50-heat run in one session will push context limits. Need to test and plan for session cycling.
-2. **Value signal noise**: Self-assessment may not produce useful differentiation. May need external signals (test pass rate, commit size, human feedback).
-3. **Single-session fragility**: If the Claude Code session crashes mid-heat, state may be inconsistent. Stuck detection helps but isn't bulletproof.
-4. **Allocator cold start**: With 0 progress everywhere, research always wins. The wavefront naturally handles this, but the first few heats are predictable.
+1. **Non-dogfood viability**: Has only been tested on itself. The first real project will reveal gaps the readiness assessment missed.
+2. **Value signal noise**: Self-assessment doesn't meaningfully differentiate stages. May need composite signals.
+3. **Context growth**: At 45 heats, context is large. Need to validate session cycling works for continuation.
+4. **Allocator implementation bias**: Implementation integral is deeply negative (-0.97) from early over-allocation. The anti-windup decay is handling it but it's slow to recover.
 
 ## Roadmap
 
-| Version | Focus | Key Feature |
-|---------|-------|-------------|
-| **v0.1** (now) | Core protocol | Heat loop, wavefront allocator, flat-file state |
-| **v0.2** | Messaging | Telegram/Slack sidecar bridging inbox/outbox |
-| **v0.3** | Multi-project | State per project, project switching |
-| **v0.4** | Design debate | AI Collaborator integration — Smith opens PRs for decisions |
-| **v0.5** | Dashboard | Web UI (htmx) — worklog, allocations, memory viewer |
-| **v0.6** | Semantic memory | ChromaDB episodic store, semantic retrieval across heats |
-| **v0.7** | Headless mode | Python orchestrator wrapping Claude Code for unattended runs |
+| Version | Focus | Status |
+|---------|-------|--------|
+| **v0.1** | Core protocol | **COMPLETE** (heats 1-5) |
+| **v0.2** | Robustness + scaffolding | **COMPLETE** (heats 6-25) |
+| **v0.3** | Personas + production readiness | **MOSTLY COMPLETE** (heats 26-38) |
+| **v0.4** (now) | Multi-project + real-world readiness | IN PROGRESS (heats 39+) |
+| **v0.5** | Messaging sidecar (Telegram/Slack) | PLANNED |
+| **v0.6** | Web dashboard (htmx) | PLANNED |
+| **v0.7** | Semantic memory (ChromaDB) | PLANNED |
