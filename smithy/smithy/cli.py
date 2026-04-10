@@ -382,6 +382,71 @@ def process_inbox(ctx):
     _err(f"{len(entries)} new inbox entries")
 
 
+@cli.command("init")
+@click.argument("project_name")
+@click.option("--target", default=".", help="Target directory")
+@click.option("--with-personas", is_flag=True, help="Scaffold persona directories")
+@click.pass_context
+def init(ctx, project_name, target, with_personas):
+    """Scaffold a new Forge project."""
+    from datetime import date
+    target_path = Path(target).resolve()
+    target_path.mkdir(parents=True, exist_ok=True)
+
+    # Protocol dir
+    (target_path / "protocol").mkdir(exist_ok=True)
+    (target_path / "research").mkdir(exist_ok=True)
+
+    # State
+    state = {
+        "project": project_name,
+        "budget": {"total_heats": 0, "used": 0, "started_at": None},
+        "stages": {s: {"target": 0.0, "heats": 0, "progress": 0.0, "value_ema": 0.5} for s in VALID_STAGES},
+        "allocator": {"integral": {s: 0 for s in VALID_STAGES}},
+        "queue": [],
+        "ideas": [],
+        "feedback_cursor": 0,
+        "inbox_cursor": 0,
+        "human_priorities": [],
+        "overall_progress": 0.0,
+    }
+    (target_path / "state.json").write_text(json.dumps(state, indent=2) + "\n")
+
+    # Worklog
+    (target_path / "worklog.tsv").write_text("timestamp\theat\tstage\ttask_id\toutcome\tvalue\tsignal\tnotes\n")
+
+    # Scaffold files
+    today = date.today().isoformat()
+    templates = {
+        "identity.md": f"# {project_name}\n\n## What This Is\n\nAn autonomous AI worker building {project_name}.\n\n## Commander's Intent\n\n## Created\n\n{today}\n",
+        "STRATEGY.md": f"# Strategic Plan — {project_name}\n\n*Updated after heat 0 | {today}*\n\n## Vision\n\n## Current State\n\n### What Exists\n\nNothing yet.\n\n## Roadmap\n\n",
+        "inbox.md": "# Inbox\n\nWrite messages below.\n",
+        "outbox.md": "# Outbox\n\nThe Smith writes status updates here.\n",
+        "feedback.md": "# Feedback\n\nHuman writes feedback here. Forge reads it at the start of each run.\n",
+        "MEMORY_DAILY.md": "# Daily Memory\n",
+        "MEMORY_WEEKLY.md": "# Weekly Memory\n",
+        ".gitignore": ".forge-checkpoint.json\n.forge-output.log\n",
+    }
+    for name, content in templates.items():
+        (target_path / name).write_text(content)
+
+    # Personas
+    if with_personas:
+        for persona in ["anvil", "forge"]:
+            (target_path / "personas" / persona).mkdir(parents=True, exist_ok=True)
+        (target_path / "dispatch").mkdir(exist_ok=True)
+        (target_path / "dispatch" / "anvil-to-forge.md").write_text("# Dispatch: Anvil → Forge\n\n")
+        (target_path / "dispatch" / "forge-to-anvil.md").write_text("# Dispatch: Forge → Anvil\n\n")
+
+    _output({
+        "project": project_name,
+        "dir": str(target_path),
+        "personas": with_personas,
+        "files": list(templates.keys()) + ["state.json", "worklog.tsv"],
+    })
+    _err(f"Initialized {project_name} at {target_path}")
+
+
 @cli.command("commit")
 @click.argument("message")
 @click.pass_context

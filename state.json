@@ -2,7 +2,7 @@
   "project": "ai-coworker",
   "budget": {
     "total_heats": 470,
-    "used": 462,
+    "used": 463,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 102,
+      "heats": 103,
       "progress": 0.98,
-      "value_ema": 0.88
+      "value_ema": 0.886
     },
     "testing": {
       "target": 0.183,
@@ -268,7 +268,7 @@
       "id": "t-082",
       "stage": "implementation",
       "desc": "Smithy: init command (replace forge-init.sh)",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
