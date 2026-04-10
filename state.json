@@ -2,25 +2,25 @@
   "project": "ai-coworker",
   "budget": {
     "total_heats": 349,
-    "used": 155,
+    "used": 165,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
     "research":       {"target": 0.12, "heats": 24, "progress": 0.88, "value_ema": 0.76},
     "planning":       {"target": 0.08, "heats": 14, "progress": 0.80, "value_ema": 0.74},
-    "implementation": {"target": 0.10, "heats": 47, "progress": 0.95, "value_ema": 0.78},
-    "testing":        {"target": 0.26, "heats": 26, "progress": 0.80, "value_ema": 0.74},
-    "editing":        {"target": 0.24, "heats": 27, "progress": 0.82, "value_ema": 0.73},
-    "marketing":      {"target": 0.20, "heats": 18, "progress": 0.78, "value_ema": 0.73}
+    "implementation": {"target": 0.10, "heats": 51, "progress": 0.95, "value_ema": 0.78},
+    "testing":        {"target": 0.26, "heats": 28, "progress": 0.82, "value_ema": 0.74},
+    "editing":        {"target": 0.24, "heats": 29, "progress": 0.84, "value_ema": 0.73},
+    "marketing":      {"target": 0.20, "heats": 20, "progress": 0.80, "value_ema": 0.73}
   },
   "allocator": {
     "integral": {
-      "research": 0.03,
-      "planning": 0.01,
-      "implementation": -0.20,
-      "testing": 0.10,
-      "editing": 0.06,
-      "marketing": 0.12
+      "research": 0.02,
+      "planning": 0.00,
+      "implementation": -0.15,
+      "testing": 0.08,
+      "editing": 0.04,
+      "marketing": 0.10
     }
   },
   "queue": [
@@ -29,8 +29,7 @@
     {"id": "t-046", "stage": "implementation", "desc": "Self-critique (Reflexion-style) per heat", "status": "pending", "priority": 2, "blocked_by": []},
     {"id": "t-047", "stage": "research", "desc": "Research WhatsApp Business API for messaging bridge", "status": "pending", "priority": 3, "blocked_by": []},
     {"id": "t-048", "stage": "planning", "desc": "Design event-sourced state (derive state.json from worklog.tsv)", "status": "pending", "priority": 3, "blocked_by": []},
-    {"id": "t-049", "stage": "testing", "desc": "E2E test Commissioner App — all screens render with real data", "status": "complete", "priority": 1, "blocked_by": []},
-    {"id": "t-050", "stage": "implementation", "desc": "Commissioner App — Direct tab (free-form input, quick actions)", "status": "pending", "priority": 2, "blocked_by": []}
+    {"id": "t-050", "stage": "implementation", "desc": "Commissioner App — Direct tab", "status": "complete", "priority": 2, "blocked_by": []}
   ],
   "ideas": [
     {"id": "i-009", "text": "Multiple personas as separate Claude Code sessions", "source": "prompt", "status": "done", "task_id": null},
@@ -38,9 +37,9 @@
     {"id": "i-011", "text": "No Telegram — use WhatsApp instead, defer messaging", "source": "inbox", "status": "done", "task_id": null},
     {"id": "i-012", "text": "Human-AI interface research", "source": "inbox", "status": "done", "task_id": null},
     {"id": "i-013", "text": "Build AI tutor — first non-dogfood project", "source": "inbox", "status": "done", "task_id": "t-036"},
-    {"id": "i-014", "text": "Commissioner App — mobile-first project management", "source": "chisel", "status": "done", "task_id": null}
+    {"id": "i-014", "text": "Commissioner App — project management", "source": "chisel", "status": "done", "task_id": null}
   ],
-  "inbox_cursor": 69,
+  "inbox_cursor": 73,
   "human_priorities": [],
-  "overall_progress": 0.84
+  "overall_progress": 0.85
 }

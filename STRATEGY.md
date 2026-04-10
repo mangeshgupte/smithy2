@@ -1,6 +1,6 @@
 # Strategic Plan — The Forge
 
-*Updated after heat 115 | 2026-04-09*
+*Updated after heat 165 | 2026-04-09*
 
 ## Vision
 
@@ -38,37 +38,37 @@ An autonomous AI coworker that works in bounded 5-minute heats, self-directs acr
 
 | Stage | Progress | Heats | Notes |
 |-------|----------|--------|-------|
-| Research | 88% | 23 | + timeout enforcement research. All landscape/interface research complete. |
-| Planning | 78% | 13 | v0.6 plan done. v0.5 marked complete. |
-| Implementation | 92% | 25 | + forge-status.sh, reporting.md, AAR to file. All v0.5 impl done. |
-| Testing | 75% | 20 | + reporting E2E, full integration test (5/5 pass), post-change validation. |
-| Editing | 78% | 20 | + STRATEGY refresh, plan update, memory consolidation. |
-| Marketing | 72% | 14 | + README updates, CHANGELOG refresh, worklog batch. |
+| Research | 88% | 24 | Landscape, interface, timeout — all research complete. |
+| Planning | 80% | 14 | v0.6 plan done. Commissioner dispatch complete. |
+| Implementation | 95% | 51 | Commissioner App (6 screens), AI Tutor, all tools. |
+| Testing | 82% | 28 | Commissioner E2E, forge-validate, integration suite. |
+| Editing | 84% | 29 | Protocol reviews, STRATEGY refreshes, state updates. |
+| Marketing | 80% | 20 | Commissioner README, CHANGELOG, AARs, dispatch reports. |
 
-**Overall progress**: ~81% | **Heats used**: 115 | **Wavefront phase**: late → finishing
+**Overall progress**: ~85% | **Heats used**: 165 | **Wavefront phase**: finishing
 
 ### What's Working
 
-- Wavefront allocator with soft clamp (±0.5) + unblocking override — balanced across 55 heats
-- Exploration rule (every 5th heat) + unblocking override (critical-path boost) prevent both stagnation and recovery traps
-- DAG task dependencies with ready detection
-- forge-init.sh with guided templates, .gitignore, E2E tested
-- 2-persona system (Anvil + Forge) with dispatch files
-- SessionEnd hook for automatic memory distillation
-- Checkpoint file for crash recovery
-- Idea pipeline: 10/10 human ideas processed
-- Auto-task generation heuristic designed (per-stage, anti-spiral guard)
-- README with examples, FAQ, dashboard output, hook docs
-- Data integrity verified: 8 automated checks pass
+- Wavefront allocator with 3 fixes (soft clamp, unblocking override, queued task bonus) — balanced across 165 heats
+- **3 real projects built**: ai-coworker (dogfood), ai-tutor (Python tutor), Commissioner App (project dashboard)
+- Commissioner App: 6 screens, reads real Forge state, Direct tab writes to inbox.md
+- forge-init.sh + forge-update.sh + forge-validate.sh + forge-status.sh — full tool suite
+- 5 interface models implemented: stoplight, uncertainty, commander's intent, AAR, L0-L4 compression
+- Personas (Anvil + Forge + Chisel) with dispatch system
+- Auto-task generation, DAG dependencies, idea pipeline
+- 19 automated integrity checks (forge-validate)
+- Comprehensive docs: README, FAQ, CHANGELOG, AARs, reporting.md
 
 ### What's Missing
 
-- No non-dogfood project run for 10+ heats — **priority, t-036 ready**
-- No hard timeout enforcement on heats (t-039, ready)
-- No WhatsApp messaging bridge — deferred to v0.6+
-- No episodic/semantic memory store (vector DB) — v0.7
-- No parallel heats via sub-agents — v0.8
-- forge-status.sh "What's Missing" section pulls from stale STRATEGY.md — needs live generation
+- Commissioner: tap-to-decide interaction (cards render but no action)
+- Commissioner: notification tier logic
+- Repo map for non-dogfood projects (t-044)
+- Lint→test→fix loop (t-045)
+- Self-critique / Reflexion (t-046)
+- WhatsApp messaging bridge — deferred to v0.7+
+- Semantic memory store (vector DB) — v0.8
+- Parallel heats via sub-agents — v0.9
 
 ## Main Ideas Being Tried
 
@@ -97,12 +97,39 @@ An autonomous AI coworker that works in bounded 5-minute heats, self-directs acr
 **Status**: Implemented, lightly tested
 **Result**: Anvil (interface) + Forge (worker) with dispatch files. Consolidated from 3 to 2 personas after finding Lens/Anvil overlap. Verified in heat 39.
 
+## Hypotheses
+
+### Active — Being Tested Now
+
+| # | Hypothesis | Status | Evidence |
+|---|-----------|--------|----------|
+| H8 | Forge produces useful output on non-self projects | ? untested | First real test: AI tutor project, starting now |
+| H9 | The human can assess quality in under 2 minutes per run | ? untested | Will measure during tutor project runs |
+| H10 | Forge's strategic decisions align with human intent | ? untested | Tutor project has a specific intent — check drift after 10 heats |
+| H5 | Stoplight signals compress oversight information | ? untested | Deployed heat 85, all green so far — real test comes with tutor project |
+| H6 | Commander's intent maintains strategic coherence | ? untested | First real test with tutor project intent |
+| H7 | AAR captures the "why" behind decisions | ? untested | Protocol in loop.md Step 8, will trigger at end of tutor run |
+
+### Parked
+
+| # | Hypothesis | Status | Evidence |
+|---|-----------|--------|----------|
+| H4 | Self-assessed value signal differentiates stages | ~ inconclusive | 0.7-0.8 cluster, no meaningful differentiation yet |
+
+### Validated — No Further Testing
+
+| # | Hypothesis | Status | Evidence |
+|---|-----------|--------|----------|
+| H1 | Wavefront allocation balances effort across stages | ✓ validated | 99 heats, no manual steering, all 6 stages covered |
+| H2 | Prose-only orchestration (CLAUDE.md) scales | ✓ validated | Multi-session, 28KB cold start, session cycling works |
+| H3 | Dogfooding surfaces real protocol issues | ✓ validated | Consistency checks, windup fix, stuck detection — all found by running |
+
 ## Risks & Unknowns
 
-1. **Non-dogfood viability**: Has only been tested on itself. t-027 is ready to test this.
+1. **Non-dogfood viability**: Has only been tested on itself. t-036 ready to test this.
 2. **Value signal noise**: Self-assessment doesn't meaningfully differentiate stages (0.7-0.8 cluster).
 3. **Context growth**: At 55 heats, context compression is active. Session cycling validated but not stress-tested.
-4. **Allocator integral recovery**: Fixed with soft clamp (±0.5) + unblocking override. Implementation integral recovering from -0.50.
+4. **Allocator integral recovery**: Fixed with soft clamp (±0.5) + unblocking override. Implementation integral recovering from -0.35.
 
 ## Roadmap
 
