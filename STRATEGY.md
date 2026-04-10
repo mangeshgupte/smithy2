@@ -1,6 +1,6 @@
 # Strategic Plan — The Smithy
 
-*Updated after heat 500 | 2026-04-10*
+*Updated after heat 535 | 2026-04-10*
 
 ## Vision
 
@@ -51,13 +51,13 @@ See `research/gas-town-integration-synthesis.md` for the full analysis.
 | Stage | Progress | Heats | Notes |
 |-------|----------|--------|-------|
 | Research | 90% | 27 | Landscape, interface, Gas Town integration (5 docs). |
-| Planning | 85% | 26 | Approach B decision, task generation, queue management. |
-| Implementation | 98% | 157 | Smithy CLI (16 commands), Tutor (RR palette, 18 templates), Commissioner. |
-| Testing | 90% | 96 | 152 tests (111 tutor + 12 commissioner + 29 smithy). Patrol clean. |
-| Editing | 90% | 132 | Protocol (handoff/resume/patrol), STRATEGY, CHANGELOG, READMEs. |
-| Marketing | 86% | 62 | AARs, dispatch reports, CHANGELOGs. |
+| Planning | 85% | 28 | Approach B decision, visual design sprint planning. |
+| Implementation | 98% | 167 | Smithy CLI (16 commands), Tutor (8 animations, button system, RR palette), Commissioner (6 stage colors, segmented budget bar). |
+| Testing | 88% | 101 | 152 tests (111 tutor + 12 commissioner + 29 smithy). Patrol clean. |
+| Editing | 88% | 141 | Protocol (handoff/resume/patrol), STRATEGY, CHANGELOG, READMEs updated for visual sprint. |
+| Marketing | 84% | 71 | AARs, dispatch reports, CHANGELOG v1.1, welcome card copy. |
 
-**Overall progress**: ~90% | **Heats used**: 500 | **Wavefront phase**: mature
+**Overall progress**: ~90% | **Heats used**: 535 | **Wavefront phase**: mature
 
 ### What's Working
 

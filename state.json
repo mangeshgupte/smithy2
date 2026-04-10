@@ -2,7 +2,7 @@
   "project": "ai-coworker",
   "budget": {
     "total_heats": 547,
-    "used": 534,
+    "used": 535,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -26,9 +26,9 @@
     },
     "testing": {
       "target": 0.183,
-      "heats": 100,
+      "heats": 101,
       "progress": 0.88,
-      "value_ema": 0.812
+      "value_ema": 0.808
     },
     "editing": {
       "target": 0.183,
@@ -524,8 +524,16 @@
       "id": "t-114",
       "stage": "testing",
       "desc": "Full regression suite: all 152 tests + route rendering + patrol after visual design sprint",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-115",
+      "stage": "planning",
+      "desc": "Plan remaining heats: update STRATEGY.md with visual design sprint results, reprioritize remaining tasks",
+      "status": "in_progress",
+      "priority": 2,
       "blocked_by": []
     }
   ],
