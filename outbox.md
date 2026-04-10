@@ -2,6 +2,12 @@
 
 The Smith writes status updates, questions, and summaries here.
 
+## 2026-04-10 [heat 430, AAR — heats 381-430]
+
+50 heats: impl×20, test×10, editing×15, planning×1, marketing×4. Signal: 🟢×50.
+Key: Topic completion summary screen, 11 new feature tests (123 total), README updated with RR palette + new features, result.html cleanup, session planner polish.
+Next: Offline caching (PWA), more subjects, user authentication.
+
 ## 2026-04-10 [heat 380, AAR — heats 331-380]
 
 50 heats: impl×25, test×8, editing×12, planning×1, marketing×4. Signal: 🟢×50.

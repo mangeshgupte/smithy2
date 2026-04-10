@@ -2,27 +2,21 @@
 
 ## 2026-04-10
 
-### Heats 331-380: Recall Rhino Palette + Visual Polish + Commissioner Tests
+### Heats 381-430: Topic Completion + Tests + Polish
 
-**Recall Rhino Palette (h332-334, h351):**
-- Full palette swap: Playful Teal (#00BCD4) primary, Energy Orange (#FF9800) secondary
-- Focus Green (#4CAF50) correct, Review Yellow (#FFEB3B) wrong, Sky Blue (#ADD8E6) AI speech
-- Subject accents: Orange=Python, Teal=Math, Green=English
-- Dark mode CSS block REMOVED per human feedback — RR palette now applies regardless of system setting
-- Card surfaces: shadow-md default, shadow-xl hover, rounded-2xl
+**Features (h382-387):**
+- Topic completion summary screen — mastery %, tutor nudge, Create/Teach/Back navigation
+- 11 new tests for teach-back, card editing, deletion, topic completion (123 total)
+- README updated with RR palette, Teach It Back, animations, 111 tests
+- result.html cleaned — dead mastered banner removed, card CTA simplified
+- Session planner empty state improved
 
-**Features (h336-339):**
-- Empty states improved with icons, helpful messaging, and action CTAs
-- 12 commissioner tests for forge_reader.py (discovery, decisions, tiers, briefing)
-- Python syntax highlighting (teal keywords, green strings, orange numbers)
-- Bottleneck indicator on Commissioner project cards
+**State Sync:**
+- Tutor state synced to 140 heats, feedback cursor updated to 64
+- All queue tasks completed and marked
 
-**Key Stats:**
-- 112 total tests (100 tutor + 12 commissioner)
-- ~1080 lines tutor CSS (Recall Rhino palette)
+### Key Stats
+- 123 total tests (111 tutor + 12 commissioner)
+- 18 tutor templates, topic_complete.html is newest
 - All routes pass on both apps
-- Overall: 93% at heat 380
-
-### Key Learning
-- Dark mode overriding custom palettes is a common gotcha — if a design spec doesn't mention dark mode, don't add it
-- Human feedback through feedback.md works well — both palette and dark mode issues caught and fixed within same run
+- Overall: 94% at heat 430
