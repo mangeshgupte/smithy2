@@ -37,6 +37,17 @@ Add 2-3 bullet points under today's date header:
 - Next: wire up Z
 ```
 
+## Update STRATEGY.md
+
+After every heat, update `STRATEGY.md` to reflect the current state:
+- Update the **Stage Progress** table (progress %, chunks, notes)
+- Update **Overall progress** and **Chunks used**
+- If a main idea's status changed, update its entry under **Main Ideas Being Tried**
+- If a new risk or insight emerged, add it to **Risks & Unknowns**
+- Update the timestamp at the top: `*Updated after chunk N | YYYY-MM-DD*`
+
+Keep it concise — this is a living snapshot, not a detailed log (that's what worklog.tsv and MEMORY_DAILY.md are for).
+
 ## Write to outbox.md (if needed)
 
 Write when:
