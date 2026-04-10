@@ -6,12 +6,12 @@
     "started_at": null
   },
   "stages": {
-    "research": {"target": 0.30, "chunks": 0, "progress": 0.0, "value_ema": 0.5},
-    "planning": {"target": 0.30, "chunks": 0, "progress": 0.0, "value_ema": 0.5},
-    "implementation": {"target": 0.15, "chunks": 0, "progress": 0.0, "value_ema": 0.5},
-    "testing": {"target": 0.05, "chunks": 0, "progress": 0.0, "value_ema": 0.5},
-    "editing": {"target": 0.10, "chunks": 0, "progress": 0.0, "value_ema": 0.5},
-    "marketing": {"target": 0.10, "chunks": 0, "progress": 0.0, "value_ema": 0.5}
+    "research":       {"target": 0.0, "chunks": 0, "progress": 0.0, "value_ema": 0.5},
+    "planning":       {"target": 0.0, "chunks": 0, "progress": 0.0, "value_ema": 0.5},
+    "implementation": {"target": 0.0, "chunks": 0, "progress": 0.0, "value_ema": 0.5},
+    "testing":        {"target": 0.0, "chunks": 0, "progress": 0.0, "value_ema": 0.5},
+    "editing":        {"target": 0.0, "chunks": 0, "progress": 0.0, "value_ema": 0.5},
+    "marketing":      {"target": 0.0, "chunks": 0, "progress": 0.0, "value_ema": 0.5}
   },
   "allocator": {
     "integral": {
@@ -21,8 +21,7 @@
       "testing": 0,
       "editing": 0,
       "marketing": 0
-    },
-    "phase": "early"
+    }
   },
   "queue": [],
   "inbox_cursor": 0,
