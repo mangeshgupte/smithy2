@@ -74,4 +74,20 @@ Test from commissioner
 
 ## 2026-04-10 [via prompt]
 Idea: Build iteration tooling in 3 stages. Stage 1: feedback.md + review-first-heat in protocol (ai-coworker). Stage 2: feedback UI in Commissioner Direct tab. Stage 3: multi-project Forge (deferred). Makes iteration on tutor/commissioner/ai-coworker frictionless.
-→ ✓ Stage 1 complete in heats 166-170. Stage 2 (Commissioner feedback UI) next.
+→ ✓ Stage 1 complete in heats 166-170. Stage 2 done in heats 172-173.
+
+## 2026-04-10 [via prompt]
+Idea: Tutor should be generic multi-subject. Add Grade 3 Singapore Math alongside Python. Serve as website, not CLI. Research 5 heats, then build autonomously for 500 heats total.
+→ dispatched (500 heats on tutor project, see anvil-to-forge.md)
+
+
+## 2026-04-10 09:35 [via commissioner]
+Decision on t-044: APPROVE — looks good (task: Repo map generation for non-dogfood projects)
+
+
+## 2026-04-10 09:35 [via commissioner]
+Decision on t-046: REJECT (task: Self-critique (Reflexion-style) per heat)
+
+
+## 2026-04-10 09:35 [via commissioner]
+UNDO: Previous decision on t-046 was reversed.

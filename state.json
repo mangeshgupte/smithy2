@@ -2,36 +2,106 @@
   "project": "ai-coworker",
   "budget": {
     "total_heats": 270,
-    "used": 180,
+    "used": 184,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
-    "research":       {"target": 0.12, "heats": 24, "progress": 0.88, "value_ema": 0.76},
-    "planning":       {"target": 0.08, "heats": 15, "progress": 0.82, "value_ema": 0.75},
-    "implementation": {"target": 0.10, "heats": 56, "progress": 0.96, "value_ema": 0.79},
-    "testing":        {"target": 0.26, "heats": 32, "progress": 0.85, "value_ema": 0.76},
-    "editing":        {"target": 0.24, "heats": 32, "progress": 0.86, "value_ema": 0.75},
-    "marketing":      {"target": 0.20, "heats": 22, "progress": 0.82, "value_ema": 0.74}
+    "research": {
+      "target": 0.12,
+      "heats": 24,
+      "progress": 0.88,
+      "value_ema": 0.76
+    },
+    "planning": {
+      "target": 0.08,
+      "heats": 16,
+      "progress": 0.82,
+      "value_ema": 0.75
+    },
+    "implementation": {
+      "target": 0.1,
+      "heats": 58,
+      "progress": 0.96,
+      "value_ema": 0.79
+    },
+    "testing": {
+      "target": 0.26,
+      "heats": 33,
+      "progress": 0.85,
+      "value_ema": 0.76
+    },
+    "editing": {
+      "target": 0.24,
+      "heats": 32,
+      "progress": 0.86,
+      "value_ema": 0.75
+    },
+    "marketing": {
+      "target": 0.2,
+      "heats": 22,
+      "progress": 0.82,
+      "value_ema": 0.74
+    }
   },
   "allocator": {
     "integral": {
       "research": 0.02,
-      "planning": 0.00,
-      "implementation": -0.10,
+      "planning": 0.0,
+      "implementation": -0.1,
       "testing": 0.06,
       "editing": 0.02,
       "marketing": 0.06
     }
   },
   "queue": [
-    {"id": "t-044", "stage": "implementation", "desc": "Repo map generation for non-dogfood projects", "status": "pending", "priority": 2, "blocked_by": []},
-    {"id": "t-045", "stage": "implementation", "desc": "Lint→test→fix loop for implementation stage", "status": "pending", "priority": 2, "blocked_by": []},
-    {"id": "t-046", "stage": "implementation", "desc": "Self-critique (Reflexion-style) per heat", "status": "pending", "priority": 2, "blocked_by": []},
-    {"id": "t-051", "stage": "implementation", "desc": "Commissioner: tap-to-decide on decision cards", "status": "pending", "priority": 1, "blocked_by": []}
+    {
+      "id": "t-044",
+      "stage": "implementation",
+      "desc": "Repo map generation for non-dogfood projects",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-045",
+      "stage": "implementation",
+      "desc": "Lint\u2192test\u2192fix loop for implementation stage",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-046",
+      "stage": "implementation",
+      "desc": "Self-critique (Reflexion-style) per heat",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-051",
+      "stage": "implementation",
+      "desc": "Commissioner: tap-to-decide on decision cards",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": []
+    }
   ],
   "ideas": [
-    {"id": "i-015", "text": "Iteration tooling — feedback.md + review-first-heat", "source": "inbox", "status": "done", "task_id": null},
-    {"id": "i-016", "text": "Multi-subject tutor with Singapore Math", "source": "inbox", "status": "queued", "task_id": null}
+    {
+      "id": "i-015",
+      "text": "Iteration tooling \u2014 feedback.md + review-first-heat",
+      "source": "inbox",
+      "status": "done",
+      "task_id": null
+    },
+    {
+      "id": "i-016",
+      "text": "Multi-subject tutor with Singapore Math",
+      "source": "inbox",
+      "status": "queued",
+      "task_id": null
+    }
   ],
   "feedback_cursor": 27,
   "inbox_cursor": 81,
