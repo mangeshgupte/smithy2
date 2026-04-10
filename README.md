@@ -117,20 +117,19 @@ The Forge has three personas, each running as a separate Claude Code session:
 
 | Persona | Name | Role | Start Command |
 |---------|------|------|---------------|
-| **Comms** | **Lens** | Explains state and history. Refuses implementation and new ideas. | `cd personas/lens && claude` |
-| **Chief of Staff** | **Anvil** | Brainstorms, decides, dispatches direction. Refuses direct implementation. | `cd personas/anvil && claude` |
-| **Worker** | **Forge** | Autonomous engine. Runs all 6 stages (research→marketing) via wavefront. GUPP. | `cd personas/forge && claude` |
+| **Interface** | **Anvil** | Your single point of contact. Explains state, brainstorms, dispatches. | `cd personas/anvil && claude` |
+| **Worker** | **Forge** | Autonomous engine. Runs all 6 stages (research→marketing) via wavefront. | `cd personas/forge && claude` |
 
 **Typical workflow:**
 ```
-You ↔ Anvil      (brainstorm, decide direction)
+You ↔ Anvil      "What happened?" → explains (Lens hat)
+                  "What next?"     → brainstorms (Strategy hat)
+                  "Do it"          → dispatches to Forge
        ↓
      Forge        (autonomous: research, plan, implement, test, edit, market)
-       ↓
-You ↔ Lens        (explain what happened, trace decisions)
 ```
 
-**Communication between personas** is via flat files in `dispatch/`:
+**Communication** via flat files in `dispatch/`:
 - `dispatch/anvil-to-forge.md` — Anvil sends direction
 - `dispatch/forge-to-anvil.md` — Forge reports results
 
