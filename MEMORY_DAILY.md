@@ -2,34 +2,25 @@
 
 ## 2026-04-10
 
-### Heats 181-201: Feedback Protocol Fix + Commissioner Polish + Tutor UI Redesign
+### Heats 181-211: Three Dispatches + Tutor UI Redesign + Self-Directed
 
-**Feedback Protocol (h181-182):**
-- feedback_cursor added to both ai-coworker and tutor state.json (replaces ambiguous "first heat" trigger)
-- Review-first-heat now uses explicit cursor, feedback tasks get priority 0
-- Tutor pending feedback processed: 5 tasks created (cards, workflow, nav shell)
-- forge-init.sh updated with feedback_cursor
+**Completed Dispatches (heats 181-198):**
+- Feedback protocol fix (2 heats): feedback_cursor in both projects, priority 0 feedback tasks
+- Commissioner polish (6 heats): tap-to-decide, day-grouped activity, inbox badges, None bug fix
+- Tutor UI redesign (10 heats): three-tab nav, Learn/Create/Review loop, Chisel design palette
 
-**Commissioner Polish (h183-188):**
-- Tap-to-decide: approve/defer/reject buttons, POST handler writes to inbox.md, confirmation banner with undo
-- Activity tab: heats grouped by day, auto-summarization for older days (2 recent days expanded, rest collapsed)
-- Inbox badges: cross-project decision count on tab bar
-- Route ordering matters: /review/play must precede /review/{subject_id}
-- None notes bug in template: `heat.get('notes') or ''` not `heat.get('notes', '')`
+**Tutor Phase 2 Features (heats 199-211):**
+- AI card review: tutor reviews student flashcards after save with Socratic suggestions
+- Two card types: drill cards auto-generated on mastery, concept cards student-authored
+- Streak counter + reviewed-today stat on Review landing
+- Session memory: track exercise position, green "Resume" button, clear on mastery
+- Review Summary: recall stats, streak banner, card edit nudge
+- Browse all topics: expandable view on Learn landing
+- Create tab suggestion: detects recently completed topic with no cards
 
-**Tutor UI Redesign (h189-201):**
-- Three-tab bottom navigation: Learn, Create, Review
-- Chisel design palette: Deep Indigo (#4F46E5), Wrong Amber (#F59E0B), Hint Blue (#3B82F6)
-- Dark mode via CSS `prefers-color-scheme` media query
-- Learn Landing: subject cards with progress bars, "Continue →", accent bars
-- Topic Preview: objectives, prereqs, estimated time → "Start Lesson"
-- Create tab: cards.py storage engine, deck landing, card author form, AI card review after save
-- Review tab: stats-first landing (due/total boxes), SM-2 card player with forgot/hard/good/easy
-- Two card types: system-generated drill cards on mastery + student-created concept cards
-- Result page: Socratic hint-blue for wrong answers, "Create Flashcards" CTA on mastery
-- 63 tests pass, 11 routes return 200
+**All three dispatches done under budget (17 heats for 33 budgeted)**
 
-### Key Patterns
-- All three dispatch directions finished under budget (17 heats for 33 budgeted)
-- Tutor app now has the full Learn → Create → Review loop from Chisel's spec
-- The card creation + AI review + spaced repetition pipeline is end-to-end functional
+### Key Stats
+- Tutor: 63 tests pass, 9 routes, 34 browseable topics, full Learn→Create→Review loop
+- Commissioner: all routes 200, tap-to-decide E2E, 8 decisions across 2 projects
+- Overall: 89% at heat 211
