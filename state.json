@@ -2,25 +2,25 @@
   "project": "ai-coworker",
   "budget": {
     "total_heats": 19,
-    "used": 9,
+    "used": 12,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
-    "research":       {"target": 0.288, "heats": 3, "progress": 0.5, "value_ema": 0.63},
-    "planning":       {"target": 0.135, "heats": 1, "progress": 0.3, "value_ema": 0.59},
-    "implementation": {"target": 0.072, "heats": 3, "progress": 0.5, "value_ema": 0.65},
-    "testing":        {"target": 0.216, "heats": 2, "progress": 0.2, "value_ema": 0.56},
-    "editing":        {"target": 0.192, "heats": 2, "progress": 0.3, "value_ema": 0.56},
-    "marketing":      {"target": 0.096, "heats": 1, "progress": 0.2, "value_ema": 0.59}
+    "research":       {"target": 0.29, "heats": 3, "progress": 0.5, "value_ema": 0.61},
+    "planning":       {"target": 0.14, "heats": 1, "progress": 0.3, "value_ema": 0.59},
+    "implementation": {"target": 0.07, "heats": 3, "progress": 0.5, "value_ema": 0.65},
+    "testing":        {"target": 0.22, "heats": 2, "progress": 0.2, "value_ema": 0.56},
+    "editing":        {"target": 0.19, "heats": 2, "progress": 0.3, "value_ema": 0.63},
+    "marketing":      {"target": 0.10, "heats": 1, "progress": 0.2, "value_ema": 0.59}
   },
   "allocator": {
     "integral": {
-      "research": 1.075,
-      "planning": -0.715,
-      "implementation": -0.612,
-      "testing": 0.551,
-      "editing": 0.225,
-      "marketing": 0.475
+      "research": 1.248,
+      "planning": -0.648,
+      "implementation": -1.096,
+      "testing": 0.662,
+      "editing": 0.411,
+      "marketing": 0.422
     }
   },
   "queue": [
@@ -35,9 +35,10 @@
     {"id": "i-003", "text": "Create STRATEGY.md with project state and main ideas, updated each heat", "source": "prompt", "status": "done", "task_id": null},
     {"id": "i-004", "text": "Make inbox idea pipeline more robust with structured tracking", "source": "prompt", "status": "done", "task_id": null},
     {"id": "i-005", "text": "Track progress per heat with visual/textual dashboard", "source": "prompt", "status": "done", "task_id": null},
-    {"id": "i-006", "text": "Idea status annotations inline in inbox.md", "source": "prompt", "status": "done", "task_id": null}
+    {"id": "i-006", "text": "Idea status annotations inline in inbox.md", "source": "prompt", "status": "done", "task_id": null},
+    {"id": "i-007", "text": "Standardize vocabulary to heat everywhere instead of chunk", "source": "prompt", "status": "done", "task_id": null}
   ],
-  "inbox_cursor": 29,
+  "inbox_cursor": 34,
   "human_priorities": [],
-  "overall_progress": 0.28
+  "overall_progress": 0.33
 }

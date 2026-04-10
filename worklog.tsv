@@ -8,3 +8,6 @@ timestamp	heat	stage	task_id	outcome	value	notes
 2026-04-09T00:30:00Z	7	research	generated	complete	0.8	Deep dive on session cycling: checkpoint files, SessionEnd hooks, three-layer persistence, session state detection
 2026-04-09T00:35:00Z	8	implementation	i-005,i-006	complete	0.8	ASCII heat dashboard + inline idea status annotations in inbox.md
 2026-04-09T00:40:00Z	9	marketing	generated	complete	0.8	README.md — how it works, wavefront allocator, file structure, principles
+2026-04-09T00:45:00Z	10	testing	generated	complete	0.7	10 protocol test scenarios — 9 pass, 1 untested (keep/discard), 5 edge cases identified
+2026-04-09T00:50:00Z	11	research	generated	complete	0.7	/loop vs /schedule vs external cron for automating heat execution
+2026-04-09T00:55:00Z	12	editing	i-007	complete	0.8	Standardized vocabulary: chunk → heat across all protocol, state, and doc files

@@ -1,6 +1,6 @@
 # Strategic Plan — The Forge
 
-*Updated after heat 9 | 2026-04-09*
+*Updated after heat 12 | 2026-04-09*
 
 ## Vision
 
@@ -29,14 +29,14 @@ An autonomous AI coworker that works in bounded 5-minute heats, self-directs acr
 
 | Stage | Progress | Heats | Notes |
 |-------|----------|--------|-------|
-| Research | 40% | 2 | Survey + deep dive on session cycling. Checkpoint files, SessionEnd hooks mapped out. |
+| Research | 50% | 3 | Survey + session cycling + automation (/loop, /schedule, cron). |
 | Planning | 30% | 1 | Task queue created. Plan.md has 5 prioritized items. |
 | Implementation | 50% | 3 | Protocol gaps + idea pipeline + heat dashboard + idea status annotations. |
-| Testing | 10% | 1 | Protocol consistency check done. No automated tests yet. |
-| Editing | 20% | 1 | Inbox convention added. CLAUDE.md already split to hub+protocol. |
+| Testing | 20% | 2 | Consistency check + 10 test scenarios (9 pass, 1 untested). |
+| Editing | 30% | 2 | Inbox convention + vocabulary standardization (chunk→heat). |
 | Marketing | 20% | 1 | README.md written. No detailed docs yet. |
 
-**Overall progress**: ~28% | **Heats used**: 9 | **Wavefront phase**: early→middle
+**Overall progress**: ~33% | **Heats used**: 12 | **Wavefront phase**: middle
 
 ### What's Working
 
