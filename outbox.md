@@ -2,6 +2,12 @@
 
 The Smith writes status updates, questions, and summaries here.
 
+## 2026-04-10 [heat 450, AAR — heats 441-450]
+
+10 heats: impl×2, test×3, editing×3, planning×1, marketing×1. Signal: 🟢×10.
+Key: Smithy CLI completed — add-task (auto-ID), complete-task, commit commands. 142 tests pass across all projects. Full dogfooding successful.
+Next: Use smithy exclusively for all future runs. No more manual state.json edits.
+
 ## 2026-04-10 [heat 440, AAR — heats 431-440]
 
 10 heats: impl×2, test×1, editing×4, marketing×3. Signal: 🟢×10.

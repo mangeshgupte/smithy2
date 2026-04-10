@@ -2,19 +2,24 @@
 
 ## 2026-04-10
 
-### Heats 431-440: Smithy CLI Built
+### Heats 441-450: Smithy CLI Completed + Full Dogfooding
 
-**Smithy CLI (heats 431-434):**
-- `smithy/smithy/state.py` — load/save/validate state, worklog append, checkpoint management
-- `smithy/smithy/allocator.py` — wavefront model ported from prose to Python
-- `smithy/smithy/cli.py` — 8 commands: start-heat, end-heat, validate, status, allocate, pick-task, process-feedback, process-inbox
-- 14 tests in `smithy/tests/test_smithy.py` — all passing
-- Protocol/loop.md updated to reference smithy commands
-- Installed via `pip install -e smithy/`
+**New smithy commands (h442):**
+- `smithy add-task <stage> <desc>` — auto-incrementing IDs (t-NNN), priority option
+- `smithy complete-task <task_id>` — marks task as complete with validation
+- `smithy commit <message>` — git add + commit with [stage] prefix from checkpoint
 
-**Key insight**: The smithy CLI makes bookkeeping deterministic — counters, cursors, and integral values are always computed correctly. No more state drift from manual edits.
+**Testing (h443-444):**
+- 19 smithy tests (5 new for add-task/complete-task)
+- Full system: 142 tests pass (111 tutor + 12 commissioner + 19 smithy)
+- smithy validate passes
 
-### Key Stats
-- **Smithy**: 8 commands, 14 tests, ~400 lines Python
-- **Total tests**: 123 (tutor) + 12 (commissioner) + 14 (smithy) = 149
-- Overall: 89% at heat 440 (recalculated by smithy from actual stage progress)
+**Dogfooding result:**
+- Successfully used smithy for all bookkeeping in heats 441-450
+- `start-heat` → `end-heat` flow works cleanly
+- `allocate` correctly recommends stages
+- No manual state.json edits needed (except fixing stale queue from previous runs)
+
+### Smithy CLI Summary
+11 commands: start-heat, end-heat, validate, status, allocate, pick-task, process-feedback, process-inbox, add-task, complete-task, commit
+19 tests, ~550 lines Python, installable via `pip install -e smithy/`
