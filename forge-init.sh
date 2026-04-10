@@ -158,6 +158,13 @@ EOF
 
 touch "$TARGET/research/.gitkeep"
 
+# Create .gitignore
+cat > "$TARGET/.gitignore" << 'EOF'
+# Forge transient files
+.forge-checkpoint.json
+.forge-output.log
+EOF
+
 echo ""
 echo "Done! The Forge is ready."
 echo ""

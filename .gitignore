@@ -1,0 +1,3 @@
+# Forge transient files
+.forge-checkpoint.json
+.forge-output.log
