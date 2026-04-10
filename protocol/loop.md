@@ -18,17 +18,26 @@ Read these files at the start of every heat:
 
 ## Step 2: Process Inbox
 
-If there are new lines in `inbox.md` beyond the `inbox_cursor`:
-- Parse human messages for priority changes, new tasks, or feedback
-- Update `human_priorities` in state if the human directed focus
-- Add any requested tasks to the `queue`
-- Update `inbox_cursor` to the current line count of inbox.md
+The human communicates via two channels:
+1. **inbox.md** — async messages written from another terminal/editor
+2. **Prompt messages** — ideas or instructions typed directly into the Claude Code session
 
-Human messages may contain:
+Both are inputs. Process them the same way.
+
+**For inbox.md**: If there are new lines beyond the `inbox_cursor`, read and process them. Update `inbox_cursor` to the current line count.
+
+**For prompt ideas**: When the human provides an idea via the prompt (e.g., "Idea: ..."), log it to inbox.md for the record before acting on it. This keeps all human input in one inspectable place. Format:
+```markdown
+## YYYY-MM-DD HH:MM [via prompt]
+<the idea or instruction>
+```
+
+**Parse all human messages for**:
 - **Priority overrides**: "Focus on X" → set human_priorities to [X]
 - **New tasks**: "Can you add Y" → add to queue with appropriate stage
 - **Target overrides**: "Spend 80% on implementation" → manually adjust stage targets
 - **Feedback**: "The approach to X isn't working" → adjust plans, note in memory
+- **Ideas**: "Idea: ..." → evaluate, add to queue or plan.md as appropriate
 - **Questions answered**: responses to outbox questions → incorporate and continue
 
 ## Step 3: Run the Allocator
