@@ -2,30 +2,34 @@
   "project": "ai-coworker",
   "budget": {
     "total_heats": 119,
-    "used": 25,
+    "used": 30,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
-    "research":       {"target": 0.22, "heats": 5, "progress": 0.6, "value_ema": 0.66},
-    "planning":       {"target": 0.16, "heats": 2, "progress": 0.4, "value_ema": 0.63},
-    "implementation": {"target": 0.08, "heats": 7, "progress": 0.65, "value_ema": 0.67},
-    "testing":        {"target": 0.20, "heats": 4, "progress": 0.35, "value_ema": 0.60},
-    "editing":        {"target": 0.20, "heats": 4, "progress": 0.40, "value_ema": 0.63},
+    "research":       {"target": 0.22, "heats": 5, "progress": 0.60, "value_ema": 0.66},
+    "planning":       {"target": 0.16, "heats": 3, "progress": 0.45, "value_ema": 0.64},
+    "implementation": {"target": 0.08, "heats": 9, "progress": 0.70, "value_ema": 0.66},
+    "testing":        {"target": 0.20, "heats": 5, "progress": 0.40, "value_ema": 0.62},
+    "editing":        {"target": 0.20, "heats": 5, "progress": 0.45, "value_ema": 0.63},
     "marketing":      {"target": 0.14, "heats": 3, "progress": 0.35, "value_ema": 0.62}
   },
   "allocator": {
     "integral": {
-      "research": 0.10,
-      "planning": 0.05,
-      "implementation": -0.50,
-      "testing": 0.15,
-      "editing": 0.10,
+      "research": 0.08,
+      "planning": 0.02,
+      "implementation": -0.40,
+      "testing": 0.12,
+      "editing": 0.08,
       "marketing": 0.10
     }
   },
-  "queue": [],
+  "queue": [
+    {"id": "t-014", "stage": "implementation", "desc": "Add /loop integration for auto-restart within session", "status": "pending", "priority": 2, "blocked_by": []},
+    {"id": "t-018", "stage": "research", "desc": "Research how to measure actual value (not just self-assessment)", "status": "pending", "priority": 3, "blocked_by": []},
+    {"id": "t-020", "stage": "marketing", "desc": "Write How The Forge Works deep-dive doc", "status": "pending", "priority": 4, "blocked_by": []}
+  ],
   "ideas": [],
   "inbox_cursor": 37,
   "human_priorities": [],
-  "overall_progress": 0.47
+  "overall_progress": 0.50
 }
