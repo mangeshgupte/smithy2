@@ -53,4 +53,8 @@ Directive: No Telegram bridge. When messaging is needed, build a WhatsApp bridge
 
 ## 2026-04-09 [via prompt]
 Idea: The human-AI interface is the bottleneck. Can't assess quality of changes. Need higher-level structure for ideas being tried. Research how different domains solve the oversight problem — companies, research orgs, universities, animal colonies, organizational research. Generate diverse interface models, then converge on top candidates.
-→ dispatched (10 research heats, see anvil-to-forge.md)
+→ ✓ research complete in heats 69-79 (synthesis in research/human-ai-interface-synthesis.md)
+
+## 2026-04-09 [via prompt]
+Directive: Operationalize the interface synthesis. Implement all 5 models: stoplight + uncertainty → commander's intent → AAR → compression layers.
+→ partially done in heats 85-88 (stoplight, intent, AAR protocol). Remaining: forge-status, reporting.md, AAR to file.

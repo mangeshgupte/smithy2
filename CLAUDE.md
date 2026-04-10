@@ -19,6 +19,7 @@ When the human says "Run N heats" (or similar):
 | `protocol/loop.md` | The heat loop — steps 1-8, what to read, how to execute, when to stop |
 | `protocol/allocator.md` | Wavefront model + PI controller — how to pick which stage to work on |
 | `protocol/logging.md` | Worklog format, state.json updates, memory writes, self-assessment guide |
+| `protocol/reporting.md` | Information compression layers (L0-L4) — what to report and when |
 
 ## Rules
 
