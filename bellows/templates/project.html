@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title_suffix %} — {{ project.name }}{% endblock %}
+{% block content %}
+<header class="page-header">
+    <a href="/" class="back-link">← Projects</a>
+    <div class="project-title-row">
+        <span class="signal signal-{{ project.signal }}"></span>
+        <h1>{{ project.name }}</h1>
+        <span class="progress-badge large">{{ (project.overall_progress * 100)|int }}%</span>
+    </div>
+</header>
+
+<nav class="sub-tabs">
+    <a href="/project/{{ project.name }}" class="sub-tab {% if tab == 'activity' %}active{% endif %}">Activity</a>
+    <a href="/project/{{ project.name }}/decide" class="sub-tab {% if tab == 'decide' %}active{% endif %}">
+        Decide
+        {% if project.decisions %}<span class="badge">{{ project.decisions|length }}</span>{% endif %}
+    </a>
+    <a href="/project/{{ project.name }}/direct" class="sub-tab {% if tab == 'direct' %}active{% endif %}">Direct</a>
+</nav>
+
+<!-- Stage progress -->
+<div class="stage-bars detail-bars">
+    {% for stage_name in ['research', 'planning', 'implementation', 'testing', 'editing', 'marketing'] %}
+    {% set stage = project.stages.get(stage_name, {}) %}
+    {% set spct = (stage.get('progress', 0) * 100)|int %}
+    <div class="stage-bar-row">
+        <span class="stage-label">{{ stage_name }}</span>
+        <div class="stage-bar">
+            <div class="stage-fill" style="width: {{ spct }}%"></div>
+        </div>
+        <span class="stage-pct">{{ spct }}%</span>
+        <span class="muted">{{ stage.get('heats', 0) }}h</span>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Budget — segmented by stage -->
+<div class="card-budget detail-budget">
+    {% set budget_total = project.budget.total_heats if project.budget.total_heats > 0 else 1 %}
+    {% set budget_pct = (project.budget.used / budget_total * 100)|int %}
+    {% set remaining = budget_total - project.budget.used %}
+    <div class="budget-label-row">
+        <span class="budget-label">Budget</span>
+        <span class="budget-text">{{ project.budget.used }}/{{ project.budget.total_heats }} heats ({{ budget_pct }}%)</span>
+    </div>
+    <div class="budget-bar segmented">
+        {% for stage_name in ['research', 'planning', 'implementation', 'testing', 'editing', 'marketing'] %}
+        {% set stage = project.stages.get(stage_name, {}) %}
+        {% set stage_heats = stage.get('heats', 0) %}
+        {% if stage_heats > 0 %}
+        <div class="budget-segment stage-{{ stage_name }}" style="width: {{ (stage_heats / budget_total * 100)|round(1) }}%" title="{{ stage_name }}: {{ stage_heats }} heats"></div>
+        {% endif %}
+        {% endfor %}
+    </div>
+    <div class="budget-legend">
+        {% for stage_name in ['research', 'planning', 'implementation', 'testing', 'editing', 'marketing'] %}
+        {% set stage = project.stages.get(stage_name, {}) %}
+        {% set stage_heats = stage.get('heats', 0) %}
+        {% if stage_heats > 0 %}
+        <span class="legend-item">
+            <span class="legend-dot stage-dot-{{ stage_name }}"></span>
+            {{ stage_name[:3] }} {{ stage_heats }}
+        </span>
+        {% endif %}
+        {% endfor %}
+        {% if remaining > 0 %}
+        <span class="legend-item">
+            <span class="legend-dot stage-dot-remaining"></span>
+            left {{ remaining }}
+        </span>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Activity feed -->
+<section class="activity-feed">
+    <h2>Activity</h2>
+    {% for day in project.heat_days %}
+    <div class="day-group">
+        <div class="day-header">
+            <span class="day-date">{{ day.date }}</span>
+            <span class="day-summary">{{ day.summary }}</span>
+            <span class="day-signals">
+                {% if day.signals.get('🟢', 0) %}🟢×{{ day.signals['🟢'] }}{% endif %}
+                {% if day.signals.get('🟡', 0) %}🟡×{{ day.signals['🟡'] }}{% endif %}
+                {% if day.signals.get('🔴', 0) %}🔴×{{ day.signals['🔴'] }}{% endif %}
+            </span>
+        </div>
+        {% if day.is_recent %}
+        <div class="day-heats">
+            {% for heat in day.heats|reverse %}
+            {% set val = heat.get('value', 0)|float %}
+            <details class="heat-card stage-border-{{ heat.get('stage', '') }}">
+                <summary class="heat-header">
+                    <span class="heat-signal">{{ heat.get('signal', '🟢') }}</span>
+                    <span class="heat-number">Heat {{ heat.get('heat', '?') }}</span>
+                    <span class="heat-stage stage-{{ heat.get('stage', '') }}">{{ heat.get('stage', '') }}</span>
+                    <span class="heat-value {% if val >= 0.7 %}heat-value-high{% elif val >= 0.5 %}heat-value-mid{% else %}heat-value-low{% endif %}">{{ heat.get('value', '') }}</span>
+                    <span class="heat-summary">{{ (heat.get('notes') or '')[:50] }}{% if (heat.get('notes') or '')|length > 50 %}...{% endif %}</span>
+                </summary>
+                <p class="heat-notes-full">{{ heat.get('notes') or '' }}</p>
+            </details>
+            {% endfor %}
+        </div>
+        {% else %}
+        <details class="day-collapsed">
+            <summary class="day-expand">Show {{ day.count }} heats</summary>
+            <div class="day-heats">
+                {% for heat in day.heats|reverse %}
+                {% set val = heat.get('value', 0)|float %}
+                <details class="heat-card stage-border-{{ heat.get('stage', '') }}">
+                    <summary class="heat-header">
+                        <span class="heat-signal">{{ heat.get('signal', '🟢') }}</span>
+                        <span class="heat-number">Heat {{ heat.get('heat', '?') }}</span>
+                        <span class="heat-stage stage-{{ heat.get('stage', '') }}">{{ heat.get('stage', '') }}</span>
+                        <span class="heat-value {% if val >= 0.7 %}heat-value-high{% elif val >= 0.5 %}heat-value-mid{% else %}heat-value-low{% endif %}">{{ heat.get('value', '') }}</span>
+                        <span class="heat-summary">{{ (heat.get('notes') or '')[:50] }}{% if (heat.get('notes') or '')|length > 50 %}...{% endif %}</span>
+                    </summary>
+                    <p class="heat-notes-full">{{ heat.get('notes') or '' }}</p>
+                </details>
+                {% endfor %}
+            </div>
+        </details>
+        {% endif %}
+    </div>
+    {% endfor %}
+
+    {% if not project.heat_days %}
+    <p class="muted">No heats recorded yet.</p>
+    {% endif %}
+</section>
+
+{% if project.whats_missing %}
+<section class="whats-missing">
+    <h2>What's Missing</h2>
+    <ul>
+    {% for item in project.whats_missing %}
+        <li>{{ item }}</li>
+    {% endfor %}
+    </ul>
+</section>
+{% endif %}
+{% endblock %}
