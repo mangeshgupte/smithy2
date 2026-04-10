@@ -113,7 +113,7 @@ Adds 10 to the budget. Picks up exactly where it left off.
 
 ## Personas
 
-The Forge has three personas, each running as a separate Claude Code session:
+The Forge has two personas, each running as a separate Claude Code session:
 
 | Persona | Name | Role | Start Command |
 |---------|------|------|---------------|
