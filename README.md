@@ -133,6 +133,36 @@ You ↔ Anvil      "What happened?" → explains (Lens hat)
 - `dispatch/anvil-to-forge.md` — Anvil sends direction
 - `dispatch/forge-to-anvil.md` — Forge reports results
 
+## SessionEnd Hook (Automatic Memory)
+
+The Forge can automatically distill session transcripts into `MEMORY_DAILY.md` when a Claude Code session ends.
+
+**Setup:**
+
+1. The hook script lives at `hooks/session-end-forge.sh`.
+
+2. Add it to your Claude Code settings (`.claude/settings.json` in the project root):
+```json
+{
+  "hooks": {
+    "SessionEnd": [
+      {
+        "type": "command",
+        "command": "./hooks/session-end-forge.sh"
+      }
+    ]
+  }
+}
+```
+
+3. The hook will:
+   - Detect if the session was running in The Forge directory
+   - Read the last 200 lines of the session transcript
+   - Use Claude to distill key decisions, progress, and blockers into `MEMORY_DAILY.md`
+   - Only runs for sessions in the Forge project tree
+
+**Note**: The hook uses `claude -p` (programmatic mode) to call Claude for distillation. Make sure Claude CLI is available in your PATH.
+
 ## Key Principles
 
 - **No Python.** The entire system is prose — CLAUDE.md + protocol files. Claude Code is the runtime.
