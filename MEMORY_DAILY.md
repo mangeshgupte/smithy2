@@ -2,26 +2,27 @@
 
 ## 2026-04-10
 
-### Heats 281-295: Self-Directed Run — Teach It Back + Visual Design Focus
-- **Teach It Back** (h282): student explains concept, AI evaluates, unlocks after mastery — top of Bloom's taxonomy
-- **Card editing** (h283): edit/delete from deck view, update_card + delete_card functions
-- **Integration tests** (h284): 20 new tests for full Learn→Create→Review→Edit flow — total 100 tests
-- **Session progress** (h285): exercises completed count on topic preview, increment after each answer
-- **CHANGELOG v0.8** (h286): documented heats 181-285 features
-- **Commissioner: last-active** (h287): timestamp on project cards from worklog
+### Heats 331-380: Recall Rhino Palette + Visual Polish + Commissioner Tests
 
-**Visual Design Focus (h289-294) — per human priority:**
-- Tutor animations: correct pulse, wrong shake, Socratic slide-up, streak bounce, hover lift, tab indicator
-- Exercise cards: larger padding, surface bg, rounded corners
-- Choice options: bigger tap targets, indigo hover with scale feedback
-- Buttons: rounded, hover states, active press
-- Review tab: stat box indigo accent, larger card, color-coded rating buttons
-- Create tab: deck card hover lift, tutor-speech border, labels uppercase
-- Learn landing: larger icons, bolder titles, accent gradients, continue hover
-- Commissioner: project card hover lift + shadow, decision card shadow, briefing header
+**Recall Rhino Palette (h332-334, h351):**
+- Full palette swap: Playful Teal (#00BCD4) primary, Energy Orange (#FF9800) secondary
+- Focus Green (#4CAF50) correct, Review Yellow (#FFEB3B) wrong, Sky Blue (#ADD8E6) AI speech
+- Subject accents: Orange=Python, Teal=Math, Green=English
+- Dark mode CSS block REMOVED per human feedback — RR palette now applies regardless of system setting
+- Card surfaces: shadow-md default, shadow-xl hover, rounded-2xl
 
-### Key Stats
-- 100 tests across 9 files
-- 1104 lines tutor CSS, 739 lines commissioner CSS
-- 5 CSS animations per Chisel spec
+**Features (h336-339):**
+- Empty states improved with icons, helpful messaging, and action CTAs
+- 12 commissioner tests for forge_reader.py (discovery, decisions, tiers, briefing)
+- Python syntax highlighting (teal keywords, green strings, orange numbers)
+- Bottleneck indicator on Commissioner project cards
+
+**Key Stats:**
+- 112 total tests (100 tutor + 12 commissioner)
+- ~1080 lines tutor CSS (Recall Rhino palette)
 - All routes pass on both apps
+- Overall: 93% at heat 380
+
+### Key Learning
+- Dark mode overriding custom palettes is a common gotcha — if a design spec doesn't mention dark mode, don't add it
+- Human feedback through feedback.md works well — both palette and dark mode issues caught and fixed within same run

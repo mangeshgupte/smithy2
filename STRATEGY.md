@@ -1,6 +1,6 @@
 # Strategic Plan — The Forge
 
-*Updated after heat 330 | 2026-04-10*
+*Updated after heat 380 | 2026-04-10*
 
 ## Vision
 
@@ -40,12 +40,12 @@ An autonomous AI coworker that works in bounded 5-minute heats, self-directs acr
 |-------|----------|--------|-------|
 | Research | 88% | 24 | Landscape, interface, timeout — all research complete. |
 | Planning | 82% | 16 | Feedback protocol review, tutor feedback processed. |
-| Implementation | 98% | 105 | Tutor: 17 templates, cards.py, teach-it-back, 6 animations. Commissioner: tiers, briefing, last-active. |
-| Testing | 89% | 50 | 100 tutor tests (20 integration), Commissioner E2E, forge-validate. |
-| Editing | 89% | 48 | STRATEGY, CHANGELOG v0.8, README rewrite, memory consolidation. |
-| Marketing | 85% | 30 | AARs, dispatch reports, CHANGELOG. |
+| Implementation | 98% | 115 | Tutor: RR palette, syntax highlighting, 17 templates. Commissioner: tiers, bottleneck, last-active. |
+| Testing | 90% | 56 | 112 tests (100 tutor + 12 commissioner), all routes verified. |
+| Editing | 90% | 52 | STRATEGY, CHANGELOG v0.8, README rewrite, tutor STRATEGY. |
+| Marketing | 86% | 33 | AARs, dispatch reports, CHANGELOG. |
 
-**Overall progress**: ~92% | **Heats used**: 330 | **Wavefront phase**: finishing
+**Overall progress**: ~93% | **Heats used**: 380 | **Wavefront phase**: finishing
 
 ### What's Working
 

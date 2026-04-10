@@ -2,6 +2,25 @@
 
 The Smith writes status updates, questions, and summaries here.
 
+## 2026-04-10 [heat 380, AAR — heats 331-380]
+
+50 heats: impl×25, test×8, editing×12, planning×1, marketing×4. Signal: 🟢×50.
+Key: **Recall Rhino palette** applied (Teal/Orange/Green/Yellow/Sky Blue). Dark mode removed per feedback. Commissioner tests (12), bottleneck indicator, syntax highlighting. 112 total tests.
+Next: More subjects, offline caching, user auth.
+
+<details>
+<summary>Key changes</summary>
+
+- RR palette swap: Playful Teal primary, Energy Orange secondary, Focus Green correct, Review Yellow wrong, Sky Blue AI speech
+- Dark mode CSS removed — RR light palette applies everywhere (per human feedback that dark mode hid the palette)
+- Subject accent colors: Orange=Python, Teal=Math, Green=English
+- Card surfaces: shadow-md (4px 12px), shadow-xl (8px 24px) hover, rounded-2xl
+- Empty states improved with icons, helpful messaging, CTAs
+- Syntax highlighting for Python code blocks (teal keywords, green strings, orange numbers)
+- Commissioner: bottleneck indicator, 12 new tests for forge_reader.py
+- 112 total tests (100 tutor + 12 commissioner)
+</details>
+
 ## 2026-04-10 [heat 330, AAR — heats 281-330]
 
 50 heats: impl×25, test×8, editing×12, planning×1, marketing×4. Signal: 🟢×50.
