@@ -2,41 +2,44 @@
 
 Forge writes completion reports here. Anvil reads to review work.
 
-## 2026-04-09 23:00 — Direction Complete: First Real Project — AI Tutor
+## 2026-04-09 24:00 — Direction Complete: Commissioner App (Phase 1)
 
 ### What Was Done
-Built a working AI tutor for Python at ~/vibes/tutor. The Forge's first non-dogfood project.
+Built a working Commissioner web app with 5 screens, following Chisel's design spec.
+
+### Screens Implemented
+
+| Screen | Status | Notes |
+|--------|--------|-------|
+| Home (project cards) | ✅ Complete | Lifecycle-adaptive (early/mid/mature), signal-sorted |
+| Morning Briefing | ✅ Complete | Needs-you, progress, notable sections |
+| Project Detail + Activity | ✅ Complete | Stage bars, budget, heat feed, what's missing |
+| Decide | ⚠️ Partial | Cards render but no tap-to-decide interaction |
+| Inbox | ✅ Complete | Cross-project decision queue |
+| Direct | ❌ Not started | Needs Phase 2 |
+
+### Technical Stack
+- Python FastAPI + Jinja2 templates + vanilla CSS
+- Reads directly from Forge flat files (state.json, worklog.tsv, etc.)
+- Dark theme, responsive (laptop + phone browser)
+- uv for dependency management
 
 ### Heats Used
-20 heats (116-135). Tutor project: 15 internal heats. Remaining 5 for ai-coworker state updates.
+20 heats (136-155)
 
-### Research Findings
-- Bloom's 2-sigma: 1-on-1 tutoring with mastery learning is 2σ better than classroom
-- Existing AI tutors (Khanmigo, Duolingo) succeed by teaching through questions, not answers
-- Chose adults + Python as MVP target (verifiable code, clear mastery progression)
-
-### What Was Built
-| Component | File | Status |
-|-----------|------|--------|
-| Curriculum | tutor/curriculum.py | 7 topics, 4 levels, prerequisite deps |
-| Engine | tutor/engine.py | Learning loop (teach→question→practice→evaluate) |
-| Socratic | tutor/socratic.py | Claude API, pedagogical system prompt |
-| Runner | tutor/runner.py | Subprocess sandbox, 10s timeout |
-| Progress | tutor/progress.py | JSON persistence, mastery tracking |
-| CLI | tutor.py | --status, --reset |
-| Tests | tests/ | 11 tests, all passing |
-| Docs | README.md | Quick-start, curriculum table, architecture |
-
-### Hypothesis Results
-- **H8** ✓: Forge produces useful output on non-self projects
-- **H5** ~: First real 🟡 signal (socratic.py untested E2E)
-- **H6** ✓: Commander's intent prevented chatbot-wrapper drift
+### How to Run
+```bash
+cd commissioner
+uv run uvicorn app:app --port 8080
+# Open http://localhost:8080
+```
 
 ### Issues
-- socratic.py untested with real Claude API (needs ANTHROPIC_API_KEY in environment)
-- No spaced repetition yet (planned for v0.2)
-- Allocator wasn't used for dispatch-driven work — protocol gap?
+- Decide tab needs JavaScript for tap-to-decide + write-to-inbox.md
+- Direct tab not implemented (Phase 2)
+- No notification tier logic yet
+- No auto-refresh / WebSocket for live updates
 
 ### Artifacts
-- All files in ~/vibes/tutor/
-- 6 git commits in tutor repo
+- `commissioner/` — full web app (7 Python/HTML files + CSS)
+- `commissioner/README.md`

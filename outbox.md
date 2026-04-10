@@ -2,6 +2,44 @@
 
 The Smith writes status updates, questions, and summaries here.
 
+## 2026-04-09 [heat 155, After-Action Review — heats 136-155]
+
+### 1. What Was Planned
+Anvil/Chisel dispatch: Build Commissioner App — web dashboard for managing Forge projects. 15-heat budget.
+
+### 2. What Happened
+Built a working web app with 5 screens:
+- **Home**: Lifecycle-adaptive project cards (early/mid/mature), sorted by signal
+- **Morning Briefing**: Needs-you, progress deltas, notable items
+- **Project Detail**: Stage bars, budget, activity feed, what's missing
+- **Decide**: Decision cards with priority badges
+- **Inbox**: Cross-project decision queue
+
+Backend reads directly from Forge flat files — no database, no setup.
+
+### 3. Key Artifacts (L3)
+- `commissioner/forge_reader.py` — discovers projects, reads state, generates briefing (HIGH)
+- `commissioner/app.py` — FastAPI with 5 HTML routes + 2 API endpoints (HIGH)
+- `commissioner/static/css/style.css` — dark responsive theme (MEDIUM)
+- `commissioner/templates/*.html` — 6 templates (MEDIUM)
+
+### 4. Lessons Learned
+- Starlette/FastAPI API changed — TemplateResponse signature is different in 2026 versions
+- Jinja2 doesn't have `max()` — need to compute in Python or use conditionals
+- Reading flat files directly is fast and requires zero setup — validates the Forge architecture
+- The lifecycle-adaptive card pattern (Chisel's design) is elegant and information-dense
+
+### 5. Open Questions
+- Should the Commissioner have write capabilities (tap-to-decide, add heats)?
+- How to handle the Direct tab (free-form input → write to inbox.md)?
+- Worth adding WebSocket for live updates during an active run?
+
+### 6. Signal Summary
+- 🟢×19 🟡×1 🔴×0
+- The 🟡: decide.html renders cards but no tap-to-decide interaction yet
+
+---
+
 ## 2026-04-09 [heat 135, After-Action Review — heats 116-135]
 
 ### 1. What Was Planned

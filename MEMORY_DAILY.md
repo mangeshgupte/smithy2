@@ -2,23 +2,23 @@
 
 ## 2026-04-09
 
-### Heats 1-115: v0.1-v0.5 Complete + Interface Research
-- Protocol, allocator (3 fixes), all tools, personas, interface research (22 ideas → 5 implemented)
-- Landscape research (5 ideas to adopt), 81% overall at heat 115
+### Heats 1-135: v0.1-v0.5 + AI Tutor
+- Protocol, allocator (3 fixes), all tools, personas, interface research, landscape research
+- AI Tutor: 7 topics, Socratic dialogue, code runner, progress tracking — all tested
+- 82% overall at heat 135
 
-### Heats 116-135: First Real Project — AI Tutor
-- **Scaffolded** at ~/vibes/tutor using forge-init.sh (H8 validated — Forge works on non-self projects!)
-- **Researched**: Bloom's 2-sigma, Khanmigo, Duolingo → chose adults + Python + Socratic mastery
-- **Built**: 7 modules (curriculum, engine, socratic, runner, progress, CLI, tests)
-- **7 topics** across 4 levels: variables → print/input → conditionals → loops → lists → dicts → functions
-- **11 tests** all passing (curriculum integrity + runner safety)
-- **One 🟡** signal: socratic.py has no E2E test with real Claude API (honest uncertainty)
-- Protocol handled non-dogfood well — forge-init worked, skill tree is the right structure
+### Heats 136-155: Commissioner App (Chisel dispatch)
+- **Built**: FastAPI backend + 5 HTML screens + dark responsive CSS
+- **Screens**: Home (lifecycle cards), Briefing (needs-you/progress/notable), Project Detail (stages + activity), Decide (decision cards), Inbox (cross-project)
+- **forge_reader.py**: discovers Forge projects, reads flat files, generates briefing data
+- **Works with real data**: found 2 projects (ai-coworker + ai-tutor), rendered cards correctly
+- **Bugs fixed**: Starlette TemplateResponse API change, Jinja2 max() undefined
+- **First 🟡 signal**: decide.html has no tap-to-decide yet (honest uncertainty)
+- Commissioner README written
 
 ### Key Patterns
-- **H8 validated**: Forge produces useful output on non-self projects
-- **H5 partially validated**: First real 🟡 signal appeared (socratic.py untested with API)
-- **H6 validated**: Commander's intent kept work focused — no chatbot wrapper, real pedagogy
-- forge-init.sh scaffolding is smooth for new projects
-- The curriculum data structure is the most important design decision — everything flows from it
-- 82% overall at heat 135
+- Commissioner validates the Forge's flat-file approach — reading state.json/worklog directly works
+- Lifecycle-adaptive cards are effective — early projects show more, mature projects compress
+- Building the management tool for the Forge inside the Forge is deeply recursive but productive
+- 84% overall at heat 155
+- 3 real projects now: ai-coworker, ai-tutor, commissioner
