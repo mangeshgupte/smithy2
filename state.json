@@ -2,7 +2,7 @@
   "project": "ai-coworker",
   "budget": {
     "total_heats": 440,
-    "used": 433,
+    "used": 434,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -32,9 +32,9 @@
     },
     "editing": {
       "target": 0.183,
-      "heats": 58,
+      "heats": 59,
       "progress": 0.88,
-      "value_ema": 0.74
+      "value_ema": 0.758
     },
     "marketing": {
       "target": 0.219,
@@ -49,7 +49,7 @@
       "planning": 0.146,
       "implementation": -0.5,
       "testing": 0.039,
-      "editing": -0.006,
+      "editing": -0.029,
       "marketing": 0.16
     }
   },

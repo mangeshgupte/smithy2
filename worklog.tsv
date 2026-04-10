@@ -427,3 +427,4 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-10T13:15:47Z	431	implementation	generated	complete	0.9	🟢	Smithy CLI: core module (state.py) + CLI (cli.py) with start-heat, end-heat, validate, status
 2026-04-10T13:17:32Z	432	implementation	generated	complete	0.9	🟢	Smithy CLI: allocator.py (wavefront model), allocate + pick-task + process-feedback + process-inbox commands
 2026-04-10T13:19:25Z	433	testing	generated	complete	0.9	🟢	14 smithy tests: validate, status, start/end heat, allocate, pick-task, process-feedback, cursor advance
+2026-04-10T13:20:25Z	434	editing	generated	complete	0.8	🟢	Protocol updated: loop.md now references smithy commands for all bookkeeping

@@ -2,7 +2,17 @@
 
 **NEVER STOP.** Once the loop begins, do NOT pause to ask "should I continue?" or "is this a good stopping point?" The human may be away. Loop until budget exhausted. This is the core contract.
 
-Each heat follows these steps exactly:
+Each heat follows these steps exactly.
+
+**IMPORTANT — Use `smithy` for all bookkeeping.** Never directly edit state.json or worklog.tsv. Use these commands:
+- `smithy allocate` → pick which stage to work on
+- `smithy pick-task <stage>` → find the best task
+- `smithy start-heat <stage> [--task <id>]` → begin a heat (writes checkpoint)
+- `smithy end-heat <value> <signal> <notes>` → finish a heat (updates all counters)
+- `smithy process-feedback` → read new feedback entries
+- `smithy process-inbox` → read new inbox entries
+- `smithy validate` → check state consistency
+- `smithy status` → show L0/L1 summary
 
 ## Step 1: Load Context
 
@@ -82,7 +92,7 @@ Statuses:
 
 ## Step 3: Run the Allocator
 
-Read `protocol/allocator.md` and follow the algorithm to pick a stage.
+Run `smithy allocate` to get the recommended stage. The allocator computes wavefront benefits, PI controller scores, and applies exploration rules automatically.
 
 ## Step 4: Pick a Task
 
@@ -177,7 +187,13 @@ git commit -m "[stage] description of what this heat accomplished"
 
 ## Step 6: Log the Heat
 
-Read `protocol/logging.md` and follow the logging format.
+Run `smithy end-heat <value> <signal> "<notes>"` to log the heat. This automatically:
+- Increments budget.used and stage heats
+- Updates value_ema and allocator integral
+- Appends worklog.tsv row
+- Marks task complete (if outcome=complete)
+- Updates overall_progress
+- Deletes checkpoint
 
 ## Step 7: Memory Consolidation (every 6th heat)
 
