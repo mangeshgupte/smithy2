@@ -1,5 +1,43 @@
 # Changelog
 
+## v0.9 — Smithy CLI + Visual Polish + Bug Fixes (heats 286-480)
+
+### Smithy CLI (13 commands)
+- `smithy start-heat` / `end-heat` — deterministic heat bookkeeping (counters, cursors, integrals)
+- `smithy allocate` — wavefront allocator ported to Python
+- `smithy pick-task` / `add-task` / `complete-task` — queue management with auto-incrementing IDs
+- `smithy process-feedback` / `process-inbox` — cursor-based feed processing
+- `smithy validate` / `status` — state consistency checks and L0/L1 summary
+- `smithy init` — project scaffolding (replaces forge-init.sh)
+- `smithy commit` — git add + commit with [stage] prefix
+- `smithy memory-write` — append notes to MEMORY_DAILY.md
+- **23 tests**, installable via `pip install -e smithy/`
+
+### Recall Rhino Palette
+- Playful Teal (#00BCD4), Energy Orange (#FF9800), Focus Green (#4CAF50), Review Yellow (#FFEB3B), Sky Blue (#ADD8E6)
+- Subject accents: Orange=Python, Teal=Math, Green=English
+- Dark mode removed — RR light palette applies everywhere
+
+### Tutor Features
+- **Teach It Back** — student explains concept, AI evaluates (Bloom's top level)
+- **Topic completion summary** — mastery %, forward CTAs, card creation nudge
+- **Card editing** — edit/delete from deck view
+- **Python syntax highlighting** — scoped to Python examples only
+- **Forward-CTA pattern** — success always leads forward, retry is secondary
+- **6 CSS animations** — correct pulse, wrong shake, Socratic slide-up, streak bounce, card reveal, saved check
+- **Onboarding welcome card** for first-time users
+
+### Commissioner Features
+- **Bottleneck indicator** on project cards
+- **Last-active timestamp** from worklog
+- **12 forge_reader tests**
+
+### Bug Fixes
+- Syntax highlighting no longer breaks non-Python examples
+- Forward-CTA pattern across 4 success templates
+- Teach It Back promoted to primary green CTA
+- Dark mode CSS removed (was hiding RR palette)
+
 ## v0.8 — Tutor UI Redesign + Commissioner Polish (heats 181-285)
 
 ### Tutor App — Full Redesign

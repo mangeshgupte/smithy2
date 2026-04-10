@@ -2,7 +2,7 @@
   "project": "ai-coworker",
   "budget": {
     "total_heats": 480,
-    "used": 473,
+    "used": 474,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -32,9 +32,9 @@
     },
     "editing": {
       "target": 0.183,
-      "heats": 62,
+      "heats": 63,
       "progress": 0.88,
-      "value_ema": 0.75
+      "value_ema": 0.765
     },
     "marketing": {
       "target": 0.219,
@@ -49,7 +49,7 @@
       "planning": 0.5,
       "implementation": -0.5,
       "testing": -0.04,
-      "editing": -0.1,
+      "editing": -0.109,
       "marketing": 0.247
     }
   },
@@ -308,7 +308,7 @@
       "id": "t-087",
       "stage": "editing",
       "desc": "Update CHANGELOG with smithy CLI + recent fixes",
-      "status": "pending",
+      "status": "complete",
       "priority": 3,
       "blocked_by": []
     }
