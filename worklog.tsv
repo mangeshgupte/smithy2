@@ -191,3 +191,4 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-10T02:10:00Z	195	implementation	generated	complete	0.8	🟢	Tutor: Topic Preview screen with objectives, prereqs, estimated time, Learn→Preview→Lesson flow
 2026-04-10T02:15:00Z	196	testing	generated	complete	0.8	🟢	Tutor full E2E: 11 routes pass, preview screen works, card creation+review flow verified
 2026-04-10T02:20:00Z	197	editing	generated	complete	0.7	🟢	State batch update: tutor tasks marked complete, STRATEGY refresh to heat 197, overall 89%
+2026-04-10T02:25:00Z	198	marketing	generated	complete	0.8	🟢	Dispatch report to Anvil: 3 directions complete (feedback fix, commissioner polish, tutor UI redesign)
