@@ -15,12 +15,12 @@
   },
   "allocator": {
     "integral": {
-      "research": 1.248,
-      "planning": -0.648,
-      "implementation": -1.096,
-      "testing": 0.662,
-      "editing": 0.411,
-      "marketing": 0.422
+      "research": 0.50,
+      "planning": -0.50,
+      "implementation": -0.80,
+      "testing": 0.40,
+      "editing": 0.25,
+      "marketing": 0.30
     }
   },
   "queue": [

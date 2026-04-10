@@ -53,7 +53,8 @@ The dynamic targets feed into the PI controller to smooth allocation:
 total_heats_used = sum of all stages' heats (or 1 if zero to avoid division by zero)
 actual_fraction = this_stage.heats / total_heats_used
 error = target - actual_fraction
-integral = state.allocator.integral[stage] + error
+integral = state.allocator.integral[stage] * 0.85 + error    # decay old errors (anti-windup)
+integral = clamp(integral, -1.0, 1.0)                        # safety cap
 value_bonus = stage.value_ema * 0.3
 priority_boost = 2.0 if stage is in human_priorities, else 1.0
 
@@ -61,6 +62,8 @@ score = (error + integral * 0.1 + value_bonus) * priority_boost
 ```
 
 Store the updated `integral` values back to state.json.
+
+**Anti-windup**: The 0.85 decay factor means old errors lose ~50% weight after 5 heats and ~80% after 10. The ±1.0 clamp prevents extreme accumulation. This stops any single stage from permanently dominating the allocator due to early-phase imbalances.
 
 ## Pick Stage
 
