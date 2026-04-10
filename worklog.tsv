@@ -7,3 +7,4 @@ timestamp	chunk	stage	task_id	outcome	value	notes
 2026-04-09T00:25:00Z	6	implementation	generated	complete	0.8	Built idea pipeline: 4-step process (capture→evaluate→track→acknowledge) with ideas array in state.json
 2026-04-09T00:30:00Z	7	research	generated	complete	0.8	Deep dive on session cycling: checkpoint files, SessionEnd hooks, three-layer persistence, session state detection
 2026-04-09T00:35:00Z	8	implementation	i-005,i-006	complete	0.8	ASCII heat dashboard + inline idea status annotations in inbox.md
+2026-04-09T00:40:00Z	9	marketing	generated	complete	0.8	README.md — how it works, wavefront allocator, file structure, principles

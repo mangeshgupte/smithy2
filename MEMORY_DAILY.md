@@ -43,3 +43,8 @@
 - Dashboard: printed after each heat with progress bars, budget, next stage prediction
 - Inbox.md now shows disposition of every idea (✓ done, ⏳ queued, 📋 deferred, ↩ covered)
 - All 6 human ideas from this session now have status "done"
+
+### Chunk 9 [marketing]
+- Wrote README.md: how it works, wavefront allocator, file structure, design influences, principles
+- Overrode allocator (research led by 0.02) — marketing had 0 chunks in 9 heats, README is highest-value final deliverable
+- All 6 stages now have at least 1 chunk

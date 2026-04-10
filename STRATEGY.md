@@ -1,6 +1,6 @@
 # Strategic Plan — The Forge
 
-*Updated after chunk 8 | 2026-04-09*
+*Updated after chunk 9 | 2026-04-09*
 
 ## Vision
 
@@ -34,9 +34,9 @@ An autonomous AI coworker that works in bounded 5-minute chunks, self-directs ac
 | Implementation | 50% | 3 | Protocol gaps + idea pipeline + heat dashboard + idea status annotations. |
 | Testing | 10% | 1 | Protocol consistency check done. No automated tests yet. |
 | Editing | 20% | 1 | Inbox convention added. CLAUDE.md already split to hub+protocol. |
-| Marketing | 0% | 0 | No README or docs yet. |
+| Marketing | 20% | 1 | README.md written. No detailed docs yet. |
 
-**Overall progress**: ~25% | **Chunks used**: 8 | **Wavefront phase**: early→middle
+**Overall progress**: ~28% | **Chunks used**: 9 | **Wavefront phase**: early→middle
 
 ### What's Working
 

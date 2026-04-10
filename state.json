@@ -2,25 +2,25 @@
   "project": "ai-coworker",
   "budget": {
     "total_chunks": 9,
-    "used": 8,
+    "used": 9,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
-    "research":       {"target": 0.40, "chunks": 2, "progress": 0.4, "value_ema": 0.63},
-    "planning":       {"target": 0.07, "chunks": 1, "progress": 0.3, "value_ema": 0.59},
-    "implementation": {"target": 0.09, "chunks": 3, "progress": 0.5, "value_ema": 0.65},
-    "testing":        {"target": 0.18, "chunks": 1, "progress": 0.1, "value_ema": 0.56},
-    "editing":        {"target": 0.16, "chunks": 1, "progress": 0.2, "value_ema": 0.56},
-    "marketing":      {"target": 0.10, "chunks": 0, "progress": 0.0, "value_ema": 0.5}
+    "research":       {"target": 0.288, "chunks": 2, "progress": 0.4, "value_ema": 0.63},
+    "planning":       {"target": 0.135, "chunks": 1, "progress": 0.3, "value_ema": 0.59},
+    "implementation": {"target": 0.072, "chunks": 3, "progress": 0.5, "value_ema": 0.65},
+    "testing":        {"target": 0.216, "chunks": 1, "progress": 0.1, "value_ema": 0.56},
+    "editing":        {"target": 0.192, "chunks": 1, "progress": 0.2, "value_ema": 0.56},
+    "marketing":      {"target": 0.096, "chunks": 1, "progress": 0.2, "value_ema": 0.59}
   },
   "allocator": {
     "integral": {
-      "research": 1.037,
-      "planning": -0.725,
-      "implementation": -0.309,
-      "testing": 0.460,
-      "editing": 0.158,
-      "marketing": 0.379
+      "research": 1.075,
+      "planning": -0.715,
+      "implementation": -0.612,
+      "testing": 0.551,
+      "editing": 0.225,
+      "marketing": 0.475
     }
   },
   "queue": [
@@ -37,7 +37,7 @@
     {"id": "i-005", "text": "Track progress per heat with visual/textual dashboard", "source": "prompt", "status": "done", "task_id": null},
     {"id": "i-006", "text": "Idea status annotations inline in inbox.md", "source": "prompt", "status": "done", "task_id": null}
   ],
-  "inbox_cursor": 23,
+  "inbox_cursor": 29,
   "human_priorities": [],
-  "overall_progress": 0.25
+  "overall_progress": 0.28
 }
