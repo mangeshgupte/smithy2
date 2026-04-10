@@ -93,11 +93,13 @@ def read_project(project_dir: str) -> dict:
             d["tier"] = "in-app"     # Nice to know — only visible in-app
             d["tier_label"] = "FYI"
 
-    # Current activity
+    # Current activity and last active time
     current_activity = ""
+    last_active = None
     if worklog:
         last = worklog[-1]
-        current_activity = last.get("notes", "").split(". Could improve")[0]
+        current_activity = (last.get("notes") or "").split(". Could improve")[0]
+        last_active = last.get("timestamp", "")[:16]  # YYYY-MM-DDTHH:MM
 
     # Group heats by day for activity feed
     days = {}
@@ -146,6 +148,7 @@ def read_project(project_dir: str) -> dict:
         "decisions": decisions,
         "whats_missing": whats_missing[:5],
         "current_activity": current_activity,
+        "last_active": last_active,
         "queue": state.get("queue", []),
     }
 
