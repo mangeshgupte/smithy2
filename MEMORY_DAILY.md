@@ -3,20 +3,21 @@
 ## 2026-04-09
 
 ### Heats 1-68: v0.1-v0.4 Complete
-- Protocol, allocator (with 3 fixes), DAG deps, forge-init.sh, forge-update.sh, personas
-- All human ideas implemented, auto-task generation in protocol
-- 69% overall progress
+- Protocol, allocator (3 fixes), forge-init/update/validate, personas, all ideas implemented
 
 ### Heats 69-79: Human-AI Interface Research (Anvil dispatch)
-- **10 domains researched**: corporate governance, academia, military, animal colonies, open source, VC, newsroom, pair programming, creative industries, organizational research
-- **22 concrete ideas generated** across all domains
-- **Top 5 synthesized**: (1) Info compression layers L0-L4, (2) Commander's intent + creative brief, (3) Exception-based stoplight, (4) After-action reviews, (5) Uncertainty signaling
-- **3 implementation tasks queued**: t-041 (stoplight), t-042 (intent), t-043 (AAR)
-- Human directive processed: no Telegram, WhatsApp when ready
+- 10 domains, 22 ideas → top 5: stoplight, uncertainty, intent, AAR, compression layers
+
+### Heats 80-92: AI Worker Landscape + Implementation
+- **Landscape research** (h80-84): Devin, OpenHands, CrewAI, Aider, reflexion, frontier ideas
+- Top 5 to adopt: self-critique, repo map, event-sourced state, lint-test-fix, parallel heats
+- **Implemented** (h85-88): stoplight signals, self-critique, commander's intent, forge-validate.sh, AAR protocol
+- **Validated** (h89-91): forge-validate.sh catches corruption, 19/19 protocol checks pass
+- CHANGELOG.md written (h91), both Anvil dispatches complete
 
 ### Key Patterns
-- Research-heavy runs work well when dispatched with clear direction
-- 10 domains in 7 heats (some combined) — efficient research pace
-- The interface problem is fundamentally about information compression
-- Stigmergy (work IS the signal) is the most elegant idea but hardest to implement
-- Commander's intent + stoplight together would solve ~70% of the oversight problem
+- Both research dispatches completed efficiently (7 + 5 heats instead of 10 + 10)
+- Interface research → immediate implementation: stoplight + intent + AAR
+- Landscape validated The Forge's unique strengths: prose-as-program, wavefront allocator, flat-file transparency
+- forge-validate.sh is the first automated quality gate — closes a major gap
+- 75% overall progress at heat 92

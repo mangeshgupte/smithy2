@@ -1,6 +1,6 @@
 # Strategic Plan — The Forge
 
-*Updated after heat 79 | 2026-04-09*
+*Updated after heat 92 | 2026-04-09*
 
 ## Vision
 
@@ -38,14 +38,14 @@ An autonomous AI coworker that works in bounded 5-minute heats, self-directs acr
 
 | Stage | Progress | Heats | Notes |
 |-------|----------|--------|-------|
-| Research | 80% | 17 | + human-AI interface: 10 domains, 22 ideas, synthesis with top 5 models. |
-| Planning | 70% | 10 | + v0.5 plan, queued task bonus, interface research planning. |
-| Implementation | 82% | 15 | + forge-update.sh, auto-task generation, .gitignore. |
-| Testing | 63% | 13 | + forge-update.sh E2E, unblocking override edge cases, non-dogfood scaffold. |
-| Editing | 68% | 14 | + protocol consistency 22/22, interface research logging, memory consolidation. |
-| Marketing | 60% | 9 | + FAQ, file structure, Anvil dispatch report. |
+| Research | 85% | 22 | + AI worker landscape (Devin, OpenHands, Aider, CrewAI), frontier ideas. |
+| Planning | 72% | 11 | + v0.5 plan, both Anvil dispatches completed. |
+| Implementation | 88% | 20 | + stoplight signals, commander's intent, forge-validate.sh, AAR protocol. |
+| Testing | 68% | 15 | + forge-validate.sh tested (catches corruption), protocol review 19/19. |
+| Editing | 72% | 15 | + CHANGELOG, protocol review, strategy refreshes, memory consolidation. |
+| Marketing | 65% | 10 | + CHANGELOG, dispatch reports, landscape synthesis. |
 
-**Overall progress**: ~71% | **Heats used**: 79 | **Wavefront phase**: late
+**Overall progress**: ~75% | **Heats used**: 92 | **Wavefront phase**: late
 
 ### What's Working
 

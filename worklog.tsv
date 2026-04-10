@@ -78,3 +78,16 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-09T06:20:00Z	77	editing	generated	complete	0.7	State update, worklog batch, STRATEGY refresh for heats 70-79
 2026-04-09T06:25:00Z	78	editing	generated	complete	0.7	MEMORY_DAILY consolidation for interface research heats
 2026-04-09T06:30:00Z	79	marketing	generated	complete	0.8	Dispatch report to forge-to-anvil.md — research direction complete
+2026-04-09T06:35:00Z	80	research	generated	complete	0.8	🟢	AI workers: Devin, SWE-Agent, OpenHands, Aider — architectures and relevance
+2026-04-09T06:40:00Z	81	research	generated	complete	0.8	🟢	Orchestration: CrewAI, LangGraph, AutoGen, Claude Code, Codex CLI patterns
+2026-04-09T06:45:00Z	82	research	generated	complete	0.8	🟢	Memory systems + planning architectures: vector DB, ReAct, Reflexion, ToT
+2026-04-09T06:50:00Z	83	research	generated	complete	0.9	🟢	Self-evaluation + frontier ideas: Reflexion, LATS, PRMs, tool creation, world models
+2026-04-09T06:55:00Z	84	research	generated	complete	0.9	🟢	Landscape synthesis: top 5 ideas to adopt, validated strengths
+2026-04-09T07:00:00Z	85	implementation	t-041	complete	0.9	🟢	Stoplight signals + uncertainty + self-critique in logging protocol
+2026-04-09T07:05:00Z	86	implementation	t-042	complete	0.8	🟢	Commander's intent in identity.md + forge-init.sh template
+2026-04-09T07:10:00Z	87	implementation	t-035	complete	0.8	🟢	forge-validate.sh: 19 automated checks, catches state corruption
+2026-04-09T07:15:00Z	88	implementation	t-043	complete	0.8	🟢	AAR protocol added to loop.md Step 8
+2026-04-09T07:20:00Z	89	testing	generated	complete	0.8	🟢	forge-validate.sh tested on fresh + intentionally broken project
+2026-04-09T07:25:00Z	90	editing	t-037	complete	0.8	🟢	Protocol review: 19/19 checks pass across all protocol files
+2026-04-09T07:30:00Z	91	marketing	t-038	complete	0.8	🟢	CHANGELOG.md: v0.1→v0.5 with all features documented
+2026-04-09T07:35:00Z	92	editing	generated	complete	0.7	🟢	State update, worklog batch, strategy refresh for heats 80-92
