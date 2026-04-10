@@ -382,6 +382,79 @@ def process_inbox(ctx):
     _err(f"{len(entries)} new inbox entries")
 
 
+@cli.command("patrol")
+@click.option("--fix", is_flag=True, help="Auto-fix simple discrepancies")
+@click.pass_context
+def patrol(ctx, fix):
+    """Discover-don't-track validation. Scans git + worklog + state for discrepancies."""
+    root = ctx.obj["root"]
+    state = load_state(root)
+    issues = []
+    fixes = []
+
+    # 1. Check worklog heat count matches budget.used
+    worklog_path = root / "worklog.tsv"
+    if worklog_path.exists():
+        lines = worklog_path.read_text().strip().split("\n")
+        worklog_heats = len(lines) - 1  # minus header
+        budget_used = state["budget"]["used"]
+        if worklog_heats != budget_used:
+            issues.append(f"worklog has {worklog_heats} entries but budget.used is {budget_used}")
+            if fix:
+                state["budget"]["used"] = worklog_heats
+                fixes.append(f"Set budget.used to {worklog_heats}")
+
+    # 2. Check for tasks stuck in_progress (no active checkpoint)
+    cp_path = root / ".forge-checkpoint.json"
+    has_checkpoint = cp_path.exists()
+    for task in state.get("queue", []):
+        if task["status"] == "in_progress" and not has_checkpoint:
+            issues.append(f"Task {task['id']} is in_progress but no checkpoint exists")
+            if fix:
+                task["status"] = "pending"
+                fixes.append(f"Reset {task['id']} to pending")
+
+    # 3. Check stage heats sum approximately matches budget.used
+    stage_sum = sum(s.get("heats", 0) for s in state["stages"].values())
+    budget_used = state["budget"]["used"]
+    if abs(stage_sum - budget_used) > 10:  # Allow some tolerance
+        issues.append(f"Stage heats sum ({stage_sum}) differs from budget.used ({budget_used}) by {abs(stage_sum - budget_used)}")
+
+    # 4. Check for orphan checkpoint (checkpoint but budget exhausted)
+    if has_checkpoint and state["budget"]["used"] >= state["budget"]["total_heats"]:
+        issues.append("Checkpoint exists but budget is exhausted")
+        if fix:
+            cp_path.unlink()
+            fixes.append("Deleted orphan checkpoint")
+
+    # 5. Check feedback/inbox cursors don't exceed file length
+    for cursor_name, file_name in [("feedback_cursor", "feedback.md"), ("inbox_cursor", "inbox.md")]:
+        cursor = state.get(cursor_name, 0)
+        fpath = root / file_name
+        if fpath.exists():
+            line_count = len(fpath.read_text().splitlines())
+            if cursor > line_count:
+                issues.append(f"{cursor_name} ({cursor}) exceeds {file_name} ({line_count} lines)")
+                if fix:
+                    state[cursor_name] = line_count
+                    fixes.append(f"Set {cursor_name} to {line_count}")
+
+    # Save fixes if any
+    if fix and fixes:
+        save_state(root, state)
+
+    _output({
+        "issues": issues,
+        "fixes": fixes,
+        "clean": len(issues) == 0,
+        "checks_run": 5,
+    })
+    if issues:
+        _err(f"Patrol found {len(issues)} issues" + (f", fixed {len(fixes)}" if fixes else ""))
+    else:
+        _err("Patrol: all clean ✓")
+
+
 @cli.command("handoff")
 @click.argument("notes")
 @click.option("--next", "next_steps", default=None, help="What the next session should do first")
