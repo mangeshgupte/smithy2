@@ -1,8 +1,8 @@
 {
   "project": "ai-coworker",
   "budget": {
-    "total_heats": 450,
-    "used": 450,
+    "total_heats": 460,
+    "used": 451,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -14,9 +14,9 @@
     },
     "planning": {
       "target": 0.21,
-      "heats": 19,
+      "heats": 20,
       "progress": 0.85,
-      "value_ema": 0.728
+      "value_ema": 0.72
     },
     "implementation": {
       "target": 0.049,
@@ -46,7 +46,7 @@
   "allocator": {
     "integral": {
       "research": 0.14,
-      "planning": 0.374,
+      "planning": 0.459,
       "implementation": -0.5,
       "testing": 0.012,
       "editing": -0.086,
@@ -245,6 +245,38 @@
       "stage": "testing",
       "desc": "Test the new smithy commands",
       "status": "complete",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-080",
+      "stage": "implementation",
+      "desc": "Fix Teach It Back CTA: success \u2192 'Continue to Next Topic' as primary, 'Try Again' secondary/removed",
+      "status": "pending",
+      "priority": 0,
+      "blocked_by": []
+    },
+    {
+      "id": "t-081",
+      "stage": "testing",
+      "desc": "Verify Teach It Back CTA fix renders correctly",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-082",
+      "stage": "implementation",
+      "desc": "Smithy: init command (replace forge-init.sh)",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-083",
+      "stage": "editing",
+      "desc": "Update tutor feedback.md cursor + annotate processed entry",
+      "status": "pending",
       "priority": 2,
       "blocked_by": []
     }
