@@ -59,6 +59,8 @@ Each stage's allocation = `prerequisite_readiness × (1 - own_progress)`. Effort
 
 **Status**: read `outbox.md` or watch the ASCII dashboard printed after each heat.
 
+**Feedback**: edit `feedback.md` with what needs improving. The Forge reads it at the start of the next run and generates fix tasks automatically. This is the iteration loop.
+
 ## File Structure
 
 ```
@@ -69,6 +71,7 @@ protocol/
   logging.md           ← Worklog, dashboards, stoplight signals, self-critique
   reporting.md         ← Information compression layers (L0-L4)
 identity.md            ← Project context + commander's intent
+feedback.md            ← Human feedback → review-first-heat generates fix tasks
 STRATEGY.md            ← Living strategic plan (updated every ~5 heats)
 state.json             ← Budget, stages, queue, allocator state
 worklog.tsv            ← Append-only heat log
