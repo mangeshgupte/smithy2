@@ -5,23 +5,35 @@
 Each heat follows these steps exactly.
 
 **IMPORTANT — Use `smithy` for all bookkeeping.** Never directly edit state.json or worklog.tsv. Use these commands:
+- `smithy resume` → check for handoff from previous session (do this FIRST)
+- `smithy patrol [--fix]` → discover-don't-track validation (check state integrity)
 - `smithy allocate` → pick which stage to work on
 - `smithy pick-task <stage>` → find the best task
 - `smithy start-heat <stage> [--task <id>]` → begin a heat (writes checkpoint)
 - `smithy end-heat <value> <signal> <notes>` → finish a heat (updates all counters)
 - `smithy process-feedback` → read new feedback entries
 - `smithy process-inbox` → read new inbox entries
+- `smithy add-task <stage> <desc>` → add a task to the queue
+- `smithy complete-task <id>` → mark a task complete
+- `smithy handoff <notes> [--next <steps>]` → save context for next session
 - `smithy validate` → check state consistency
 - `smithy status` → show L0/L1 summary
+
+## Step 0: Session Start (first heat only)
+
+On the FIRST heat of a new session:
+1. Run `smithy resume` — check for handoff from previous session
+2. Run `smithy patrol --fix` — validate and auto-repair state
+3. If handoff exists, read the context notes and next steps
 
 ## Step 1: Load Context
 
 Read these files at the start of every heat:
-- `state.json` — current heat count, budget, stage stats, queue, priorities
+- `smithy status` — current heat count, budget, stage stats, pending tasks
 - `identity.md` — commander's intent (reference for all decisions)
 - `STRATEGY.md` — strategic plan, current state, main ideas being tried
-- `feedback.md` — human feedback to act on (first heat of run = review heat)
-- `inbox.md` — check for new human messages (lines after `inbox_cursor`)
+- `smithy process-feedback` — human feedback (returns new entries as JSON)
+- `smithy process-inbox` — human messages (returns new entries as JSON)
 - `MEMORY_DAILY.md` — recent working memory
 - `worklog.tsv` — last 10 entries for trajectory awareness
 
@@ -221,4 +233,5 @@ When `budget.used % 6 == 0`:
     2. Key artifacts (files created/modified, ranked by impact)
     3. Lessons learned + open questions
 
+  - Run `smithy handoff "<context notes>" --next "<what the next session should do first>"`
   - **STOP.**
