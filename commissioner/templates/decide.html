@@ -18,17 +18,37 @@
     <a href="/project/{{ project.name }}/direct" class="sub-tab {% if tab == 'direct' %}active{% endif %}">Direct</a>
 </nav>
 
+{% if decided %}
+<div class="confirmation-banner">
+    <span>{{ decided_action|upper }} on {{ decided_id }}.</span>
+    <form method="post" action="/project/{{ project.name }}/decide/{{ decided_id }}/undo" style="display:inline">
+        <input type="hidden" name="original_action" value="{{ decided_action }}">
+        <button type="submit" class="undo-btn">Undo</button>
+    </form>
+</div>
+{% endif %}
+
 {% if project.decisions %}
 <div class="decision-cards">
     {% for d in project.decisions %}
     <div class="decision-card priority-{{ d.priority }}">
         <div class="decision-header">
-            <span class="priority-badge {% if d.priority == 1 %}high{% else %}medium{% endif %}">
-                {% if d.priority == 1 %}HIGH{% else %}MEDIUM{% endif %}
+            <span class="priority-badge {% if d.priority == 1 %}high{% elif d.priority == 0 %}critical{% else %}medium{% endif %}">
+                {% if d.priority == 0 %}CRITICAL{% elif d.priority == 1 %}HIGH{% else %}MEDIUM{% endif %}
             </span>
             <span class="decision-stage">{{ d.stage }}</span>
         </div>
         <p class="decision-question">{{ d.question }}</p>
+        <form method="post" action="/project/{{ project.name }}/decide/{{ d.id }}" class="decision-actions">
+            <div class="decision-buttons">
+                <button type="submit" name="action" value="approve" class="decide-btn approve">Approve</button>
+                <button type="submit" name="action" value="defer" class="decide-btn defer">Defer</button>
+                <button type="submit" name="action" value="reject" class="decide-btn reject">Reject</button>
+            </div>
+            <div class="custom-answer">
+                <input type="text" name="custom_answer" placeholder="Add context (optional)" class="custom-input">
+            </div>
+        </form>
         <div class="decision-id">{{ d.id }}</div>
     </div>
     {% endfor %}

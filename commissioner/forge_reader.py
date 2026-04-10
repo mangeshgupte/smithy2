@@ -68,7 +68,7 @@ def read_project(project_dir: str) -> dict:
         elif "🟡" in s:
             signal = "yellow"
 
-    # Pending decisions (from queue)
+    # Pending decisions (from queue — priority 0, 1, or 2)
     decisions = []
     for task in state.get("queue", []):
         if task["status"] == "pending" and task.get("priority", 3) <= 2:
@@ -78,6 +78,7 @@ def read_project(project_dir: str) -> dict:
                 "priority": task.get("priority", 2),
                 "stage": task["stage"],
             })
+    decisions.sort(key=lambda d: d["priority"])
 
     # Current activity
     current_activity = ""

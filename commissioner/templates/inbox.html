@@ -11,12 +11,22 @@
     {% for d in decisions %}
     <div class="decision-card priority-{{ d.priority }}">
         <div class="decision-header">
-            <span class="priority-badge {% if d.priority == 1 %}high{% else %}medium{% endif %}">
-                {% if d.priority == 1 %}HIGH{% else %}MEDIUM{% endif %}
+            <span class="priority-badge {% if d.priority == 1 %}high{% elif d.priority == 0 %}critical{% else %}medium{% endif %}">
+                {% if d.priority == 0 %}CRITICAL{% elif d.priority == 1 %}HIGH{% else %}MEDIUM{% endif %}
             </span>
             <span class="decision-project">{{ d.project_name }}</span>
         </div>
         <p class="decision-question">{{ d.question }}</p>
+        <form method="post" action="/project/{{ d.project_name }}/decide/{{ d.id }}" class="decision-actions">
+            <div class="decision-buttons">
+                <button type="submit" name="action" value="approve" class="decide-btn approve">Approve</button>
+                <button type="submit" name="action" value="defer" class="decide-btn defer">Defer</button>
+                <button type="submit" name="action" value="reject" class="decide-btn reject">Reject</button>
+            </div>
+            <div class="custom-answer">
+                <input type="text" name="custom_answer" placeholder="Add context (optional)" class="custom-input">
+            </div>
+        </form>
     </div>
     {% endfor %}
 </div>

@@ -3,10 +3,13 @@
 import os
 from pathlib import Path
 
+import json
+from datetime import datetime
+
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 
 from forge_reader import discover_projects, read_project, get_morning_briefing
 
@@ -52,7 +55,7 @@ async def project_detail(request: Request, project_name: str):
 
 
 @app.get("/project/{project_name}/decide", response_class=HTMLResponse)
-async def project_decide(request: Request, project_name: str):
+async def project_decide(request: Request, project_name: str, decided: str = None, action: str = None):
     projects = discover_projects(PROJECTS_DIR)
     project = next((p for p in projects if p["name"] == project_name), None)
     if not project:
@@ -60,7 +63,93 @@ async def project_decide(request: Request, project_name: str):
     return templates.TemplateResponse(request=request, name="decide.html", context={
         "project": project,
         "tab": "decide",
+        "decided": decided is not None,
+        "decided_id": decided or "",
+        "decided_action": action or "",
     })
+
+
+@app.post("/project/{project_name}/decide/{task_id}")
+async def project_decide_action(request: Request, project_name: str, task_id: str):
+    form = await request.form()
+    action = form.get("action", "").strip()  # approve, defer, reject
+    custom = form.get("custom_answer", "").strip()
+
+    projects = discover_projects(PROJECTS_DIR)
+    project = next((p for p in projects if p["name"] == project_name), None)
+    if not project:
+        return HTMLResponse("<h1>Project not found</h1>", status_code=404)
+
+    project_dir = Path(project["dir"])
+    state_path = project_dir / "state.json"
+    inbox_path = project_dir / "inbox.md"
+
+    # Find the task in state.json and update it
+    state = json.loads(state_path.read_text())
+    task_desc = task_id
+    for task in state.get("queue", []):
+        if task["id"] == task_id:
+            task_desc = task["desc"]
+            if action == "approve":
+                # Keep as pending — Forge will execute it next run
+                pass
+            elif action == "reject":
+                task["status"] = "complete"  # Remove from active queue
+            elif action == "defer":
+                task["priority"] = max(task.get("priority", 2) + 1, 3)
+            break
+
+    state_path.write_text(json.dumps(state, indent=2) + "\n")
+
+    # Write decision to inbox.md so Forge sees it
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+    decision_text = f"Decision on {task_id}: {action.upper()}"
+    if custom:
+        decision_text += f" — {custom}"
+    decision_text += f" (task: {task_desc})"
+    entry = f"\n\n## {timestamp} [via commissioner]\n{decision_text}\n"
+    with open(inbox_path, "a") as f:
+        f.write(entry)
+
+    # Store undo info as query param (task_id + original action)
+    return RedirectResponse(
+        f"/project/{project_name}/decide?decided={task_id}&action={action}",
+        status_code=303,
+    )
+
+
+@app.post("/project/{project_name}/decide/{task_id}/undo")
+async def project_decide_undo(request: Request, project_name: str, task_id: str):
+    form = await request.form()
+    original_action = form.get("original_action", "")
+
+    projects = discover_projects(PROJECTS_DIR)
+    project = next((p for p in projects if p["name"] == project_name), None)
+    if not project:
+        return HTMLResponse("<h1>Project not found</h1>", status_code=404)
+
+    project_dir = Path(project["dir"])
+    state_path = project_dir / "state.json"
+
+    # Reverse the action in state.json
+    state = json.loads(state_path.read_text())
+    for task in state.get("queue", []):
+        if task["id"] == task_id:
+            if original_action == "reject":
+                task["status"] = "pending"
+            elif original_action == "defer":
+                task["priority"] = max(task.get("priority", 3) - 1, 1)
+            break
+    state_path.write_text(json.dumps(state, indent=2) + "\n")
+
+    # Append undo note to inbox
+    inbox_path = project_dir / "inbox.md"
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+    entry = f"\n\n## {timestamp} [via commissioner]\nUNDO: Previous decision on {task_id} was reversed.\n"
+    with open(inbox_path, "a") as f:
+        f.write(entry)
+
+    return RedirectResponse(f"/project/{project_name}/decide", status_code=303)
 
 
 @app.get("/project/{project_name}/direct", response_class=HTMLResponse)
@@ -111,13 +200,11 @@ async def project_direct_send(request: Request, project_name: str):
         project = next((p for p in projects if p["name"] == project_name), None)
         if project:
             inbox_path = Path(project["dir"]) / "inbox.md"
-            from datetime import datetime
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
             entry = f"\n\n## {timestamp} [via commissioner]\n{message}\n"
             with open(inbox_path, "a") as f:
                 f.write(entry)
 
-    from fastapi.responses import RedirectResponse
     return RedirectResponse(f"/project/{project_name}/direct", status_code=303)
 
 
@@ -131,7 +218,6 @@ async def project_feedback_send(request: Request, project_name: str):
         project = next((p for p in projects if p["name"] == project_name), None)
         if project:
             feedback_path = Path(project["dir"]) / "feedback.md"
-            from datetime import datetime
             date = datetime.now().strftime("%Y-%m-%d")
 
             if feedback_path.exists():
@@ -148,7 +234,6 @@ async def project_feedback_send(request: Request, project_name: str):
                     f"# Feedback\n\n## {date}\n- {feedback_text}\n"
                 )
 
-    from fastapi.responses import RedirectResponse
     return RedirectResponse(f"/project/{project_name}/direct", status_code=303)
 
 
