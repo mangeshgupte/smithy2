@@ -35,14 +35,42 @@
     {% endfor %}
 </div>
 
-<!-- Budget -->
+<!-- Budget — segmented by stage -->
 <div class="card-budget detail-budget">
     {% set budget_total = project.budget.total_heats if project.budget.total_heats > 0 else 1 %}
     {% set budget_pct = (project.budget.used / budget_total * 100)|int %}
-    <div class="budget-bar">
-        <div class="budget-fill" style="width: {{ budget_pct }}%"></div>
+    {% set remaining = budget_total - project.budget.used %}
+    <div class="budget-label-row">
+        <span class="budget-label">Budget</span>
+        <span class="budget-text">{{ project.budget.used }}/{{ project.budget.total_heats }} heats ({{ budget_pct }}%)</span>
     </div>
-    <span class="budget-text">{{ project.budget.used }}/{{ project.budget.total_heats }} heats ({{ budget_pct }}%)</span>
+    <div class="budget-bar segmented">
+        {% for stage_name in ['research', 'planning', 'implementation', 'testing', 'editing', 'marketing'] %}
+        {% set stage = project.stages.get(stage_name, {}) %}
+        {% set stage_heats = stage.get('heats', 0) %}
+        {% if stage_heats > 0 %}
+        <div class="budget-segment stage-{{ stage_name }}" style="width: {{ (stage_heats / budget_total * 100)|round(1) }}%" title="{{ stage_name }}: {{ stage_heats }} heats"></div>
+        {% endif %}
+        {% endfor %}
+    </div>
+    <div class="budget-legend">
+        {% for stage_name in ['research', 'planning', 'implementation', 'testing', 'editing', 'marketing'] %}
+        {% set stage = project.stages.get(stage_name, {}) %}
+        {% set stage_heats = stage.get('heats', 0) %}
+        {% if stage_heats > 0 %}
+        <span class="legend-item">
+            <span class="legend-dot stage-dot-{{ stage_name }}"></span>
+            {{ stage_name[:3] }} {{ stage_heats }}
+        </span>
+        {% endif %}
+        {% endfor %}
+        {% if remaining > 0 %}
+        <span class="legend-item">
+            <span class="legend-dot stage-dot-remaining"></span>
+            left {{ remaining }}
+        </span>
+        {% endif %}
+    </div>
 </div>
 
 <!-- Activity feed -->
