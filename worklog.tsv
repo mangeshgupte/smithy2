@@ -447,3 +447,4 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-10T13:39:20Z	451	planning	generated	complete	0.7	🟢	Reviewed tutor feedback (Teach It Back CTA bug), 4 tasks generated (t-080 to t-083)
 2026-04-10T13:42:15Z	452	implementation	t-080	complete	0.9	🟢	Forward-CTA pattern fix across 4 templates: teach_back, topic_complete, review_summary, session — success always leads forward
 2026-04-10T13:42:47Z	453	testing	t-081	complete	0.8	🟢	CTA fix verified: session shows forward CTA, all 7 routes 200, teach-back mastery guard works
+2026-04-10T13:44:09Z	454	editing	t-083	complete	0.8	🟢	Feedback cursor updated, stale tasks fixed, Teach It Back promoted to primary green CTA
