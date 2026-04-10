@@ -103,6 +103,13 @@ Write messages below. The Smith reads new lines at the start of each heat.
 Format: `## YYYY-MM-DD HH:MM` followed by your message.
 EOF
 
+cat > "$TARGET/feedback.md" << 'EOF'
+# Feedback
+
+Human writes feedback here. Forge reads it at the start of each run and generates fix tasks.
+Format: `## YYYY-MM-DD` followed by freeform feedback on what needs improving.
+EOF
+
 cat > "$TARGET/outbox.md" << 'EOF'
 # Outbox
 
