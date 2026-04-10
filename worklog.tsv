@@ -59,3 +59,4 @@ timestamp	heat	stage	task_id	outcome	value	notes
 2026-04-09T04:45:00Z	58	marketing	generated	complete	0.8	v0.4 status update to outbox.md, queue replenished (2 new tasks: t-029 test forge-update, t-030 protocol review)
 2026-04-09T04:50:00Z	59	testing	generated	complete	0.8	Unblocking override edge cases: 5/5 pass — exact-2, single-block, completed-blocker, same-stage, current-state
 2026-04-09T04:55:00Z	60	editing	t-030	complete	0.8	Protocol consistency review: 22/22 cross-refs pass, stale ±1.0 fixed in research doc, memory consolidated
+2026-04-09T05:00:00Z	61	marketing	generated	complete	0.7	README file structure updated: added personas/, dispatch/, hooks/, .gitignore to the diagram
