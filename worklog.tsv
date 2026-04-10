@@ -483,3 +483,4 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-10T15:07:43Z	487	implementation	generated	complete	0.9	🟢	smithy patrol: 5 checks (worklog count, stuck tasks, stage sum, orphan checkpoint, cursor bounds), --fix auto-repairs
 2026-04-10T15:08:22Z	488	testing	generated	complete	0.9	🟢	6 new tests: handoff (save, resume, no-handoff), patrol (clean, detect stuck, fix stuck). 29 smithy tests total.
 2026-04-10T15:09:33Z	489	editing	generated	complete	0.8	🟢	Protocol updated: Step 0 (resume+patrol on session start), Step 1 uses smithy commands, Step 8 saves handoff
+2026-04-10T15:10:08Z	490	editing	generated	complete	0.8	🟢	STRATEGY.md: Approach B decision documented, Gas Town relationship section added

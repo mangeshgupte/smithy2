@@ -1,10 +1,22 @@
 # Strategic Plan — The Forge
 
-*Updated after heat 430 | 2026-04-10*
+*Updated after heat 490 | 2026-04-10*
 
 ## Vision
 
-An autonomous AI coworker that works in bounded 5-minute heats, self-directs across project stages, and communicates asynchronously with a human. Given a budget and a project, it does useful work while the human is away.
+An autonomous AI coworker (The Smithy) that works in bounded 5-minute heats, self-directs across project stages, and communicates asynchronously with a human. Bookkeeping is deterministic via the `smithy` CLI. Given a budget and a project, it does useful work while the human is away.
+
+## Relationship to Gas Town
+
+**Decision: Approach B** — adopt Gas Town's best patterns, stay independent.
+
+Gas Town is a Go-based multi-agent orchestration framework (20+ agents, Dolt-backed). Smithy is a single-agent self-directed system (flat JSON, Python CLI). They're complementary:
+
+- **Adopted from Gas Town**: session cycling (handoff/resume), discover-don't-track (patrol), GUPP principle
+- **Unique to Smithy**: wavefront allocator, 4-level memory hierarchy, self-assessment, AAR, budget system
+- **Deferred**: Dolt backend (optional, for multi-agent future), multi-agent coordination
+
+See `research/gas-town-integration-synthesis.md` for the full analysis.
 
 ## Current State
 
