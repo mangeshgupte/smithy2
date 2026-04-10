@@ -1,7 +1,7 @@
 {
   "project": "ai-coworker",
   "budget": {
-    "total_heats": 547,
+    "total_heats": 567,
     "used": 543,
     "started_at": "2026-04-09T00:00:00Z"
   },
@@ -48,7 +48,7 @@
       "research": 0.5,
       "planning": 0.5,
       "implementation": -0.5,
-      "testing": -0.039,
+      "testing": -0.04,
       "editing": -0.5,
       "marketing": 0.5
     }
@@ -559,6 +559,70 @@
       "status": "complete",
       "priority": 1,
       "blocked_by": []
+    },
+    {
+      "id": "t-119",
+      "stage": "planning",
+      "desc": "Plan 20-heat sprint: Bellows rename + new tutor content + system polish",
+      "status": "in_progress",
+      "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-120",
+      "stage": "research",
+      "desc": "Research: what makes a good 4th tutor subject? Evaluate options: logic/puzzles, typing, basic science, geography",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-121",
+      "stage": "implementation",
+      "desc": "Tutor: add a 4th subject (logic/critical thinking puzzles \u2014 no external dependencies)",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-122",
+      "stage": "implementation",
+      "desc": "Commissioner: add a Direct tab quick-action for 'Run N heats' that writes to inbox.md",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-123",
+      "stage": "testing",
+      "desc": "Test Bellows rename: verify all apps still work after rename",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-124",
+      "stage": "implementation",
+      "desc": "Tutor: add topic review mode \u2014 replay completed topic exercises for retention",
+      "status": "pending",
+      "priority": 3,
+      "blocked_by": []
+    },
+    {
+      "id": "t-125",
+      "stage": "editing",
+      "desc": "Commissioner README: document all 6 screens, setup, FORGE_PROJECTS_DIR",
+      "status": "pending",
+      "priority": 3,
+      "blocked_by": []
+    },
+    {
+      "id": "t-126",
+      "stage": "marketing",
+      "desc": "Write a concise project overview (1-page) for sharing externally",
+      "status": "pending",
+      "priority": 3,
+      "blocked_by": []
     }
   ],
   "ideas": [
@@ -578,7 +642,7 @@
     }
   ],
   "feedback_cursor": 26,
-  "inbox_cursor": 127,
+  "inbox_cursor": 131,
   "human_priorities": [
     "visual design"
   ],
