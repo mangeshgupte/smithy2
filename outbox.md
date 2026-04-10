@@ -2,6 +2,19 @@
 
 The Smith writes status updates, questions, and summaries here.
 
+## 2026-04-10 [heat 542, AAR — heats 518-542]
+
+25 heats: impl×12, planning×3, testing×3, editing×3, marketing×4. Signal: 🟢×25.
+Key: **Visual design sprint complete + CLI finalized.** 17 tasks completed. Tutor: 8 animations, button system, subject card redesign, empty states, exercise feedback polish. Commissioner: 6 stage colors, segmented budget bar, decision card improvements. Smithy: 2 new commands (update, repomap), 5 shell scripts removed (636 lines), 158 total tests.
+
+### Artifacts
+- Tutor CSS: ~1200 lines, 8 animations, 6 utility classes
+- Commissioner CSS: stage colors, segmented bar, decision pulse
+- Smithy CLI: 18 commands, 35 tests
+- Shell scripts removed: forge-init/repomap/status/update/validate.sh
+
+Next: More tutor subjects, user authentication, PWA offline caching, Dolt research.
+
 ## 2026-04-10 [heat 520, sprint start — visual design]
 
 New 20-heat sprint (518-537). Focus: visual design per human priority. 13 tasks generated. Subject cards already redesigned (heat 519). Dispatch report sent to Anvil.
