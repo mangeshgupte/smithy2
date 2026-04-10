@@ -1,8 +1,8 @@
 {
   "project": "ai-coworker",
   "budget": {
-    "total_heats": 440,
-    "used": 440,
+    "total_heats": 450,
+    "used": 441,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -14,9 +14,9 @@
     },
     "planning": {
       "target": 0.21,
-      "heats": 18,
+      "heats": 19,
       "progress": 0.85,
-      "value_ema": 0.74
+      "value_ema": 0.728
     },
     "implementation": {
       "target": 0.049,
@@ -45,12 +45,12 @@
   },
   "allocator": {
     "integral": {
-      "research": 0.084,
-      "planning": 0.146,
+      "research": 0.14,
+      "planning": 0.374,
       "implementation": -0.5,
-      "testing": 0.039,
-      "editing": -0.051,
-      "marketing": 0.16
+      "testing": 0.031,
+      "editing": -0.07,
+      "marketing": 0.247
     }
   },
   "queue": [
@@ -178,7 +178,7 @@
       "id": "t-066",
       "stage": "implementation",
       "desc": "Tutor: progress bar on subject cards should use subject accent color (not green)",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -186,7 +186,7 @@
       "id": "t-067",
       "stage": "implementation",
       "desc": "Tutor: empty state improvements \u2014 better messaging when no cards, no reviews, no progress",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -194,7 +194,7 @@
       "id": "t-068",
       "stage": "testing",
       "desc": "Commissioner: write tests for forge_reader.py \u2014 project discovery, decision extraction, tier classification",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -202,7 +202,7 @@
       "id": "t-069",
       "stage": "implementation",
       "desc": "Tutor: code syntax highlighting in exercise code blocks (basic keyword coloring via CSS)",
-      "status": "pending",
+      "status": "complete",
       "priority": 3,
       "blocked_by": []
     },
@@ -210,9 +210,35 @@
       "id": "t-070",
       "stage": "implementation",
       "desc": "Commissioner: project card shows stage that's furthest behind (bottleneck indicator)",
-      "status": "pending",
+      "status": "complete",
       "priority": 3,
       "blocked_by": []
+    },
+    {
+      "id": "t-076",
+      "stage": "implementation",
+      "desc": "Smithy: add-task and complete-task commands",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-077",
+      "stage": "implementation",
+      "desc": "Smithy: commit command (git add + commit with [stage] prefix)",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-078",
+      "stage": "testing",
+      "desc": "Smithy: test add-task, complete-task, commit commands",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [
+        "t-076"
+      ]
     }
   ],
   "ideas": [
