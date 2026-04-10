@@ -17,7 +17,7 @@
             <span class="tab-label">Home</span>
         </a>
         <a href="/inbox" class="tab {% if tab == 'inbox' %}active{% endif %}">
-            <span class="tab-icon">📥</span>
+            <span class="tab-icon">📥{% if total_decisions %}<span class="tab-badge">{{ total_decisions }}</span>{% endif %}</span>
             <span class="tab-label">Inbox</span>
         </a>
         <a href="/briefing" class="tab {% if tab == 'briefing' %}active{% endif %}">

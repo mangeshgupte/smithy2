@@ -56,7 +56,24 @@ body {
 }
 
 .tab.active { color: var(--blue); }
-.tab-icon { font-size: 20px; }
+.tab-icon { font-size: 20px; position: relative; }
+
+.tab-badge {
+    position: absolute;
+    top: -4px;
+    right: -10px;
+    background: var(--red);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    min-width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+}
 
 /* Header */
 .page-header {

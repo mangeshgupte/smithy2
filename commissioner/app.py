@@ -23,12 +23,18 @@ templates = Jinja2Templates(directory=BASE_DIR / "templates")
 PROJECTS_DIR = os.environ.get("FORGE_PROJECTS_DIR", str(Path.home() / "vibes"))
 
 
+def count_all_decisions(projects: list[dict]) -> int:
+    """Count total pending decisions across all projects."""
+    return sum(len(p.get("decisions", [])) for p in projects)
+
+
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     projects = discover_projects(PROJECTS_DIR)
     return templates.TemplateResponse(request=request, name="home.html", context={
         "projects": projects,
         "tab": "home",
+        "total_decisions": count_all_decisions(projects),
     })
 
 
@@ -38,7 +44,8 @@ async def briefing(request: Request):
     brief = get_morning_briefing(projects)
     return templates.TemplateResponse(request=request, name="briefing.html", context={
         "briefing": brief,
-        "tab": "home",
+        "tab": "briefing",
+        "total_decisions": count_all_decisions(projects),
     })
 
 
@@ -51,6 +58,7 @@ async def project_detail(request: Request, project_name: str):
     return templates.TemplateResponse(request=request, name="project.html", context={
         "project": project,
         "tab": "activity",
+        "total_decisions": count_all_decisions(projects),
     })
 
 
@@ -66,6 +74,7 @@ async def project_decide(request: Request, project_name: str, decided: str = Non
         "decided": decided is not None,
         "decided_id": decided or "",
         "decided_action": action or "",
+        "total_decisions": count_all_decisions(projects),
     })
 
 
@@ -187,6 +196,7 @@ async def project_direct(request: Request, project_name: str):
     return templates.TemplateResponse(request=request, name="direct.html", context={
         "project": project,
         "tab": "direct",
+        "total_decisions": count_all_decisions(projects),
     })
 
 
@@ -250,6 +260,7 @@ async def inbox(request: Request):
     return templates.TemplateResponse(request=request, name="inbox.html", context={
         "decisions": all_decisions,
         "tab": "inbox",
+        "total_decisions": len(all_decisions),
     })
 
 
