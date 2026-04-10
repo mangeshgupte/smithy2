@@ -94,7 +94,7 @@ Make The Forge work reliably on non-dogfood projects. Complete the gaps found in
 ```
 Queue health check (before picking a task):
   pending_count = count of queue items with status "pending"
-  if pending_count < 3:
+  if pending_count <= 3:
     generate 1-2 tasks using the heuristic above for the highest-scoring stages
     add to queue with status "pending"
 

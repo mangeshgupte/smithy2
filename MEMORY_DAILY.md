@@ -28,6 +28,7 @@
 
 ### Heat 48 [planning]: t-028 complete — auto-task generation design in plan.md. Memory consolidated.
 ### Heat 49 [testing]: Data integrity — 8 automated checks all pass. Stage heats off by 1 (timing), all else exact.
+### Heat 50 [testing]: Simulated auto-task heuristic — all 6 stages produce reasonable tasks. Fixed trigger: `<3` → `<=3`. Noted: implementation integral (-1.0) blocking t-021 which blocks 2 tasks.
 
 ### Key Patterns
 - 10/10 human ideas processed and implemented
