@@ -39,6 +39,7 @@
             <span class="decision-stage">{{ d.stage }}</span>
         </div>
         <p class="decision-question">{{ d.question }}</p>
+        {% if d.tier_label %}<span class="tier-label tier-{{ d.tier }}">{{ d.tier_label }}</span>{% endif %}
         <form method="post" action="/project/{{ project.name }}/decide/{{ d.id }}" class="decision-actions">
             <div class="decision-buttons">
                 <button type="submit" name="action" value="approve" class="decide-btn approve">Approve</button>

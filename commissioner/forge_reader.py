@@ -80,6 +80,19 @@ def read_project(project_dir: str) -> dict:
             })
     decisions.sort(key=lambda d: d["priority"])
 
+    # Classify notification tier for each decision
+    for d in decisions:
+        p = d["priority"]
+        if p <= 1:
+            d["tier"] = "push"       # Blocking now — needs immediate attention
+            d["tier_label"] = "Needs attention"
+        elif p == 2:
+            d["tier"] = "quiet"      # Will block soon — can wait for next check-in
+            d["tier_label"] = "When you're ready"
+        else:
+            d["tier"] = "in-app"     # Nice to know — only visible in-app
+            d["tier_label"] = "FYI"
+
     # Current activity
     current_activity = ""
     if worklog:
@@ -196,10 +209,21 @@ def get_morning_briefing(projects: list[dict]) -> dict:
                 "activity": p["current_activity"],
             })
 
+    # Notification tier counts
+    all_decisions = []
+    for p in projects:
+        all_decisions.extend(p.get("decisions", []))
+    tier_counts = {
+        "push": sum(1 for d in all_decisions if d.get("tier") == "push"),
+        "quiet": sum(1 for d in all_decisions if d.get("tier") == "quiet"),
+        "in_app": sum(1 for d in all_decisions if d.get("tier") == "in-app"),
+    }
+
     return {
         "project_count": len(projects),
         "total_heats": total_heats,
         "needs_you": needs_you,
         "progress": sorted(progress, key=lambda x: -x["progress"]),
         "notable": notable,
+        "tier_counts": tier_counts,
     }
