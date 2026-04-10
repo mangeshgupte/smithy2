@@ -54,7 +54,7 @@ total_heats_used = sum of all stages' heats (or 1 if zero to avoid division by z
 actual_fraction = this_stage.heats / total_heats_used
 error = target - actual_fraction
 integral = state.allocator.integral[stage] * 0.85 + error    # decay old errors (anti-windup)
-integral = clamp(integral, -1.0, 1.0)                        # safety cap
+integral = clamp(integral, -0.5, 0.5)                        # safety cap (soft clamp — prevents recovery traps)
 value_bonus = stage.value_ema * 0.3
 priority_boost = 2.0 if stage is in human_priorities, else 1.0
 
@@ -64,6 +64,19 @@ score = (error + integral * 0.1 + value_bonus) * priority_boost
 Store the updated `integral` values back to state.json.
 
 **Anti-windup**: The 0.85 decay factor means old errors lose ~50% weight after 5 heats and ~80% after 10. The ±1.0 clamp prevents extreme accumulation. This stops any single stage from permanently dominating the allocator due to early-phase imbalances.
+
+## Unblocking Override
+
+After computing all scores, check for critical-path tasks:
+
+```
+for each stage with a ready task:
+  unblock_count = count of queue tasks where blocked_by contains this task's ID
+  if unblock_count >= 2:
+    score[stage] += 0.3    # critical-path boost
+```
+
+This ensures tasks that unblock multiple downstream tasks get done even when their stage's integral is negative.
 
 ## Pick Stage
 

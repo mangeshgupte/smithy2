@@ -104,6 +104,30 @@ Anti-spiral: if 3 consecutive generated research tasks target the same topic,
 
 **Implementation (t-025)**: Add the queue-depth check and generation heuristic to loop.md. This is a small protocol edit, not code.
 
+### Integral Recovery Mechanism (heat 51 design)
+
+**Problem**: Implementation integral stuck at -1.0 after early over-allocation (12 of first 38 heats). The anti-windup decay (0.85) is too slow — recovery requires ~100 heats. Meanwhile, critical implementation tasks (t-021) are blocked from selection, which in turn blocks testing (t-027).
+
+**Root cause**: The integral accumulates error over time. When a stage is over-allocated early, the integral goes deeply negative. The 0.85 decay reduces old errors by ~50% after 5 heats, but new negative errors keep being added (because actual fraction > target), so the integral stays clamped at -1.0.
+
+**Solution: Unblocking override + softer clamp.**
+
+Two changes to `protocol/allocator.md`:
+
+1. **Softer integral clamp**: Change `±1.0` to `±0.5`. This reduces the maximum penalty from -0.1 (at -1.0) to -0.05 (at -0.5), making recovery 2x faster without losing the anti-oscillation benefit.
+
+2. **Unblocking override**: After computing scores, check if any stage's task would unblock 2+ other tasks. If so, boost that stage's score by +0.3. This ensures critical-path tasks get done even when the stage's integral is negative.
+
+```
+# After computing all scores:
+for each stage with a ready task:
+  unblock_count = count of tasks in queue where blocked_by contains this task's ID
+  if unblock_count >= 2:
+    score[stage] += 0.3  # Critical-path boost
+```
+
+**Impact on current state**: With the softer clamp (-0.5), implementation score would be approximately: `-0.155 + (-0.5)*0.1 + 0.204 = -0.001`. Still negative but barely — and the unblocking override would add +0.3 for t-021 (blocks t-023 and t-027), making it 0.299 — highest score. t-021 would get picked immediately.
+
 ### What "done" looks like for v0.4
 - forge-init.sh produces complete, ready-to-run scaffolds (with .gitignore)
 - forge-update.sh exists for protocol updates
