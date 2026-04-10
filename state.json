@@ -1,15 +1,15 @@
 {
   "project": "ai-coworker",
   "budget": {
-    "total_heats": 430,
-    "used": 430,
+    "total_heats": 440,
+    "used": 431,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
     "research": {
       "target": 0.05,
       "heats": 25,
-      "progress": 0.90,
+      "progress": 0.9,
       "value_ema": 0.75
     },
     "planning": {
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.08,
-      "heats": 97,
+      "heats": 98,
       "progress": 0.98,
-      "value_ema": 0.78
+      "value_ema": 0.816
     },
     "testing": {
       "target": 0.22,
@@ -31,13 +31,13 @@
       "value_ema": 0.76
     },
     "editing": {
-      "target": 0.30,
+      "target": 0.3,
       "heats": 58,
       "progress": 0.88,
       "value_ema": 0.74
     },
     "marketing": {
-      "target": 0.30,
+      "target": 0.3,
       "heats": 31,
       "progress": 0.84,
       "value_ema": 0.74
@@ -47,7 +47,7 @@
     "integral": {
       "research": 0.02,
       "planning": 0.0,
-      "implementation": -0.1,
+      "implementation": -0.353,
       "testing": 0.06,
       "editing": 0.02,
       "marketing": 0.06
@@ -126,17 +126,94 @@
       "priority": 2,
       "blocked_by": []
     },
-    {"id": "t-060", "stage": "implementation", "desc": "Tutor: Teach it back mode", "status": "complete", "priority": 2, "blocked_by": []},
-    {"id": "t-061", "stage": "implementation", "desc": "Tutor: card editing from deck view", "status": "complete", "priority": 2, "blocked_by": []},
-    {"id": "t-062", "stage": "testing", "desc": "Tutor: 20 integration tests", "status": "complete", "priority": 2, "blocked_by": []},
-    {"id": "t-063", "stage": "implementation", "desc": "Commissioner: responsive phone CSS", "status": "complete", "priority": 3, "blocked_by": []},
-    {"id": "t-064", "stage": "implementation", "desc": "Tutor: session progress tracking", "status": "complete", "priority": 3, "blocked_by": []},
-    {"id": "t-065", "stage": "editing", "desc": "CHANGELOG v0.8", "status": "complete", "priority": 3, "blocked_by": []},
-    {"id": "t-066", "stage": "implementation", "desc": "Tutor: progress bar on subject cards should use subject accent color (not green)", "status": "pending", "priority": 2, "blocked_by": []},
-    {"id": "t-067", "stage": "implementation", "desc": "Tutor: empty state improvements — better messaging when no cards, no reviews, no progress", "status": "pending", "priority": 2, "blocked_by": []},
-    {"id": "t-068", "stage": "testing", "desc": "Commissioner: write tests for forge_reader.py — project discovery, decision extraction, tier classification", "status": "pending", "priority": 2, "blocked_by": []},
-    {"id": "t-069", "stage": "implementation", "desc": "Tutor: code syntax highlighting in exercise code blocks (basic keyword coloring via CSS)", "status": "pending", "priority": 3, "blocked_by": []},
-    {"id": "t-070", "stage": "implementation", "desc": "Commissioner: project card shows stage that's furthest behind (bottleneck indicator)", "status": "pending", "priority": 3, "blocked_by": []}
+    {
+      "id": "t-060",
+      "stage": "implementation",
+      "desc": "Tutor: Teach it back mode",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-061",
+      "stage": "implementation",
+      "desc": "Tutor: card editing from deck view",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-062",
+      "stage": "testing",
+      "desc": "Tutor: 20 integration tests",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-063",
+      "stage": "implementation",
+      "desc": "Commissioner: responsive phone CSS",
+      "status": "complete",
+      "priority": 3,
+      "blocked_by": []
+    },
+    {
+      "id": "t-064",
+      "stage": "implementation",
+      "desc": "Tutor: session progress tracking",
+      "status": "complete",
+      "priority": 3,
+      "blocked_by": []
+    },
+    {
+      "id": "t-065",
+      "stage": "editing",
+      "desc": "CHANGELOG v0.8",
+      "status": "complete",
+      "priority": 3,
+      "blocked_by": []
+    },
+    {
+      "id": "t-066",
+      "stage": "implementation",
+      "desc": "Tutor: progress bar on subject cards should use subject accent color (not green)",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-067",
+      "stage": "implementation",
+      "desc": "Tutor: empty state improvements \u2014 better messaging when no cards, no reviews, no progress",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-068",
+      "stage": "testing",
+      "desc": "Commissioner: write tests for forge_reader.py \u2014 project discovery, decision extraction, tier classification",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-069",
+      "stage": "implementation",
+      "desc": "Tutor: code syntax highlighting in exercise code blocks (basic keyword coloring via CSS)",
+      "status": "pending",
+      "priority": 3,
+      "blocked_by": []
+    },
+    {
+      "id": "t-070",
+      "stage": "implementation",
+      "desc": "Commissioner: project card shows stage that's furthest behind (bottleneck indicator)",
+      "status": "pending",
+      "priority": 3,
+      "blocked_by": []
+    }
   ],
   "ideas": [
     {
@@ -155,7 +232,9 @@
     }
   ],
   "feedback_cursor": 27,
-  "inbox_cursor": 112,
-  "human_priorities": ["visual design"],
-  "overall_progress": 0.94
+  "inbox_cursor": 119,
+  "human_priorities": [
+    "visual design"
+  ],
+  "overall_progress": 0.89
 }

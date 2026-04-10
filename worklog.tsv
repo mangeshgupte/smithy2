@@ -424,3 +424,4 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-10T23:55:00Z	428	marketing	generated	complete	0.7	🟢	Outbox AAR
 2026-04-11T00:00:00Z	429	editing	generated	complete	0.7	🟢	Final memory consolidation
 2026-04-11T00:05:00Z	430	marketing	generated	complete	0.8	🟢	Budget exhausted. Final commit.
+2026-04-10T13:15:47Z	431	implementation	generated	complete	0.9	🟢	Smithy CLI: core module (state.py) + CLI (cli.py) with start-heat, end-heat, validate, status

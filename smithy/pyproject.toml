@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "smithy"
+version = "0.1.0"
+description = "Bookkeeping CLI for The Smithy — deterministic state mutations for Forge heats"
+requires-python = ">=3.9"
+dependencies = ["click>=8.0"]
+
+[project.scripts]
+smithy = "smithy.cli:cli"

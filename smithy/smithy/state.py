@@ -1,0 +1,121 @@
+"""State management — reads/writes state.json with validation."""
+
+import json
+from pathlib import Path
+from datetime import datetime
+
+VALID_STAGES = ["research", "planning", "implementation", "testing", "editing", "marketing"]
+VALID_SIGNALS = ["🟢", "🟡", "🔴"]
+VALID_OUTCOMES = ["complete", "partial", "blocked"]
+
+
+def find_project_root(start: str = ".") -> Path:
+    """Walk up from start directory to find state.json."""
+    p = Path(start).resolve()
+    for _ in range(10):
+        if (p / "state.json").exists():
+            return p
+        p = p.parent
+    raise FileNotFoundError("No state.json found in parent directories")
+
+
+def load_state(project_dir: Path) -> dict:
+    """Load and return state.json."""
+    path = project_dir / "state.json"
+    if not path.exists():
+        raise FileNotFoundError(f"state.json not found at {path}")
+    return json.loads(path.read_text())
+
+
+def save_state(project_dir: Path, state: dict):
+    """Save state.json with validation."""
+    validate_state(state)
+    path = project_dir / "state.json"
+    path.write_text(json.dumps(state, indent=2) + "\n")
+
+
+def validate_state(state: dict) -> list[str]:
+    """Validate state consistency. Returns list of errors (empty = valid)."""
+    errors = []
+
+    budget = state.get("budget", {})
+    used = budget.get("used", 0)
+    total = budget.get("total_heats", 0)
+
+    if used > total:
+        errors.append(f"used ({used}) > total_heats ({total})")
+    if used < 0:
+        errors.append(f"used is negative ({used})")
+
+    stages = state.get("stages", {})
+    for name in VALID_STAGES:
+        if name not in stages:
+            errors.append(f"missing stage: {name}")
+            continue
+        s = stages[name]
+        prog = s.get("progress", 0)
+        if not (0 <= prog <= 1):
+            errors.append(f"{name}.progress out of range: {prog}")
+        ema = s.get("value_ema", 0)
+        if not (0 <= ema <= 1):
+            errors.append(f"{name}.value_ema out of range: {ema}")
+
+    integrals = state.get("allocator", {}).get("integral", {})
+    for name, val in integrals.items():
+        if abs(val) > 0.5:
+            errors.append(f"integral[{name}] out of ±0.5 range: {val}")
+
+    queue = state.get("queue", [])
+    ids = [t["id"] for t in queue]
+    if len(ids) != len(set(ids)):
+        errors.append("duplicate task IDs in queue")
+
+    for task in queue:
+        if task["status"] not in ("pending", "in_progress", "complete"):
+            errors.append(f"invalid task status for {task['id']}: {task['status']}")
+
+    return errors
+
+
+def append_worklog(project_dir: Path, heat: int, stage: str, task_id: str,
+                   outcome: str, value: float, signal: str, notes: str):
+    """Append a row to worklog.tsv with validation."""
+    if stage not in VALID_STAGES:
+        raise ValueError(f"Invalid stage: {stage}")
+    if signal not in VALID_SIGNALS:
+        raise ValueError(f"Invalid signal: {signal}")
+    if outcome not in VALID_OUTCOMES:
+        raise ValueError(f"Invalid outcome: {outcome}")
+    if not (0 <= value <= 1):
+        raise ValueError(f"Value out of range: {value}")
+
+    ts = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+    row = f"{ts}\t{heat}\t{stage}\t{task_id}\t{outcome}\t{value}\t{signal}\t{notes}\n"
+    path = project_dir / "worklog.tsv"
+    with open(path, "a") as f:
+        f.write(row)
+
+
+def write_checkpoint(project_dir: Path, heat: int, stage: str, task_id: str):
+    """Write .forge-checkpoint.json."""
+    import subprocess
+    git_head = subprocess.run(
+        ["git", "rev-parse", "HEAD"], capture_output=True, text=True, cwd=project_dir
+    ).stdout.strip()
+
+    checkpoint = {
+        "heat": heat,
+        "stage": stage,
+        "task_id": task_id,
+        "git_head": git_head,
+        "timestamp": datetime.now().isoformat(),
+    }
+    path = project_dir / ".forge-checkpoint.json"
+    path.write_text(json.dumps(checkpoint, indent=2) + "\n")
+
+
+def delete_checkpoint(project_dir: Path):
+    """Delete .forge-checkpoint.json if it exists."""
+    path = project_dir / ".forge-checkpoint.json"
+    if path.exists():
+        path.unlink()

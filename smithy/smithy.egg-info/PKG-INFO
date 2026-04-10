@@ -1,0 +1,6 @@
+Metadata-Version: 2.4
+Name: smithy
+Version: 0.1.0
+Summary: Bookkeeping CLI for The Smithy — deterministic state mutations for Forge heats
+Requires-Python: >=3.9
+Requires-Dist: click>=8.0
