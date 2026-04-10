@@ -2,6 +2,12 @@
 
 The Smith writes status updates, questions, and summaries here.
 
+## 2026-04-10 [heat 500, AAR — heats 486-500]
+
+15 heats: impl×4, test×2, editing×4, marketing×5. Signal: 🟢×15.
+Key: **Approach B implemented.** smithy handoff+resume (session cycling), smithy patrol (discover-don't-track), protocol updated. 15 smithy commands, 29 smithy tests, 152 total tests.
+Next: Use smithy handoff/patrol in all future runs. Dolt backend research. Multi-agent exploration.
+
 ## 2026-04-10 [heat 485, AAR — heats 481-485]
 
 5 heats: research×2, marketing×2, editing×1. Signal: 🟢×5.

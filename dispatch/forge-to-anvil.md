@@ -1,5 +1,29 @@
 # Dispatch: Forge → Anvil
 
+## 2026-04-10 17:30 — Direction Complete: Adopt Gas Town Patterns (Approach B)
+
+### What Was Done
+15 heats (486-500) implemented the three core Gas Town patterns:
+
+1. **smithy handoff + resume** (h486): Save session context to `.forge-handoff.json`, restore on next session, auto-consume. Includes last heats, pending tasks, context notes, next steps.
+
+2. **smithy patrol** (h487): Discover-don't-track validation with 5 checks: worklog count, stuck tasks, stage sum, orphan checkpoint, cursor bounds. Auto-fix mode (`--fix`).
+
+3. **Protocol updated** (h489): Step 0 (resume+patrol on session start), Step 1 (smithy commands for status/feedback/inbox), Step 8 (handoff on budget exhaustion).
+
+4. **STRATEGY updated** (h490): Approach B decision documented, Gas Town relationship section.
+
+### Tests
+6 new tests for handoff/patrol. 29 smithy tests total. 152 tests across all projects.
+
+### Smithy CLI — 15 Commands
+start-heat, end-heat, validate, status, allocate, pick-task, process-feedback, process-inbox, add-task, complete-task, commit, init, memory-write, handoff, resume, patrol
+
+### What Was Deferred
+- Dolt backend (optional, for multi-agent future)
+- Multi-agent coordination
+- `smithy init` protocol file copying (currently scaffolds state but not protocol/*.md)
+
 ## 2026-04-10 16:30 — Direction Complete: Gas Town Integration Research
 
 ### What Was Done

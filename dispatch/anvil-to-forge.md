@@ -2,6 +2,63 @@
 
 Anvil writes direction here. Forge reads on startup and uses it to guide autonomous work.
 
+## 2026-04-10 14:00 — Direction: Adopt Gas Town Patterns (Approach B)
+
+### What We Decided
+Research complete. Approach B confirmed: adopt Gas Town's best patterns into Smithy without taking the dependency. Smithy stays independent, flat-file, Python-based. Cherry-pick what works, contribute innovations back later.
+
+### Commander's Intent
+```json
+{
+  "intent": "Make Smithy more robust by adopting Gas Town's proven patterns for session cycling, validation, and handoff",
+  "success_looks_like": "smithy handoff and smithy patrol commands working, session cycling reliable, protocol updated to use them",
+  "tone": "Infrastructure — careful, well-tested",
+  "boundaries": ["Stay on flat JSON — no Dolt yet", "Use the smithy CLI for all new commands", "Don't change Gas Town's code"],
+  "not_this": ["No multi-agent coordination yet", "No Go code", "No forking Gas Town"]
+}
+```
+
+### Implementation Plan
+
+**Heats 1-4: `smithy handoff` (session cycling)**
+- Save session context to a handoff file when a session ends (or budget exhausts)
+- Include: last heat number, active task, allocator state, key decisions made, what to do next
+- On next session startup, `smithy resume` reads the handoff and restores context
+- Replaces the current fragile "read state.json and guess where we were" pattern
+- Integrate with the SessionEnd hook
+- Tests
+
+**Heats 5-8: `smithy patrol` (discover-don't-track validation)**
+- Gas Town's "discover, don't track" pattern: instead of trusting state.json, derive state from git history and worklog
+- `smithy patrol` scans: git log, worklog.tsv, state.json — reports discrepancies
+- Checks: heat count matches commits, task statuses match worklog outcomes, stage progress is plausible given worklog entries
+- Can auto-fix simple discrepancies (e.g., task marked in_progress but worklog shows complete)
+- Replaces/extends `smithy validate` with discovery-based checks
+- Tests
+
+**Heats 9-11: Session cycling in protocol**
+- Update `protocol/loop.md` to use `smithy handoff` at budget exhaustion (Step 8)
+- Update Step 1 context load to use `smithy resume` if handoff file exists
+- Test: simulate a session end + new session, verify context survives
+- Update `forge-init.sh` / `smithy init` to include handoff support
+
+**Heats 12-13: Document Smithy ↔ Gas Town relationship**
+- Update STRATEGY.md with the Approach B decision and rationale
+- Add a section on what Smithy could contribute back (memory hierarchy, wavefront, AAR)
+- Update research docs with "decision made" annotations
+
+**Heats 14-15: Testing + AAR**
+- Full integration test: init → run heats → handoff → resume → patrol → validate
+- AAR covering what was adopted, what was deferred, what to do next
+
+### Constraints
+- All new functionality goes through the smithy CLI — no direct state edits
+- Tests for every new command
+- Write AAR at end
+
+### Budget
+15 heats
+
 ## 2026-04-10 13:00 — Direction: Research Gas Town Integration (5 heats)
 
 ### What We Decided
