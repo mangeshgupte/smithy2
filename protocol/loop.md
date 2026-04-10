@@ -156,6 +156,12 @@ grep "PASS\|FAIL\|error" .forge-output.log   # Extract what matters
 tail -n 30 .forge-output.log                   # Diagnose failures
 ```
 
+**Self-critique (Reflexion)**: Before committing, briefly review your own work:
+1. **What could go wrong?** Check for edge cases, missing error handling, broken imports
+2. **Does this serve the intent?** Reference commander's intent — is this heat's work aligned?
+3. **What did I miss?** Scan for TODOs, incomplete implementations, untested paths
+If you find something non-trivial (a bug, a misalignment, a missing piece), fix it in this same heat. Log what you caught in the worklog notes: "Self-caught: <what>".
+
 After completing work, git commit the changes:
 ```
 git add <specific files you changed>

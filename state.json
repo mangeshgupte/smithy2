@@ -74,7 +74,7 @@
       "id": "t-046",
       "stage": "implementation",
       "desc": "Self-critique (Reflexion-style) per heat",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
