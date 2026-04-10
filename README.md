@@ -20,6 +20,25 @@ The Smith (the AI worker) reads `CLAUDE.md`, follows the protocol, and loops aut
 4. **Log** — worklog entry, state update, memory append, dashboard print
 5. **Repeat** — until budget exhausted
 
+**After each heat, you see a dashboard like this:**
+
+```
+── Heat 14 [testing] ──────────────────────────────
+Task: Live keep/discard test — deliberate bad edit, rollback confirmed
+Value: 0.8 | Outcome: complete
+
+Stage          Progress     Heats  Target
+research       ██████░░░░    60%    5    .19
+planning       █████░░░░░    45%    3    .17
+implementation ███████░░░    65%    7    .07
+testing        ████░░░░░░    40%    4    .22
+editing        ████░░░░░░    40%    4    .20
+marketing      ████░░░░░░    35%    3    .15
+
+Budget: 14/30 | Overall: 48% | Next: editing
+────────────────────────────────────────────────
+```
+
 ## The Wavefront Allocator
 
 Six stages form a dependency chain:
