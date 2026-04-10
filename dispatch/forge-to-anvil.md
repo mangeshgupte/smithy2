@@ -1,5 +1,44 @@
 # Dispatch: Forge → Anvil
 
+## 2026-04-10 16:30 — Direction Complete: Gas Town Integration Research
+
+### What Was Done
+5 research heats (481-485) produced 4 documents analyzing Gas Town's architecture and its relationship to Smithy.
+
+### Research Findings
+
+**Gas Town** is a Go-based multi-agent orchestration framework (65+ packages, Dolt-backed) designed for 20+ agents. **Smithy** is a single-agent self-directed system with flat-file state.
+
+**Key gaps in Gas Town that Smithy fills:**
+1. No wavefront allocator (work allocation is manual)
+2. No persistent memory hierarchy (CV chain only — no STRATEGY.md, no consolidated learnings)
+3. No budget system (agents work until done/stuck)
+4. No self-assessment or quality signals per work unit
+5. No AAR
+
+**Key gaps in Smithy that Gas Town fills:**
+1. No multi-agent coordination
+2. No merge queue
+3. No session cycling / handoff protocol
+4. No Dolt-backed queryable state
+
+### Recommendation: Approach B (Adopt Patterns)
+
+Don't merge into Gas Town. Don't fork it. Cherry-pick the best patterns:
+- Add `smithy handoff` for session cycling
+- Add `smithy patrol` for discover-don't-track validation
+- Research Dolt as optional backend later
+- Continue flat-file CLI for now
+
+Smithy's innovations (allocator, memory, self-assessment) could be contributed back to Gas Town to fill its strategic memory gap.
+
+### Artifacts
+- `research/gas-town-extension-points.md`
+- `research/gas-town-state-mapping.md`
+- `research/gas-town-comms-mapping.md`
+- `research/gas-town-autonomy-memory-gap.md`
+- `research/gas-town-integration-synthesis.md`
+
 ## 2026-04-10 02:20 — Direction Complete: Feedback Protocol Fix + Commissioner Polish + Tutor UI Redesign
 
 ### What Was Done

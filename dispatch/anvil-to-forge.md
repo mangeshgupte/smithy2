@@ -2,7 +2,386 @@
 
 Anvil writes direction here. Forge reads on startup and uses it to guide autonomous work.
 
+## 2026-04-10 13:00 — Direction: Research Gas Town Integration (5 heats)
+
+### What We Decided
+Smithy and Gas Town are converging architecturally. Before building more infrastructure (like the smithy CLI), we need to understand whether to build on top of Gas Town or stay independent. This research determines the path.
+
+### Commander's Intent
+```json
+{
+  "intent": "Determine whether Smithy should become a Gas Town rig type, fork Gas Town, or stay independent — with a concrete recommendation",
+  "success_looks_like": "A research doc with architecture comparison, extension point analysis, and a clear recommendation with migration path",
+  "tone": "Deep research — read the code, don't just skim READMEs",
+  "boundaries": ["Research only — no implementation", "Gas Town is at ~/vibes/gt/ or nearby — find it"],
+  "not_this": ["Don't redesign either system", "Don't start building anything"]
+}
+```
+
+### Research Questions (5 heats)
+
+**Heat 1: Gas Town extension points**
+- How are polecat types defined? Can you add a custom type that runs a heat loop?
+- How are rig types configured? What's the interface a rig must implement?
+- Is there a plugin/hook system?
+- Write findings to `research/gas-town-extension-points.md`
+
+**Heat 2: State and persistence mapping**
+- How would Smithy's state.json map to beads in Dolt?
+- Could worklog.tsv become beads entries?
+- Could the wavefront allocator read from Dolt instead of flat JSON?
+- What's the migration path from flat files to Dolt?
+- Write findings to `research/gas-town-state-mapping.md`
+
+**Heat 3: Communication protocol mapping**
+- How does Gas Town's mail protocol compare to inbox/outbox/dispatch?
+- Could Anvil → Forge dispatch become mail messages?
+- Could feedback.md become escalation protocol entries?
+- How do nudges compare to the review-first-heat pattern?
+- Write findings to `research/gas-town-comms-mapping.md`
+
+**Heat 4: Autonomy + memory gap analysis**
+- What prevents polecats from doing autonomous research today?
+- What would a "forge-polecat" need that doesn't exist in Gas Town?
+- How does Gas Town handle self-directed task generation (if at all)?
+- Is the wavefront allocator compatible with Gas Town's allocation model?
+- **Memory**: How do Gas Town agents remember across sessions? Do they have anything like MEMORY_DAILY/WEEKLY, STRATEGY.md, or worklog? Is memory embedded in beads history, or is it absent? Smithy has a 4-level memory hierarchy (L1 worklog → L2 daily → L3 weekly → L4 identity) with consolidation every 6 heats. How does Gas Town compare? If Gas Town agents lack persistent memory, this is a major gap — and one Smithy could contribute back.
+- Write findings to `research/gas-town-autonomy-memory-gap.md`
+
+**Heat 5: Synthesis and recommendation**
+- Write `research/gas-town-integration-synthesis.md`:
+  - Approach A (Smithy as Gas Town rig): feasibility, effort, what you gain/lose
+  - Approach B (Adopt GT patterns into Smithy): feasibility, effort, what you gain/lose
+  - Approach C (Fork Gas Town): feasibility, merge strategy, drift risk
+  - **Recommendation**: which approach, why, and what the first 10 implementation heats would look like
+  - How does this affect the smithy CLI plan? (Should it target Dolt instead of flat JSON?)
+
+### Constraints
+- All research stage — no implementation
+- Read Gas Town's actual code, not just docs
+- Be specific about file paths, interfaces, and code patterns
+- The recommendation must be actionable — "do X in Y heats" not "consider Z"
+
+### Budget
+5 heats
+
+## 2026-04-10 12:00 — Direction: Build the Smithy CLI (bookkeeping tool)
+
+### What We Decided
+The project is now called **Smithy**. The LLM keeps forgetting to update counters, cursors, and task statuses correctly (budget double-counting, feedback_cursor not read, tasks stuck in_progress). The fix: a `smithy` Python CLI that handles ALL state mutations. The LLM never directly edits state.json or worklog.tsv again — it calls `smithy` commands instead.
+
+This is inspired by beads and gas town, which hide bookkeeping behind tool calls so it's deterministic and auditable.
+
+### Commander's Intent
+```json
+{
+  "intent": "Build a smithy Python CLI that makes all Forge bookkeeping deterministic — the LLM decides what to do, smithy handles the record-keeping",
+  "success_looks_like": "Forge can run a full heat using only smithy commands for state changes, and every counter/cursor/status is guaranteed correct",
+  "tone": "Infrastructure — careful, well-tested, this is the foundation everything runs on",
+  "boundaries": ["Python CLI using click or argparse", "Reads/writes the same flat files (state.json, worklog.tsv, feedback.md)", "State validation on every call — reject impossible states"],
+  "not_this": ["No database", "No daemon/server — just a CLI", "Don't change the file formats — same state.json schema, same worklog.tsv format"]
+}
+```
+
+### The API
+
+```
+smithy start-heat <stage> [--task <task_id>]
+  → Sets task to in_progress (if specified)
+  → Writes .forge-checkpoint.json
+  → Returns: heat number, stage, task details, context summary
+  → Validates: budget not exhausted, stage exists, task is ready
+
+smithy end-heat <value> <signal> <notes> [--outcome complete|partial|blocked]
+  → Increments budget.used
+  → Increments stage heats
+  → Updates stage progress (prompted or auto-estimated)
+  → Computes value_ema: 0.7 * old + 0.3 * new
+  → Updates allocator integral (with ±0.5 clamp)
+  → Appends worklog.tsv row
+  → Marks task complete (if outcome=complete)
+  → Updates overall_progress
+  → Deletes checkpoint
+  → Validates: checkpoint exists, value in 0-1, signal is valid
+
+smithy pick-task <stage>
+  → Finds highest-priority ready task for stage
+  → Returns task details as JSON
+  → If no tasks: suggests one based on stage heuristics
+
+smithy allocate
+  → Runs the full wavefront allocator algorithm
+  → Returns: recommended stage, benefit scores, debug info
+  → Applies exploration rule (every 5th heat) and unblocking override
+
+smithy process-feedback
+  → Reads feedback.md lines after feedback_cursor
+  → Returns new entries as structured JSON
+  → Updates feedback_cursor in state.json
+  → Same for inbox: smithy process-inbox
+
+smithy commit <message>
+  → git add + git commit with standardized format: [stage] message
+  → Validates: something to commit
+
+smithy validate
+  → Runs all consistency checks (like forge-validate.sh but in Python)
+  → Checks: used <= total, stage heats sum correctly, no orphan in_progress tasks,
+    cursors are valid, worklog row count matches used, etc.
+  → Returns pass/fail with details
+
+smithy init <project_name> [--with-personas]
+  → Replaces forge-init.sh — scaffolds a new project
+  → Creates all files with correct initial state
+
+smithy status
+  → Prints the L0/L1 status summary
+  → Replaces forge-status.sh
+```
+
+### Implementation Plan
+
+**Heats 1-3: Core CLI + state mutations**
+- Set up Python package (click-based CLI, `pyproject.toml`)
+- Implement `start-heat`, `end-heat`, `validate`
+- State validation on every write (reject impossible states)
+- Tests for each command
+
+**Heats 4-5: Allocator + task management**
+- Implement `allocate` (port wavefront algorithm from prose to Python)
+- Implement `pick-task`
+- Tests
+
+**Heats 6-7: Feedback + inbox processing**
+- Implement `process-feedback`, `process-inbox`
+- Cursor management with validation
+- Tests
+
+**Heats 8-9: Commit, init, status**
+- Implement `commit`, `init` (replacing forge-init.sh), `status`
+- Tests
+
+**Heat 10: Protocol update**
+- Update `protocol/loop.md` to use `smithy` commands instead of direct state edits
+- Update `protocol/logging.md` to reference smithy
+- Update CLAUDE.md
+
+### Where it lives
+`smithy/` directory at the project root (`~/vibes/ai-coworker/smithy/`). Use `uv` for all dependency management — `pyproject.toml` + `uv.lock`. Run via `uv run smithy <command>`. No pip.
+
+### Constraints
+- Every command must validate state before AND after mutation
+- JSON output for all commands (parseable by LLM)
+- Human-readable output to stderr (for debugging)
+- Comprehensive test suite — this is the foundation
+- Write an AAR at end
+
+### Budget
+10 heats
+
+## 2026-04-10 10:00 — Direction: Tutor App UI Redesign (mobile-first)
+
+### What We Decided
+Chisel designed a mobile-first app for the AI Tutor, borrowing patterns from Recall Rhino and adapting them for Socratic dialogue, student-created flashcards, and multi-exercise-type sessions. The full design spec is at `~/vibes/tutor/design/2026-04-10-tutor-app-design.md` and the dispatch summary is at `~/vibes/tutor/dispatch/chisel-to-forge.md`. Read both before starting.
+
+This redesigns the tutor's current Jinja2 web UI into a mobile-first app with a Learn → Create → Review → Refine loop.
+
+### Commander's Intent
+```json
+{
+  "intent": "Rebuild the tutor UI as a mobile-first app following Chisel's design spec, with three-tab navigation (Learn, Create, Review) and the full learning loop",
+  "success_looks_like": "A working web app at localhost where a student can: complete a Socratic lesson, create flashcards from what they learned, and review those cards via spaced repetition — all from a phone browser",
+  "tone": "Implementation-heavy. The design is done — build it. Follow the spec closely.",
+  "boundaries": ["Follow Chisel's design spec", "Mobile-first — must work well on phone browser", "Keep existing backend/API intact where possible", "Student-created flashcards are the core innovation — don't skip this"],
+  "not_this": ["Don't redesign what Chisel decided", "Don't build a native app — web only", "Don't add more curriculum content — focus on the app workflow per human feedback"],
+  "references": ["~/vibes/tutor/design/2026-04-10-tutor-app-design.md", "~/vibes/tutor/dispatch/chisel-to-forge.md", "~/vibes/rr/ (Recall Rhino — reference implementation for review patterns)"]
+}
+```
+
+### Key Design Decisions (from spec)
+- **Three-tab nav**: Learn, Create, Review — no deeper nesting
+- **Wrong answers use Review Yellow (#FFEB3B), not red** — Socratic philosophy, yellow says "let's explore that"
+- **Students create their own flashcards** — system only generates drill cards for pure memorization
+- **AI reviews student cards** — suggests improvements after save, Socratic even in creation mode
+- **Sky Blue (#ADD8E6) container** for all AI/Socratic speech — consistent visual identity
+- **Subject accent bars** — 3px colored left border (Orange=Python, Teal=Math, Green=English)
+- **Session memory** — resume where you left off after interruption
+- **One daily notification max** — at the student's usual review time
+- **Visual system: Recall Rhino palette** — Recall Gray (#708090), Playful Teal (#00BCD4), Energy Orange (#FF9800), Focus Green (#4CAF50), Review Yellow (#FFEB3B), Alert Red (#F44336), Sky Blue (#ADD8E6). See `~/vibes/rr/instructions/design-system.md` for full reference.
+
+### Phase 1 — Core Loop (priority)
+1. Three-tab navigation shell (Learn, Create, Review)
+2. Learn tab: subject landing → topic preview → exercise session with Socratic moments
+3. Create tab: deck overview → card author with AI review
+4. Review tab: stats landing → card player with type-specific rendering
+
+### Phase 2 — Screens & UX (from Chisel spec, not yet built)
+5. **Topic Preview screen** — prereqs with lock/check, mastery threshold, estimated time, "Start Lesson"
+6. **Exercise Session shell** — type-specific rendering: code sandbox (Run + Check), math input with CPA manipulatives (fraction bars, base-10 blocks), free response with voice input
+7. **Socratic Moment container** — Sky Blue (#ADD8E6) bg, lightbulb icon, 1-2 follow-up exchanges, never says "wrong", dynamic AI follow-ups based on specific misconception
+8. **Session Summary** — results, mastery status, "What You Nailed" / "What to Revisit", primary CTA is "Create Flashcards" (nudge while fresh)
+9. **Card Author upgrade** — three-field form (key idea, test question, answer), AI review after save with improvement suggestions and related card prompts
+10. **Review Session card player** — concept cards with 4-button self-rating (Forgot/Hard/Good/Easy), drill cards requiring typed input (no "show answer"), "show my trick" hint for drill cards with student mnemonics
+11. **Review Summary** — recall stats, strong/weak areas, card rewrite suggestions closing the Refine loop
+
+### Phase 3 — Visual & Polish
+12. **Recall Rhino visual system** — full palette (Recall Gray, Playful Teal, Energy Orange, Focus Green, Review Yellow, Sky Blue), card surfaces, shadows, animations (correct flash green, wrong flash yellow, Socratic slide-up)
+13. **Session memory** — resume interrupted sessions with one tap
+14. Streak counter and daily notification logic
+15. Offline card caching
+16. **"Teach it back" mode** — unlocks after mastery, student explains concept, AI evaluates
+
+### Constraints
+- Read the full design spec (`~/vibes/tutor/design/2026-04-10-tutor-app-design.md`) — it has ASCII wireframes for every screen
+- This replaces the current Jinja2 UI, not supplements it
+- Keep the existing FastAPI backend and subject plugin architecture
+- Existing Python and Singapore Math curricula must continue working
+- DO NOT add more curriculum — focus on the app experience
+- Write an AAR every ~20 heats
+
+### Budget
+50 heats
+
+## 2026-04-10 03:00 — Direction: Commissioner Polish (10 heats)
+
+### What We Decided
+After the protocol fix and tutor redesign, bring the Commissioner app up to Chisel's spec. Focus on the missing interactive pieces.
+
+### Commander's Intent
+```json
+{
+  "intent": "Make the Commissioner app fully interactive — decisions, activity feed, and steering all working",
+  "success_looks_like": "Tap-to-decide works on decision cards, Activity tab shows heat feed with auto-summarization, feedback from Direct tab flows to projects",
+  "tone": "Implementation-heavy, polish what exists",
+  "boundaries": ["Follow Chisel's original design spec", "Web only, laptop-first"],
+  "not_this": ["Don't add new screens", "Don't redesign"]
+}
+```
+
+### Tasks
+1. **t-051: Tap-to-decide** (priority 0) — Decision cards get option buttons, POST handler writes decision to project's inbox.md, 5-min undo, confirmation message
+2. **Activity tab** — Reverse-chronological heat feed from worklog.tsv, collapsible cards (already started), auto-summarization of older days
+3. **Cross-project Inbox** — Pull all pending decisions across all projects into a single queue, actionable inline
+4. **Notification tier logic** — Badge counts on tabs, tier classification (push/quiet/in-app) based on decision priority
+5. **Visual system: Recall Rhino palette** — Apply the RR design system (colors, typography, spacing, shadows, interactive states). See updated `design/2026-04-09-commissioner-app-design.md` Visual Design section. Reference `~/vibes/rr/instructions/design-system.md` for the source palette.
+6. **Responsive check** — Test all screens on phone browser, note what breaks in AAR
+
+### Constraints
+- Work on the Commissioner project (inside ai-coworker)
+- Reference `design/2026-04-09-commissioner-app-design.md` for specs
+- Write AAR at end
+
+### Budget
+10 heats
+
+## 2026-04-10 02:00 — Direction: Fix Feedback Protocol (critical bug)
+
+### What We Decided
+The tutor project's protocol never got the feedback.md integration from heats 166-170. Forge has been running 68 heats on the tutor without ever reading feedback.md. Human feedback (card creation, priority shift to workflow) was ignored because the protocol literally doesn't tell Forge to read the file. This is a critical protocol bug.
+
+### Commander's Intent
+```json
+{
+  "intent": "Fix the feedback loop so all Forge projects reliably process human feedback",
+  "success_looks_like": "Tutor's protocol reads feedback.md, review-first-heat processes new entries, feedback tasks get priority 0, and the human's pending feedback is acted on",
+  "tone": "Surgical fix. Don't refactor — patch the gap.",
+  "boundaries": ["Fix both ai-coworker and tutor protocols", "Don't change anything else"],
+  "not_this": ["Don't redesign the feedback system", "Don't work on the tutor app itself — just the protocol"]
+}
+```
+
+### Three Fixes
+
+**Fix 1: Sync tutor's loop.md (1 heat)**
+Add to `~/vibes/tutor/protocol/loop.md` Step 1 context load:
+```
+- `feedback.md` — human feedback to act on (first heat of run = review heat)
+```
+Add the review-first-heat block after stuck detection (copy from ai-coworker's loop.md lines 22-30).
+
+**Fix 2: Add feedback_cursor to state.json (1 heat)**
+Add `"feedback_cursor": 0` to both ai-coworker and tutor state.json. Update the review-first-heat protocol in BOTH projects' loop.md:
+- On review heat, read feedback.md lines after `feedback_cursor`
+- After processing, update `feedback_cursor` to current line count
+- This replaces the ambiguous "first heat of a run" trigger with an explicit cursor, same pattern as inbox_cursor
+
+**Fix 3: Feedback tasks get priority 0 (same heat as Fix 2)**
+Update the review-first-heat protocol in BOTH loop.md files:
+- Tasks generated from feedback.md get `"priority": 0` (highest — above any existing task)
+- Add to the protocol text: "Feedback tasks represent explicit human direction. They MUST be prioritized above allocator-generated tasks. Set priority 0."
+
+**Fix 4: Process the pending tutor feedback (1 heat)**
+After fixes 1-3 are in place, run a review heat on the tutor project that actually reads feedback.md and:
+- Processes the card creation feedback → generates tasks with priority 0
+- Processes the "STOP curriculum, focus on workflow" directive → removes or deprioritizes curriculum tasks, generates workflow tasks with priority 0
+- Annotates all processed entries with `→ reviewed in heat N`
+
+Also update `forge-init.sh` to include feedback.md in the context load list and the review-first-heat block, so future scaffolded projects get it automatically.
+
+### Constraints
+- Work on ai-coworker protocol files first (heats 1-2), then tutor protocol (heat 3)
+- Test by verifying feedback_cursor works: write a test entry, confirm it gets picked up
+- This is a 3-heat fix, not a redesign
+
+### Budget
+3 heats
+
+## 2026-04-10 01:00 — Direction: Generic Multi-Subject Tutor (500 heats)
+
+### What We Decided
+The tutor is currently Python-only with a CLI. It needs to become a **generic multi-subject tutor** served as a website. The architecture should support any subject — Python, Grade 3 Singapore Math, college biochemistry, etc. Each subject is a "skill" with its own curriculum, exercises, and pedagogical approach.
+
+We already have one subject (Python). We're adding **Grade 3 Mathematics (Singapore Math)** as the second subject to prove the architecture generalizes.
+
+### Commander's Intent
+```json
+{
+  "intent": "Transform the tutor from a single-subject CLI into a multi-subject web app where users pick a skill and learn interactively",
+  "success_looks_like": "A web app at localhost where a user can choose Python or Singapore Math Grade 3, and get a full Socratic tutoring experience in either subject",
+  "tone": "Research first, then build methodically. This is a long run — 500 heats. Take time to get the architecture right before scaling subjects.",
+  "boundaries": ["Keep the existing Python curriculum working throughout", "Singapore Math Grade 3 must follow actual Singapore Math pedagogy (CPA approach)", "Web app — not CLI"],
+  "not_this": ["Don't just slap a web wrapper on the CLI", "Don't hardcode subjects — the architecture must make adding a new subject easy", "Don't build a course marketplace — this is a learning tool, not a platform"],
+  "references": ["Current tutor at ~/vibes/tutor/", "Singapore Math CPA (Concrete-Pictorial-Abstract) approach", "Khan Academy's mastery model"]
+}
+```
+
+### Phase 1: Research (heats 1-5)
+Research these questions and write findings to `research/`:
+
+1. **Multi-subject architecture** — How should the curriculum be structured so adding a new subject is just adding a directory/config, not changing the engine? Look at how Duolingo, Khan Academy, and Anki handle multi-subject content.
+
+2. **Singapore Math Grade 3** — What's the actual curriculum? The CPA (Concrete-Pictorial-Abstract) approach. What topics are covered? Number sense, addition/subtraction to 10000, multiplication/division, fractions, measurement, geometry, word problems. How does this map to a skill tree?
+
+3. **Web framework** — The tutor is currently Python. What's the simplest way to serve it as a web app? FastAPI + HTMX (like Commissioner)? Or something else? Consider: interactive code execution for Python, math rendering (LaTeX/MathJax), visual manipulatives for Singapore Math.
+
+4. **Pedagogical differences by subject** — Python needs a code sandbox. Math needs visual representations, step-by-step worked examples, and word problems. How does the tutoring engine adapt its approach per subject? What's generic vs subject-specific?
+
+5. **Synthesis** — Write `research/multi-subject-synthesis.md` with the architecture recommendation, subject schema, and implementation plan.
+
+### Phase 2: Build (heats 6+)
+After research, the allocator takes over. Key milestones:
+- Subject plugin architecture (curriculum as data, engine as generic)
+- Web app with subject selection
+- Python curriculum migrated to plugin format
+- Singapore Math Grade 3 curriculum (following CPA)
+- Interactive exercises: code sandbox for Python, math input for Math
+- Progress tracking per subject per user
+- Mastery-based progression (don't advance until concept is solid)
+
+### Constraints
+- This is a 500-heat run. Pace accordingly — research deeply, build carefully, test thoroughly.
+- The Forge is working on the **tutor project** (`~/vibes/tutor/`), not ai-coworker. Use that project's state.json and worklog.
+- Use feedback.md if you need human input — the review-first-heat will pick it up.
+- Write AARs every ~50 heats for the human to check in on.
+- Signal honestly — this is a complex project, expect some 🟡 heats.
+
+### Budget
+500 heats
+
 ## 2026-04-10 00:00 — Direction: Iteration Tooling (3 stages)
+
+### ⚠️ Budget Fix (do this FIRST)
+There was a double-counting bug: both Anvil and Forge were incrementing `budget.total_heats`. Anvil has been fixed (will no longer edit budget). On this run, **reset `budget.total_heats` to `budget.used + N`** where N is the heats for this run (5). Do NOT add N to the current inflated total. This is a one-time correction. Going forward, only Forge manages the budget number.
 
 ### What We Decided
 The Forge can build things, but the human can't efficiently iterate on them. The feedback loop is broken — there's no structured way to say "fix this" and have it flow into Forge work. We're building the iteration infrastructure in 3 stages across all 3 projects.

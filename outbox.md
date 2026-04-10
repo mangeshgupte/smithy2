@@ -2,6 +2,12 @@
 
 The Smith writes status updates, questions, and summaries here.
 
+## 2026-04-10 [heat 485, AAR — heats 481-485]
+
+5 heats: research×2, marketing×2, editing×1. Signal: 🟢×5.
+Key: **Gas Town integration research complete.** 4 docs produced. Recommendation: Approach B (adopt patterns, stay independent). Smithy fills Gas Town's memory/allocator gap. Gas Town fills Smithy's session cycling gap.
+Next: `smithy handoff`, `smithy patrol`, optional Dolt backend research.
+
 ## 2026-04-10 [heat 480, AAR — heats 471-480]
 
 10 heats: impl×2, test×2, editing×2, planning×1, marketing×3. Signal: 🟢×10.
