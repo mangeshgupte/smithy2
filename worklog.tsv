@@ -43,3 +43,4 @@ timestamp	heat	stage	task_id	outcome	value	notes
 2026-04-09T03:25:00Z	42	marketing	t-024	complete	0.8	Documented SessionEnd hook setup in README with config example
 2026-04-09T03:30:00Z	43	testing	generated	complete	0.8	E2E test forge-init.sh: 14/14 files, valid JSON, guided comments, project name substitution all pass
 2026-04-09T03:35:00Z	44	planning	generated	complete	0.8	v0.4 plan: multi-project isolation design (copy over symlink), 6 new tasks, forge-update.sh planned
+2026-04-09T03:40:00Z	45	marketing	generated	complete	0.7	Added example dashboard output to README showing what The Forge looks like in action
