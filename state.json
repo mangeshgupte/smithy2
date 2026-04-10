@@ -1,14 +1,14 @@
 {
   "project": "ai-coworker",
   "budget": {
-    "total_chunks": 5,
-    "used": 5,
+    "total_chunks": 6,
+    "used": 6,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
     "research":       {"target": 0.423, "chunks": 1, "progress": 0.2, "value_ema": 0.56},
     "planning":       {"target": 0.074, "chunks": 1, "progress": 0.3, "value_ema": 0.59},
-    "implementation": {"target": 0.111, "chunks": 1, "progress": 0.3, "value_ema": 0.59},
+    "implementation": {"target": 0.111, "chunks": 2, "progress": 0.4, "value_ema": 0.62},
     "testing":        {"target": 0.159, "chunks": 1, "progress": 0.1, "value_ema": 0.56},
     "editing":        {"target": 0.127, "chunks": 1, "progress": 0.2, "value_ema": 0.56},
     "marketing":      {"target": 0.106, "chunks": 0, "progress": 0.0, "value_ema": 0.5}
@@ -29,7 +29,13 @@
     {"id": "t-003", "stage": "implementation", "desc": "Add keep/discard pattern to loop.md Step 5", "status": "complete", "priority": 3},
     {"id": "t-004", "stage": "editing", "desc": "Add inbox idea integration convention", "status": "complete", "priority": 4}
   ],
-  "inbox_cursor": 11,
+  "ideas": [
+    {"id": "i-001", "text": "Effort allocation should depend on project stage and maximum benefit", "source": "prompt", "status": "done", "task_id": null},
+    {"id": "i-002", "text": "Keep CLAUDE.md short, move detail to protocol files", "source": "prompt", "status": "done", "task_id": null},
+    {"id": "i-003", "text": "Create STRATEGY.md with project state and main ideas, updated each heat", "source": "prompt", "status": "done", "task_id": null},
+    {"id": "i-004", "text": "Make inbox idea pipeline more robust with structured tracking", "source": "prompt", "status": "done", "task_id": null}
+  ],
+  "inbox_cursor": 17,
   "human_priorities": [],
-  "overall_progress": 0.18
+  "overall_progress": 0.20
 }

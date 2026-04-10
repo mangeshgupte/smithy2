@@ -26,3 +26,9 @@
 - Protocol consistency check: all cross-references valid, schemas match
 - Fixed: run continuation semantics (add vs reset), task ID format documented
 - 5 of 6 stages touched in 5 chunks — only marketing untouched (correct: lowest in dependency chain)
+
+### Chunk 6 [implementation]
+- Built structured idea pipeline in loop.md: capture → evaluate → track → acknowledge
+- Added `ideas` array to state.json with id, text, source, status, linked task_id
+- Backfilled 4 ideas from this session (all status: done)
+- Human-directed heat — skipped allocator, went straight to the requested topic

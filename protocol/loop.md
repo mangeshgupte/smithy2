@@ -38,8 +38,32 @@ Both are inputs. Process them the same way.
 - **New tasks**: "Can you add Y" → add to queue with appropriate stage
 - **Target overrides**: "Spend 80% on implementation" → manually adjust stage targets
 - **Feedback**: "The approach to X isn't working" → adjust plans, note in memory
-- **Ideas**: "Idea: ..." → evaluate, add to queue or plan.md as appropriate
+- **Ideas**: Process via the Idea Pipeline (see below)
 - **Questions answered**: responses to outbox questions → incorporate and continue
+
+### Idea Pipeline
+
+When the human provides an idea (via prompt or inbox.md), process it through this pipeline:
+
+**1. Capture** — Log it to inbox.md if it came via prompt (already covered above).
+
+**2. Evaluate** — For each idea, decide:
+- **Actionable now?** → Create a task in `state.json` queue. Set the task's `idea` field to a short label for traceability.
+- **Needs research first?** → Create a research task to investigate feasibility.
+- **Strategic/long-term?** → Add to `STRATEGY.md` under Main Ideas Being Tried or Roadmap.
+- **Already done?** → Note in outbox.md that this is covered.
+
+**3. Track** — Add an entry to `state.json` `ideas` array:
+```json
+{"id": "i-001", "text": "short description", "source": "prompt|inbox", "status": "received|queued|deferred|done", "task_id": "t-005 or null"}
+```
+Statuses:
+- `received` — logged but not yet evaluated (shouldn't persist past the current heat)
+- `queued` — spawned a task, tracked via task_id
+- `deferred` — valid but not actionable now (added to STRATEGY.md roadmap or plan.md)
+- `done` — already implemented or addressed
+
+**4. Acknowledge** — Write to outbox.md confirming what was done with the idea: "Your idea about X → created task t-005 for implementation" or "Deferred to v0.3 roadmap."
 
 ## Step 3: Run the Allocator
 

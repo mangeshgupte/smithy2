@@ -1,6 +1,6 @@
 # Strategic Plan — The Forge
 
-*Updated after chunk 5 | 2026-04-09*
+*Updated after chunk 6 | 2026-04-09*
 
 ## Vision
 
@@ -31,12 +31,12 @@ An autonomous AI coworker that works in bounded 5-minute chunks, self-directs ac
 |-------|----------|--------|-------|
 | Research | 20% | 1 | Initial survey done. Need deeper dives on specific patterns. |
 | Planning | 30% | 1 | Task queue created. Plan.md has 5 prioritized items. |
-| Implementation | 30% | 1 | 3 protocol gaps fixed (stuck detection, output redirect, keep/discard). |
+| Implementation | 40% | 2 | 3 protocol gaps fixed + idea pipeline with structured tracking. |
 | Testing | 10% | 1 | Protocol consistency check done. No automated tests yet. |
 | Editing | 20% | 1 | Inbox convention added. CLAUDE.md already split to hub+protocol. |
 | Marketing | 0% | 0 | No README or docs yet. |
 
-**Overall progress**: ~18% | **Chunks used**: 5 | **Wavefront phase**: early
+**Overall progress**: ~20% | **Chunks used**: 6 | **Wavefront phase**: early
 
 ### What's Working
 
@@ -79,10 +79,11 @@ An autonomous AI coworker that works in bounded 5-minute chunks, self-directs ac
 **Idea**: The first project the Forge works on is the Forge itself. This surfaces protocol issues immediately — if the loop has a gap, the Smith hits it while running.
 **Result so far**: Effective. The consistency check in chunk 5 found two real issues (run continuation semantics, task ID format). Research in chunk 1 identified 5 gaps that were mostly fixed by chunk 4.
 
-### 5. Dual-Channel Human Input
-**Status**: Implemented
-**Idea**: Human communicates via inbox.md (async, from another terminal) OR direct prompt messages. Both are processed the same way. Prompt ideas get logged to inbox.md for the record.
-**Open question**: In practice, will humans mostly use prompt or inbox.md? The inbox.md approach is better for truly async (human away), but prompt is more natural during active sessions.
+### 5. Dual-Channel Human Input + Idea Pipeline
+**Status**: Implemented (enhanced in chunk 6)
+**Idea**: Human communicates via inbox.md (async) or prompt. Both processed the same way. Ideas flow through a 4-step pipeline: capture → evaluate (actionable/research/strategic/done) → track (ideas array in state.json with status and linked task_id) → acknowledge (outbox confirmation).
+**Result so far**: 4 ideas tracked so far, all status "done". Pipeline provides traceability from human input to action taken.
+**Open question**: Will the ideas array grow too large? May need pruning of "done" ideas after they're old enough.
 
 ## Risks & Unknowns
 
