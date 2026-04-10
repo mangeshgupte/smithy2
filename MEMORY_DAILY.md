@@ -33,6 +33,7 @@
 - Heat 44 [planning]: v0.4 plan — multi-project isolation via full copy (not symlink), forge-update.sh for protocol migration, 6 tasks queued
 - Heat 45 [marketing]: Example dashboard output in README — shows what The Forge looks like to a new user
 - Heat 46 [editing]: Full STRATEGY.md rewrite — updated all sections to heat 46 state, added persona system as idea #6, updated roadmap with completion status
+- Heat 47 [research]: Adaptive queue management — studied AutoGPT task creation agent, CrewAI decomposition. Designed per-stage generation heuristic + anti-spiral guard (3-in-a-row detection). Added t-025 blocked_by t-028.
 
 ### Key Patterns
 - Human ideas implemented quickly (8/8 done)
