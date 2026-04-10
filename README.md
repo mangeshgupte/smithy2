@@ -118,17 +118,27 @@ The Forge has three personas, each running as a separate Claude Code session:
 | Persona | Name | Role | Start Command |
 |---------|------|------|---------------|
 | **Comms** | **Lens** | Explains state and history. Refuses implementation and new ideas. | `cd personas/lens && claude` |
-| **Chief of Staff** | **Anvil** | Brainstorms, plans, dispatches jobs. Refuses direct implementation. | `cd personas/anvil && claude` |
-| **Implementor** | **Hammer** | Pure polecat. Runs heats, executes jobs. GUPP. | `cd personas/hammer && claude` |
+| **Chief of Staff** | **Anvil** | Brainstorms, decides, dispatches. Refuses direct implementation. | `cd personas/anvil && claude` |
+| **Planner** | **Blueprint** | Turns strategy into concrete plans. Reads code, names files, sets order. | `cd personas/blueprint && claude` |
+| **Implementor** | **Hammer** | Pure polecat. Runs heats, executes plans. GUPP. | `cd personas/hammer && claude` |
 
 **Typical workflow:**
-1. Talk to **Anvil** about what to do next → Anvil writes a job to `dispatch/anvil-to-hammer.md`
-2. Start **Hammer** → `Run 10 heats` → Hammer executes and reports to `dispatch/hammer-to-anvil.md`
-3. Ask **Lens** to explain what happened, what decisions were made, current state
+```
+You ↔ Anvil       (brainstorm, decide direction)
+       ↓
+     Blueprint     (turn direction into concrete plan with file paths + tasks)
+       ↓
+     Hammer        (execute plan, run heats, commit work)
+       ↓
+You ↔ Lens         (explain what happened, trace decisions)
+```
 
 **Communication between personas** is via flat files in `dispatch/`:
-- `dispatch/anvil-to-hammer.md` — Anvil sends jobs
+- `dispatch/anvil-to-blueprint.md` — Anvil sends brainstorming output
+- `dispatch/blueprint-to-hammer.md` — Blueprint sends concrete plans
+- `dispatch/anvil-to-hammer.md` — Anvil sends simple/urgent jobs directly
 - `dispatch/hammer-to-anvil.md` — Hammer reports results
+- `dispatch/blueprint-to-anvil.md` — Blueprint requests clarification
 
 ## Key Principles
 

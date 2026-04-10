@@ -38,3 +38,7 @@ Idea: Task tracking should be backed by git and dependencies stored as a DAG. Re
 ## 2026-04-09 [via prompt]
 Idea: Multiple personas as separate Claude Code sessions. Comms (read-only explainer), Chief of Staff (coordinator/brainstormer, farms out work), Implementor (pure polecat, runs heats).
 → ✓ done in heats 36-38 (persona system designed and implemented)
+
+## 2026-04-09 [via prompt]
+Idea: Add a Planner persona between Anvil and Hammer. Anvil brainstorms, Planner turns it into a concrete plan, Hammer executes.
+→ ✓ done in heat 39 (Blueprint persona created with dispatch files)
