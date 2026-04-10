@@ -182,6 +182,29 @@ The Forge can automatically distill session transcripts into `MEMORY_DAILY.md` w
 
 **Note**: The hook uses `claude -p` (programmatic mode) to call Claude for distillation. Make sure Claude CLI is available in your PATH.
 
+## FAQ / Troubleshooting
+
+**Q: The Smith seems stuck on one stage and won't do implementation work.**
+The allocator uses a PI controller with integral memory. If a stage was over-allocated early, its integral goes negative and recovery takes time. Solutions:
+- Say "Focus on implementation" to apply a 2x priority boost
+- Check `state.json` → `allocator.integral` — if any value is at -0.5 (clamped), the stage is in recovery
+- The unblocking override automatically boosts stages with tasks that unblock 2+ other tasks
+
+**Q: How do I continue a run in a new Claude Code session?**
+Just start a new `claude` session in the same directory and say "Run N heats." The Smith reads `state.json` and picks up where it left off. Cold start is ~28KB of context.
+
+**Q: How do I give the Smith an idea while it's running?**
+Either type it directly between heats (`Idea: use SQLite instead of flat files`) or edit `inbox.md` from another terminal. Both are processed the same way.
+
+**Q: The Smith is doing research when I want it to build things.**
+Say "Focus on implementation" — this applies a 2x priority boost. Or add specific tasks to `state.json` queue manually.
+
+**Q: How do I see what happened while I was away?**
+Check these files: `outbox.md` (status updates), `worklog.tsv` (every heat), `STRATEGY.md` (current state), `inbox.md` (your ideas + dispositions).
+
+**Q: Can I use this on an existing project (not a new one)?**
+Yes. Run `forge-init.sh my-project .` from your project root. It creates Forge files alongside your existing code. The Smith will read `identity.md` to understand what to work on.
+
 ## Key Principles
 
 - **No Python.** The entire system is prose — CLAUDE.md + protocol files. Claude Code is the runtime.
