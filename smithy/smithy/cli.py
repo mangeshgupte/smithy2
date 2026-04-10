@@ -199,5 +199,129 @@ def status(ctx):
     })
 
 
+@cli.command("allocate")
+@click.pass_context
+def allocate(ctx):
+    """Run the wavefront allocator and recommend a stage."""
+    from .allocator import score_stages, pick_stage
+
+    root = ctx.obj["root"]
+    state = load_state(root)
+
+    scores, targets, new_integrals = score_stages(
+        state["stages"],
+        state["allocator"]["integral"],
+        state.get("human_priorities", []),
+        state.get("queue", []),
+    )
+
+    heat = state["budget"]["used"] + 1
+    recommended = pick_stage(scores, heat)
+    exploration = heat % 5 == 0
+
+    # Update targets and integrals in state
+    for stage in VALID_STAGES:
+        state["stages"][stage]["target"] = targets[stage]
+    state["allocator"]["integral"] = new_integrals
+    save_state(root, state)
+
+    _output({
+        "recommended_stage": recommended,
+        "exploration": exploration,
+        "scores": scores,
+        "targets": targets,
+    })
+    _err(f"Allocator recommends: {recommended}" + (" (exploration)" if exploration else ""))
+
+
+@cli.command("pick-task")
+@click.argument("stage", type=click.Choice(VALID_STAGES))
+@click.pass_context
+def pick_task(ctx, stage):
+    """Find highest-priority ready task for a stage."""
+    root = ctx.obj["root"]
+    state = load_state(root)
+    queue = state.get("queue", [])
+
+    # Find ready tasks
+    complete_ids = {t["id"] for t in queue if t["status"] == "complete"}
+    ready = []
+    for task in queue:
+        if task["stage"] != stage or task["status"] != "pending":
+            continue
+        blocked = task.get("blocked_by", [])
+        if all(bid in complete_ids for bid in blocked):
+            ready.append(task)
+
+    ready.sort(key=lambda t: t.get("priority", 3))
+
+    if ready:
+        _output({"task": ready[0], "alternatives": len(ready) - 1})
+        _err(f"Task: {ready[0]['id']} — {ready[0]['desc']}")
+    else:
+        _output({"task": None, "message": f"No ready tasks for {stage} — generate one"})
+        _err(f"No ready tasks for {stage}")
+
+
+@cli.command("process-feedback")
+@click.pass_context
+def process_feedback(ctx):
+    """Read new feedback entries after cursor."""
+    root = ctx.obj["root"]
+    state = load_state(root)
+    cursor = state.get("feedback_cursor", 0)
+
+    fb_path = root / "feedback.md"
+    if not fb_path.exists():
+        _output({"new_entries": [], "cursor": cursor})
+        return
+
+    lines = fb_path.read_text().splitlines()
+    new_lines = lines[cursor:] if cursor < len(lines) else []
+
+    # Parse entries
+    entries = []
+    for line in new_lines:
+        stripped = line.strip()
+        if stripped and not stripped.startswith("→") and not stripped.startswith("#"):
+            entries.append(stripped)
+
+    # Update cursor
+    state["feedback_cursor"] = len(lines)
+    save_state(root, state)
+
+    _output({"new_entries": entries, "cursor": len(lines), "count": len(entries)})
+    _err(f"{len(entries)} new feedback entries")
+
+
+@cli.command("process-inbox")
+@click.pass_context
+def process_inbox(ctx):
+    """Read new inbox entries after cursor."""
+    root = ctx.obj["root"]
+    state = load_state(root)
+    cursor = state.get("inbox_cursor", 0)
+
+    inbox_path = root / "inbox.md"
+    if not inbox_path.exists():
+        _output({"new_entries": [], "cursor": cursor})
+        return
+
+    lines = inbox_path.read_text().splitlines()
+    new_lines = lines[cursor:] if cursor < len(lines) else []
+
+    entries = []
+    for line in new_lines:
+        stripped = line.strip()
+        if stripped and not stripped.startswith("→") and not stripped.startswith("#"):
+            entries.append(stripped)
+
+    state["inbox_cursor"] = len(lines)
+    save_state(root, state)
+
+    _output({"new_entries": entries, "cursor": len(lines), "count": len(entries)})
+    _err(f"{len(entries)} new inbox entries")
+
+
 if __name__ == "__main__":
     cli()

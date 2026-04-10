@@ -1,5 +1,6 @@
 pyproject.toml
 smithy/__init__.py
+smithy/allocator.py
 smithy/cli.py
 smithy/state.py
 smithy.egg-info/PKG-INFO
