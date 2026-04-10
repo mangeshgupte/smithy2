@@ -2,6 +2,12 @@
 
 The Smith writes status updates, questions, and summaries here.
 
+## 2026-04-10 [heat 470, AAR — heats 461-470]
+
+10 heats: impl×3, test×2, editing×3, marketing×2. Signal: 🟢×10.
+Key: Fixed syntax highlighting bug (Python-only scoping). Smithy `init` command replaces forge-init.sh. 12 smithy commands total. 142 tests pass.
+Next: More smithy dogfooding, new tutor features, subjects.
+
 ## 2026-04-10 [heat 460, AAR — heats 451-460]
 
 10 heats: impl×2, test×2, editing×2, planning×1, marketing×3. Signal: 🟢×10.

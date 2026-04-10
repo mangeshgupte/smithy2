@@ -2,18 +2,16 @@
 
 ## 2026-04-10
 
-### Heats 451-460: Forward-CTA Pattern Fix + Teach It Back Prominence
+### Heats 461-470: Bug Fix + Smithy Init
 
-**Feedback processed:**
-1. **Forward-CTA pattern bug** (h452): Success pages now lead forward — "Next Topic →" as primary on teach_back, topic_complete, review_summary, session. "Try Again" only on needs_work.
-2. **Teach It Back prominence** (h454): Promoted from secondary to green primary CTA on mastery screens. Sky Blue tutor-speech callout on topic preview: "You've mastered this. Can you teach it?"
+**Syntax highlighting bug** (h461-462): Python highlighter was breaking non-Python examples (English Vocabulary showed raw `<span>` tags). Fixed by adding `data-subject` attribute to example blocks and scoping syntax.js selector to `[data-subject="python"]` only.
 
-**Smithy dogfooding:**
-- All 10 heats used `smithy start-heat` / `smithy end-heat` for bookkeeping
-- `smithy add-task`, `smithy complete-task` used for queue management
-- No manual state.json edits needed (except fixing pre-existing stale tasks)
+**Smithy init** (h463): Replaced forge-init.sh with `smithy init <project-name>` command. Scaffolds all files (state.json, worklog.tsv, identity.md, STRATEGY.md, feedback.md, inbox.md, etc.) with validated initial state. Supports `--with-personas` flag.
+
+**Smithy CLI now has 12 commands:**
+start-heat, end-heat, validate, status, allocate, pick-task, process-feedback, process-inbox, add-task, complete-task, commit, init
 
 ### Key Stats
-- 142 total tests (111 tutor + 12 commissioner + 19 smithy)
-- All feedback processed and annotated
-- Forward-CTA rule established: after success, always lead forward
+- 142 tests (111 tutor + 12 commissioner + 19 smithy)
+- All feedback processed and annotated (feedback cursor at 89)
+- Smithy fully dogfooded for 20 consecutive heats (441-470)
