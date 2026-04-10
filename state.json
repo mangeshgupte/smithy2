@@ -1,45 +1,45 @@
 {
   "project": "ai-coworker",
   "budget": {
-    "total_heats": 280,
-    "used": 280,
+    "total_heats": 330,
+    "used": 281,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
     "research": {
-      "target": 0.12,
-      "heats": 24,
+      "target": 0.05,
+      "heats": 25,
+      "progress": 0.90,
+      "value_ema": 0.75
+    },
+    "planning": {
+      "target": 0.05,
+      "heats": 18,
+      "progress": 0.85,
+      "value_ema": 0.74
+    },
+    "implementation": {
+      "target": 0.08,
+      "heats": 97,
+      "progress": 0.98,
+      "value_ema": 0.78
+    },
+    "testing": {
+      "target": 0.22,
+      "heats": 52,
       "progress": 0.88,
       "value_ema": 0.76
     },
-    "planning": {
-      "target": 0.08,
-      "heats": 16,
-      "progress": 0.82,
-      "value_ema": 0.75
-    },
-    "implementation": {
-      "target": 0.1,
-      "heats": 60,
-      "progress": 0.96,
-      "value_ema": 0.79
-    },
-    "testing": {
-      "target": 0.26,
-      "heats": 34,
-      "progress": 0.85,
-      "value_ema": 0.76
-    },
     "editing": {
-      "target": 0.24,
-      "heats": 32,
-      "progress": 0.86,
-      "value_ema": 0.75
+      "target": 0.30,
+      "heats": 58,
+      "progress": 0.88,
+      "value_ema": 0.74
     },
     "marketing": {
-      "target": 0.2,
-      "heats": 22,
-      "progress": 0.82,
+      "target": 0.30,
+      "heats": 31,
+      "progress": 0.84,
       "value_ema": 0.74
     }
   },
@@ -125,7 +125,13 @@
       "status": "complete",
       "priority": 2,
       "blocked_by": []
-    }
+    },
+    {"id": "t-060", "stage": "implementation", "desc": "Tutor: 'Teach it back' mode — student explains concept in own words, AI evaluates. Unlocks after mastery.", "status": "pending", "priority": 2, "blocked_by": []},
+    {"id": "t-061", "stage": "implementation", "desc": "Tutor: card editing — allow students to edit existing cards from deck view", "status": "pending", "priority": 2, "blocked_by": []},
+    {"id": "t-062", "stage": "testing", "desc": "Tutor: integration test — full Learn→Create→Review flow with real HTTP requests", "status": "pending", "priority": 2, "blocked_by": []},
+    {"id": "t-063", "stage": "implementation", "desc": "Commissioner: responsive phone test + fix any layout issues at 375px width", "status": "pending", "priority": 3, "blocked_by": []},
+    {"id": "t-064", "stage": "implementation", "desc": "Tutor: session progress tracking — count exercises completed per topic visit, show progress on topic preview", "status": "pending", "priority": 3, "blocked_by": []},
+    {"id": "t-065", "stage": "editing", "desc": "ai-coworker CHANGELOG update — document heats 181-280 features", "status": "pending", "priority": 3, "blocked_by": []}
   ],
   "ideas": [
     {
