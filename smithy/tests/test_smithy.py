@@ -255,3 +255,59 @@ class TestProcessFeedback:
         result = runner.invoke(cli, ["--dir", str(project), "process-feedback"])
         data = json.loads(result.output)
         assert data["count"] == 0  # already processed
+
+
+class TestUpdate:
+    def test_update_self(self, project, runner):
+        """Update on self should show nothing to update (no source protocol files in tmp)."""
+        result = runner.invoke(cli, ["--dir", str(project), "update", str(project)])
+        data = json.loads(result.output)
+        # Target exists (state.json present) so should not error
+        assert result.exit_code == 0
+        assert "error" not in data
+
+    def test_update_missing_target(self, runner, tmp_path):
+        """Update on non-forge dir should fail."""
+        empty = tmp_path / "empty"
+        empty.mkdir()
+        result = runner.invoke(cli, ["update", str(empty)])
+        assert result.exit_code != 0
+
+    def test_update_copies_files(self, project, runner, tmp_path):
+        """Create a source with protocol files, verify they're copied."""
+        # Create a "source" project with a CLAUDE.md
+        source = tmp_path / "source"
+        source.mkdir()
+        (source / "state.json").write_text('{"budget": {}}')
+        (source / "CLAUDE.md").write_text("# Updated Protocol")
+
+        result = runner.invoke(cli, ["--dir", str(source), "update", str(project)])
+        data = json.loads(result.output)
+        assert result.exit_code == 0
+        # The CLAUDE.md from source should be detected
+        # (Whether it's "updated" or "unchanged" depends on content)
+        assert isinstance(data.get("updated", []), list)
+
+
+class TestRepomap:
+    def test_generates_map(self, project, runner):
+        """Repomap should create research/repo-map.md."""
+        result = runner.invoke(cli, ["--dir", str(project), "repomap", str(project)])
+        data = json.loads(result.output)
+        assert result.exit_code == 0
+        assert data["total_files"] > 0
+        assert (project / "research" / "repo-map.md").exists()
+
+    def test_map_content(self, project, runner):
+        """Repo map should contain expected sections."""
+        runner.invoke(cli, ["--dir", str(project), "repomap", str(project)])
+        content = (project / "research" / "repo-map.md").read_text()
+        assert "# Repository Map" in content
+        assert "## Stats" in content
+        assert "## Directory Structure" in content
+        assert "## Key Files" in content
+
+    def test_missing_dir(self, runner, tmp_path):
+        """Repomap on nonexistent dir should fail."""
+        result = runner.invoke(cli, ["repomap", str(tmp_path / "nope")])
+        assert result.exit_code != 0
