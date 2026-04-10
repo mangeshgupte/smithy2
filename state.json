@@ -2,7 +2,7 @@
   "project": "ai-coworker",
   "budget": {
     "total_heats": 547,
-    "used": 528,
+    "used": 534,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,21 +20,21 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 163,
+      "heats": 167,
       "progress": 0.98,
-      "value_ema": 0.785
+      "value_ema": 0.777
     },
     "testing": {
       "target": 0.183,
-      "heats": 99,
+      "heats": 100,
       "progress": 0.88,
-      "value_ema": 0.817
+      "value_ema": 0.812
     },
     "editing": {
       "target": 0.183,
-      "heats": 140,
+      "heats": 141,
       "progress": 0.88,
-      "value_ema": 0.831
+      "value_ema": 0.792
     },
     "marketing": {
       "target": 0.219,
@@ -48,7 +48,7 @@
       "research": 0.5,
       "planning": 0.5,
       "implementation": -0.5,
-      "testing": -0.044,
+      "testing": -0.037,
       "editing": -0.5,
       "marketing": 0.5
     }
@@ -380,7 +380,7 @@
       "id": "t-096",
       "stage": "implementation",
       "desc": "Commissioner: enhanced budget visualization \u2014 segmented bar with stage breakdown, forecast line",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -388,7 +388,7 @@
       "id": "t-097",
       "stage": "implementation",
       "desc": "Commissioner: decision card visual weight \u2014 priority badges, loading/success feedback on buttons",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -396,7 +396,7 @@
       "id": "t-098",
       "stage": "implementation",
       "desc": "Commissioner: delightful empty states \u2014 illustration + contextual messaging for all-clear/no-projects",
-      "status": "pending",
+      "status": "complete",
       "priority": 3,
       "blocked_by": []
     },
@@ -412,7 +412,7 @@
       "id": "t-100",
       "stage": "testing",
       "desc": "Visual regression check: verify both apps render correctly after design changes",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -420,7 +420,7 @@
       "id": "t-101",
       "stage": "editing",
       "desc": "Update READMEs with visual design changes and current screenshots descriptions",
-      "status": "pending",
+      "status": "complete",
       "priority": 3,
       "blocked_by": []
     },
@@ -436,7 +436,7 @@
       "id": "t-103",
       "stage": "implementation",
       "desc": "Tutor: review session polish \u2014 card flip animation, confidence rating stars, session complete celebration",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -518,6 +518,14 @@
       "desc": "Verify Bellows rename: app starts, grep -ri commissioner and ai-coworker return no hits outside git history/worklog",
       "status": "pending",
       "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-114",
+      "stage": "testing",
+      "desc": "Full regression suite: all 152 tests + route rendering + patrol after visual design sprint",
+      "status": "in_progress",
+      "priority": 1,
       "blocked_by": []
     }
   ],
