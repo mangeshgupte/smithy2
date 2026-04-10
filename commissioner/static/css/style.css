@@ -343,10 +343,49 @@ body {
     font-size: 12px;
 }
 
-.heat-notes {
+.heat-notes, .heat-notes-full {
     font-size: 14px;
     color: var(--text-muted);
 }
+
+.heat-notes-full {
+    padding: 8px 0 4px;
+    border-top: 1px solid var(--border);
+    margin-top: 8px;
+}
+
+details.heat-card summary {
+    cursor: pointer;
+    list-style: none;
+}
+
+details.heat-card summary::marker,
+details.heat-card summary::-webkit-details-marker {
+    display: none;
+}
+
+.heat-summary {
+    flex: 1;
+    color: var(--text-muted);
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+details.heat-card[open] .heat-summary {
+    display: none;
+}
+
+.feedback-section {
+    margin: 20px 0;
+}
+
+.feedback-section h2 { font-size: 16px; margin-bottom: 4px; }
+
+.recent-feedback { margin-top: 12px; }
+.recent-feedback h3 { font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
+.feedback-item { font-size: 13px; color: var(--text-muted); padding: 4px 0; }
 
 /* Decision cards */
 .decision-cards { display: flex; flex-direction: column; gap: 12px; }

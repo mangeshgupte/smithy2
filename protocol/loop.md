@@ -175,13 +175,18 @@ When `budget.used % 6 == 0`:
 
 - If `budget.used < budget.total_heats` → **go to Step 1** (next heat)
 - If `budget.used >= budget.total_heats`:
-  - Generate an **After-Action Review** (AAR) to both `aar/YYYY-MM-DD-HHMM.md` AND `outbox.md`:
-    1. **What was planned**: Dispatch direction or self-generated goals for this run
-    2. **What happened**: Actual work done, key decisions, stages covered
-    3. **Why the delta**: What went differently than planned and why
-    4. **Key artifacts**: Files created/modified, ranked by impact (L3 reporting layer)
-    5. **Lessons learned**: What to change in future runs
-    6. **Open questions**: Things the Forge is unsure about — needs human input
-    7. **Signal summary**: Count of 🟢/🟡/🔴 heats in this run
-  - Read `protocol/reporting.md` for the information compression layers — the AAR serves as L1 + L3.
+  - Generate an **After-Action Review** (AAR) to `outbox.md`:
+
+    **L1 summary** (always — 3 lines max):
+    ```
+    N heats: [stage breakdown]. Signal: 🟢×A 🟡×B 🔴×C.
+    Key: [most important thing accomplished].
+    Next: [what should happen next run].
+    ```
+
+    **L3 detail** (below the summary — expandable):
+    1. What was planned vs. what happened
+    2. Key artifacts (files created/modified, ranked by impact)
+    3. Lessons learned + open questions
+
   - **STOP.**

@@ -87,6 +87,24 @@
     </div>
 </section>
 
+<!-- Feedback -->
+<section class="feedback-section">
+    <h2>Feedback</h2>
+    <p class="muted">Tell Forge what needs improving. Read on next run.</p>
+    <form action="/project/{{ project.name }}/feedback/send" method="POST" class="direct-form">
+        <textarea name="feedback" class="direct-textarea" placeholder="What needs improving? e.g. 'The Socratic questions are too easy — need harder probing'" rows="3"></textarea>
+        <button type="submit" class="btn btn-primary">Send Feedback</button>
+    </form>
+    {% if project.recent_feedback %}
+    <div class="recent-feedback">
+        <h3>Recent Feedback</h3>
+        {% for item in project.recent_feedback %}
+        <p class="feedback-item">{{ item }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+</section>
+
 <!-- Active Tasks -->
 {% set pending_tasks = [] %}
 {% for t in project.queue if t.status == 'pending' %}

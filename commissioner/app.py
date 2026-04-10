@@ -86,6 +86,15 @@ async def project_direct(request: Request, project_name: str):
                 intent += line + "\n"
     project["intent"] = intent.strip() or None
 
+    # Read recent feedback
+    feedback_path = Path(project["dir"]) / "feedback.md"
+    recent_feedback = []
+    if feedback_path.exists():
+        for line in feedback_path.read_text().split("\n"):
+            if line.startswith("- ") and not line.startswith("→"):
+                recent_feedback.append(line[2:].strip())
+    project["recent_feedback"] = recent_feedback[-5:]  # last 5 items
+
     return templates.TemplateResponse(request=request, name="direct.html", context={
         "project": project,
         "tab": "direct",
@@ -107,6 +116,37 @@ async def project_direct_send(request: Request, project_name: str):
             entry = f"\n\n## {timestamp} [via commissioner]\n{message}\n"
             with open(inbox_path, "a") as f:
                 f.write(entry)
+
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(f"/project/{project_name}/direct", status_code=303)
+
+
+@app.post("/project/{project_name}/feedback/send")
+async def project_feedback_send(request: Request, project_name: str):
+    form = await request.form()
+    feedback_text = form.get("feedback", "").strip()
+
+    if feedback_text:
+        projects = discover_projects(PROJECTS_DIR)
+        project = next((p for p in projects if p["name"] == project_name), None)
+        if project:
+            feedback_path = Path(project["dir"]) / "feedback.md"
+            from datetime import datetime
+            date = datetime.now().strftime("%Y-%m-%d")
+
+            if feedback_path.exists():
+                content = feedback_path.read_text()
+                # Append under today's date header if it exists, otherwise create it
+                if f"## {date}" in content:
+                    entry = f"- {feedback_text}\n"
+                    content = content.replace(f"## {date}\n", f"## {date}\n{entry}", 1)
+                else:
+                    content += f"\n## {date}\n- {feedback_text}\n"
+                feedback_path.write_text(content)
+            else:
+                feedback_path.write_text(
+                    f"# Feedback\n\n## {date}\n- {feedback_text}\n"
+                )
 
     from fastapi.responses import RedirectResponse
     return RedirectResponse(f"/project/{project_name}/direct", status_code=303)
