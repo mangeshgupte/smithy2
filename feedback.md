@@ -21,3 +21,5 @@ Format: `## YYYY-MM-DD` followed by freeform feedback.
 - The AAR is useful but verbose — would prefer a 3-line summary + expandable detail
 - Stoplight signals work — the two yellows were genuinely useful
 - Overall: the system builds things, now it needs to iterate on them
+
+→ reviewed in heat 171, tasks created: t-051 (tap-to-decide), t-052 (collapsible heats), t-053 (feedback UI), t-054 (shorter AAR). Tutor feedback deferred to next tutor run.

@@ -1,13 +1,13 @@
 {
   "project": "ai-coworker",
   "budget": {
-    "total_heats": 354,
-    "used": 170,
+    "total_heats": 180,
+    "used": 171,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
     "research":       {"target": 0.12, "heats": 24, "progress": 0.88, "value_ema": 0.76},
-    "planning":       {"target": 0.08, "heats": 14, "progress": 0.80, "value_ema": 0.74},
+    "planning":       {"target": 0.08, "heats": 15, "progress": 0.82, "value_ema": 0.75},
     "implementation": {"target": 0.10, "heats": 53, "progress": 0.96, "value_ema": 0.79},
     "testing":        {"target": 0.26, "heats": 29, "progress": 0.83, "value_ema": 0.75},
     "editing":        {"target": 0.24, "heats": 30, "progress": 0.85, "value_ema": 0.74},
@@ -27,8 +27,10 @@
     {"id": "t-044", "stage": "implementation", "desc": "Repo map generation for non-dogfood projects", "status": "pending", "priority": 2, "blocked_by": []},
     {"id": "t-045", "stage": "implementation", "desc": "Lint→test→fix loop for implementation stage", "status": "pending", "priority": 2, "blocked_by": []},
     {"id": "t-046", "stage": "implementation", "desc": "Self-critique (Reflexion-style) per heat", "status": "pending", "priority": 2, "blocked_by": []},
-    {"id": "t-047", "stage": "research", "desc": "Research WhatsApp Business API for messaging bridge", "status": "pending", "priority": 3, "blocked_by": []},
-    {"id": "t-048", "stage": "planning", "desc": "Design event-sourced state (derive state.json from worklog.tsv)", "status": "pending", "priority": 3, "blocked_by": []}
+    {"id": "t-051", "stage": "implementation", "desc": "Commissioner: tap-to-decide on decision cards (JS + POST handler)", "status": "pending", "priority": 1, "blocked_by": []},
+    {"id": "t-052", "stage": "implementation", "desc": "Commissioner: collapsible heat cards in Activity tab", "status": "pending", "priority": 2, "blocked_by": []},
+    {"id": "t-053", "stage": "implementation", "desc": "Commissioner: feedback input on Direct tab (Stage 2 iteration tooling)", "status": "pending", "priority": 1, "blocked_by": []},
+    {"id": "t-054", "stage": "editing", "desc": "Shorten AAR format: 3-line summary + expandable detail", "status": "pending", "priority": 2, "blocked_by": []}
   ],
   "ideas": [
     {"id": "i-009", "text": "Multiple personas as separate Claude Code sessions", "source": "prompt", "status": "done", "task_id": null},
