@@ -1,8 +1,8 @@
 {
   "project": "ai-coworker",
   "budget": {
-    "total_heats": 502,
-    "used": 497,
+    "total_heats": 507,
+    "used": 498,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -14,9 +14,9 @@
     },
     "planning": {
       "target": 0.21,
-      "heats": 21,
+      "heats": 22,
       "progress": 0.85,
-      "value_ema": 0.714
+      "value_ema": 0.71
     },
     "implementation": {
       "target": 0.049,
@@ -45,12 +45,12 @@
   },
   "allocator": {
     "integral": {
-      "research": 0.23,
+      "research": 0.266,
       "planning": 0.5,
       "implementation": -0.5,
-      "testing": -0.078,
-      "editing": -0.122,
-      "marketing": 0.443
+      "testing": -0.085,
+      "editing": -0.126,
+      "marketing": 0.488
     }
   },
   "queue": [
@@ -310,6 +310,30 @@
       "desc": "Update CHANGELOG with smithy CLI + recent fixes",
       "status": "complete",
       "priority": 3,
+      "blocked_by": []
+    },
+    {
+      "id": "t-088",
+      "stage": "implementation",
+      "desc": "smithy sync-stages: recalculate stage heats from worklog.tsv to fix drift",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-089",
+      "stage": "testing",
+      "desc": "Full system test + patrol after sync-stages fix",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-090",
+      "stage": "editing",
+      "desc": "Final STRATEGY + CHANGELOG update for heat 500 milestone",
+      "status": "pending",
+      "priority": 2,
       "blocked_by": []
     }
   ],
