@@ -131,13 +131,18 @@ body {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 16px;
+    padding: 20px;
     text-decoration: none;
     color: var(--text);
-    transition: background 0.15s;
+    transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
-.project-card:hover { background: var(--surface-hover); }
+.project-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    border-color: var(--blue);
+}
 
 .card-header {
     display: flex;
@@ -252,8 +257,9 @@ body {
 .detail-budget { margin: 16px 0; }
 
 /* Briefing */
-.briefing-header { text-align: center; padding: 32px 0 16px; }
-.briefing-header h1 { font-size: 28px; }
+.briefing-header { text-align: center; padding: 40px 0 20px; }
+.briefing-header h1 { font-size: 32px; font-weight: 700; }
+.briefing-header .subtitle { font-size: 15px; }
 
 .briefing-section {
     margin: 24px 0;
@@ -438,8 +444,12 @@ details.heat-card[open] .heat-summary {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 16px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    transition: box-shadow 0.15s;
 }
+
+.decision-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.25); }
 
 .decision-card.priority-0 { border-left: 3px solid var(--red); }
 .decision-card.priority-1 { border-left: 3px solid var(--red); }
