@@ -47,6 +47,21 @@
 </section>
 {% endif %}
 
+{% if briefing.tier_counts and briefing.tier_counts.push > 0 %}
+<section class="briefing-section">
+    <h2>Decision Queue</h2>
+    <div class="tier-summary">
+        {% if briefing.tier_counts.push > 0 %}
+        <span class="tier-label tier-push">{{ briefing.tier_counts.push }} urgent</span>
+        {% endif %}
+        {% if briefing.tier_counts.quiet > 0 %}
+        <span class="tier-label tier-quiet">{{ briefing.tier_counts.quiet }} when ready</span>
+        {% endif %}
+    </div>
+    <a href="/inbox" class="btn btn-primary" style="margin-top: 12px; display: inline-block;">Review decisions →</a>
+</section>
+{% endif %}
+
 <div class="briefing-action">
     <a href="/" class="btn">Go to projects</a>
 </div>
