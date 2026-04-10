@@ -156,6 +156,13 @@ grep "PASS\|FAIL\|error" .forge-output.log   # Extract what matters
 tail -n 30 .forge-output.log                   # Diagnose failures
 ```
 
+**Lint→Test→Fix** (implementation and testing heats only): Before committing:
+1. If the project has a test suite (pytest, npm test, cargo test, etc.), run it
+2. Redirect output to `.forge-output.log` and check for failures
+3. If tests fail: fix the failing code in this same heat, re-run, and verify
+4. If a lint/format tool is configured, run it (e.g., `ruff check`, `eslint`)
+5. Only commit after tests pass. If you can't fix within this heat, log outcome as "partial" and note what broke.
+
 **Self-critique (Reflexion)**: Before committing, briefly review your own work:
 1. **What could go wrong?** Check for edge cases, missing error handling, broken imports
 2. **Does this serve the intent?** Reference commander's intent — is this heat's work aligned?
