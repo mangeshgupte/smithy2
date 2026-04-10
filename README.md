@@ -118,27 +118,21 @@ The Forge has three personas, each running as a separate Claude Code session:
 | Persona | Name | Role | Start Command |
 |---------|------|------|---------------|
 | **Comms** | **Lens** | Explains state and history. Refuses implementation and new ideas. | `cd personas/lens && claude` |
-| **Chief of Staff** | **Anvil** | Brainstorms, decides, dispatches. Refuses direct implementation. | `cd personas/anvil && claude` |
-| **Planner** | **Blueprint** | Turns strategy into concrete plans. Reads code, names files, sets order. | `cd personas/blueprint && claude` |
-| **Implementor** | **Hammer** | Pure polecat. Runs heats, executes plans. GUPP. | `cd personas/hammer && claude` |
+| **Chief of Staff** | **Anvil** | Brainstorms, decides, dispatches direction. Refuses direct implementation. | `cd personas/anvil && claude` |
+| **Worker** | **Forge** | Autonomous engine. Runs all 6 stages (research→marketing) via wavefront. GUPP. | `cd personas/forge && claude` |
 
 **Typical workflow:**
 ```
-You ↔ Anvil       (brainstorm, decide direction)
+You ↔ Anvil      (brainstorm, decide direction)
        ↓
-     Blueprint     (turn direction into concrete plan with file paths + tasks)
+     Forge        (autonomous: research, plan, implement, test, edit, market)
        ↓
-     Hammer        (execute plan, run heats, commit work)
-       ↓
-You ↔ Lens         (explain what happened, trace decisions)
+You ↔ Lens        (explain what happened, trace decisions)
 ```
 
 **Communication between personas** is via flat files in `dispatch/`:
-- `dispatch/anvil-to-blueprint.md` — Anvil sends brainstorming output
-- `dispatch/blueprint-to-hammer.md` — Blueprint sends concrete plans
-- `dispatch/anvil-to-hammer.md` — Anvil sends simple/urgent jobs directly
-- `dispatch/hammer-to-anvil.md` — Hammer reports results
-- `dispatch/blueprint-to-anvil.md` — Blueprint requests clarification
+- `dispatch/anvil-to-forge.md` — Anvil sends direction
+- `dispatch/forge-to-anvil.md` — Forge reports results
 
 ## Key Principles
 
