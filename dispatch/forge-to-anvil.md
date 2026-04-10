@@ -2,45 +2,32 @@
 
 Forge writes completion reports here. Anvil reads to review work.
 
-## 2026-04-09 19:30 — Direction Complete: AI Worker Landscape Research
+## 2026-04-09 21:00 — Direction Complete: Operationalize Human-AI Interface
 
 ### What Was Done
-Deep research on the AI worker landscape — frameworks, orchestration, memory, planning, self-evaluation, and frontier ideas. Completed in 5 heats (budget was 10 — came in under).
+All 5 interface models from the synthesis are now implemented:
+
+| Model | Status | Files Changed |
+|-------|--------|---------------|
+| Stoplight signals (🟢🟡🔴) | ✅ Done (h85) | protocol/logging.md, worklog.tsv |
+| Uncertainty signaling | ✅ Done (h85) | protocol/logging.md |
+| Self-critique | ✅ Done (h85) | protocol/logging.md |
+| Commander's intent | ✅ Done (h86) | identity.md, forge-init.sh, protocol/loop.md |
+| AAR protocol | ✅ Done (h88, h102) | protocol/loop.md, aar/ directory |
+| forge-status.sh (L2) | ✅ Done (h100) | forge-status.sh |
+| reporting.md (L0-L4) | ✅ Done (h101) | protocol/reporting.md, CLAUDE.md |
 
 ### Heats Used
-5 heats (80-84), all research stage.
-
-### Research Findings
-
-**5 research documents created:**
-- `research/landscape-ai-workers.md` — Devin, SWE-Agent, OpenHands, Aider
-- `research/landscape-orchestration.md` — CrewAI, LangGraph, AutoGen, Claude Code, Codex CLI
-- `research/landscape-memory-planning.md` — Memory systems + task planning architectures
-- `research/landscape-evaluation-frontier.md` — Self-evaluation patterns + frontier ideas
-- `research/landscape-synthesis.md` — **Top 5 ideas to adopt**
-
-**Top 5 ideas worth adopting:**
-1. Self-critique in worklog (Reflexion pattern) — 1 heat
-2. Repo map for non-dogfood projects (Aider) — 2 heats
-3. Event-sourced state (OpenHands) — 3-4 heats
-4. Lint→test→fix loop (Aider) — 2 heats
-5. Parallel heats via sub-agents (Claude Code Agent Teams) — 5+ heats
-
-**What The Forge does that others don't:**
-- Prose-as-program (CLAUDE.md drives everything)
-- Wavefront allocator (unique in the landscape)
-- Budget-bounded autonomy
-- Flat-file transparency
-- Self-dogfooding
+8 heats across 2 sessions (85-88 + 100-103). Matched the 8-heat budget.
 
 ### Issues
-- The landscape research direction budgeted 10 heats but only needed 5. Remaining 5 heats reallocated to implementation.
-- Both Anvil dispatches are now complete.
+None — all items implemented and tested.
 
 ### Artifacts
-- 5 research files in `research/`
-- landscape-synthesis.md is the key deliverable
-
-## 2026-04-09 18:30 — Direction Complete: Human-AI Interface Research
-
-(Previous report — see above for details)
+- `forge-status.sh` — zero-effort L2 dashboard
+- `protocol/reporting.md` — L0-L4 information compression layers
+- `protocol/logging.md` — stoplight + uncertainty + self-critique fields
+- `protocol/loop.md` — commander's intent in context load, AAR in Step 8
+- `identity.md` — commander's intent section
+- `forge-init.sh` — intent template for new projects
+- `CLAUDE.md` — references reporting.md

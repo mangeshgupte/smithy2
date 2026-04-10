@@ -1,6 +1,6 @@
 # Strategic Plan — The Forge
 
-*Updated after heat 99 | 2026-04-09*
+*Updated after heat 103 | 2026-04-09*
 
 ## Vision
 
@@ -63,13 +63,12 @@ An autonomous AI coworker that works in bounded 5-minute heats, self-directs acr
 
 ### What's Missing
 
-- No non-dogfood project attempted yet — **priority, t-027 ready**
-- No forge-update.sh for protocol updates (t-026, ready)
-- No auto-task generation in protocol yet (t-025, ready — design complete)
-- No --with-personas flag for forge-init.sh (t-023, ready)
-- No messaging integration — WhatsApp bridge planned (v0.5, not yet started)
-- No episodic memory store — v0.6
-- No hard timeout enforcement on heats
+- No non-dogfood project run for 10+ heats — **priority, t-036 ready**
+- No hard timeout enforcement on heats (t-039, ready)
+- No WhatsApp messaging bridge — deferred to v0.6+
+- No episodic/semantic memory store (vector DB) — v0.7
+- No parallel heats via sub-agents — v0.8
+- forge-status.sh "What's Missing" section pulls from stale STRATEGY.md — needs live generation
 
 ## Main Ideas Being Tried
 
