@@ -2,37 +2,37 @@
   "project": "ai-coworker",
   "budget": {
     "total_heats": 159,
-    "used": 41,
+    "used": 42,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
-    "research":       {"target": 0.18, "heats": 7, "progress": 0.65, "value_ema": 0.67},
+    "research":       {"target": 0.19, "heats": 7, "progress": 0.65, "value_ema": 0.67},
     "planning":       {"target": 0.17, "heats": 5, "progress": 0.50, "value_ema": 0.65},
     "implementation": {"target": 0.07, "heats": 12, "progress": 0.75, "value_ema": 0.68},
     "testing":        {"target": 0.22, "heats": 7, "progress": 0.45, "value_ema": 0.64},
-    "editing":        {"target": 0.22, "heats": 7, "progress": 0.50, "value_ema": 0.65},
-    "marketing":      {"target": 0.14, "heats": 4, "progress": 0.40, "value_ema": 0.64}
+    "editing":        {"target": 0.20, "heats": 7, "progress": 0.50, "value_ema": 0.65},
+    "marketing":      {"target": 0.16, "heats": 5, "progress": 0.45, "value_ema": 0.65}
   },
   "allocator": {
     "integral": {
       "research": 0.12,
-      "planning": 0.11,
-      "implementation": -0.81,
-      "testing": 0.20,
+      "planning": 0.15,
+      "implementation": -0.91,
+      "testing": 0.22,
       "editing": 0.22,
-      "marketing": 0.16
+      "marketing": 0.20
     }
   },
   "queue": [
     {"id": "t-021", "stage": "implementation", "desc": "Add .gitignore to forge-init.sh scaffold", "status": "pending", "priority": 1, "blocked_by": []},
     {"id": "t-022", "stage": "editing", "desc": "Improve identity.md and STRATEGY.md templates with guided questions", "status": "complete", "priority": 2, "blocked_by": []},
     {"id": "t-023", "stage": "implementation", "desc": "Add --with-personas flag to forge-init.sh", "status": "pending", "priority": 3, "blocked_by": ["t-021"]},
-    {"id": "t-024", "stage": "marketing", "desc": "Document SessionEnd hook setup in README", "status": "pending", "priority": 2, "blocked_by": []}
+    {"id": "t-024", "stage": "marketing", "desc": "Document SessionEnd hook setup in README", "status": "complete", "priority": 2, "blocked_by": []}
   ],
   "ideas": [
     {"id": "i-009", "text": "Multiple personas (Comms, Chief of Staff, Implementor) as separate Claude Code sessions", "source": "prompt", "status": "done", "task_id": null}
   ],
   "inbox_cursor": 41,
   "human_priorities": [],
-  "overall_progress": 0.54
+  "overall_progress": 0.55
 }
