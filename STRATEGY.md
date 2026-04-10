@@ -1,6 +1,6 @@
 # Strategic Plan — The Forge
 
-*Updated after heat 197 | 2026-04-10*
+*Updated after heat 208 | 2026-04-10*
 
 ## Vision
 
@@ -40,18 +40,19 @@ An autonomous AI coworker that works in bounded 5-minute heats, self-directs acr
 |-------|----------|--------|-------|
 | Research | 88% | 24 | Landscape, interface, timeout — all research complete. |
 | Planning | 82% | 16 | Feedback protocol review, tutor feedback processed. |
-| Implementation | 97% | 65 | Tutor UI redesign (3-tab, Create, Review), Commissioner tap-to-decide. |
-| Testing | 86% | 36 | Tutor 11-route E2E, Commissioner E2E. |
-| Editing | 86% | 33 | State updates, STRATEGY refreshes, memory consolidation. |
-| Marketing | 82% | 22 | AARs, dispatch reports, CHANGELOG. |
+| Implementation | 97% | 71 | Tutor UI redesign complete (3-tab, Create, Review, session memory, streak). |
+| Testing | 87% | 38 | Tutor 63 tests pass, Commissioner E2E, all routes verified. |
+| Editing | 87% | 35 | State updates, STRATEGY refreshes, memory consolidation. |
+| Marketing | 83% | 24 | AARs (tutor UI redesign), dispatch reports. |
 
-**Overall progress**: ~89% | **Heats used**: 197 | **Wavefront phase**: finishing
+**Overall progress**: ~89% | **Heats used**: 208 | **Wavefront phase**: finishing
 
 ### What's Working
 
 - Wavefront allocator with 3 fixes (soft clamp, unblocking override, queued task bonus) — balanced across 188 heats
-- **3 real projects built**: ai-coworker (dogfood), ai-tutor (Python + Singapore Math tutor), Commissioner App (project dashboard)
+- **3 real projects built**: ai-coworker (dogfood), ai-tutor (multi-subject tutor with full Learn→Create→Review loop), Commissioner App (project dashboard)
 - Commissioner App: 6 screens, tap-to-decide, day-grouped activity, inbox badges, feedback UI
+- AI Tutor: 3-tab nav, student flashcards with AI review, SM-2 card player, streak counter, session memory, 63 tests
 - forge-init.sh + forge-update.sh + forge-validate.sh + forge-status.sh — full tool suite
 - 5 interface models implemented: stoplight, uncertainty, commander's intent, AAR, L0-L4 compression
 - Personas (Anvil + Forge + Chisel) with dispatch system
