@@ -1,6 +1,6 @@
 # Strategic Plan — The Forge
 
-*Updated after heat 56 | 2026-04-09*
+*Updated after heat 68 | 2026-04-09*
 
 ## Vision
 
@@ -38,14 +38,14 @@ An autonomous AI coworker that works in bounded 5-minute heats, self-directs acr
 
 | Stage | Progress | Heats | Notes |
 |-------|----------|--------|-------|
-| Research | 72% | 9 | + real-project readiness, adaptive queue management, Telegram bridge design. |
-| Planning | 65% | 8 | + v0.4 plan, auto-task generation design, integral recovery fix. |
-| Implementation | 78% | 13 | + .gitignore in scaffold. Allocator fixes applied. |
-| Testing | 55% | 10 | + data integrity checks (8/8 pass), auto-task heuristic simulation. |
-| Editing | 58% | 9 | + protocol review, queue cleanup, STRATEGY refresh. |
-| Marketing | 55% | 7 | + SessionEnd hook docs, FAQ/troubleshooting, dashboard example. |
+| Research | 75% | 10 | + dead-task problem analysis, Telegram bridge design. |
+| Planning | 68% | 9 | + queued task bonus design, auto-task generation applied. |
+| Implementation | 82% | 15 | + forge-update.sh, auto-task generation in protocol, .gitignore. |
+| Testing | 63% | 13 | + forge-update.sh E2E, unblocking override edge cases, non-dogfood scaffold. |
+| Editing | 65% | 12 | + protocol consistency 22/22, STRATEGY refreshes, research doc fixes. |
+| Marketing | 60% | 9 | + FAQ section, file structure update, v0.4 status in outbox. |
 
-**Overall progress**: ~64% | **Heats used**: 55 | **Wavefront phase**: late
+**Overall progress**: ~69% | **Heats used**: 68 | **Wavefront phase**: late
 
 ### What's Working
 

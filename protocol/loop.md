@@ -79,6 +79,22 @@ Pick the highest-priority **ready** task matching the chosen stage. Set its stat
 
 If no ready tasks for the chosen stage: generate one yourself based on the project's current needs. Add it to the queue with status "in_progress".
 
+**Queue health check** (before picking a task):
+```
+pending_count = count of queue items with status "pending"
+if pending_count <= 3:
+  generate 1-2 tasks for highest-scoring stages using this heuristic:
+    research:       Read STRATEGY.md "What's Missing", pick biggest unknown
+    planning:       If version plan is done, plan next version
+    implementation: Check plan.md for pending impl tasks
+    testing:        Find recently completed implementation — each needs testing
+    editing:        Check STRATEGY.md staleness (heats since update > 5)
+    marketing:      Check README against features, find undocumented ones
+  Add to queue with status "pending"
+```
+
+**Anti-spiral**: If 3 consecutive generated research tasks target the same topic, write to outbox.md: "Stuck on <topic> — need human input."
+
 **Task schema:**
 ```json
 {"id": "t-NNN", "stage": "...", "desc": "...", "status": "pending|in_progress|complete",

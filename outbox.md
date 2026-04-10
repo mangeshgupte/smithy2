@@ -26,6 +26,34 @@ The Smith writes status updates, questions, and summaries here.
 
 The system is ready for real-project use. forge-init.sh produces working scaffolds, the allocator is balanced, and the protocol is self-consistent. The main gap is implementing the auto-task generation and forge-update.sh utility.
 
+## 2026-04-09 [heat 68, session complete — 30 heats]
+
+### Session Summary (heats 39-68)
+
+**30 heats across all 6 stages.** v0.4 nearly complete.
+
+| Stage | Heats | Key Accomplishments |
+|-------|-------|---------------------|
+| Research | 3 | Real-project readiness, adaptive queue mgmt, Telegram bridge, dead-task problem |
+| Planning | 3 | v0.4 plan, auto-task generation design, queued task bonus, integral recovery fix |
+| Implementation | 3 | .gitignore, forge-update.sh, auto-task generation in protocol |
+| Testing | 5 | Persona verification, E2E forge-init, data integrity, unblocking override, non-dogfood scaffold, forge-update.sh |
+| Editing | 4 | Templates, protocol reviews (22/22 pass), STRATEGY refreshes, queue cleanup |
+| Marketing | 4 | SessionEnd docs, FAQ, dashboard example, file structure, v0.4 status |
+
+### Allocator Improvements
+- **Soft clamp ±0.5** (was ±1.0): prevents integral recovery traps
+- **Unblocking override**: +0.3 for tasks that unblock 2+ others (validated in heat 52)
+- **Queued task bonus**: +0.07/ready task prevents dead tasks in low-scoring stages
+
+### Remaining for v0.4
+- t-023: Add --with-personas flag to forge-init.sh (lower priority)
+
+### What to do next
+1. **Use it on a real project** — scaffold and run 20 heats on a real codebase
+2. t-023 if personas are wanted in scaffold
+3. Start v0.5: Telegram bridge (design complete in research/telegram-bridge.md)
+
 ## 2026-04-09 [run complete, 5/5 heats]
 
 ### Summary

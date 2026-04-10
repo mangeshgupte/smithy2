@@ -2,15 +2,15 @@
   "project": "ai-coworker",
   "budget": {
     "total_heats": 159,
-    "used": 64,
+    "used": 68,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
-    "research":       {"target": 0.18, "heats": 10, "progress": 0.75, "value_ema": 0.70},
-    "planning":       {"target": 0.15, "heats": 9, "progress": 0.68, "value_ema": 0.69},
-    "implementation": {"target": 0.09, "heats": 14, "progress": 0.80, "value_ema": 0.70},
-    "testing":        {"target": 0.22, "heats": 12, "progress": 0.60, "value_ema": 0.68},
-    "editing":        {"target": 0.20, "heats": 11, "progress": 0.63, "value_ema": 0.68},
+    "research":       {"target": 0.17, "heats": 10, "progress": 0.75, "value_ema": 0.70},
+    "planning":       {"target": 0.14, "heats": 9, "progress": 0.68, "value_ema": 0.69},
+    "implementation": {"target": 0.09, "heats": 15, "progress": 0.82, "value_ema": 0.71},
+    "testing":        {"target": 0.22, "heats": 13, "progress": 0.63, "value_ema": 0.69},
+    "editing":        {"target": 0.20, "heats": 12, "progress": 0.65, "value_ema": 0.68},
     "marketing":      {"target": 0.16, "heats": 9, "progress": 0.60, "value_ema": 0.68}
   },
   "allocator": {
@@ -18,21 +18,21 @@
       "research": 0.12,
       "planning": 0.05,
       "implementation": -0.50,
-      "testing": 0.20,
+      "testing": 0.19,
       "editing": 0.16,
-      "marketing": 0.20
+      "marketing": 0.19
     }
   },
   "queue": [
     {"id": "t-023", "stage": "implementation", "desc": "Add --with-personas flag to forge-init.sh", "status": "pending", "priority": 3, "blocked_by": []},
-    {"id": "t-025", "stage": "implementation", "desc": "Add auto-task generation to loop.md Step 4", "status": "pending", "priority": 2, "blocked_by": []},
+    {"id": "t-025", "stage": "implementation", "desc": "Add auto-task generation to loop.md Step 4", "status": "complete", "priority": 2, "blocked_by": []},
     {"id": "t-026", "stage": "implementation", "desc": "Create forge-update.sh for protocol updates", "status": "complete", "priority": 2, "blocked_by": []},
-    {"id": "t-029", "stage": "testing", "desc": "Test forge-update.sh once created", "status": "pending", "priority": 2, "blocked_by": []}
+    {"id": "t-029", "stage": "testing", "desc": "Test forge-update.sh once created", "status": "complete", "priority": 2, "blocked_by": []}
   ],
   "ideas": [
     {"id": "i-009", "text": "Multiple personas (Comms, Chief of Staff, Implementor) as separate Claude Code sessions", "source": "prompt", "status": "done", "task_id": null}
   ],
   "inbox_cursor": 41,
   "human_priorities": [],
-  "overall_progress": 0.68
+  "overall_progress": 0.69
 }
