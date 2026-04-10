@@ -69,11 +69,18 @@ plan.md                ← Living plan
 
 ## Examples
 
-**Start a new project:**
+**Start a new project (2 minutes):**
 ```bash
-cd ~/my-project
-# Copy The Forge files: CLAUDE.md, protocol/, state.json, identity.md, etc.
-# Edit identity.md to describe your project
+# From The Forge repo:
+./forge-init.sh my-saas-app ~/projects/my-saas-app
+
+# Edit the generated files:
+vim ~/projects/my-saas-app/identity.md    # Describe your project
+vim ~/projects/my-saas-app/STRATEGY.md    # Set your vision and roadmap
+
+# Initialize git and start:
+cd ~/projects/my-saas-app
+git init && git add -A && git commit -m "[init] The Forge scaffold"
 claude
 > Run 20 heats.
 ```
