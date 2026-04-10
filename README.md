@@ -65,17 +65,25 @@ Each stage's allocation = `prerequisite_readiness × (1 - own_progress)`. Effort
 CLAUDE.md              ← The brain (30-line hub)
 protocol/
   loop.md              ← 8-step heat loop
-  allocator.md         ← Wavefront + PI controller
+  allocator.md         ← Wavefront + PI controller + unblocking override
   logging.md           ← Worklog, dashboards, memory protocol
 identity.md            ← Project context
-STRATEGY.md            ← Living strategic plan (updated each heat)
+STRATEGY.md            ← Living strategic plan (updated every ~5 heats)
 state.json             ← Budget, stages, queue, allocator state
 worklog.tsv            ← Append-only heat log
 inbox.md / outbox.md   ← Async human-AI messages
-MEMORY_DAILY.md        ← Working memory
+MEMORY_DAILY.md        ← Working memory (consolidated every 6 heats)
 MEMORY_WEEKLY.md       ← Validated patterns
 research/              ← Research artifacts
-plan.md                ← Living plan
+plan.md                ← Living plan with version roadmap
+.gitignore             ← Excludes checkpoint and output files
+personas/              ← Optional multi-persona sessions
+  anvil/CLAUDE.md      ← Human interface (strategy + explain)
+  forge/CLAUDE.md      ← Autonomous worker
+dispatch/              ← Inter-persona communication
+  anvil-to-forge.md    ← Direction from Anvil
+  forge-to-anvil.md    ← Reports from Forge
+hooks/                 ← SessionEnd hook for memory distillation
 ```
 
 ## Design Influences
