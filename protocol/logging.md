@@ -48,6 +48,47 @@ After every heat, update `STRATEGY.md` to reflect the current state:
 
 Keep it concise — this is a living snapshot, not a detailed log (that's what worklog.tsv and MEMORY_DAILY.md are for).
 
+## Print Heat Dashboard
+
+After every heat, print a compact progress dashboard directly to the conversation so the human can see it. Use this format:
+
+```
+── Heat N [stage] ─────────────────────────────
+Task: <what was done>
+Value: <0.0-1.0> | Outcome: <complete/partial/blocked>
+
+Stage          Progress     Chunks  Target
+research       ████░░░░░░    40%    2    .40
+planning       ███░░░░░░░    30%    1    .07
+implementation ████░░░░░░    40%    2    .09
+testing        █░░░░░░░░░    10%    1    .18
+editing        ██░░░░░░░░    20%    1    .16
+marketing      ░░░░░░░░░░     0%    0    .10
+
+Budget: 8/9 | Overall: 25% | Next: <predicted stage>
+────────────────────────────────────────────────
+```
+
+Progress bars: use `█` for filled and `░` for empty, 10 chars wide. Each `█` = 10% progress.
+
+## Update inbox.md with Idea Status
+
+After processing ideas in Step 2, annotate each idea in inbox.md with its disposition. Append a status line directly after the idea:
+
+```markdown
+## 2026-04-09 [via prompt]
+Idea: Make the allocator adaptive
+→ ✓ done in chunk 3 (wavefront model implemented)
+```
+
+Status formats:
+- `→ ✓ done in chunk N (description)` — implemented
+- `→ ⏳ queued as t-NNN` — in the task queue
+- `→ 📋 deferred to vX.Y` — valid but not now
+- `→ ↩ already covered (description)` — duplicate or pre-existing
+
+This keeps inbox.md as the single place to see all human input and what happened to each item.
+
 ## Write to outbox.md (if needed)
 
 Write when:

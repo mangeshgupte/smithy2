@@ -1,6 +1,6 @@
 # Strategic Plan — The Forge
 
-*Updated after chunk 6 | 2026-04-09*
+*Updated after chunk 8 | 2026-04-09*
 
 ## Vision
 
@@ -29,14 +29,14 @@ An autonomous AI coworker that works in bounded 5-minute chunks, self-directs ac
 
 | Stage | Progress | Chunks | Notes |
 |-------|----------|--------|-------|
-| Research | 20% | 1 | Initial survey done. Need deeper dives on specific patterns. |
+| Research | 40% | 2 | Survey + deep dive on session cycling. Checkpoint files, SessionEnd hooks mapped out. |
 | Planning | 30% | 1 | Task queue created. Plan.md has 5 prioritized items. |
-| Implementation | 40% | 2 | 3 protocol gaps fixed + idea pipeline with structured tracking. |
+| Implementation | 50% | 3 | Protocol gaps + idea pipeline + heat dashboard + idea status annotations. |
 | Testing | 10% | 1 | Protocol consistency check done. No automated tests yet. |
 | Editing | 20% | 1 | Inbox convention added. CLAUDE.md already split to hub+protocol. |
 | Marketing | 0% | 0 | No README or docs yet. |
 
-**Overall progress**: ~20% | **Chunks used**: 6 | **Wavefront phase**: early
+**Overall progress**: ~25% | **Chunks used**: 8 | **Wavefront phase**: early→middle
 
 ### What's Working
 

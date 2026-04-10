@@ -1,26 +1,26 @@
 {
   "project": "ai-coworker",
   "budget": {
-    "total_chunks": 6,
-    "used": 6,
+    "total_chunks": 9,
+    "used": 8,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
-    "research":       {"target": 0.423, "chunks": 1, "progress": 0.2, "value_ema": 0.56},
-    "planning":       {"target": 0.074, "chunks": 1, "progress": 0.3, "value_ema": 0.59},
-    "implementation": {"target": 0.111, "chunks": 2, "progress": 0.4, "value_ema": 0.62},
-    "testing":        {"target": 0.159, "chunks": 1, "progress": 0.1, "value_ema": 0.56},
-    "editing":        {"target": 0.127, "chunks": 1, "progress": 0.2, "value_ema": 0.56},
-    "marketing":      {"target": 0.106, "chunks": 0, "progress": 0.0, "value_ema": 0.5}
+    "research":       {"target": 0.40, "chunks": 2, "progress": 0.4, "value_ema": 0.63},
+    "planning":       {"target": 0.07, "chunks": 1, "progress": 0.3, "value_ema": 0.59},
+    "implementation": {"target": 0.09, "chunks": 3, "progress": 0.5, "value_ema": 0.65},
+    "testing":        {"target": 0.18, "chunks": 1, "progress": 0.1, "value_ema": 0.56},
+    "editing":        {"target": 0.16, "chunks": 1, "progress": 0.2, "value_ema": 0.56},
+    "marketing":      {"target": 0.10, "chunks": 0, "progress": 0.0, "value_ema": 0.5}
   },
   "allocator": {
     "integral": {
-      "research": 0.804,
-      "planning": -0.628,
-      "implementation": -0.066,
-      "testing": 0.447,
-      "editing": 0.165,
-      "marketing": 0.279
+      "research": 1.037,
+      "planning": -0.725,
+      "implementation": -0.309,
+      "testing": 0.460,
+      "editing": 0.158,
+      "marketing": 0.379
     }
   },
   "queue": [
@@ -33,9 +33,11 @@
     {"id": "i-001", "text": "Effort allocation should depend on project stage and maximum benefit", "source": "prompt", "status": "done", "task_id": null},
     {"id": "i-002", "text": "Keep CLAUDE.md short, move detail to protocol files", "source": "prompt", "status": "done", "task_id": null},
     {"id": "i-003", "text": "Create STRATEGY.md with project state and main ideas, updated each heat", "source": "prompt", "status": "done", "task_id": null},
-    {"id": "i-004", "text": "Make inbox idea pipeline more robust with structured tracking", "source": "prompt", "status": "done", "task_id": null}
+    {"id": "i-004", "text": "Make inbox idea pipeline more robust with structured tracking", "source": "prompt", "status": "done", "task_id": null},
+    {"id": "i-005", "text": "Track progress per heat with visual/textual dashboard", "source": "prompt", "status": "done", "task_id": null},
+    {"id": "i-006", "text": "Idea status annotations inline in inbox.md", "source": "prompt", "status": "done", "task_id": null}
   ],
-  "inbox_cursor": 17,
+  "inbox_cursor": 23,
   "human_priorities": [],
-  "overall_progress": 0.20
+  "overall_progress": 0.25
 }

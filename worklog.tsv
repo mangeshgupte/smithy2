@@ -5,3 +5,5 @@ timestamp	chunk	stage	task_id	outcome	value	notes
 2026-04-09T00:15:00Z	4	editing	t-004	complete	0.7	Added dual-channel inbox convention; backfilled 2 earlier prompt ideas to inbox.md
 2026-04-09T00:20:00Z	5	testing	generated	complete	0.7	Protocol consistency check; fixed run continuation semantics and task ID format
 2026-04-09T00:25:00Z	6	implementation	generated	complete	0.8	Built idea pipeline: 4-step process (capture→evaluate→track→acknowledge) with ideas array in state.json
+2026-04-09T00:30:00Z	7	research	generated	complete	0.8	Deep dive on session cycling: checkpoint files, SessionEnd hooks, three-layer persistence, session state detection
+2026-04-09T00:35:00Z	8	implementation	i-005,i-006	complete	0.8	ASCII heat dashboard + inline idea status annotations in inbox.md

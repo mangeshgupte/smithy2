@@ -32,3 +32,14 @@
 - Added `ideas` array to state.json with id, text, source, status, linked task_id
 - Backfilled 4 ideas from this session (all status: done)
 - Human-directed heat — skipped allocator, went straight to the requested topic
+
+### Chunk 7 [research]
+- Deep dive on session cycling: checkpoint files, SessionEnd hooks, three-layer persistence
+- Key insight: session death = memory consolidation event, not failure
+- For v0.1: not needed yet. Queue checkpoint file for v0.2, session cycling for v0.3
+
+### Chunk 8 [implementation]
+- Two human ideas implemented: ASCII progress dashboard + idea status annotations
+- Dashboard: printed after each heat with progress bars, budget, next stage prediction
+- Inbox.md now shows disposition of every idea (✓ done, ⏳ queued, 📋 deferred, ↩ covered)
+- All 6 human ideas from this session now have status "done"
