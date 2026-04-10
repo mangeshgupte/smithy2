@@ -31,10 +31,21 @@ An autonomous AI worker building $PROJECT in bounded 5-minute heats.
 ## Current Project: $PROJECT
 
 ### What needs to exist:
-(Describe your project goals here)
+<!-- List concrete deliverables. Be specific — these guide the Smith's task generation. -->
+<!-- Examples: -->
+<!-- - A REST API with /users, /posts, and /auth endpoints -->
+<!-- - Unit tests covering all business logic -->
+<!-- - A README with setup instructions and API docs -->
 
 ### Constraints:
-(List your constraints here)
+<!-- List technical, time, or scope limits. These prevent the Smith from going off-track. -->
+<!-- Examples: -->
+<!-- - Python 3.12+, FastAPI, SQLite for v1 -->
+<!-- - No external auth providers — JWT only -->
+<!-- - Must run on a single machine (no distributed systems) -->
+
+## Influences
+<!-- What existing projects, libraries, or patterns should the Smith draw from? -->
 
 ## Created
 
@@ -95,9 +106,15 @@ cat > "$TARGET/STRATEGY.md" << EOF
 
 ## Vision
 
-(Describe your project vision)
+<!-- One paragraph: what does this project do and who is it for? -->
+<!-- Example: "A CLI tool that lets developers run database migrations safely, -->
+<!-- with automatic rollback on failure and dry-run previews." -->
 
 ## Current State
+
+### What Exists
+
+Nothing yet. This is a fresh scaffold.
 
 ### Stage Progress
 
@@ -112,13 +129,31 @@ cat > "$TARGET/STRATEGY.md" << EOF
 
 **Overall progress**: 0% | **Heats used**: 0
 
+### What's Working
+
+(Updated by the Smith after each heat)
+
+### What's Missing
+
+(Updated by the Smith after each heat)
+
 ## Main Ideas Being Tried
 
-(Will be populated as work begins)
+<!-- The Smith adds entries here as it explores approaches. Each entry tracks: -->
+<!-- what the idea is, its status (untested/validated/rejected), and results so far. -->
+
+## Risks & Unknowns
+
+<!-- Known risks and open questions the Smith should investigate. -->
 
 ## Roadmap
 
-(Define your versions and milestones)
+<!-- Define versions with concrete scope. Example: -->
+<!-- | Version | Focus | Key Feature | -->
+<!-- |---------|-------|-------------| -->
+<!-- | v0.1    | Core  | Basic API with CRUD endpoints | -->
+<!-- | v0.2    | Auth  | JWT authentication + middleware | -->
+<!-- | v0.3    | Tests | 80% coverage, CI pipeline | -->
 EOF
 
 touch "$TARGET/research/.gitkeep"
