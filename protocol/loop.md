@@ -164,6 +164,11 @@ When `budget.used % 6 == 0`:
 
 - If `budget.used < budget.total_heats` → **go to Step 1** (next heat)
 - If `budget.used >= budget.total_heats`:
-  - Write a final summary to outbox.md covering what was accomplished across all heats
-  - Include: stages worked, tasks completed, key decisions made, what to do next
+  - Generate an **After-Action Review** (AAR) to `outbox.md`:
+    1. **What was planned**: Dispatch direction or self-generated goals for this run
+    2. **What happened**: Actual work done, key decisions, stages covered
+    3. **Why the delta**: What went differently than planned and why
+    4. **Lessons learned**: What to change in future runs
+    5. **Open questions**: Things the Forge is unsure about — needs human input
+    6. **Signal summary**: Count of 🟢/🟡/🔴 heats in this run
   - **STOP.**
