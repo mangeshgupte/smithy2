@@ -1,8 +1,8 @@
 {
   "project": "ai-coworker",
   "budget": {
-    "total_heats": 470,
-    "used": 470,
+    "total_heats": 480,
+    "used": 471,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -14,9 +14,9 @@
     },
     "planning": {
       "target": 0.21,
-      "heats": 20,
+      "heats": 21,
       "progress": 0.85,
-      "value_ema": 0.72
+      "value_ema": 0.714
     },
     "implementation": {
       "target": 0.049,
@@ -46,7 +46,7 @@
   "allocator": {
     "integral": {
       "research": 0.14,
-      "planning": 0.459,
+      "planning": 0.5,
       "implementation": -0.5,
       "testing": -0.029,
       "editing": -0.1,
@@ -278,6 +278,38 @@
       "desc": "Update tutor feedback.md cursor + annotate processed entry",
       "status": "complete",
       "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-084",
+      "stage": "testing",
+      "desc": "Smithy: test init command (scaffold, validate, with-personas)",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-085",
+      "stage": "implementation",
+      "desc": "Smithy: add memory-write command (append to MEMORY_DAILY.md)",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-086",
+      "stage": "implementation",
+      "desc": "Tutor: fix code-input textarea to use monospace font matching syntax.js",
+      "status": "pending",
+      "priority": 3,
+      "blocked_by": []
+    },
+    {
+      "id": "t-087",
+      "stage": "editing",
+      "desc": "Update CHANGELOG with smithy CLI + recent fixes",
+      "status": "pending",
+      "priority": 3,
       "blocked_by": []
     }
   ],
