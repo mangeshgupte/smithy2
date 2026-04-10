@@ -510,3 +510,9 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-10T15:54:43Z	509	editing	generated	complete	0.9	🟢	logging.md + allocator.md rewritten: smithy end-heat handles all logging, smithy allocate handles all math
 2026-04-10T15:55:12Z	510	testing	generated	complete	0.8	🟢	Stress test heat 1: full protocol flow via smithy CLI only
 2026-04-10T15:55:29Z	511	editing	generated	complete	0.8	🟢	Stress test heat 2: memory-write via smithy, patrol clean
+2026-04-10T15:56:05Z	512	marketing	generated	complete	0.8	🟢	Outbox AAR for protocol wiring dispatch
+2026-04-10T19:10:00Z	513	editing	generated	complete	0.7	🟢	Final state sync
+2026-04-10T19:15:00Z	514	testing	generated	complete	0.7	🟢	Final verification
+2026-04-10T19:20:00Z	515	editing	generated	complete	0.7	🟢	Memory consolidation
+2026-04-10T19:25:00Z	516	marketing	generated	complete	0.7	🟢	Dispatch report
+2026-04-10T19:30:00Z	517	marketing	generated	complete	0.8	🟢	Budget exhausted. Handoff saved.

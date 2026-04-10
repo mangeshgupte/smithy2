@@ -2,6 +2,12 @@
 
 The Smith writes status updates, questions, and summaries here.
 
+## 2026-04-10 [heat 517, AAR — heats 508-517]
+
+10 heats: editing×4, testing×3, marketing×3. Signal: 🟢×10.
+Key: **Protocol fully wired to smithy CLI.** loop.md, logging.md, allocator.md all rewritten — zero manual state edits. 2 stress test heats passed with patrol clean after each. Dispatch complete.
+Next: This protocol is now the foundation. All future runs use smithy exclusively.
+
 ## 2026-04-10 [heat 507, AAR — heats 486-507]
 
 22 heats: impl×6, test×4, editing×5, planning×2, marketing×4, research×1. Signal: 🟢×22.
