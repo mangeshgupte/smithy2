@@ -474,3 +474,4 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-10T16:25:00Z	478	marketing	generated	complete	0.7	🟢	Outbox AAR
 2026-04-10T16:30:00Z	479	editing	generated	complete	0.7	🟢	Final state update
 2026-04-10T16:35:00Z	480	marketing	generated	complete	0.8	🟢	Budget exhausted. Final commit.
+2026-04-10T14:44:18Z	481	research	generated	complete	0.9	🟢	Gas Town extension points: polecat model, rig types, hooks/plugins/formulas, no plugin interface for custom agent types
