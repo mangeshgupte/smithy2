@@ -2,34 +2,32 @@
   "project": "ai-coworker",
   "budget": {
     "total_heats": 119,
-    "used": 30,
+    "used": 38,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
-    "research":       {"target": 0.22, "heats": 5, "progress": 0.60, "value_ema": 0.66},
-    "planning":       {"target": 0.16, "heats": 3, "progress": 0.45, "value_ema": 0.64},
-    "implementation": {"target": 0.08, "heats": 9, "progress": 0.70, "value_ema": 0.66},
-    "testing":        {"target": 0.20, "heats": 5, "progress": 0.40, "value_ema": 0.62},
-    "editing":        {"target": 0.20, "heats": 5, "progress": 0.45, "value_ema": 0.63},
-    "marketing":      {"target": 0.14, "heats": 3, "progress": 0.35, "value_ema": 0.62}
+    "research":       {"target": 0.20, "heats": 6, "progress": 0.60, "value_ema": 0.66},
+    "planning":       {"target": 0.15, "heats": 5, "progress": 0.50, "value_ema": 0.65},
+    "implementation": {"target": 0.07, "heats": 12, "progress": 0.75, "value_ema": 0.68},
+    "testing":        {"target": 0.20, "heats": 6, "progress": 0.40, "value_ema": 0.62},
+    "editing":        {"target": 0.20, "heats": 6, "progress": 0.45, "value_ema": 0.63},
+    "marketing":      {"target": 0.14, "heats": 4, "progress": 0.40, "value_ema": 0.64}
   },
   "allocator": {
     "integral": {
-      "research": 0.08,
+      "research": 0.05,
       "planning": 0.02,
-      "implementation": -0.40,
-      "testing": 0.12,
+      "implementation": -0.35,
+      "testing": 0.10,
       "editing": 0.08,
-      "marketing": 0.10
+      "marketing": 0.08
     }
   },
-  "queue": [
-    {"id": "t-014", "stage": "implementation", "desc": "Add /loop integration for auto-restart within session", "status": "pending", "priority": 2, "blocked_by": []},
-    {"id": "t-018", "stage": "research", "desc": "Research how to measure actual value (not just self-assessment)", "status": "pending", "priority": 3, "blocked_by": []},
-    {"id": "t-020", "stage": "marketing", "desc": "Write How The Forge Works deep-dive doc", "status": "pending", "priority": 4, "blocked_by": []}
+  "queue": [],
+  "ideas": [
+    {"id": "i-009", "text": "Multiple personas (Comms, Chief of Staff, Implementor) as separate Claude Code sessions", "source": "prompt", "status": "done", "task_id": null}
   ],
-  "ideas": [],
-  "inbox_cursor": 37,
+  "inbox_cursor": 41,
   "human_priorities": [],
-  "overall_progress": 0.50
+  "overall_progress": 0.52
 }

@@ -34,3 +34,6 @@ timestamp	heat	stage	task_id	outcome	value	notes
 2026-04-09T02:40:00Z	33	testing	generated	complete	0.7	Verified forge-init.sh copies latest features (DAG, anti-windup, checkpoint)
 2026-04-09T02:45:00Z	34	editing	generated	complete	0.7	Updated STRATEGY.md What's Working/Missing sections
 2026-04-09T02:50:00Z	35	planning	generated	complete	0.7	Next-wave planning: dogfood on a real project is the priority
+2026-04-09T02:55:00Z	36	planning	i-009	complete	0.8	Designed persona system: Lens/Anvil/Hammer with dispatch
+2026-04-09T03:00:00Z	37	implementation	i-009	complete	0.9	Built 3 persona CLAUDE.md files + dispatch system
+2026-04-09T03:05:00Z	38	implementation	i-009	complete	0.8	Created dispatch files, added personas section to README
