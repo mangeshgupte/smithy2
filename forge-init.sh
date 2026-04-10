@@ -1,15 +1,22 @@
 #!/bin/bash
 # forge-init.sh — Scaffold The Forge in a new project directory
-# Usage: ./forge-init.sh <project-name> [target-dir]
+# Usage: ./forge-init.sh <project-name> [target-dir] [--with-personas]
 
 set -e
 
-PROJECT="${1:?Usage: forge-init.sh <project-name> [target-dir]}"
+PROJECT="${1:?Usage: forge-init.sh <project-name> [target-dir] [--with-personas]}"
 TARGET="${2:-.}"
+WITH_PERSONAS=false
+for arg in "$@"; do
+    if [ "$arg" = "--with-personas" ]; then
+        WITH_PERSONAS=true
+    fi
+done
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 echo "Initializing The Forge for project: $PROJECT"
 echo "Target directory: $TARGET"
+[ "$WITH_PERSONAS" = true ] && echo "Personas: enabled"
 
 # Create directory structure
 mkdir -p "$TARGET/protocol" "$TARGET/research"
@@ -172,6 +179,36 @@ cat > "$TARGET/.gitignore" << 'EOF'
 .forge-checkpoint.json
 .forge-output.log
 EOF
+
+# Optionally scaffold personas
+if [ "$WITH_PERSONAS" = true ]; then
+    mkdir -p "$TARGET/personas/anvil" "$TARGET/personas/forge" "$TARGET/dispatch"
+
+    cat > "$TARGET/dispatch/anvil-to-forge.md" << 'EOF'
+# Dispatch: Anvil → Forge
+
+Anvil writes direction here. Forge reads on startup and uses it to guide autonomous work.
+EOF
+
+    cat > "$TARGET/dispatch/forge-to-anvil.md" << 'EOF'
+# Dispatch: Forge → Anvil
+
+Forge writes completion reports here. Anvil reads to review work.
+EOF
+
+    # Copy persona CLAUDE.md files if they exist in source
+    if [ -f "$SCRIPT_DIR/personas/anvil/CLAUDE.md" ]; then
+        cp "$SCRIPT_DIR/personas/anvil/CLAUDE.md" "$TARGET/personas/anvil/CLAUDE.md"
+    fi
+    if [ -f "$SCRIPT_DIR/personas/forge/CLAUDE.md" ]; then
+        cp "$SCRIPT_DIR/personas/forge/CLAUDE.md" "$TARGET/personas/forge/CLAUDE.md"
+    fi
+
+    echo ""
+    echo "Personas scaffolded: Anvil (interface) + Forge (worker)"
+    echo "  Start Anvil: cd $TARGET/personas/anvil && claude"
+    echo "  Start Forge: cd $TARGET/personas/forge && claude"
+fi
 
 echo ""
 echo "Done! The Forge is ready."
