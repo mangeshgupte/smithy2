@@ -2,7 +2,7 @@
   "project": "ai-coworker",
   "budget": {
     "total_heats": 547,
-    "used": 524,
+    "used": 528,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -14,15 +14,15 @@
     },
     "planning": {
       "target": 0.21,
-      "heats": 27,
+      "heats": 28,
       "progress": 0.85,
-      "value_ema": 0.737
+      "value_ema": 0.726
     },
     "implementation": {
       "target": 0.049,
-      "heats": 162,
+      "heats": 163,
       "progress": 0.98,
-      "value_ema": 0.778
+      "value_ema": 0.785
     },
     "testing": {
       "target": 0.183,
@@ -38,9 +38,9 @@
     },
     "marketing": {
       "target": 0.219,
-      "heats": 69,
+      "heats": 71,
       "progress": 0.84,
-      "value_ema": 0.752
+      "value_ema": 0.746
     }
   },
   "allocator": {
@@ -48,7 +48,7 @@
       "research": 0.5,
       "planning": 0.5,
       "implementation": -0.5,
-      "testing": -0.054,
+      "testing": -0.044,
       "editing": -0.5,
       "marketing": 0.5
     }
@@ -404,7 +404,7 @@
       "id": "t-099",
       "stage": "implementation",
       "desc": "Tutor: exercise feedback animations \u2014 correct/wrong visual distinction with color flash + icon",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -412,7 +412,7 @@
       "id": "t-100",
       "stage": "testing",
       "desc": "Visual regression check: verify both apps render correctly after design changes",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 2,
       "blocked_by": []
     },
@@ -428,7 +428,7 @@
       "id": "t-102",
       "stage": "marketing",
       "desc": "CHANGELOG v1.0: visual design sprint summary + all improvements",
-      "status": "pending",
+      "status": "complete",
       "priority": 3,
       "blocked_by": []
     },
@@ -484,7 +484,39 @@
       "id": "t-109",
       "stage": "planning",
       "desc": "Mid-sprint review: assess visual design progress, reprioritize remaining tasks, identify testing needs",
-      "status": "in_progress",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-110",
+      "stage": "marketing",
+      "desc": "Tutor: update welcome card copy and first-visit experience messaging",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-111",
+      "stage": "implementation",
+      "desc": "Rename commissioner app to Bellows: directory, FastAPI title, pyproject.toml, templates, CSS, README, all references",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-112",
+      "stage": "implementation",
+      "desc": "Rename ai-coworker to Bellows in state.json, identity.md, README.md, STRATEGY.md, hooks, research docs, and all other references",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-113",
+      "stage": "testing",
+      "desc": "Verify Bellows rename: app starts, grep -ri commissioner and ai-coworker return no hits outside git history/worklog",
+      "status": "pending",
       "priority": 2,
       "blocked_by": []
     }
