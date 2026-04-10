@@ -494,3 +494,4 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-10T18:05:00Z	498	editing	generated	complete	0.7	🟢	Final state update
 2026-04-10T18:10:00Z	499	marketing	generated	complete	0.7	🟢	Final dispatch report
 2026-04-10T18:15:00Z	500	marketing	generated	complete	0.8	🟢	Budget exhausted. Handoff saved.
+2026-04-10T15:25:31Z	496	testing	generated	complete	0.7	🟢	152 tests pass (111+12+29). Handoff consumed, patrol ran with fix.
