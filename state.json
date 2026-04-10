@@ -1,26 +1,26 @@
 {
   "project": "ai-coworker",
   "budget": {
-    "total_heats": 259,
-    "used": 69,
+    "total_heats": 269,
+    "used": 79,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
-    "research":       {"target": 0.17, "heats": 10, "progress": 0.75, "value_ema": 0.70},
+    "research":       {"target": 0.17, "heats": 17, "progress": 0.80, "value_ema": 0.73},
     "planning":       {"target": 0.14, "heats": 10, "progress": 0.70, "value_ema": 0.70},
     "implementation": {"target": 0.09, "heats": 15, "progress": 0.82, "value_ema": 0.71},
     "testing":        {"target": 0.22, "heats": 13, "progress": 0.63, "value_ema": 0.69},
-    "editing":        {"target": 0.20, "heats": 12, "progress": 0.65, "value_ema": 0.68},
+    "editing":        {"target": 0.20, "heats": 14, "progress": 0.68, "value_ema": 0.69},
     "marketing":      {"target": 0.16, "heats": 9, "progress": 0.60, "value_ema": 0.68}
   },
   "allocator": {
     "integral": {
-      "research": 0.12,
-      "planning": 0.05,
+      "research": 0.15,
+      "planning": 0.04,
       "implementation": -0.50,
-      "testing": 0.19,
-      "editing": 0.16,
-      "marketing": 0.19
+      "testing": 0.22,
+      "editing": 0.15,
+      "marketing": 0.20
     }
   },
   "queue": [
@@ -30,14 +30,18 @@
     {"id": "t-037", "stage": "editing", "desc": "Comprehensive protocol review + version stamp for v0.5 release", "status": "pending", "priority": 2, "blocked_by": []},
     {"id": "t-038", "stage": "marketing", "desc": "Write changelog (v0.1→v0.5) for project history", "status": "pending", "priority": 2, "blocked_by": []},
     {"id": "t-039", "stage": "research", "desc": "Research hard timeout enforcement for heats", "status": "pending", "priority": 2, "blocked_by": []},
-    {"id": "t-040", "stage": "planning", "desc": "Design v0.6 — web dashboard or WhatsApp bridge", "status": "pending", "priority": 3, "blocked_by": []}
+    {"id": "t-040", "stage": "planning", "desc": "Design v0.6 — web dashboard or WhatsApp bridge", "status": "pending", "priority": 3, "blocked_by": []},
+    {"id": "t-041", "stage": "implementation", "desc": "Implement stoplight signals (L0) + uncertainty field in logging protocol", "status": "pending", "priority": 1, "blocked_by": []},
+    {"id": "t-042", "stage": "implementation", "desc": "Add commander's intent section to dispatch/identity", "status": "pending", "priority": 1, "blocked_by": []},
+    {"id": "t-043", "stage": "implementation", "desc": "Implement after-action review (AAR) generation at end of run", "status": "pending", "priority": 2, "blocked_by": []}
   ],
   "ideas": [
-    {"id": "i-009", "text": "Multiple personas (Comms, Chief of Staff, Implementor) as separate Claude Code sessions", "source": "prompt", "status": "done", "task_id": null},
+    {"id": "i-009", "text": "Multiple personas as separate Claude Code sessions", "source": "prompt", "status": "done", "task_id": null},
     {"id": "i-010", "text": "Auto-replenish research when task queue is thin", "source": "prompt", "status": "done", "task_id": "t-025"},
-    {"id": "i-011", "text": "No Telegram — use WhatsApp instead, defer messaging", "source": "inbox", "status": "done", "task_id": null}
+    {"id": "i-011", "text": "No Telegram — use WhatsApp instead, defer messaging", "source": "inbox", "status": "done", "task_id": null},
+    {"id": "i-012", "text": "Human-AI interface research — oversight models from diverse domains", "source": "inbox", "status": "done", "task_id": null}
   ],
-  "inbox_cursor": 52,
+  "inbox_cursor": 56,
   "human_priorities": [],
-  "overall_progress": 0.69
+  "overall_progress": 0.71
 }

@@ -1,6 +1,6 @@
 # Strategic Plan — The Forge
 
-*Updated after heat 68 | 2026-04-09*
+*Updated after heat 79 | 2026-04-09*
 
 ## Vision
 
@@ -38,14 +38,14 @@ An autonomous AI coworker that works in bounded 5-minute heats, self-directs acr
 
 | Stage | Progress | Heats | Notes |
 |-------|----------|--------|-------|
-| Research | 75% | 10 | + dead-task problem analysis, Telegram bridge design. |
-| Planning | 68% | 9 | + queued task bonus design, auto-task generation applied. |
-| Implementation | 82% | 15 | + forge-update.sh, auto-task generation in protocol, .gitignore. |
+| Research | 80% | 17 | + human-AI interface: 10 domains, 22 ideas, synthesis with top 5 models. |
+| Planning | 70% | 10 | + v0.5 plan, queued task bonus, interface research planning. |
+| Implementation | 82% | 15 | + forge-update.sh, auto-task generation, .gitignore. |
 | Testing | 63% | 13 | + forge-update.sh E2E, unblocking override edge cases, non-dogfood scaffold. |
-| Editing | 65% | 12 | + protocol consistency 22/22, STRATEGY refreshes, research doc fixes. |
-| Marketing | 60% | 9 | + FAQ section, file structure update, v0.4 status in outbox. |
+| Editing | 68% | 14 | + protocol consistency 22/22, interface research logging, memory consolidation. |
+| Marketing | 60% | 9 | + FAQ, file structure, Anvil dispatch report. |
 
-**Overall progress**: ~69% | **Heats used**: 68 | **Wavefront phase**: late
+**Overall progress**: ~71% | **Heats used**: 79 | **Wavefront phase**: late
 
 ### What's Working
 
@@ -67,7 +67,7 @@ An autonomous AI coworker that works in bounded 5-minute heats, self-directs acr
 - No forge-update.sh for protocol updates (t-026, ready)
 - No auto-task generation in protocol yet (t-025, ready — design complete)
 - No --with-personas flag for forge-init.sh (t-023, ready)
-- No messaging integration — Telegram bridge designed (v0.5)
+- No messaging integration — WhatsApp bridge planned (v0.5, not yet started)
 - No episodic memory store — v0.6
 - No hard timeout enforcement on heats
 
@@ -113,6 +113,6 @@ An autonomous AI coworker that works in bounded 5-minute heats, self-directs acr
 | **v0.2** | Robustness + scaffolding | **COMPLETE** (heats 6-25) |
 | **v0.3** | Personas + production readiness | **MOSTLY COMPLETE** (heats 26-38) |
 | **v0.4** (now) | Multi-project + real-world readiness | IN PROGRESS (heats 39+) |
-| **v0.5** | Messaging sidecar (Telegram/Slack) | PLANNED |
+| **v0.5** | Messaging sidecar (WhatsApp) | PLANNED (deferred — build when ready) |
 | **v0.6** | Web dashboard (htmx) | PLANNED |
 | **v0.7** | Semantic memory (ChromaDB) | PLANNED |

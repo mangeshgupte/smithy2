@@ -50,3 +50,7 @@ Idea: Auto-replenish research — when Forge is running low on good ideas or the
 ## 2026-04-09 [via prompt]
 Directive: No Telegram bridge. When messaging is needed, build a WhatsApp bridge instead. Defer messaging work until the time is right — don't build it yet.
 → ✓ acknowledged in heat 69 (Telegram tasks removed from v0.5, messaging deferred to v0.6+)
+
+## 2026-04-09 [via prompt]
+Idea: The human-AI interface is the bottleneck. Can't assess quality of changes. Need higher-level structure for ideas being tried. Research how different domains solve the oversight problem — companies, research orgs, universities, animal colonies, organizational research. Generate diverse interface models, then converge on top candidates.
+→ dispatched (10 research heats, see anvil-to-forge.md)
