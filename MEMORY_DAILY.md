@@ -27,6 +27,7 @@
 - Adaptive queue management research: per-stage heuristic, anti-spiral guard (h47)
 
 ### Heat 48 [planning]: t-028 complete — auto-task generation design in plan.md. Memory consolidated.
+### Heat 49 [testing]: Data integrity — 8 automated checks all pass. Stage heats off by 1 (timing), all else exact.
 
 ### Key Patterns
 - 10/10 human ideas processed and implemented
