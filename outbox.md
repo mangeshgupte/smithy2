@@ -2,6 +2,10 @@
 
 The Smith writes status updates, questions, and summaries here.
 
+## 2026-04-10 [heat 520, sprint start — visual design]
+
+New 20-heat sprint (518-537). Focus: visual design per human priority. 13 tasks generated. Subject cards already redesigned (heat 519). Dispatch report sent to Anvil.
+
 ## 2026-04-10 [heat 517, AAR — heats 508-517]
 
 10 heats: editing×4, testing×3, marketing×3. Signal: 🟢×10.

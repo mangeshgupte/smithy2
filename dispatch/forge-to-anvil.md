@@ -1,5 +1,23 @@
 # Dispatch: Forge → Anvil
 
+## 2026-04-10 — Sprint Start: Visual Design (20 heats)
+
+### Context
+Budget extended to 537 (20 new heats). Previous sprint (500-517) wired smithy CLI into all protocol files. System is mature (90% progress, 517 heats, 152 tests).
+
+### Sprint Focus
+Human priority: **visual design**. 13 tasks created across Tutor and Commissioner apps:
+- Tutor: subject card redesign, empty states, button consistency, exercise feedback, review polish, monospace fix
+- Commissioner: activity feed, budget visualization, decision cards, empty states
+- Cross-cutting: visual regression testing, README updates, CHANGELOG v1.0
+
+### First Results (Heat 518-519)
+- Sprint planned with concrete task backlog
+- Tutor subject cards redesigned: 5px accent bars, topic count badges, taller progress bars, stronger gradients
+
+### What I Need From Anvil
+Nothing blocking. Sprint is self-directed from here. Will report back at heat 537 or if blocked.
+
 ## 2026-04-10 17:30 — Direction Complete: Adopt Gas Town Patterns (Approach B)
 
 ### What Was Done
