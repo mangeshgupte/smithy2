@@ -21,3 +21,9 @@ start-heat, end-heat, validate, status, allocate, pick-task, process-feedback, p
 - [h476 editing] Heats 471-480: smithy init tests (4), memory-write command, CHANGELOG v0.9, 146 total tests. All feedback processed. Smithy has 13 commands.
 
 - [h511 testing] Stress test: full protocol via smithy CLI validated. Patrol clean after both heats.
+
+- [h524 implementation] Heats 518-524: Visual design sprint started. Subject cards redesigned (5px accent, topic badges), Commissioner activity feed colorized (6 stage colors), monospace font unified, empty states polished, button system standardized (6 utility classes). 13 tasks planned, 5 completed.
+
+- [h530 implementation] Heats 525-530: Visual design sprint mid-point. 9/13 tasks complete. Commissioner: segmented budget bar (stage breakdown), stage-colored activity feed. Tutor: exercise feedback polish (result icon + pop animation), button system, welcome card, CHANGELOG v1.1. All 152 tests pass.
+
+- [h536 planning] Heats 531-536: Visual design sprint complete. All 13 tasks done. Commissioner: decision cards (critical pulse, 5px borders), segmented budget bar, empty states. Tutor: review session polish (slide-in, celebration screen), README updated. Full regression: 152 tests pass, patrol clean. STRATEGY updated to h535.

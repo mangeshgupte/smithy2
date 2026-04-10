@@ -2,6 +2,71 @@
 
 Anvil writes direction here. Forge reads on startup and uses it to guide autonomous work.
 
+## 2026-04-10 21:30 — Direction: Rename to Bellows (3 heats)
+
+### What We Decided
+The commissioner app and the "ai-coworker" project name are both being renamed to **Bellows**. This is a branding rename — the app is Bellows, the project is Bellows.
+
+### Focus Areas
+
+**Heat 1: Rename commissioner → Bellows** (t-111, priority 1)
+Rename everything user-visible and structural:
+- Rename `commissioner/` directory to `bellows/`
+- `app.py` line 1: docstring → "Bellows App — FastAPI backend."
+- `app.py` line 16: `FastAPI(title="Bellows")`
+- `app.py` lines 119, 157, 214: `[via commissioner]` → `[via bellows]`
+- `templates/base.html` line 6: `<title>Bellows...`
+- `static/css/style.css` line 1: comment → `/* Bellows App — CSS */`
+- `pyproject.toml`: name → "bellows", description → "Bellows — ..."
+- `README.md`: heading and all references
+- Any imports or path references elsewhere in the repo that point to `commissioner/`
+
+**Heat 2: Rename ai-coworker → Bellows** (t-112, priority 1)
+- `state.json` line 2: `"project": "bellows"`
+- `identity.md` line 9: update reference
+- `README.md` line 10: update path
+- `STRATEGY.md` lines 65, 68: update references
+- `hooks/session-end-forge.sh` line 7: update FORGE_DIR path
+- `research/test-scenarios.md` line 56: update reference
+- `inbox.md` line 76: update reference
+- Do NOT edit `worklog.tsv` — the record is sacred (append-only, historical)
+- Do NOT edit files in `aar/` or `dispatch/` history — those are historical records
+
+**Heat 3: Verify** (t-113, priority 2)
+- Run `grep -ri "commissioner" . --include='*.py' --include='*.html' --include='*.css' --include='*.toml' --include='*.md'` — should only hit worklog.tsv, aar/, and dispatch/ history
+- Run `grep -ri "ai-coworker" . --include='*.py' --include='*.html' --include='*.css' --include='*.toml' --include='*.md'` — same
+- Start the app: `cd bellows && uv run uvicorn app:app --port 8080` — verify it loads
+- Run `smithy validate` and `smithy patrol`
+
+### Constraints
+- worklog.tsv is append-only — never edit historical entries
+- aar/ and dispatch/ history are historical records — don't rename in past entries
+- The directory rename (`commissioner/` → `bellows/`) may require updating any CLAUDE.md or config that references the old path
+- feedback.md section heading "### Commissioner" should become "### Bellows"
+
+### Budget
+3 heats
+
+## 2026-04-10 21:00 — Direction: Deprecate forge-*.sh Scripts (4 heats)
+
+### What We Decided
+The smithy CLI already replaces 3 of 5 shell scripts (forge-init.sh → `smithy init`, forge-validate.sh → `smithy validate`/`smithy patrol`, forge-status.sh → `smithy status`). Two scripts remain without CLI equivalents: `forge-update.sh` and `forge-repomap.sh`. We're adding those as CLI commands, then deleting all 5 scripts.
+
+### Focus Areas
+1. **`smithy update <target-dir>`** (t-105, priority 1) — Port `forge-update.sh` logic. Copies protocol files (CLAUDE.md, protocol/loop.md, protocol/allocator.md, protocol/logging.md) into an existing Forge project. Must verify target is a Forge project first. Never touch state files. Show diff summary (unchanged/updated/added). See `forge-update.sh` for exact behavior.
+2. **`smithy repomap [target-dir]`** (t-106, priority 2) — Port `forge-repomap.sh` logic. Generates `research/repo-map.md` with: file stats by extension, directory structure (depth 3), config/entry point detection, documentation listing, largest source files, test file listing. See `forge-repomap.sh` for exact behavior.
+3. **Test both commands** (t-107) — Cover: update on valid project, update on non-project (should error), repomap on a directory, repomap output correctness.
+4. **Delete all forge-*.sh scripts** (t-108) — After tests pass, remove forge-init.sh, forge-update.sh, forge-validate.sh, forge-status.sh, forge-repomap.sh.
+
+### Constraints
+- The CLI source is at `smithy/smithy/cli.py` — add commands there following existing patterns
+- Both commands should be added to the existing Click group
+- `smithy update` should use the smithy package's own protocol files as source (not a script directory)
+- Keep the Python implementations functionally identical to the shell scripts
+
+### Budget
+4 heats
+
 ## 2026-04-10 16:00 — Direction: Wire Smithy CLI Into Forge Runs (10 heats)
 
 ### What We Decided

@@ -125,3 +125,7 @@ Idea: Smithy is converging with Gas Town architecture. Research whether to build
 ## 2026-04-10 [via prompt]
 Decision: Approach B confirmed — adopt Gas Town patterns into Smithy, stay independent. 15 heats for handoff, patrol, session cycling, docs.
 → dispatched (15 heats, see anvil-to-forge.md)
+
+
+## 2026-04-10 16:30 [via commissioner]
+Decision on t-105: APPROVE (task: smithy update command: copy protocol files to existing project (replace forge-update.sh))
