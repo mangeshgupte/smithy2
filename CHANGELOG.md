@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.1 — Visual Design Sprint (heats 518-537)
+## v1.1 — Visual Design Sprint + CLI Completion (heats 518-547)
 
 ### Tutor Visual Redesign
 - **Subject cards**: 5px accent bars (was 3px), topic count badges, taller progress bars, stronger accent gradients
@@ -8,11 +8,24 @@
 - **Empty states**: Card-style with dashed borders, emoji icons, rich messaging, guidance CTAs
 - **Button system**: 6 utility classes (btn-lg, btn-sm, btn-block, btn-stack, btn-green, btn-mt) — replacing inline styles
 - **Monospace fonts**: Unified font stack (JetBrains Mono → Fira Code → Cascadia Code), tab-size: 4, consistent line-height
+- **Exercise feedback**: Result icon with pop animation, centered colored title
+- **Review session**: Card slide-in animation, celebration screen with icon pop
 
 ### Commissioner Visual Redesign
 - **Stage colors**: 6 distinct colors (purple research, blue planning, green implementation, yellow testing, orange editing, red marketing)
 - **Activity feed**: Stage-colored left borders on heat cards, colored stage badges, value color coding (green/yellow/red)
 - **Stage bars**: Color-coded progress fills in project detail view
+- **Budget visualization**: Segmented bar showing stage breakdown with legend
+- **Decision cards**: 5px priority borders, critical pulse animation, stage-colored badges
+- **Empty states**: Dashed borders, emoji icons across all screens
+
+### New Smithy Commands (2)
+- `smithy update <target>` — copy protocol files to existing project (replaces forge-update.sh)
+- `smithy repomap [target]` — generate research/repo-map.md with file stats, dir structure, key files (replaces forge-repomap.sh)
+
+### Cleanup
+- Removed 5 forge-*.sh scripts (636 lines) — all functionality now in smithy CLI (18 commands total)
+- 6 new tests for update + repomap (35 smithy tests, 158 total)
 
 ### Protocol Wired to CLI (heats 508-517)
 - All 3 protocol files rewritten: loop.md, logging.md, allocator.md
