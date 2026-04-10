@@ -101,6 +101,9 @@ hooks/                 ← SessionEnd hook for memory distillation
 # From The Forge repo:
 ./forge-init.sh my-saas-app ~/projects/my-saas-app
 
+# With multi-persona support (Anvil + Forge):
+./forge-init.sh my-saas-app ~/projects/my-saas-app --with-personas
+
 # Edit the generated files:
 vim ~/projects/my-saas-app/identity.md    # Describe your project
 vim ~/projects/my-saas-app/STRATEGY.md    # Set your vision and roadmap

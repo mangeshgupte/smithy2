@@ -2,38 +2,32 @@
   "project": "ai-coworker",
   "budget": {
     "total_heats": 289,
-    "used": 92,
+    "used": 99,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
     "research":       {"target": 0.15, "heats": 22, "progress": 0.85, "value_ema": 0.75},
-    "planning":       {"target": 0.12, "heats": 11, "progress": 0.72, "value_ema": 0.71},
-    "implementation": {"target": 0.10, "heats": 20, "progress": 0.88, "value_ema": 0.73},
-    "testing":        {"target": 0.22, "heats": 15, "progress": 0.68, "value_ema": 0.70},
-    "editing":        {"target": 0.22, "heats": 15, "progress": 0.72, "value_ema": 0.70},
-    "marketing":      {"target": 0.18, "heats": 10, "progress": 0.65, "value_ema": 0.69}
+    "planning":       {"target": 0.12, "heats": 12, "progress": 0.75, "value_ema": 0.72},
+    "implementation": {"target": 0.10, "heats": 21, "progress": 0.90, "value_ema": 0.74},
+    "testing":        {"target": 0.22, "heats": 16, "progress": 0.70, "value_ema": 0.71},
+    "editing":        {"target": 0.22, "heats": 17, "progress": 0.75, "value_ema": 0.71},
+    "marketing":      {"target": 0.18, "heats": 11, "progress": 0.68, "value_ema": 0.70}
   },
   "allocator": {
     "integral": {
-      "research": 0.10,
-      "planning": 0.04,
-      "implementation": -0.40,
-      "testing": 0.20,
-      "editing": 0.15,
-      "marketing": 0.22
+      "research": 0.08,
+      "planning": 0.03,
+      "implementation": -0.35,
+      "testing": 0.18,
+      "editing": 0.12,
+      "marketing": 0.20
     }
   },
   "queue": [
-    {"id": "t-023", "stage": "implementation", "desc": "Add --with-personas flag to forge-init.sh", "status": "pending", "priority": 3, "blocked_by": []},
-    {"id": "t-035", "stage": "implementation", "desc": "Create forge-validate.sh", "status": "complete", "priority": 1, "blocked_by": []},
+    {"id": "t-023", "stage": "implementation", "desc": "Add --with-personas flag to forge-init.sh", "status": "complete", "priority": 3, "blocked_by": []},
     {"id": "t-036", "stage": "testing", "desc": "Run Forge on a real non-dogfood project for 10+ heats", "status": "pending", "priority": 1, "blocked_by": []},
-    {"id": "t-037", "stage": "editing", "desc": "Comprehensive protocol review + version stamp for v0.5 release", "status": "complete", "priority": 2, "blocked_by": []},
-    {"id": "t-038", "stage": "marketing", "desc": "Write changelog (v0.1→v0.5) for project history", "status": "complete", "priority": 2, "blocked_by": []},
     {"id": "t-039", "stage": "research", "desc": "Research hard timeout enforcement for heats", "status": "pending", "priority": 2, "blocked_by": []},
-    {"id": "t-040", "stage": "planning", "desc": "Design v0.6 — web dashboard or WhatsApp bridge", "status": "pending", "priority": 3, "blocked_by": []},
-    {"id": "t-041", "stage": "implementation", "desc": "Implement stoplight signals (L0) + uncertainty field in logging protocol", "status": "complete", "priority": 1, "blocked_by": []},
-    {"id": "t-042", "stage": "implementation", "desc": "Add commander's intent section to identity", "status": "complete", "priority": 1, "blocked_by": []},
-    {"id": "t-043", "stage": "implementation", "desc": "Implement after-action review (AAR) generation at end of run", "status": "complete", "priority": 2, "blocked_by": []}
+    {"id": "t-040", "stage": "planning", "desc": "Design v0.6 — web dashboard or WhatsApp bridge", "status": "pending", "priority": 3, "blocked_by": []}
   ],
   "ideas": [
     {"id": "i-009", "text": "Multiple personas as separate Claude Code sessions", "source": "prompt", "status": "done", "task_id": null},
@@ -43,5 +37,5 @@
   ],
   "inbox_cursor": 56,
   "human_priorities": [],
-  "overall_progress": 0.75
+  "overall_progress": 0.77
 }

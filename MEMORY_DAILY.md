@@ -5,19 +5,17 @@
 ### Heats 1-68: v0.1-v0.4 Complete
 - Protocol, allocator (3 fixes), forge-init/update/validate, personas, all ideas implemented
 
-### Heats 69-79: Human-AI Interface Research (Anvil dispatch)
-- 10 domains, 22 ideas → top 5: stoplight, uncertainty, intent, AAR, compression layers
-
-### Heats 80-92: AI Worker Landscape + Implementation
-- **Landscape research** (h80-84): Devin, OpenHands, CrewAI, Aider, reflexion, frontier ideas
-- Top 5 to adopt: self-critique, repo map, event-sourced state, lint-test-fix, parallel heats
-- **Implemented** (h85-88): stoplight signals, self-critique, commander's intent, forge-validate.sh, AAR protocol
-- **Validated** (h89-91): forge-validate.sh catches corruption, 19/19 protocol checks pass
-- CHANGELOG.md written (h91), both Anvil dispatches complete
+### Heats 69-99: v0.5 — Research + Interface Implementation
+- **Interface research** (h70-76): 10 domains, 22 ideas → top 5 synthesized
+- **Landscape research** (h80-84): Devin, OpenHands, CrewAI, Aider, reflexion, PRMs
+- **Implemented** (h85-93): stoplight signals, self-critique, commander's intent, forge-validate.sh, AAR protocol, --with-personas flag
+- **Validated** (h89-95): forge-validate catches corruption (19 checks), protocol review passes
+- CHANGELOG.md, README updates, both Anvil dispatches complete
+- First AAR written at heat 99 — all 20 heats 🟢
 
 ### Key Patterns
-- Both research dispatches completed efficiently (7 + 5 heats instead of 10 + 10)
-- Interface research → immediate implementation: stoplight + intent + AAR
-- Landscape validated The Forge's unique strengths: prose-as-program, wavefront allocator, flat-file transparency
-- forge-validate.sh is the first automated quality gate — closes a major gap
-- 75% overall progress at heat 92
+- Design→implement gap is small when research produces concrete ideas
+- Research dispatches can run faster than budgeted (5/10 for landscape)
+- All-green stoplight may indicate thresholds too permissive — needs real stress test
+- 77% overall at heat 99, approaching v0.5 completion
+- 3 tasks remaining: t-036 (real project run), t-039 (timeout research), t-040 (v0.6 design)

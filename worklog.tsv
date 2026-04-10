@@ -91,3 +91,10 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-09T07:25:00Z	90	editing	t-037	complete	0.8	🟢	Protocol review: 19/19 checks pass across all protocol files
 2026-04-09T07:30:00Z	91	marketing	t-038	complete	0.8	🟢	CHANGELOG.md: v0.1→v0.5 with all features documented
 2026-04-09T07:35:00Z	92	editing	generated	complete	0.7	🟢	State update, worklog batch, strategy refresh for heats 80-92
+2026-04-09T07:40:00Z	93	implementation	t-023	complete	0.8	🟢	--with-personas flag: creates dispatch + persona dirs. Could improve: should test without flag too.
+2026-04-09T07:45:00Z	94	editing	generated	complete	0.7	🟢	STRATEGY.md refresh to heat 99. Could improve: nothing obvious.
+2026-04-09T07:50:00Z	95	testing	generated	complete	0.7	🟢	Verified --with-personas works, without-flag still works, forge-validate passes both.
+2026-04-09T07:55:00Z	96	editing	generated	complete	0.7	🟢	Memory consolidation, completed task cleanup. Could improve: nothing obvious.
+2026-04-09T08:00:00Z	97	marketing	generated	complete	0.7	🟢	Updated README with --with-personas docs.
+2026-04-09T08:05:00Z	98	planning	generated	complete	0.7	🟢	v0.6 roadmap sketched in STRATEGY.md.
+2026-04-09T08:10:00Z	99	marketing	generated	complete	0.8	🟢	After-action review for heats 80-99 written to outbox.md.

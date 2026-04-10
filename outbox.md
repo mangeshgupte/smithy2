@@ -2,6 +2,46 @@
 
 The Smith writes status updates, questions, and summaries here.
 
+## 2026-04-09 [heat 99, After-Action Review — heats 80-99]
+
+### 1. What Was Planned
+- Execute AI Worker Landscape Research dispatch (10 heats)
+- Switch to implementation: stoplight signals, commander's intent, AAR protocol, forge-validate.sh
+- Complete remaining v0.5 tasks (t-023, t-035, t-037, t-038, t-041, t-042, t-043)
+
+### 2. What Happened
+- Landscape research completed in 5 heats (vs. 10 budgeted) — efficient
+- Implemented all 5 interface research findings: stoplight, uncertainty, self-critique, commander's intent, AAR
+- Built forge-validate.sh (19 automated checks, catches corruption)
+- Completed t-023 (--with-personas flag), t-035, t-037, t-038, t-041, t-042, t-043
+- Wrote CHANGELOG.md covering v0.1→v0.5
+- Updated README with --with-personas docs
+
+### 3. Why the Delta
+- Landscape research was faster than expected because the landscape is well-surveyed — most systems follow similar patterns. Deep novelty was limited; the synthesis was more valuable than individual system analysis.
+- Implementation tasks were straightforward because the designs (from interface research) were concrete and specific. Design→implement gap was small.
+
+### 4. Lessons Learned
+- **Research dispatches can be combined**: Two domains per heat is efficient for survey-style research. Deep dives need dedicated heats.
+- **Design before implement works**: The interface research (heats 70-76) produced such specific designs that implementation (heats 85-88) was almost mechanical.
+- **forge-validate.sh should run automatically**: Currently manual. Should be a pre-commit hook or part of the heat loop.
+- **The stoplight system needs real usage to validate**: All heats in this run were 🟢. Need yellow/red heats to test the signal value.
+
+### 5. Open Questions
+- Should forge-validate.sh run automatically in the heat loop (Step 5)?
+- Is the queued task bonus coefficient (0.07) right, or should it be tuned?
+- When should we attempt t-036 (run on real non-dogfood project for 10+ heats)?
+- v0.6 direction: web dashboard vs WhatsApp bridge vs something else?
+
+### 6. Signal Summary
+- 🟢 Green: 20/20 heats (100%)
+- 🟡 Yellow: 0
+- 🔴 Red: 0
+
+All green is suspicious — either the work was straightforward or the signal thresholds are too permissive.
+
+---
+
 ## 2026-04-09 [heat 58, v0.4 status update]
 
 ### v0.4 Milestone: Real-Project Readiness — Nearly Complete

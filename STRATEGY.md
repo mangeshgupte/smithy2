@@ -1,6 +1,6 @@
 # Strategic Plan — The Forge
 
-*Updated after heat 92 | 2026-04-09*
+*Updated after heat 99 | 2026-04-09*
 
 ## Vision
 
@@ -38,14 +38,14 @@ An autonomous AI coworker that works in bounded 5-minute heats, self-directs acr
 
 | Stage | Progress | Heats | Notes |
 |-------|----------|--------|-------|
-| Research | 85% | 22 | + AI worker landscape (Devin, OpenHands, Aider, CrewAI), frontier ideas. |
-| Planning | 72% | 11 | + v0.5 plan, both Anvil dispatches completed. |
-| Implementation | 88% | 20 | + stoplight signals, commander's intent, forge-validate.sh, AAR protocol. |
-| Testing | 68% | 15 | + forge-validate.sh tested (catches corruption), protocol review 19/19. |
-| Editing | 72% | 15 | + CHANGELOG, protocol review, strategy refreshes, memory consolidation. |
-| Marketing | 65% | 10 | + CHANGELOG, dispatch reports, landscape synthesis. |
+| Research | 85% | 22 | AI worker landscape complete, interface research complete. |
+| Planning | 75% | 12 | v0.6 roadmap sketched. Both Anvil dispatches done. |
+| Implementation | 90% | 21 | Stoplight, intent, AAR, validate, --with-personas. All v0.5 impl done. |
+| Testing | 70% | 16 | forge-validate.sh catches corruption, protocol 19/19, --with-personas verified. |
+| Editing | 75% | 17 | CHANGELOG, protocol reviews, strategy refreshes, memory consolidation. |
+| Marketing | 68% | 11 | CHANGELOG, README updates, dispatch reports, AAR. |
 
-**Overall progress**: ~75% | **Heats used**: 92 | **Wavefront phase**: late
+**Overall progress**: ~77% | **Heats used**: 99 | **Wavefront phase**: late
 
 ### What's Working
 
