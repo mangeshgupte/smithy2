@@ -13,9 +13,9 @@ Read these files at the start of every heat:
 - `MEMORY_DAILY.md` — recent working memory
 - `worklog.tsv` — last 10 entries for trajectory awareness
 
-**Stuck detection**: Scan the queue for any tasks with status "in_progress". These are leftovers from a previous heat that was interrupted. For each:
-- If the worklog shows the task was logged in the last heat → it was interrupted mid-work. Reset to "pending" so it can be re-picked.
-- If the worklog does NOT mention it → it was orphaned. Reset to "pending".
+**Crash recovery**: If `.forge-checkpoint.json` exists, the previous heat was interrupted mid-work. Roll back: `git reset --hard <checkpoint.git_head>`. Delete the checkpoint file. Log the interrupted heat as "discard" in the worklog.
+
+**Stuck detection**: Scan the queue for any tasks with status "in_progress". These are leftovers from a previous heat that was interrupted. Reset to "pending" so they can be re-picked.
 
 ## Step 2: Process Inbox
 
@@ -78,7 +78,23 @@ Task IDs: queued tasks use `t-NNN` (e.g., t-005). Self-generated tasks use `"gen
 
 ## Step 5: Execute (~4 minutes)
 
-**Checkpoint**: Before starting work, note the current git HEAD: `git rev-parse HEAD`. If the work breaks things (tests fail, code doesn't parse), you can roll back: `git reset --hard <saved-head>`. Log the outcome as "discard" in the worklog. Only use this for implementation and testing heats — research and planning always keep their output.
+**Checkpoint**: Before starting work on implementation or testing heats:
+
+1. Save git HEAD: `git rev-parse HEAD`
+2. Write `.forge-checkpoint.json`:
+```json
+{
+  "heat": <current heat number>,
+  "stage": "<stage>",
+  "task_id": "<task id or generated>",
+  "git_head": "<sha>",
+  "timestamp": "<ISO 8601>"
+}
+```
+3. If the work breaks things (tests fail, code doesn't parse), roll back: `git reset --hard <saved-head>` and log outcome as "discard".
+4. If the work succeeds, delete `.forge-checkpoint.json` (clean state for next heat).
+
+The checkpoint file also enables crash recovery: if the Smith starts a heat and finds `.forge-checkpoint.json` already exists, the previous heat was interrupted. Reset to the saved git_head and re-queue the task.
 
 Do the actual work. Stay focused on the single task. Use the appropriate tools:
 
