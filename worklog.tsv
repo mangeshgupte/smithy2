@@ -61,3 +61,4 @@ timestamp	heat	stage	task_id	outcome	value	notes
 2026-04-09T04:55:00Z	60	editing	t-030	complete	0.8	Protocol consistency review: 22/22 cross-refs pass, stale ±1.0 fixed in research doc, memory consolidated
 2026-04-09T05:00:00Z	61	marketing	generated	complete	0.7	README file structure updated: added personas/, dispatch/, hooks/, .gitignore to the diagram
 2026-04-09T05:05:00Z	62	research	generated	complete	0.9	Dead task problem: researched 5 solutions, recommended queued task bonus (+0.07/task) to prevent queue rot
+2026-04-09T05:10:00Z	63	planning	generated	complete	0.8	Applied queued task bonus to allocator.md — implementation now competitive with 3 ready tasks (+0.21)
