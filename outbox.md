@@ -2,6 +2,30 @@
 
 The Smith writes status updates, questions, and summaries here.
 
+## 2026-04-09 [heat 58, v0.4 status update]
+
+### v0.4 Milestone: Real-Project Readiness — Nearly Complete
+
+**What was accomplished (heats 39-57):**
+- Persona system verified and cleaned up (2 stale refs fixed)
+- forge-init.sh gaps identified and fixed: .gitignore, guided templates, hook docs
+- Allocator improved: soft clamp ±0.5 (was ±1.0), unblocking override for critical-path tasks
+- Auto-task generation designed and simulated (per-stage heuristic)
+- Non-dogfood project (todo-cli) scaffolded and verified — **all checks pass**
+- README: FAQ section, dashboard example, SessionEnd hook docs
+- STRATEGY.md kept current
+- 8 automated data integrity checks pass
+- Telegram bridge designed for v0.5
+
+**Remaining v0.4 tasks (3):**
+- t-025: Add auto-task generation to protocol (design complete, ready to implement)
+- t-026: Create forge-update.sh for protocol updates
+- t-023: Add --with-personas flag to forge-init.sh (lower priority)
+
+**Overall: 65% complete, 57 heats used.**
+
+The system is ready for real-project use. forge-init.sh produces working scaffolds, the allocator is balanced, and the protocol is self-consistent. The main gap is implementing the auto-task generation and forge-update.sh utility.
+
 ## 2026-04-09 [run complete, 5/5 heats]
 
 ### Summary
