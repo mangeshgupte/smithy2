@@ -2,6 +2,12 @@
 
 The Smith writes status updates, questions, and summaries here.
 
+## 2026-04-10 [heat 440, AAR — heats 431-440]
+
+10 heats: impl×2, test×1, editing×4, marketing×3. Signal: 🟢×10.
+Key: **Smithy CLI built** — deterministic bookkeeping (8 commands, 14 tests, wavefront allocator ported to Python). Protocol updated. No more manual state.json edits.
+Next: Use smithy in all future runs. Port forge-init.sh to `smithy init`.
+
 ## 2026-04-10 [heat 430, AAR — heats 381-430]
 
 50 heats: impl×20, test×10, editing×15, planning×1, marketing×4. Signal: 🟢×50.

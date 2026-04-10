@@ -2,21 +2,19 @@
 
 ## 2026-04-10
 
-### Heats 381-430: Topic Completion + Tests + Polish
+### Heats 431-440: Smithy CLI Built
 
-**Features (h382-387):**
-- Topic completion summary screen — mastery %, tutor nudge, Create/Teach/Back navigation
-- 11 new tests for teach-back, card editing, deletion, topic completion (123 total)
-- README updated with RR palette, Teach It Back, animations, 111 tests
-- result.html cleaned — dead mastered banner removed, card CTA simplified
-- Session planner empty state improved
+**Smithy CLI (heats 431-434):**
+- `smithy/smithy/state.py` — load/save/validate state, worklog append, checkpoint management
+- `smithy/smithy/allocator.py` — wavefront model ported from prose to Python
+- `smithy/smithy/cli.py` — 8 commands: start-heat, end-heat, validate, status, allocate, pick-task, process-feedback, process-inbox
+- 14 tests in `smithy/tests/test_smithy.py` — all passing
+- Protocol/loop.md updated to reference smithy commands
+- Installed via `pip install -e smithy/`
 
-**State Sync:**
-- Tutor state synced to 140 heats, feedback cursor updated to 64
-- All queue tasks completed and marked
+**Key insight**: The smithy CLI makes bookkeeping deterministic — counters, cursors, and integral values are always computed correctly. No more state drift from manual edits.
 
 ### Key Stats
-- 123 total tests (111 tutor + 12 commissioner)
-- 18 tutor templates, topic_complete.html is newest
-- All routes pass on both apps
-- Overall: 94% at heat 430
+- **Smithy**: 8 commands, 14 tests, ~400 lines Python
+- **Total tests**: 123 (tutor) + 12 (commissioner) + 14 (smithy) = 149
+- Overall: 89% at heat 440 (recalculated by smithy from actual stage progress)
