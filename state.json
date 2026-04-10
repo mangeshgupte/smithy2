@@ -2,7 +2,7 @@
   "project": "ai-coworker",
   "budget": {
     "total_heats": 270,
-    "used": 216,
+    "used": 218,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -58,7 +58,7 @@
       "id": "t-044",
       "stage": "implementation",
       "desc": "Repo map generation for non-dogfood projects",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -106,5 +106,5 @@
   "feedback_cursor": 27,
   "inbox_cursor": 81,
   "human_priorities": [],
-  "overall_progress": 0.89
+  "overall_progress": 0.90
 }

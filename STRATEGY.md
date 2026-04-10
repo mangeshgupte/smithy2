@@ -1,6 +1,6 @@
 # Strategic Plan — The Forge
 
-*Updated after heat 208 | 2026-04-10*
+*Updated after heat 218 | 2026-04-10*
 
 ## Vision
 
@@ -40,12 +40,12 @@ An autonomous AI coworker that works in bounded 5-minute heats, self-directs acr
 |-------|----------|--------|-------|
 | Research | 88% | 24 | Landscape, interface, timeout — all research complete. |
 | Planning | 82% | 16 | Feedback protocol review, tutor feedback processed. |
-| Implementation | 97% | 71 | Tutor UI redesign complete (3-tab, Create, Review, session memory, streak). |
-| Testing | 87% | 38 | Tutor 63 tests pass, Commissioner E2E, all routes verified. |
-| Editing | 87% | 35 | State updates, STRATEGY refreshes, memory consolidation. |
-| Marketing | 83% | 24 | AARs (tutor UI redesign), dispatch reports. |
+| Implementation | 97% | 76 | Tutor full redesign, Socratic moments, forge-repomap.sh. |
+| Testing | 87% | 40 | Tutor 63 tests, Commissioner E2E, forge-validate passes. |
+| Editing | 87% | 37 | State updates, STRATEGY refreshes, memory consolidation. |
+| Marketing | 83% | 25 | AARs, dispatch reports. |
 
-**Overall progress**: ~89% | **Heats used**: 208 | **Wavefront phase**: finishing
+**Overall progress**: ~90% | **Heats used**: 218 | **Wavefront phase**: finishing
 
 ### What's Working
 
