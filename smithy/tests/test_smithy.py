@@ -163,6 +163,52 @@ class TestCompleteTask:
         assert result.exit_code != 0
 
 
+class TestHandoff:
+    def test_saves_handoff(self, project, runner):
+        result = runner.invoke(cli, ["--dir", str(project), "handoff", "Test context notes", "--next", "Do X next"])
+        data = json.loads(result.output)
+        assert data["context_notes"] == "Test context notes"
+        assert data["next_steps"] == "Do X next"
+        assert (project / ".forge-handoff.json").exists()
+
+    def test_resume_reads_and_consumes(self, project, runner):
+        runner.invoke(cli, ["--dir", str(project), "handoff", "Resume test"])
+        result = runner.invoke(cli, ["--dir", str(project), "resume"])
+        data = json.loads(result.output)
+        assert data["has_handoff"] is True
+        assert data["context_notes"] == "Resume test"
+        assert not (project / ".forge-handoff.json").exists()
+
+    def test_resume_no_handoff(self, project, runner):
+        result = runner.invoke(cli, ["--dir", str(project), "resume"])
+        data = json.loads(result.output)
+        assert data["has_handoff"] is False
+
+
+class TestPatrol:
+    def test_clean_state(self, project, runner):
+        result = runner.invoke(cli, ["--dir", str(project), "patrol"])
+        data = json.loads(result.output)
+        assert data["checks_run"] == 5
+
+    def test_detects_stuck_task(self, project, runner):
+        # Set a task to in_progress without checkpoint
+        state = json.loads((project / "state.json").read_text())
+        state["queue"][0]["status"] = "in_progress"
+        (project / "state.json").write_text(json.dumps(state))
+        result = runner.invoke(cli, ["--dir", str(project), "patrol"])
+        data = json.loads(result.output)
+        assert any("in_progress" in i for i in data["issues"])
+
+    def test_fix_stuck_task(self, project, runner):
+        state = json.loads((project / "state.json").read_text())
+        state["queue"][0]["status"] = "in_progress"
+        (project / "state.json").write_text(json.dumps(state))
+        runner.invoke(cli, ["--dir", str(project), "patrol", "--fix"])
+        state = json.loads((project / "state.json").read_text())
+        assert state["queue"][0]["status"] == "pending"
+
+
 class TestInit:
     def test_scaffolds_project(self, tmp_path, runner):
         target = tmp_path / "new-project"

@@ -481,3 +481,4 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-10T16:55:00Z	485	marketing	generated	complete	0.8	🟢	Budget exhausted. Final commit.
 2026-04-10T15:06:56Z	486	implementation	generated	complete	0.9	🟢	smithy handoff + resume: save session context, restore on next session, auto-consume handoff file
 2026-04-10T15:07:43Z	487	implementation	generated	complete	0.9	🟢	smithy patrol: 5 checks (worklog count, stuck tasks, stage sum, orphan checkpoint, cursor bounds), --fix auto-repairs
+2026-04-10T15:08:22Z	488	testing	generated	complete	0.9	🟢	6 new tests: handoff (save, resume, no-handoff), patrol (clean, detect stuck, fix stuck). 29 smithy tests total.
