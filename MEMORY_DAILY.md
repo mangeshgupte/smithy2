@@ -17,6 +17,8 @@
 - Telegram bridge designed for v0.5 (h55)
 - README: FAQ, file structure, dashboard example, hook docs
 
+### Heat 69 [planning]: v0.5 plan — 7 tasks for polish + validation. **Human directive**: no Telegram, use WhatsApp when ready, defer messaging.
+
 ### Key Patterns
 - **Three allocator fixes** validated in practice: soft clamp, unblocking override, queued task bonus
 - Allocator balanced over 68 heats with no human steering

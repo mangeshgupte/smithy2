@@ -134,9 +134,34 @@ for each stage with a ready task:
 - At least one non-dogfood project has been scaffolded and run for 3+ heats
 - Auto-research trigger implemented (t-025)
 
-## v0.5+ Outlook
-- Telegram/Slack messaging sidecar
+## v0.5: Polish + Real-World Validation
+
+### Goal
+Bring overall quality to production-grade. Run on a real project. Target: 85%+ overall progress.
+
+**Note**: Messaging (WhatsApp bridge) deferred to v0.6+ per human directive. No Telegram bridge.
+
+### Tasks
+
+| ID | Stage | Description | Priority | Blocked By |
+|----|-------|-------------|----------|------------|
+| t-023 | implementation | Add --with-personas flag to forge-init.sh | 3 | |
+| t-035 | implementation | Create forge-validate.sh — automated state/protocol integrity checks | 1 | |
+| t-036 | testing | Run Forge on a real non-dogfood project for 10+ heats | 1 | |
+| t-037 | editing | Comprehensive protocol review + version stamp for v0.5 release | 2 | |
+| t-038 | marketing | Write changelog (v0.1→v0.5) for project history | 2 | |
+| t-039 | research | Research hard timeout enforcement for heats | 2 | |
+| t-040 | planning | Design v0.6 — web dashboard or WhatsApp bridge | 3 | |
+
+### What "done" looks like for v0.5
+- forge-validate.sh catches state corruption
+- At least one non-dogfood project has run 10+ heats successfully
+- Overall progress ≥ 85%
+- All protocol files version-stamped
+
+## v0.6+ Outlook
+- WhatsApp messaging bridge (deferred from v0.5)
+- Web dashboard (htmx) — worklog, allocations, memory viewer
 - AI Collaborator integration for design debates
 - Dolt-backed task tracking (full beads)
 - ChromaDB episodic store
-- Web dashboard (htmx)

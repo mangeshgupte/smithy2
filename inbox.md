@@ -42,3 +42,11 @@ Idea: Multiple personas as separate Claude Code sessions. Comms (read-only expla
 ## 2026-04-09 [via prompt]
 Idea: Add a Planner persona between Anvil and Hammer. Anvil brainstorms, Planner turns it into a concrete plan, Hammer executes.
 → ✓ done in heat 39 (Blueprint persona created with dispatch files)
+
+## 2026-04-09 [via prompt]
+Idea: Auto-replenish research — when Forge is running low on good ideas or the task queue is thin, automatically trigger 10 research heats to survey the landscape and generate fresh direction.
+→ ✓ done in heat 66 (auto-task generation added to loop.md Step 4: queue health check + per-stage heuristic)
+
+## 2026-04-09 [via prompt]
+Directive: No Telegram bridge. When messaging is needed, build a WhatsApp bridge instead. Defer messaging work until the time is right — don't build it yet.
+→ ✓ acknowledged in heat 69 (Telegram tasks removed from v0.5, messaging deferred to v0.6+)
