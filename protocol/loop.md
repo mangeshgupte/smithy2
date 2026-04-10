@@ -12,6 +12,10 @@ Read these files at the start of every heat:
 - `MEMORY_DAILY.md` — recent working memory
 - `worklog.tsv` — last 10 entries for trajectory awareness
 
+**Stuck detection**: Scan the queue for any tasks with status "in_progress". These are leftovers from a previous chunk that was interrupted. For each:
+- If the worklog shows the task was logged in the last chunk → it was interrupted mid-work. Reset to "pending" so it can be re-picked.
+- If the worklog does NOT mention it → it was orphaned. Reset to "pending".
+
 ## Step 2: Process Inbox
 
 If there are new lines in `inbox.md` beyond the `inbox_cursor`:
@@ -38,6 +42,8 @@ Read `protocol/allocator.md` and follow the algorithm to pick a stage.
 
 ## Step 5: Execute (~4 minutes)
 
+**Checkpoint**: Before starting work, note the current git HEAD: `git rev-parse HEAD`. If the work breaks things (tests fail, code doesn't parse), you can roll back: `git reset --hard <saved-head>`. Log the outcome as "discard" in the worklog. Only use this for implementation and testing heats — research and planning always keep their output.
+
 Do the actual work. Stay focused on the single task. Use the appropriate tools:
 
 | Stage | What to do | Tools |
@@ -48,6 +54,13 @@ Do the actual work. Stay focused on the single task. Use the appropriate tools:
 | **Testing** | Write tests, run them, verify behavior | Write, Edit, Bash |
 | **Editing** | Refine existing code or docs, improve quality | Read, Edit |
 | **Marketing** | Write README, docs, user-facing descriptions | Write, Edit |
+
+**Output redirection**: For Bash commands that may produce long output (builds, test suites, scripts), redirect to a file to avoid flooding context:
+```bash
+command > .forge-output.log 2>&1
+grep "PASS\|FAIL\|error" .forge-output.log   # Extract what matters
+tail -n 30 .forge-output.log                   # Diagnose failures
+```
 
 After completing work, git commit the changes:
 ```
