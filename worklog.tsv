@@ -374,3 +374,4 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-10T18:55:00Z	378	marketing	generated	complete	0.7	🟢	Outbox AAR
 2026-04-10T19:00:00Z	379	editing	generated	complete	0.7	🟢	Final state update
 2026-04-10T19:05:00Z	380	marketing	generated	complete	0.8	🟢	Budget exhausted. Final commit.
+2026-04-10T20:00:00Z	381	planning	generated	complete	0.7	🟢	Budget extended to 430, tutor state synced (140 heats, 85%), 4 new tasks (t-072-075), feedback cursor updated
