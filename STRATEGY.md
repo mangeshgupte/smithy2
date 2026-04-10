@@ -62,19 +62,23 @@ The wavefront moves left-to-right through stages over time. Each `█` = 1 heat.
 
 ### What's Working
 
-- The wavefront allocator correctly shifts effort through the dependency chain
-- 5 heats touched 5 different stages — no stage hoarding
-- Exploration rule (every 5th heat) fires correctly
-- Flat-file state is transparent and git-tracked
-- Protocol files are modular and human-readable
+- Wavefront allocator with anti-windup (0.85 decay) — balanced across 6 stages
+- 30 heats across all stages, no hoarding, exploration rule fires correctly
+- DAG task dependencies (blocked_by) with ready detection
+- forge-init.sh scaffolds new projects in seconds
+- SessionEnd hook wired for automatic memory distillation
+- Checkpoint file for crash recovery
+- Idea pipeline: capture → evaluate → track → acknowledge (8/8 human ideas done)
+- 28KB cold start — session cycling viable
+- Protocol modular and human-readable (reviewed at heat 28)
 
 ### What's Missing
 
-- No automated testing (protocol is tested manually by running it)
-- No README or external documentation
-- No messaging integration (inbox.md only, no Telegram/Slack)
-- No episodic memory store (flat files only)
+- No messaging integration (inbox.md only, no Telegram/Slack) — v0.4
+- No episodic memory store (flat files only) — v0.6
 - No hard timeout enforcement on heats
+- No /loop integration yet — v0.3
+- No non-dogfood project attempted yet
 
 ## Main Ideas Being Tried
 
