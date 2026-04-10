@@ -828,9 +828,22 @@ details.heat-card[open] .heat-summary {
 
 .empty-state {
     text-align: center;
-    padding: 48px 16px;
+    padding: 48px 24px;
     color: var(--text-muted);
+    background: var(--surface);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    margin: 16px 0;
 }
+
+.empty-state p:first-child:not(.muted) {
+    color: var(--text);
+    font-weight: 600;
+    font-size: 16px;
+    margin-bottom: 6px;
+}
+
+.empty-state .muted { font-size: 13px; max-width: 300px; margin: 0 auto; }
 
 /* Responsive — wider screens */
 @media (min-width: 768px) {
