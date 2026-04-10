@@ -52,3 +52,4 @@ timestamp	heat	stage	task_id	outcome	value	notes
 2026-04-09T04:10:00Z	51	planning	generated	complete	0.9	Integral recovery: diagnosed -1.0 trap, softened clamp ±1.0→±0.5, added unblocking override (+0.3 for critical-path tasks)
 2026-04-09T04:15:00Z	52	implementation	t-021	complete	0.8	Added .gitignore to forge-init.sh scaffold + dogfood project. Unblocks t-023 and t-027.
 2026-04-09T04:20:00Z	53	editing	generated	complete	0.7	Protocol review: fixed stale ±1.0→±0.5 in allocator docs, cleaned 2 completed tasks from queue, unblocked t-023/t-027
+2026-04-09T04:25:00Z	54	marketing	generated	complete	0.8	FAQ/Troubleshooting section in README: 6 common questions with answers + memory consolidation
