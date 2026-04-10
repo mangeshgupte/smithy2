@@ -86,6 +86,41 @@ def read_project(project_dir: str) -> dict:
         last = worklog[-1]
         current_activity = last.get("notes", "").split(". Could improve")[0]
 
+    # Group heats by day for activity feed
+    days = {}
+    for h in worklog:
+        ts = h.get("timestamp", "")
+        day = ts[:10] if len(ts) >= 10 else "unknown"
+        if day not in days:
+            days[day] = []
+        days[day].append(h)
+
+    # Build day summaries (sorted newest first)
+    heat_days = []
+    sorted_day_keys = sorted(days.keys(), reverse=True)
+    for i, day in enumerate(sorted_day_keys):
+        day_heats = days[day]
+        stages_used = {}
+        signals = {"🟢": 0, "🟡": 0, "🔴": 0}
+        for h in day_heats:
+            st = h.get("stage", "?")
+            stages_used[st] = stages_used.get(st, 0) + 1
+            sig = h.get("signal", "🟢")
+            for s in signals:
+                if s in sig:
+                    signals[s] += 1
+        summary = f"{len(day_heats)} heats: " + ", ".join(
+            f"{s}×{c}" for s, c in sorted(stages_used.items(), key=lambda x: -x[1])
+        )
+        heat_days.append({
+            "date": day,
+            "heats": day_heats,
+            "count": len(day_heats),
+            "summary": summary,
+            "signals": signals,
+            "is_recent": i < 2,  # Show individual heats for last 2 days
+        })
+
     return {
         "name": state.get("project", p.name),
         "dir": str(p),
@@ -94,6 +129,7 @@ def read_project(project_dir: str) -> dict:
         "budget": state.get("budget", {}),
         "stages": state.get("stages", {}),
         "recent_heats": recent_heats[-10:],
+        "heat_days": heat_days,
         "decisions": decisions,
         "whats_missing": whats_missing[:5],
         "current_activity": current_activity,

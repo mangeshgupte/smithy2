@@ -312,6 +312,31 @@ body {
 .activity-feed { margin: 16px 0; }
 .activity-feed h2 { font-size: 16px; margin-bottom: 12px; }
 
+/* Day groups in activity feed */
+.day-group { margin-bottom: 20px; }
+
+.day-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 8px;
+}
+
+.day-date { font-weight: 700; font-size: 14px; }
+.day-summary { font-size: 13px; color: var(--text-muted); flex: 1; }
+.day-signals { font-size: 12px; }
+
+.day-collapsed summary {
+    cursor: pointer;
+    color: var(--blue);
+    font-size: 13px;
+    padding: 6px 0;
+}
+
+.day-collapsed summary:hover { text-decoration: underline; }
+
 .heat-card {
     background: var(--surface);
     border: 1px solid var(--border);
