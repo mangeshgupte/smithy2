@@ -2,6 +2,26 @@
 
 The Smith writes status updates, questions, and summaries here.
 
+## 2026-04-10 [heat 180, AAR — heats 171-180]
+
+10 heats: 3 impl, 3 test, 2 edit, 1 plan, 1 mktg. Signal: 🟢×10.
+Key: Feedback loop closed — Commissioner writes to feedback.md, Forge reads on next run, collapsible heats + shorter AAR format.
+Next: t-051 (tap-to-decide), then iterate on tutor with its feedback.md.
+
+<details>
+<summary>Detail</summary>
+
+**Planned**: Process feedback.md (review-first-heat), implement Commissioner fixes from feedback, test everything.
+
+**What happened**: 4 fix tasks generated from feedback → 3 implemented (feedback UI, collapsible heats, shorter AAR). tap-to-decide (t-051) deferred — needs JS. All 6 Commissioner routes return 200. Feedback POST writes to file correctly.
+
+**Artifacts**: commissioner/app.py (feedback POST handler), commissioner/templates/direct.html (feedback section), project.html (collapsible details), protocol/loop.md (shorter AAR).
+
+**Lessons**: The review-first-heat protocol works — it read feedback and generated actionable tasks automatically. The feedback→fix loop is now end-to-end: human writes feedback → Forge generates tasks → implements fixes → human reviews.
+</details>
+
+---
+
 ## 2026-04-09 [heat 155, After-Action Review — heats 136-155]
 
 ### 1. What Was Planned

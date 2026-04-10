@@ -1,21 +1,17 @@
 # Daily Memory
 
-## 2026-04-09
+## 2026-04-10
 
-### Heats 1-135: v0.1-v0.5 + AI Tutor + Interface Research
-- 135 heats: protocol, allocator, tools, personas, interface/landscape research, AI tutor
-- 82% overall at heat 135
-
-### Heats 136-165: Commissioner App + Phase 2
-- **Commissioner built** (h136-155): 5 screens + dark CSS, reads real Forge state
-- **Direct tab** (h156-159): free-form input → inbox.md, quick actions, intent display, budget, tasks
-- **POST writes to inbox.md** — Commissioner can now steer Forge projects from the browser
-- Testing: forge_reader, forge-validate, E2E all pass
-- STRATEGY at 85%, all stages above 80%
+### Heats 171-180: Iteration Tooling Stage 2 + Feedback Fixes
+- **Review-first-heat validated** (h171): read feedback.md → generated 4 fix tasks automatically
+- **Commissioner feedback UI** (h172): Direct tab now has "Send Feedback" → writes to project's feedback.md
+- **Collapsible heats** (h173): Activity tab uses `<details>` — collapsed by default, tap to expand
+- **Shorter AAR** (h174): 3-line L1 summary + expandable L3 detail
+- All 6 Commissioner routes return 200, feedback POST works E2E
+- Budget corrected: was inflated by double-counting, now 180/180 (session exhausted)
 
 ### Key Patterns
-- Commissioner validates flat-file architecture — reading state.json/worklog directly works perfectly
-- The Direct tab closes the loop: human can view AND steer from one interface
-- 3 personas now: Anvil (interface), Forge (worker), Chisel (designer)
-- 85% overall at heat 165 — all stages above 80%
-- Implementation integral recovering (-0.15) thanks to Commissioner build heats
+- **Feedback loop is closed**: Commissioner → feedback.md → review-first-heat → fix tasks → implementation → human reviews
+- Review-first-heat works as designed — first real use generated 4 actionable tasks
+- The shorter AAR format is much better — respects human's time
+- 87% overall at heat 180

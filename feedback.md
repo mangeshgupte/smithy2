@@ -5,6 +5,7 @@ Human writes feedback here. Forge reads it at the start of each run and generate
 Format: `## YYYY-MM-DD` followed by freeform feedback.
 
 ## 2026-04-10
+- Test feedback from commissioner UI
 
 ### AI Tutor
 - Questions in the Socratic dialogue are too easy — need harder probing questions that really test understanding
