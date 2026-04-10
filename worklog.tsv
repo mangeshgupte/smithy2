@@ -509,3 +509,4 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-10T15:53:46Z	508	editing	generated	complete	0.9	🟢	protocol/loop.md fully rewritten: every state mutation now goes through smithy CLI, no manual edits
 2026-04-10T15:54:43Z	509	editing	generated	complete	0.9	🟢	logging.md + allocator.md rewritten: smithy end-heat handles all logging, smithy allocate handles all math
 2026-04-10T15:55:12Z	510	testing	generated	complete	0.8	🟢	Stress test heat 1: full protocol flow via smithy CLI only
+2026-04-10T15:55:29Z	511	editing	generated	complete	0.8	🟢	Stress test heat 2: memory-write via smithy, patrol clean
