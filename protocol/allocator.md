@@ -78,6 +78,20 @@ for each stage with a ready task:
 
 This ensures tasks that unblock multiple downstream tasks get done even when their stage's integral is negative.
 
+## Queued Task Bonus
+
+After computing scores and unblocking override, prevent "dead tasks" (queued tasks in low-scoring stages that never get executed):
+
+```
+for each stage:
+  ready_count = count of queue tasks for this stage where:
+    - status = "pending"
+    - all tasks in blocked_by have status = "complete" (or blocked_by is empty)
+  score[stage] += ready_count * 0.07
+```
+
+This gives a proportional nudge: 1 task = +0.07, 2 = +0.14, 3 = +0.21. Enough to make a disfavored stage competitive without always overriding the allocator.
+
 ## Pick Stage
 
 - Normally: pick the stage with the highest score.
