@@ -2,7 +2,7 @@
   "project": "ai-coworker",
   "budget": {
     "total_heats": 270,
-    "used": 236,
+    "used": 243,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -54,15 +54,78 @@
     }
   },
   "queue": [
-    {"id": "t-044", "stage": "implementation", "desc": "Repo map generation for non-dogfood projects", "status": "complete", "priority": 2, "blocked_by": []},
-    {"id": "t-045", "stage": "implementation", "desc": "Lint→test→fix loop for implementation stage", "status": "complete", "priority": 2, "blocked_by": []},
-    {"id": "t-046", "stage": "implementation", "desc": "Self-critique (Reflexion-style) per heat", "status": "complete", "priority": 2, "blocked_by": []},
-    {"id": "t-051", "stage": "implementation", "desc": "Commissioner: tap-to-decide on decision cards", "status": "complete", "priority": 1, "blocked_by": []},
-    {"id": "t-055", "stage": "implementation", "desc": "Commissioner: notification tier logic (push/quiet/in-app classification based on priority)", "status": "pending", "priority": 2, "blocked_by": []},
-    {"id": "t-056", "stage": "implementation", "desc": "Tutor: per-card review tracking for accurate Review Summary stats (strong/weak areas)", "status": "pending", "priority": 2, "blocked_by": []},
-    {"id": "t-057", "stage": "implementation", "desc": "Tutor: weekly progress chart on Review landing (bar chart of cards reviewed per day)", "status": "pending", "priority": 3, "blocked_by": []},
-    {"id": "t-058", "stage": "testing", "desc": "Write tests for tutor/cards.py — card creation, SM-2 scheduling, drill generation, streak", "status": "pending", "priority": 2, "blocked_by": []},
-    {"id": "t-059", "stage": "editing", "desc": "Tutor README update: document new 3-tab UI, card creation, review workflow, running instructions", "status": "pending", "priority": 2, "blocked_by": []}
+    {
+      "id": "t-044",
+      "stage": "implementation",
+      "desc": "Repo map generation for non-dogfood projects",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-045",
+      "stage": "implementation",
+      "desc": "Lint\u2192test\u2192fix loop for implementation stage",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-046",
+      "stage": "implementation",
+      "desc": "Self-critique (Reflexion-style) per heat",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-051",
+      "stage": "implementation",
+      "desc": "Commissioner: tap-to-decide on decision cards",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-055",
+      "stage": "implementation",
+      "desc": "Commissioner: notification tier logic (push/quiet/in-app classification based on priority)",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-056",
+      "stage": "implementation",
+      "desc": "Tutor: per-card review tracking for accurate Review Summary stats (strong/weak areas)",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-057",
+      "stage": "implementation",
+      "desc": "Tutor: weekly progress chart on Review landing (bar chart of cards reviewed per day)",
+      "status": "complete",
+      "priority": 3,
+      "blocked_by": []
+    },
+    {
+      "id": "t-058",
+      "stage": "testing",
+      "desc": "Write tests for tutor/cards.py \u2014 card creation, SM-2 scheduling, drill generation, streak",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-059",
+      "stage": "editing",
+      "desc": "Tutor README update: document new 3-tab UI, card creation, review workflow, running instructions",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": []
+    }
   ],
   "ideas": [
     {
