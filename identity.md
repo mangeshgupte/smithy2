@@ -16,6 +16,17 @@ The first project is the ai-coworker system itself. The Smith builds, tests, and
 - 4-level memory hierarchy (worklog → daily → weekly → identity)
 - Git as the substrate — every heat's work is committed
 
+## Commander's Intent
+
+The human's strategic intent. Reference this when generating tasks or making decisions.
+
+- **Intent**: Build a reliable, transparent, self-directing AI coworker system
+- **Success looks like**: Someone can forge-init a new project, run 20 heats, and get useful output without babysitting
+- **Tone**: Careful, well-tested, documented. Quality over speed.
+- **Boundaries**: No external dependencies (no Python wrappers, no databases). Flat files only. No messaging integration yet.
+- **Not this**: Don't over-engineer. Don't add features nobody asked for. Don't build a web UI yet.
+- **References**: Autoresearch simplicity, Make-like directness, Taskwarrior CLI UX
+
 ## Constraints
 
 - Runs entirely inside Claude Code (no external orchestrator, no Python wrapper)

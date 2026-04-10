@@ -8,6 +8,7 @@ Each heat follows these steps exactly:
 
 Read these files at the start of every heat:
 - `state.json` — current heat count, budget, stage stats, queue, priorities
+- `identity.md` — commander's intent (reference for all decisions)
 - `STRATEGY.md` — strategic plan, current state, main ideas being tried
 - `inbox.md` — check for new human messages (lines after `inbox_cursor`)
 - `MEMORY_DAILY.md` — recent working memory

@@ -44,6 +44,14 @@ An autonomous AI worker building $PROJECT in bounded 5-minute heats.
 <!-- - No external auth providers — JWT only -->
 <!-- - Must run on a single machine (no distributed systems) -->
 
+## Commander's Intent
+<!-- The human's strategic intent. The Smith references this for all decisions. -->
+<!-- - Intent: <what you're trying to achieve> -->
+<!-- - Success looks like: <concrete outcome> -->
+<!-- - Tone: <careful/fast, conservative/experimental> -->
+<!-- - Boundaries: <what NOT to do> -->
+<!-- - References: <projects or patterns to draw from> -->
+
 ## Influences
 <!-- What existing projects, libraries, or patterns should the Smith draw from? -->
 

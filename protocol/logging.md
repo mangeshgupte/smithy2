@@ -4,7 +4,7 @@
 
 Add one row (tab-separated):
 ```
-timestamp	heat	stage	task_id	outcome	value	notes
+timestamp	heat	stage	task_id	outcome	value	signal	notes
 ```
 
 - `timestamp`: ISO 8601 (e.g., 2026-04-09T14:35:00Z)
@@ -13,7 +13,8 @@ timestamp	heat	stage	task_id	outcome	value	notes
 - `task_id`: the task ID (e.g., t-001) or "generated" if self-generated
 - `outcome`: "complete", "partial", or "blocked"
 - `value`: self-assessed productivity 0.0-1.0 (see Self-Assessment Guide below)
-- `notes`: one-line summary of what was accomplished
+- `signal`: stoplight signal (see Signal Classification below)
+- `notes`: one-line summary + self-critique ("what could be better")
 
 ## Update state.json
 
@@ -48,12 +49,22 @@ After every heat, update `STRATEGY.md` to reflect the current state:
 
 Keep it concise — this is a living snapshot, not a detailed log (that's what worklog.tsv and MEMORY_DAILY.md are for).
 
+## Signal Classification
+
+Assign a stoplight signal to each heat. The human reads only yellow and red heats.
+
+- 🟢 **Green**: Completed normally, value ≥ 0.7, no uncertainty, no issues
+- 🟡 **Yellow**: Value < 0.7, OR progress stalled (same stage progress as last heat), OR task was self-generated (not from queue), OR moderate uncertainty about approach
+- 🔴 **Red**: Rollback occurred, OR blocked > 5 heats, OR high uncertainty about a decision, OR deviation from commander's intent
+
+**Self-critique**: In the `notes` field, after the summary, add a brief self-critique: "Could improve: <what>". This feeds into the after-action review. If nothing could be better, write "Could improve: nothing obvious."
+
 ## Print Heat Dashboard
 
 After every heat, print a compact progress dashboard directly to the conversation so the human can see it. Use this format:
 
 ```
-── Heat N [stage] ─────────────────────────────
+── Heat N [stage] 🟢 ──────────────────────────
 Task: <what was done>
 Value: <0.0-1.0> | Outcome: <complete/partial/blocked>
 
