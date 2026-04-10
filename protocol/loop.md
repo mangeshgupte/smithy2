@@ -71,10 +71,21 @@ Read `protocol/allocator.md` and follow the algorithm to pick a stage.
 
 ## Step 4: Pick a Task
 
-- If there are tasks in `queue` matching the chosen stage with status "pending": pick the highest-priority one and set its status to "in_progress".
-- If no matching tasks: generate one yourself based on the project's current needs. Add it to the queue with status "in_progress".
+**Ready detection** (inspired by beads): A task is **ready** if:
+- status = "pending"
+- all tasks in its `blocked_by` array (if any) have status = "complete"
 
-Task IDs: queued tasks use `t-NNN` (e.g., t-005). Self-generated tasks use `"generated"` as the task_id in the worklog.
+Pick the highest-priority **ready** task matching the chosen stage. Set its status to "in_progress".
+
+If no ready tasks for the chosen stage: generate one yourself based on the project's current needs. Add it to the queue with status "in_progress".
+
+**Task schema:**
+```json
+{"id": "t-NNN", "stage": "...", "desc": "...", "status": "pending|in_progress|complete",
+ "priority": 1, "blocked_by": ["t-005"]}
+```
+
+Task IDs: queued tasks use `t-NNN`. Self-generated tasks use `"generated"` as the task_id in the worklog.
 
 ## Step 5: Execute (~4 minutes)
 

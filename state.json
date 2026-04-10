@@ -24,14 +24,14 @@
     }
   },
   "queue": [
-    {"id": "t-006", "stage": "implementation", "desc": "SessionEnd hook for automatic memory distillation", "status": "pending", "priority": 2},
-    {"id": "t-007", "stage": "implementation", "desc": "Project template script to scaffold Forge files in new directory", "status": "pending", "priority": 3},
-    {"id": "t-009", "stage": "testing", "desc": "Fresh-session resume test", "status": "pending", "priority": 4},
-    {"id": "t-011", "stage": "marketing", "desc": "Quick-start guide for new projects", "status": "pending", "priority": 6},
-    {"id": "t-012", "stage": "research", "desc": "Research beads system for git-backed task tracking with DAG dependencies", "status": "pending", "priority": 1}
+    {"id": "t-006", "stage": "implementation", "desc": "SessionEnd hook for automatic memory distillation", "status": "pending", "priority": 2, "blocked_by": []},
+    {"id": "t-007", "stage": "implementation", "desc": "Project template script to scaffold Forge files in new directory", "status": "pending", "priority": 3, "blocked_by": []},
+    {"id": "t-009", "stage": "testing", "desc": "Fresh-session resume test", "status": "pending", "priority": 4, "blocked_by": []},
+    {"id": "t-011", "stage": "marketing", "desc": "Quick-start guide for new projects", "status": "pending", "priority": 6, "blocked_by": ["t-007"]},
+    {"id": "t-012", "stage": "research", "desc": "Research beads system for git-backed task tracking with DAG dependencies", "status": "complete", "priority": 1, "blocked_by": []}
   ],
   "ideas": [
-    {"id": "i-008", "text": "Task tracking backed by git, dependencies as DAG, research beads system", "source": "prompt", "status": "queued", "task_id": "t-012"}
+    {"id": "i-008", "text": "Task tracking backed by git, dependencies as DAG, research beads system", "source": "prompt", "status": "done", "task_id": "t-012"}
   ],
   "inbox_cursor": 37,
   "human_priorities": [],
