@@ -2,30 +2,30 @@
   "project": "ai-coworker",
   "budget": {
     "total_heats": 159,
-    "used": 40,
+    "used": 41,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
-    "research":       {"target": 0.21, "heats": 7, "progress": 0.65, "value_ema": 0.67},
-    "planning":       {"target": 0.16, "heats": 5, "progress": 0.50, "value_ema": 0.65},
+    "research":       {"target": 0.18, "heats": 7, "progress": 0.65, "value_ema": 0.67},
+    "planning":       {"target": 0.17, "heats": 5, "progress": 0.50, "value_ema": 0.65},
     "implementation": {"target": 0.07, "heats": 12, "progress": 0.75, "value_ema": 0.68},
-    "testing":        {"target": 0.21, "heats": 7, "progress": 0.45, "value_ema": 0.64},
-    "editing":        {"target": 0.21, "heats": 6, "progress": 0.45, "value_ema": 0.63},
+    "testing":        {"target": 0.22, "heats": 7, "progress": 0.45, "value_ema": 0.64},
+    "editing":        {"target": 0.22, "heats": 7, "progress": 0.50, "value_ema": 0.65},
     "marketing":      {"target": 0.14, "heats": 4, "progress": 0.40, "value_ema": 0.64}
   },
   "allocator": {
     "integral": {
-      "research": 0.13,
-      "planning": 0.07,
-      "implementation": -0.69,
-      "testing": 0.18,
-      "editing": 0.17,
-      "marketing": 0.13
+      "research": 0.12,
+      "planning": 0.11,
+      "implementation": -0.81,
+      "testing": 0.20,
+      "editing": 0.22,
+      "marketing": 0.16
     }
   },
   "queue": [
     {"id": "t-021", "stage": "implementation", "desc": "Add .gitignore to forge-init.sh scaffold", "status": "pending", "priority": 1, "blocked_by": []},
-    {"id": "t-022", "stage": "editing", "desc": "Improve identity.md and STRATEGY.md templates with guided questions", "status": "pending", "priority": 2, "blocked_by": []},
+    {"id": "t-022", "stage": "editing", "desc": "Improve identity.md and STRATEGY.md templates with guided questions", "status": "complete", "priority": 2, "blocked_by": []},
     {"id": "t-023", "stage": "implementation", "desc": "Add --with-personas flag to forge-init.sh", "status": "pending", "priority": 3, "blocked_by": ["t-021"]},
     {"id": "t-024", "stage": "marketing", "desc": "Document SessionEnd hook setup in README", "status": "pending", "priority": 2, "blocked_by": []}
   ],
@@ -34,5 +34,5 @@
   ],
   "inbox_cursor": 41,
   "human_priorities": [],
-  "overall_progress": 0.53
+  "overall_progress": 0.54
 }

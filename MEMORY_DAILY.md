@@ -27,6 +27,7 @@
 ### Heats 39+: Production Hardening
 - Heat 39 [testing]: Persona system verification — found 2 stale references from Lens→Anvil consolidation, all paths valid
 - Heat 40 [research]: Real-project readiness assessment — forge-init.sh missing .gitignore, SessionEnd hook, better templates. 4 tasks queued.
+- Heat 41 [editing]: Improved scaffold templates — identity.md and STRATEGY.md now have guided HTML comments with examples
 
 ### Key Patterns
 - Human ideas implemented quickly (8/8 done)
