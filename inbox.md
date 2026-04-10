@@ -33,4 +33,8 @@ Idea: Standardize vocabulary to use "heat" everywhere instead of mixing "heat" a
 
 ## 2026-04-09 [via prompt]
 Idea: Task tracking should be backed by git and dependencies stored as a DAG. Research how it's done in beads for tracking tasks and dependencies.
-→ ⏳ queued as t-012 (research task for next run)
+→ ✓ done in heat 20 (beads DAG research + implemented blocked_by deps)
+
+## 2026-04-09 [via prompt]
+Idea: Multiple personas as separate Claude Code sessions. Comms (read-only explainer), Chief of Staff (coordinator/brainstormer, farms out work), Implementor (pure polecat, runs heats).
+→ ✓ done in heats 36-38 (persona system designed and implemented)

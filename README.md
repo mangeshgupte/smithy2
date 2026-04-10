@@ -111,6 +111,25 @@ cat STRATEGY.md        # Current project state at a glance
 ```
 Adds 10 to the budget. Picks up exactly where it left off.
 
+## Personas
+
+The Forge has three personas, each running as a separate Claude Code session:
+
+| Persona | Name | Role | Start Command |
+|---------|------|------|---------------|
+| **Comms** | **Lens** | Explains state and history. Refuses implementation and new ideas. | `cd personas/lens && claude` |
+| **Chief of Staff** | **Anvil** | Brainstorms, plans, dispatches jobs. Refuses direct implementation. | `cd personas/anvil && claude` |
+| **Implementor** | **Hammer** | Pure polecat. Runs heats, executes jobs. GUPP. | `cd personas/hammer && claude` |
+
+**Typical workflow:**
+1. Talk to **Anvil** about what to do next → Anvil writes a job to `dispatch/anvil-to-hammer.md`
+2. Start **Hammer** → `Run 10 heats` → Hammer executes and reports to `dispatch/hammer-to-anvil.md`
+3. Ask **Lens** to explain what happened, what decisions were made, current state
+
+**Communication between personas** is via flat files in `dispatch/`:
+- `dispatch/anvil-to-hammer.md` — Anvil sends jobs
+- `dispatch/hammer-to-anvil.md` — Hammer reports results
+
 ## Key Principles
 
 - **No Python.** The entire system is prose — CLAUDE.md + protocol files. Claude Code is the runtime.
