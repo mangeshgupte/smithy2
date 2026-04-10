@@ -27,15 +27,13 @@
     {"id": "t-044", "stage": "implementation", "desc": "Repo map generation for non-dogfood projects", "status": "pending", "priority": 2, "blocked_by": []},
     {"id": "t-045", "stage": "implementation", "desc": "Lint→test→fix loop for implementation stage", "status": "pending", "priority": 2, "blocked_by": []},
     {"id": "t-046", "stage": "implementation", "desc": "Self-critique (Reflexion-style) per heat", "status": "pending", "priority": 2, "blocked_by": []},
-    {"id": "t-051", "stage": "implementation", "desc": "Commissioner: tap-to-decide on decision cards", "status": "pending", "priority": 1, "blocked_by": []},
-    {"id": "t-052", "stage": "implementation", "desc": "Commissioner: collapsible heat cards", "status": "complete", "priority": 2, "blocked_by": []},
-    {"id": "t-053", "stage": "implementation", "desc": "Commissioner: feedback input on Direct tab", "status": "complete", "priority": 1, "blocked_by": []},
-    {"id": "t-054", "stage": "editing", "desc": "Shorten AAR format", "status": "complete", "priority": 2, "blocked_by": []}
+    {"id": "t-051", "stage": "implementation", "desc": "Commissioner: tap-to-decide on decision cards", "status": "pending", "priority": 1, "blocked_by": []}
   ],
   "ideas": [
-    {"id": "i-015", "text": "Iteration tooling — feedback.md + review-first-heat", "source": "inbox", "status": "done", "task_id": null}
+    {"id": "i-015", "text": "Iteration tooling — feedback.md + review-first-heat", "source": "inbox", "status": "done", "task_id": null},
+    {"id": "i-016", "text": "Multi-subject tutor with Singapore Math", "source": "inbox", "status": "queued", "task_id": null}
   ],
-  "inbox_cursor": 77,
+  "inbox_cursor": 81,
   "human_priorities": [],
   "overall_progress": 0.87
 }
