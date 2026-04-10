@@ -457,3 +457,4 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-10T13:58:18Z	461	implementation	generated	complete	0.9	🟢	Fix syntax highlighting bug: scoped to Python only via data-subject attr, non-Python examples no longer broken
 2026-04-10T13:58:45Z	462	testing	generated	complete	0.8	🟢	Syntax fix verified: Python gets data-subject=python, English gets english-vocab (JS ignores). All routes 200.
 2026-04-10T13:59:35Z	463	implementation	t-082	complete	0.9	🟢	Smithy init command: scaffolds project with state.json, worklog, protocol, identity, feedback, inbox — validates clean
+2026-04-10T14:00:10Z	464	testing	generated	complete	0.8	🟢	142 tests pass (111+12+19), smithy validate clean
