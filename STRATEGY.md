@@ -1,6 +1,6 @@
-# Strategic Plan — The Forge
+# Strategic Plan — The Smithy
 
-*Updated after heat 490 | 2026-04-10*
+*Updated after heat 500 | 2026-04-10*
 
 ## Vision
 
@@ -50,14 +50,14 @@ See `research/gas-town-integration-synthesis.md` for the full analysis.
 
 | Stage | Progress | Heats | Notes |
 |-------|----------|--------|-------|
-| Research | 88% | 24 | Landscape, interface, timeout — all research complete. |
-| Planning | 82% | 16 | Feedback protocol review, tutor feedback processed. |
-| Implementation | 98% | 115 | Tutor: RR palette, syntax highlighting, 17 templates. Commissioner: tiers, bottleneck, last-active. |
-| Testing | 91% | 60 | 123 tests (111 tutor + 12 commissioner), all routes verified. |
-| Editing | 90% | 52 | STRATEGY, CHANGELOG v0.8, README rewrite, tutor STRATEGY. |
-| Marketing | 86% | 33 | AARs, dispatch reports, CHANGELOG. |
+| Research | 90% | 27 | Landscape, interface, Gas Town integration (5 docs). |
+| Planning | 85% | 26 | Approach B decision, task generation, queue management. |
+| Implementation | 98% | 157 | Smithy CLI (16 commands), Tutor (RR palette, 18 templates), Commissioner. |
+| Testing | 90% | 96 | 152 tests (111 tutor + 12 commissioner + 29 smithy). Patrol clean. |
+| Editing | 90% | 132 | Protocol (handoff/resume/patrol), STRATEGY, CHANGELOG, READMEs. |
+| Marketing | 86% | 62 | AARs, dispatch reports, CHANGELOGs. |
 
-**Overall progress**: ~94% | **Heats used**: 430 | **Wavefront phase**: finishing
+**Overall progress**: ~90% | **Heats used**: 500 | **Wavefront phase**: mature
 
 ### What's Working
 

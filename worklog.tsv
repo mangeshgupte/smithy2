@@ -499,3 +499,4 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-10T15:46:56Z	498	planning	generated	complete	0.7	🟢	3 tasks generated (t-088-090): sync-stages, full test, STRATEGY/CHANGELOG milestone
 2026-04-10T15:47:45Z	499	implementation	t-088	complete	0.9	🟢	smithy sync-stages: recalculated all stage heats from worklog. Patrol now fully clean (0 issues).
 2026-04-10T15:48:24Z	500	testing	t-089	complete	0.9	🟢	HEAT 500: 152 tests, validate clean, patrol clean, stages synced from worklog. 499 heats across 6 stages.
+2026-04-10T15:49:29Z	501	editing	t-090	complete	0.8	🟢	STRATEGY + CHANGELOG updated for 500-heat milestone. v1.0 documented.

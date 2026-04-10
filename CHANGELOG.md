@@ -1,5 +1,26 @@
 # Changelog
 
+## v1.0 — Gas Town Patterns + 500-Heat Milestone (heats 481-500)
+
+### Gas Town Integration Research
+- 5 research docs analyzing extension points, state mapping, comms, autonomy/memory gaps
+- **Decision: Approach B** — adopt patterns, stay independent
+
+### New Smithy Commands (3)
+- `smithy handoff` / `smithy resume` — session cycling (save/restore context across sessions)
+- `smithy patrol [--fix]` — discover-don't-track validation (5 checks, auto-repair)
+- `smithy sync-stages` — recalculate stage heats from worklog (fixes drift)
+
+### Protocol Updates
+- **Step 0** (new): `smithy resume` + `smithy patrol --fix` on session start
+- **Step 8**: `smithy handoff` before stopping
+
+### Milestone: 500 Heats
+- 16 smithy commands, 29 smithy tests
+- 152 total tests (111 tutor + 12 commissioner + 29 smithy)
+- Patrol fully clean — zero discrepancies
+- Stage heats synced from actual worklog data
+
 ## v0.9 — Smithy CLI + Visual Polish + Bug Fixes (heats 286-480)
 
 ### Smithy CLI (13 commands)
