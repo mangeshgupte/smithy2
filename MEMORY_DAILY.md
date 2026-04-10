@@ -19,6 +19,13 @@
 - Automation research: /loop for 20-50 heats, external cron+SessionEnd for 50+
 - Vocabulary standardized: "chunk" → "heat" globally across 13 files
 
+### Heats 13-19: v0.2 Kickoff + Wrap
+- Fixed integral windup with 0.85 decay + ±1.0 clamp — allocator scores now balanced
+- Live tested keep/discard pattern: deliberate bad edit → rollback → confirmed
+- v0.2 planned: 7 tasks for robustness + multi-project support
+- Checkpoint file (.forge-checkpoint.json) implemented for crash recovery
+- State pruned, README enhanced with examples, all 6 stages covered
+
 ### Key Patterns Emerging
 - Human ideas arrive in bursts, all get implemented quickly (6/6 done)
 - Allocator integral accumulates for research, causing persistent pull — may need integral decay

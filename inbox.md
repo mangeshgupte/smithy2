@@ -30,3 +30,7 @@ Idea: Each idea in inbox.md should have a status — whether considered and impl
 ## 2026-04-09 [via prompt]
 Idea: Standardize vocabulary to use "heat" everywhere instead of mixing "heat" and "heat". Heat serves as a global timeline for the whole project.
 → ✓ done in heat 12 (global find-and-replace across all protocol files, state.json keys, CLAUDE.md)
+
+## 2026-04-09 [via prompt]
+Idea: Task tracking should be backed by git and dependencies stored as a DAG. Research how it's done in beads for tracking tasks and dependencies.
+→ ⏳ queued as t-012 (research task for next run)

@@ -11,3 +11,10 @@ timestamp	heat	stage	task_id	outcome	value	notes
 2026-04-09T00:45:00Z	10	testing	generated	complete	0.7	10 protocol test scenarios — 9 pass, 1 untested (keep/discard), 5 edge cases identified
 2026-04-09T00:50:00Z	11	research	generated	complete	0.7	/loop vs /schedule vs external cron for automating heat execution
 2026-04-09T00:55:00Z	12	editing	i-007	complete	0.8	Standardized vocabulary: chunk → heat across all protocol, state, and doc files
+2026-04-09T01:00:00Z	13	research	generated	complete	0.9	Integral windup research + fix: 0.85 decay + ±1.0 clamp for PI controller
+2026-04-09T01:05:00Z	14	testing	generated	complete	0.8	Live keep/discard test: deliberate bad edit → rollback → confirmed
+2026-04-09T01:10:00Z	15	marketing	generated	complete	0.7	README usage examples: start, ideas, redirect, check status, continue
+2026-04-09T01:15:00Z	16	planning	generated	complete	0.8	v0.2 plan: 7 tasks for robustness + multi-project support
+2026-04-09T01:20:00Z	17	implementation	t-005	complete	0.8	Checkpoint file (.forge-checkpoint.json) for crash recovery
+2026-04-09T01:25:00Z	18	editing	t-010	complete	0.7	Pruned completed tasks and done ideas from state.json
+2026-04-09T01:30:00Z	19	editing	generated	complete	0.7	Final summary, STRATEGY update, queued beads research idea

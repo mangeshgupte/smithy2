@@ -29,6 +29,36 @@ The allocator correctly shifted focus: research → planning → implementation 
 - Add more tasks to queue based on what's in plan.md (episodic store is the big v0.6 feature)
 - Consider: should the allocator skip completed stages? Currently a stage at progress=1.0 would get benefit=0 naturally.
 
+## 2026-04-09 [run complete, 19/19 heats]
+
+### Summary (heats 10-19)
+
+| Heat | Stage | What |
+|------|-------|------|
+| 10 | testing | 10 protocol test scenarios (9 pass, 1 untested → now tested) |
+| 11 | research | /loop, /schedule, external cron for automation |
+| 12 | editing | Vocabulary standardization: chunk → heat globally |
+| 13 | research | Integral windup fix — 0.85 decay + ±1.0 clamp |
+| 14 | testing | Live keep/discard test — deliberate bad edit, rollback confirmed |
+| 15 | marketing | README usage examples added |
+| 16 | planning | v0.2 plan: 7 tasks for robustness + multi-project |
+| 17 | implementation | Checkpoint file (.forge-checkpoint.json) for crash recovery |
+| 18 | editing | State.json pruned — completed tasks and done ideas removed |
+| 19 | editing | Final summary, new idea queued (git-backed DAG tasks from beads) |
+
+### Cumulative (19 heats total)
+- All 6 stages well-covered (4/2/4/3/4/2 heats)
+- 8 human ideas received: 7 done, 1 queued (beads research)
+- v0.1 complete, v0.2 underway
+- Anti-windup fix made allocator much more balanced
+
+### Queued for next run
+1. **t-012**: Research beads for git-backed task DAG (human's latest idea)
+2. **t-006**: SessionEnd hook for memory distillation
+3. **t-007**: Project template scaffolding script
+4. **t-009**: Fresh-session resume test
+5. **t-011**: Quick-start guide
+
 ## 2026-04-09 [run complete, 9/9 heats]
 
 ### Summary (heats 7-9)
