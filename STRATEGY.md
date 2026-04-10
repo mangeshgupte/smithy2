@@ -1,6 +1,6 @@
 # Strategic Plan — The Forge
 
-*Updated after heat 236 | 2026-04-10*
+*Updated after heat 330 | 2026-04-10*
 
 ## Vision
 
@@ -40,19 +40,19 @@ An autonomous AI coworker that works in bounded 5-minute heats, self-directs acr
 |-------|----------|--------|-------|
 | Research | 88% | 24 | Landscape, interface, timeout — all research complete. |
 | Planning | 82% | 16 | Feedback protocol review, tutor feedback processed. |
-| Implementation | 98% | 85 | Tutor full redesign (14 templates, cards.py), Commissioner polish (tiers, briefing). |
-| Testing | 88% | 44 | 80 tutor tests, Commissioner E2E, forge-validate, full system verification. |
-| Editing | 88% | 41 | State updates, STRATEGY refreshes, memory consolidation, README rewrite. |
-| Marketing | 84% | 27 | AARs, dispatch reports, README. |
+| Implementation | 98% | 105 | Tutor: 17 templates, cards.py, teach-it-back, 6 animations. Commissioner: tiers, briefing, last-active. |
+| Testing | 89% | 50 | 100 tutor tests (20 integration), Commissioner E2E, forge-validate. |
+| Editing | 89% | 48 | STRATEGY, CHANGELOG v0.8, README rewrite, memory consolidation. |
+| Marketing | 85% | 30 | AARs, dispatch reports, CHANGELOG. |
 
-**Overall progress**: ~91% | **Heats used**: 236 | **Wavefront phase**: finishing
+**Overall progress**: ~92% | **Heats used**: 330 | **Wavefront phase**: finishing
 
 ### What's Working
 
 - Wavefront allocator with 3 fixes (soft clamp, unblocking override, queued task bonus) — balanced across 188 heats
 - **3 real projects built**: ai-coworker (dogfood), ai-tutor (multi-subject tutor with full Learn→Create→Review loop), Commissioner App (project dashboard)
 - Commissioner App: 6 screens, tap-to-decide, day-grouped activity, inbox badges, feedback UI
-- AI Tutor: 3-tab nav, student flashcards with AI review, SM-2 card player, streak counter, session memory, 63 tests
+- AI Tutor: 3-tab nav, student flashcards + AI review, SM-2 card player, teach-it-back, streak, session memory, 6 animations, 100 tests
 - forge-init.sh + forge-update.sh + forge-validate.sh + forge-status.sh — full tool suite
 - 5 interface models implemented: stoplight, uncertainty, commander's intent, AAR, L0-L4 compression
 - Personas (Anvil + Forge + Chisel) with dispatch system

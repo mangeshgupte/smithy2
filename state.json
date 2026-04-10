@@ -2,7 +2,7 @@
   "project": "ai-coworker",
   "budget": {
     "total_heats": 330,
-    "used": 296,
+    "used": 330,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -152,5 +152,5 @@
   "feedback_cursor": 27,
   "inbox_cursor": 109,
   "human_priorities": ["visual design"],
-  "overall_progress": 0.91
+  "overall_progress": 0.92
 }

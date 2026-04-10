@@ -2,6 +2,12 @@
 
 The Smith writes status updates, questions, and summaries here.
 
+## 2026-04-10 [heat 330, AAR — heats 281-330]
+
+50 heats: impl×25, test×8, editing×12, planning×1, marketing×4. Signal: 🟢×50.
+Key: Teach It Back mode (Bloom's top), card editing, 100 tests (20 integration), 6 CSS animations, comprehensive visual design polish. Human priority "visual design" executed across both apps.
+Next: Offline card caching (PWA), more subjects, user authentication.
+
 ## 2026-04-10 [heat 280, AAR — heats 271-280]
 
 10 heats: planning×1, impl×1, testing×1, editing×3, marketing×1. Signal: 🟢×10.

@@ -91,3 +91,22 @@ Decision on t-046: REJECT (task: Self-critique (Reflexion-style) per heat)
 
 ## 2026-04-10 09:35 [via commissioner]
 UNDO: Previous decision on t-046 was reversed.
+
+
+## 2026-04-10 10:25 [via commissioner]
+Decision on t-059: APPROVE (task: Tutor README update: document new 3-tab UI, card creation, review workflow, running instructions)
+
+
+## 2026-04-10 10:26 [via commissioner]
+Decision on t-058: APPROVE (task: Write tests for tutor/cards.py — card creation, SM-2 scheduling, drill generation, streak)
+
+
+## 2026-04-10 10:26 [via commissioner]
+Decision on t-059: APPROVE (task: Tutor README update: document new 3-tab UI, card creation, review workflow, running instructions)
+
+
+## 2026-04-10 10:26 [via commissioner]
+Decision on t-055: APPROVE (task: Commissioner: notification tier logic (push/quiet/in-app classification based on priority))
+
+## 2026-04-10 11:00 [via prompt]
+Directive: Prioritize visual design tasks in the next heats.
