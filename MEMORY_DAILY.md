@@ -2,20 +2,23 @@
 
 ## 2026-04-09
 
-### Heats 1-68: v0.1-v0.4 Complete
-- Protocol, allocator (3 fixes), forge-init/update/validate, personas, all ideas implemented
+### Heats 1-99: v0.1-v0.5 Complete
+- 99 heats: protocol, allocator (3 fixes), all tools built, personas, interface research (22 ideas → 5 implemented), landscape research (5 ideas to adopt)
+- 77% overall at heat 99
 
-### Heats 69-99: v0.5 — Research + Interface Implementation
-- **Interface research** (h70-76): 10 domains, 22 ideas → top 5 synthesized
-- **Landscape research** (h80-84): Devin, OpenHands, CrewAI, Aider, reflexion, PRMs
-- **Implemented** (h85-93): stoplight signals, self-critique, commander's intent, forge-validate.sh, AAR protocol, --with-personas flag
-- **Validated** (h89-95): forge-validate catches corruption (19 checks), protocol review passes
-- CHANGELOG.md, README updates, both Anvil dispatches complete
-- First AAR written at heat 99 — all 20 heats 🟢
+### Heats 100-115: v0.5.1 — Interface Operationalization
+- forge-status.sh (L2 dashboard) — zero-effort with alerts, signals, commits (h100)
+- protocol/reporting.md — L0-L4 compression layers formalized (h101)
+- AAR writes to aar/ directory (h102)
+- STRATEGY.md What's Missing refreshed (h103)
+- Timeout research: no change needed (h104)
+- Full integration test: 5/5 pass — scaffold, validate, status, update, personas (h106)
+- v0.6 plan: 6 tasks for real-world + repo awareness (h109)
+- README, CHANGELOG, state all updated
 
 ### Key Patterns
-- Design→implement gap is small when research produces concrete ideas
-- Research dispatches can run faster than budgeted (5/10 for landscape)
-- All-green stoplight may indicate thresholds too permissive — needs real stress test
-- 77% overall at heat 99, approaching v0.5 completion
-- 3 tasks remaining: t-036 (real project run), t-039 (timeout research), t-040 (v0.6 design)
+- Interface dispatch completed in 8 heats (matched budget)
+- Integration test suite now covers all tools end-to-end
+- 81% overall at heat 115 — crossing the 80% threshold
+- v0.5 marked complete. v0.6 planned.
+- All-green stoplight (115 heats) — may need stress testing to validate yellow/red signals

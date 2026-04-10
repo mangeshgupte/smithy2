@@ -1,33 +1,35 @@
 {
   "project": "ai-coworker",
   "budget": {
-    "total_heats": 289,
-    "used": 99,
+    "total_heats": 309,
+    "used": 115,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
-    "research":       {"target": 0.15, "heats": 22, "progress": 0.85, "value_ema": 0.75},
-    "planning":       {"target": 0.12, "heats": 12, "progress": 0.75, "value_ema": 0.72},
-    "implementation": {"target": 0.10, "heats": 21, "progress": 0.90, "value_ema": 0.74},
-    "testing":        {"target": 0.22, "heats": 16, "progress": 0.70, "value_ema": 0.71},
-    "editing":        {"target": 0.22, "heats": 17, "progress": 0.75, "value_ema": 0.71},
-    "marketing":      {"target": 0.18, "heats": 11, "progress": 0.68, "value_ema": 0.70}
+    "research":       {"target": 0.14, "heats": 23, "progress": 0.88, "value_ema": 0.76},
+    "planning":       {"target": 0.10, "heats": 13, "progress": 0.78, "value_ema": 0.73},
+    "implementation": {"target": 0.08, "heats": 25, "progress": 0.92, "value_ema": 0.75},
+    "testing":        {"target": 0.24, "heats": 20, "progress": 0.75, "value_ema": 0.72},
+    "editing":        {"target": 0.22, "heats": 20, "progress": 0.78, "value_ema": 0.72},
+    "marketing":      {"target": 0.20, "heats": 14, "progress": 0.72, "value_ema": 0.71}
   },
   "allocator": {
     "integral": {
-      "research": 0.08,
-      "planning": 0.03,
-      "implementation": -0.35,
-      "testing": 0.18,
-      "editing": 0.12,
-      "marketing": 0.20
+      "research": 0.06,
+      "planning": 0.02,
+      "implementation": -0.30,
+      "testing": 0.15,
+      "editing": 0.10,
+      "marketing": 0.18
     }
   },
   "queue": [
-    {"id": "t-023", "stage": "implementation", "desc": "Add --with-personas flag to forge-init.sh", "status": "complete", "priority": 3, "blocked_by": []},
     {"id": "t-036", "stage": "testing", "desc": "Run Forge on a real non-dogfood project for 10+ heats", "status": "pending", "priority": 1, "blocked_by": []},
-    {"id": "t-039", "stage": "research", "desc": "Research hard timeout enforcement for heats", "status": "pending", "priority": 2, "blocked_by": []},
-    {"id": "t-040", "stage": "planning", "desc": "Design v0.6 — web dashboard or WhatsApp bridge", "status": "pending", "priority": 3, "blocked_by": []}
+    {"id": "t-044", "stage": "implementation", "desc": "Repo map generation for non-dogfood projects", "status": "pending", "priority": 2, "blocked_by": []},
+    {"id": "t-045", "stage": "implementation", "desc": "Lint→test→fix loop for implementation stage", "status": "pending", "priority": 2, "blocked_by": []},
+    {"id": "t-046", "stage": "implementation", "desc": "Self-critique (Reflexion-style) per heat", "status": "pending", "priority": 2, "blocked_by": []},
+    {"id": "t-047", "stage": "research", "desc": "Research WhatsApp Business API for messaging bridge", "status": "pending", "priority": 3, "blocked_by": []},
+    {"id": "t-048", "stage": "planning", "desc": "Design event-sourced state (derive state.json from worklog.tsv)", "status": "pending", "priority": 3, "blocked_by": []}
   ],
   "ideas": [
     {"id": "i-009", "text": "Multiple personas as separate Claude Code sessions", "source": "prompt", "status": "done", "task_id": null},
@@ -35,7 +37,7 @@
     {"id": "i-011", "text": "No Telegram — use WhatsApp instead, defer messaging", "source": "inbox", "status": "done", "task_id": null},
     {"id": "i-012", "text": "Human-AI interface research — oversight models from diverse domains", "source": "inbox", "status": "done", "task_id": null}
   ],
-  "inbox_cursor": 56,
+  "inbox_cursor": 61,
   "human_priorities": [],
-  "overall_progress": 0.77
+  "overall_progress": 0.81
 }

@@ -2,6 +2,42 @@
 
 The Smith writes status updates, questions, and summaries here.
 
+## 2026-04-09 [heat 119, After-Action Review — heats 100-119]
+
+### 1. What Was Planned
+- Complete Anvil dispatch: operationalize all 5 interface models
+- Normal allocator work: testing, marketing polish, v0.6 planning
+
+### 2. What Happened
+- Dispatch completed in 4 heats (100-103): forge-status.sh, reporting.md, AAR to file, CLAUDE.md updated
+- 5-tool integration test suite created and passed (5/5)
+- Timeout research concluded (no change needed)
+- v0.6 planned with 6 tasks
+- README polished, CHANGELOG updated, STRATEGY refreshed
+- Overall progress crossed 80% → now at 81%
+
+### 3. Key Artifacts
+- `forge-status.sh` — zero-effort L2 dashboard (HIGH impact)
+- `protocol/reporting.md` — L0-L4 formalization
+- `research/timeout-enforcement.md` — no change needed
+- `plan.md` — v0.6 plan with 6 tasks
+- `CHANGELOG.md` — updated through heat 115
+
+### 4. Lessons Learned
+- Dispatch was partially pre-done (heats 85-88) — Forge should check for existing work before starting a dispatch
+- Integration test suite (5/5) is the most valuable testing artifact — catches regressions across all tools
+- The 80% progress milestone feels real — most core features are done, remaining work is polish + real-world validation
+
+### 5. Open Questions
+- When to attempt t-036 (10+ heat real project run)?
+- Should forge-validate run automatically in the heat loop?
+- Is 81% the natural ceiling for a dogfood-only project?
+
+### 6. Signal Summary
+- 🟢×16 🟡×0 🔴×0
+
+---
+
 ## 2026-04-09 [heat 99, After-Action Review — heats 80-99]
 
 ### 1. What Was Planned

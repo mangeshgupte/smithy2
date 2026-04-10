@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.5.1 — Interface Operationalization (heats 100-115)
+
+### New Tools
+- `forge-status.sh` — zero-effort L2 dashboard (budget, stages, signals, alerts, commits, what's missing)
+
+### Protocol Additions
+- `protocol/reporting.md` — L0-L4 information compression layers
+- AAR now writes to `aar/` directory (not just outbox)
+- `CLAUDE.md` references reporting.md
+
+### v0.6 Planning
+- v0.6 plan with 6 tasks: real-project run, repo map, lint→test→fix, self-critique, WhatsApp research, event-sourced state design
+
+### Documentation
+- README: forge-status, forge-validate in check-status section
+- README: --with-personas example in quick-start
+- CHANGELOG: updated through heat 115
+
+---
+
 ## v0.5 — Polish + Real-World Validation (heats 39-99)
 
 ### Interface Improvements

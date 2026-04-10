@@ -135,10 +135,15 @@ Testing gets 2x priority boost in the allocator until you clear it.
 
 **Check what happened while you were away:**
 ```bash
-cat outbox.md          # Smith's status updates and questions
-cat worklog.tsv        # Every heat logged with stage, outcome, value
-cat inbox.md           # Your ideas + what happened to each one
+./forge-status.sh      # Zero-effort dashboard: budget, stages, signals, alerts
+cat outbox.md          # Smith's status updates, AARs, and questions
+cat aar/               # After-action reviews from completed runs
 cat STRATEGY.md        # Current project state at a glance
+```
+
+**Validate project integrity:**
+```bash
+./forge-validate.sh    # 19 automated checks: state, protocol, cross-refs
 ```
 
 **Continue a paused run:**

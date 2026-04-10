@@ -159,9 +159,31 @@ Bring overall quality to production-grade. Run on a real project. Target: 85%+ o
 - Overall progress ≥ 85%
 - All protocol files version-stamped
 
-## v0.6+ Outlook
-- WhatsApp messaging bridge (deferred from v0.5)
+## v0.5 Status: COMPLETE
+
+All tasks done: t-023 ✓, t-035 ✓, t-037 ✓, t-038 ✓, t-039 ✓ (no change needed), t-041-043 ✓.
+Remaining: t-036 (real project 10+ heats) — requires dedicated session.
+Interface operationalized: stoplight, intent, AAR, reporting layers, forge-status.
+
+## v0.6: Real-World + Repo Awareness
+
+### Goal
+Run on a real non-dogfood project, add repo map for codebase awareness, add self-critique (Reflexion-style) to improve learning.
+
+### Tasks
+
+| ID | Stage | Description | Priority | Blocked By |
+|----|-------|-------------|----------|------------|
+| t-036 | testing | Run Forge on a real non-dogfood project for 10+ heats | 1 | |
+| t-044 | implementation | Repo map generation for non-dogfood projects | 2 | |
+| t-045 | implementation | Lint→test→fix loop for implementation stage | 2 | |
+| t-046 | implementation | Self-critique (Reflexion-style) — explicit verbal feedback per heat | 2 | |
+| t-047 | research | Research WhatsApp Business API for messaging bridge | 3 | |
+| t-048 | planning | Design event-sourced state (derive state.json from worklog.tsv) | 3 | |
+
+## v0.7+ Outlook
+- WhatsApp messaging bridge
 - Web dashboard (htmx) — worklog, allocations, memory viewer
-- AI Collaborator integration for design debates
-- Dolt-backed task tracking (full beads)
-- ChromaDB episodic store
+- Event-sourced state (derive state.json from worklog)
+- ChromaDB episodic store for semantic memory retrieval
+- Parallel heats via Claude Code Agent Teams
