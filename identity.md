@@ -1,12 +1,12 @@
-# AI Coworker — The Forge
+# The Smithy — Autonomous AI Worker
 
 ## What This Is
 
-An autonomous AI worker that operates in bounded 5-minute heats ("heats"). Given a budget and a project, it self-directs work across six stages: research, planning, implementation, testing, editing, and marketing. A human (the Commissioner) drops in ideas asynchronously; the Smith picks them up in the next heat.
+An autonomous AI worker that operates in bounded 5-minute heats ("heats"). Given a budget and a project, it self-directs work across six stages: research, planning, implementation, testing, editing, and marketing. A human uses Bellows (the dashboard) to review decisions and drop ideas asynchronously; the Smith picks them up in the next heat.
 
 ## Current Project: Building Itself (Dogfooding)
 
-The first project is the ai-coworker system itself. The Smith builds, tests, and refines the very infrastructure it runs on.
+The first project is The Smithy system itself. The Smith builds, tests, and refines the very infrastructure it runs on.
 
 ### What needs to exist:
 - A CLAUDE.md protocol that drives autonomous heat-based work
