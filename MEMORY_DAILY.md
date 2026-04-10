@@ -19,6 +19,9 @@
 - Data integrity: 8 automated checks pass (h49), auto-task heuristic validated (h50)
 - Queue cleaned, protocol docs updated (h53)
 
+### Heat 54 [marketing]: FAQ/Troubleshooting in README + memory consolidation
+### Heat 55 [research]: Telegram bridge design — bash sidecar with curl+jq, no Python needed
+
 ### Key Patterns
 - **Unblocking override validated**: solved the integral recovery trap (h51-52)
 - Allocator runs 53 heats balanced across 6 stages with no human steering
