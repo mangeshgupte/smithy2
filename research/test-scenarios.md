@@ -50,7 +50,7 @@ Walkthrough of edge cases to verify the protocol handles them correctly.
 ## Scenario 10: Keep/Discard Pattern
 **Setup**: Implementation heat. Code change breaks tests.
 **Expected**: Smith noted git HEAD before work, detects failure, runs git reset --hard, logs "discard".
-**Result**: ⚠️ Protocol specifies this but has NOT been tested live. No implementation heat has produced a failure yet.
+**Result**: ✓ Validated in heat 14. Deliberate bad edit to allocator.md → detected via smoke check → git checkout rollback → formula restored correctly.
 
 ## Untested Edge Cases
 - Session restart (new Claude Code session resuming from state.json)
