@@ -1,6 +1,6 @@
 # The Forge — Autonomous AI Coworker
 
-An AI worker that operates in bounded 5-minute heats ("heats"), self-directs across project stages, and communicates asynchronously with a human.
+An AI worker that operates in bounded 5-minute heats, self-directs across project stages, and communicates asynchronously with a human.
 
 ## How It Works
 
@@ -66,6 +66,43 @@ plan.md                ← Living plan
 - **NanoClaw**: Messaging patterns, per-group isolation
 - **AI Collaborator**: Git-native structured disagreement
 - **Memory Substrate**: Token-budgeted context assembly, episodic store
+
+## Examples
+
+**Start a new project:**
+```bash
+cd ~/my-project
+# Copy The Forge files: CLAUDE.md, protocol/, state.json, identity.md, etc.
+# Edit identity.md to describe your project
+claude
+> Run 20 heats.
+```
+
+**Drop in ideas while it's working:**
+```
+> Idea: Use SQLite instead of flat files for the data layer.
+```
+The Smith logs this to inbox.md, evaluates it, and either creates a task or defers it.
+
+**Redirect priorities:**
+```
+> Focus on testing.
+```
+Testing gets 2x priority boost in the allocator until you clear it.
+
+**Check what happened while you were away:**
+```bash
+cat outbox.md          # Smith's status updates and questions
+cat worklog.tsv        # Every heat logged with stage, outcome, value
+cat inbox.md           # Your ideas + what happened to each one
+cat STRATEGY.md        # Current project state at a glance
+```
+
+**Continue a paused run:**
+```
+> Run 10 heats.
+```
+Adds 10 to the budget. Picks up exactly where it left off.
 
 ## Key Principles
 
