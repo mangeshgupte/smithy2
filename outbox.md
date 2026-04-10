@@ -2,6 +2,20 @@
 
 The Smith writes status updates, questions, and summaries here.
 
+## 2026-04-10 [heat 507, AAR — heats 486-507]
+
+22 heats: impl×6, test×4, editing×5, planning×2, marketing×4, research×1. Signal: 🟢×22.
+Key: **Approach B complete + 500-heat milestone.** smithy handoff/resume/patrol/sync-stages (4 new commands). Gas Town research (5 docs). 152 tests, patrol fully clean.
+
+**The Smithy at 500 heats:**
+- 16 smithy commands, 29 tests
+- 3 apps: Tutor (18 templates, RR palette, 111 tests), Commissioner (tiers, bottleneck, 12 tests), Smithy CLI
+- Protocol: 8 steps + Step 0 (resume+patrol)
+- Session cycling: handoff → resume → patrol on every session boundary
+- 152 total tests, validate clean, patrol clean
+
+Next: Dolt backend research, more tutor subjects, multi-agent exploration.
+
 ## 2026-04-10 [heat 500, AAR — heats 486-500]
 
 15 heats: impl×4, test×2, editing×4, marketing×5. Signal: 🟢×15.

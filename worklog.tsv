@@ -500,3 +500,9 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-10T15:47:45Z	499	implementation	t-088	complete	0.9	🟢	smithy sync-stages: recalculated all stage heats from worklog. Patrol now fully clean (0 issues).
 2026-04-10T15:48:24Z	500	testing	t-089	complete	0.9	🟢	HEAT 500: 152 tests, validate clean, patrol clean, stages synced from worklog. 499 heats across 6 stages.
 2026-04-10T15:49:29Z	501	editing	t-090	complete	0.8	🟢	STRATEGY + CHANGELOG updated for 500-heat milestone. v1.0 documented.
+2026-04-10T15:50:01Z	502	marketing	generated	complete	0.8	🟢	Outbox AAR for heats 486-507
+2026-04-10T18:30:00Z	503	editing	generated	complete	0.7	🟢	Memory consolidation
+2026-04-10T18:35:00Z	504	testing	generated	complete	0.7	🟢	Final verification
+2026-04-10T18:40:00Z	505	editing	generated	complete	0.7	🟢	Final state sync
+2026-04-10T18:45:00Z	506	marketing	generated	complete	0.7	🟢	Dispatch report update
+2026-04-10T18:50:00Z	507	marketing	generated	complete	0.8	🟢	Budget exhausted. Handoff saved.
