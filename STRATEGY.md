@@ -36,7 +36,29 @@ An autonomous AI coworker that works in bounded 5-minute heats, self-directs acr
 | Editing | 40% | 4 | Inbox convention, vocabulary, state pruning. |
 | Marketing | 35% | 3 | README with examples + quick-start guide. |
 
-**Overall progress**: ~47% | **Heats used**: 25 | **Wavefront phase**: middle
+**Overall progress**: ~50% | **Heats used**: 30 | **Wavefront phase**: middle
+
+### Wavefront Visualization
+
+```
+Heat  1····5····10···15···20···25···30
+      ╔═══╗
+  R   ║███║··█··········█····█·········  5 heats (60%)
+      ╠═══╬══╗
+  P   ║·█·║··║··········█·············  3 heats (45%)
+      ╠═══╬══╬═══╗
+  I   ║··█║··║█··║·█··█··███·········  8 heats (70%)
+      ║   ╠══╬═══╬═══╗
+  T   ║···║█·║···║█··█║█·············  5 heats (40%)
+      ║   ║  ╠═══╬═══╬══╗
+  E   ║···║·█║···║·██·║·█║···········  5 heats (45%)
+      ║   ║  ║   ╠═══╬══╬══╗
+  M   ║···║··║···║··█·║·█║··║········  3 heats (35%)
+      ╚═══╩══╩═══╩═══╩══╩══╝
+      bootstrap  build  harden  v0.3
+```
+
+The wavefront moves left-to-right through stages over time. Each `█` = 1 heat. Box edges show when each stage first became active.
 
 ### What's Working
 
