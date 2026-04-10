@@ -506,3 +506,4 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-10T18:40:00Z	505	editing	generated	complete	0.7	🟢	Final state sync
 2026-04-10T18:45:00Z	506	marketing	generated	complete	0.7	🟢	Dispatch report update
 2026-04-10T18:50:00Z	507	marketing	generated	complete	0.8	🟢	Budget exhausted. Handoff saved.
+2026-04-10T15:53:46Z	508	editing	generated	complete	0.9	🟢	protocol/loop.md fully rewritten: every state mutation now goes through smithy CLI, no manual edits
