@@ -2,7 +2,7 @@
   "project": "ai-coworker",
   "budget": {
     "total_heats": 460,
-    "used": 452,
+    "used": 453,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -26,7 +26,7 @@
     },
     "testing": {
       "target": 0.183,
-      "heats": 55,
+      "heats": 56,
       "progress": 0.88,
       "value_ema": 0.801
     },
@@ -48,7 +48,7 @@
       "research": 0.14,
       "planning": 0.459,
       "implementation": -0.5,
-      "testing": 0.012,
+      "testing": 0.003,
       "editing": -0.086,
       "marketing": 0.247
     }
@@ -260,7 +260,7 @@
       "id": "t-081",
       "stage": "testing",
       "desc": "Verify Teach It Back CTA fix renders correctly",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
