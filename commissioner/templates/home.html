@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title_suffix %} — Projects{% endblock %}
+{% block content %}
+<header class="page-header">
+    <h1>Projects</h1>
+    <a href="/briefing" class="briefing-link">☀️ Morning Briefing</a>
+</header>
+
+{% if not projects %}
+<div class="empty-state">
+    <p>No Forge projects found.</p>
+    <p class="muted">Set FORGE_PROJECTS_DIR to point to your projects directory.</p>
+</div>
+{% endif %}
+
+<div class="project-cards">
+{% for p in projects %}
+    {% set progress_pct = (p.overall_progress * 100)|int %}
+    {% set lifecycle = 'early' if progress_pct < 30 else ('mid' if progress_pct < 70 else 'mature') %}
+
+    <a href="/project/{{ p.name }}" class="project-card {{ lifecycle }}">
+        <div class="card-header">
+            <span class="signal signal-{{ p.signal }}"></span>
+            <span class="project-name">{{ p.name }}</span>
+            <span class="progress-badge">{{ progress_pct }}%</span>
+        </div>
+
+        {% if lifecycle == 'early' %}
+        <!-- Early stage: show stage bars -->
+        <div class="stage-bars">
+            {% for stage_name in ['research', 'planning', 'implementation', 'testing', 'editing', 'marketing'] %}
+            {% set stage = p.stages.get(stage_name, {}) %}
+            {% set spct = (stage.get('progress', 0) * 100)|int %}
+            <div class="stage-bar-row">
+                <span class="stage-label">{{ stage_name[:4] }}</span>
+                <div class="stage-bar">
+                    <div class="stage-fill" style="width: {{ spct }}%"></div>
+                </div>
+                <span class="stage-pct">{{ spct }}%</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="card-activity">
+            {% if p.current_activity %}
+            <p class="now-doing">{{ p.current_activity[:80] }}</p>
+            {% endif %}
+        </div>
+
+        {% if p.decisions %}
+        <div class="card-decisions">
+            <span class="decision-badge">{{ p.decisions|length }} decision{{ 's' if p.decisions|length > 1 }}</span>
+        </div>
+        {% endif %}
+
+        <div class="card-budget">
+            <div class="budget-bar">
+                {% set budget_total = p.budget.total_heats if p.budget.total_heats > 0 else 1 %}
+            {% set budget_pct = (p.budget.used / budget_total * 100)|int %}
+                <div class="budget-fill" style="width: {{ budget_pct }}%"></div>
+            </div>
+            <span class="budget-text">{{ p.budget.used }}/{{ p.budget.total_heats }} heats</span>
+        </div>
+    </a>
+{% endfor %}
+</div>
+{% endblock %}

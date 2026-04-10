@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title_suffix %} — {{ project.name }} — Decide{% endblock %}
+{% block content %}
+<header class="page-header">
+    <a href="/" class="back-link">← Projects</a>
+    <div class="project-title-row">
+        <span class="signal signal-{{ project.signal }}"></span>
+        <h1>{{ project.name }}</h1>
+    </div>
+</header>
+
+<nav class="sub-tabs">
+    <a href="/project/{{ project.name }}" class="sub-tab {% if tab == 'activity' %}active{% endif %}">Activity</a>
+    <a href="/project/{{ project.name }}/decide" class="sub-tab {% if tab == 'decide' %}active{% endif %}">
+        Decide
+        {% if project.decisions %}<span class="badge">{{ project.decisions|length }}</span>{% endif %}
+    </a>
+</nav>
+
+{% if project.decisions %}
+<div class="decision-cards">
+    {% for d in project.decisions %}
+    <div class="decision-card priority-{{ d.priority }}">
+        <div class="decision-header">
+            <span class="priority-badge {% if d.priority == 1 %}high{% else %}medium{% endif %}">
+                {% if d.priority == 1 %}HIGH{% else %}MEDIUM{% endif %}
+            </span>
+            <span class="decision-stage">{{ d.stage }}</span>
+        </div>
+        <p class="decision-question">{{ d.question }}</p>
+        <div class="decision-id">{{ d.id }}</div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <p>No pending decisions.</p>
+    <p class="muted">Forge is running autonomously — nothing needs your input right now.</p>
+</div>
+{% endif %}
+{% endblock %}

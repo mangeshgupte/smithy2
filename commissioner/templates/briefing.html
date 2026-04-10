@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title_suffix %} — Morning Briefing{% endblock %}
+{% block content %}
+<header class="page-header briefing-header">
+    <h1>Good morning.</h1>
+    <p class="subtitle">{{ briefing.project_count }} projects · {{ briefing.total_heats }} heats total</p>
+</header>
+
+{% if briefing.needs_you %}
+<section class="briefing-section needs-you">
+    <h2>Needs You</h2>
+    {% for item in briefing.needs_you %}
+    <div class="briefing-item signal-{{ item.signal }}">
+        <span class="signal signal-{{ item.signal }}"></span>
+        <strong>{{ item.project }}</strong> — {{ item.count }} decision{{ 's' if item.count > 1 }}
+    </div>
+    {% endfor %}
+</section>
+{% endif %}
+
+{% if briefing.progress %}
+<section class="briefing-section progress-section">
+    <h2>Progress</h2>
+    {% for item in briefing.progress %}
+    <div class="briefing-item">
+        <span class="project-name">{{ item.project }}</span>
+        <span class="progress-badge">{{ (item.progress * 100)|int }}%</span>
+        <span class="muted">· {{ item.heats }} heats</span>
+    </div>
+    {% endfor %}
+</section>
+{% endif %}
+
+{% if briefing.notable %}
+<section class="briefing-section notable-section">
+    <h2>Notable</h2>
+    {% for item in briefing.notable %}
+    <div class="briefing-item signal-{{ item.signal }}">
+        <span class="signal signal-{{ item.signal }}"></span>
+        <strong>{{ item.project }}</strong>: {{ item.activity }}
+    </div>
+    {% endfor %}
+</section>
+{% else %}
+<section class="briefing-section">
+    <p class="muted">Nothing notable. All projects on track.</p>
+</section>
+{% endif %}
+
+<div class="briefing-action">
+    <a href="/" class="btn">Go to projects</a>
+</div>
+{% endblock %}

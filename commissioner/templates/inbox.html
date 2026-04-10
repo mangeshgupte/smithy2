@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title_suffix %} — Inbox{% endblock %}
+{% block content %}
+<header class="page-header">
+    <h1>Inbox</h1>
+    <p class="subtitle">{{ decisions|length }} pending decision{{ 's' if decisions|length != 1 }}</p>
+</header>
+
+{% if decisions %}
+<div class="decision-cards">
+    {% for d in decisions %}
+    <div class="decision-card priority-{{ d.priority }}">
+        <div class="decision-header">
+            <span class="priority-badge {% if d.priority == 1 %}high{% else %}medium{% endif %}">
+                {% if d.priority == 1 %}HIGH{% else %}MEDIUM{% endif %}
+            </span>
+            <span class="decision-project">{{ d.project_name }}</span>
+        </div>
+        <p class="decision-question">{{ d.question }}</p>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <p>All clear.</p>
+    <p class="muted">No decisions waiting across any project.</p>
+</div>
+{% endif %}
+{% endblock %}

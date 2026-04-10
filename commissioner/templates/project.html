@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title_suffix %} — {{ project.name }}{% endblock %}
+{% block content %}
+<header class="page-header">
+    <a href="/" class="back-link">← Projects</a>
+    <div class="project-title-row">
+        <span class="signal signal-{{ project.signal }}"></span>
+        <h1>{{ project.name }}</h1>
+        <span class="progress-badge large">{{ (project.overall_progress * 100)|int }}%</span>
+    </div>
+</header>
+
+<nav class="sub-tabs">
+    <a href="/project/{{ project.name }}" class="sub-tab {% if tab == 'activity' %}active{% endif %}">Activity</a>
+    <a href="/project/{{ project.name }}/decide" class="sub-tab {% if tab == 'decide' %}active{% endif %}">
+        Decide
+        {% if project.decisions %}<span class="badge">{{ project.decisions|length }}</span>{% endif %}
+    </a>
+</nav>
+
+<!-- Stage progress -->
+<div class="stage-bars detail-bars">
+    {% for stage_name in ['research', 'planning', 'implementation', 'testing', 'editing', 'marketing'] %}
+    {% set stage = project.stages.get(stage_name, {}) %}
+    {% set spct = (stage.get('progress', 0) * 100)|int %}
+    <div class="stage-bar-row">
+        <span class="stage-label">{{ stage_name }}</span>
+        <div class="stage-bar">
+            <div class="stage-fill" style="width: {{ spct }}%"></div>
+        </div>
+        <span class="stage-pct">{{ spct }}%</span>
+        <span class="muted">{{ stage.get('heats', 0) }}h</span>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Budget -->
+<div class="card-budget detail-budget">
+    {% set budget_total = project.budget.total_heats if project.budget.total_heats > 0 else 1 %}
+    {% set budget_pct = (project.budget.used / budget_total * 100)|int %}
+    <div class="budget-bar">
+        <div class="budget-fill" style="width: {{ budget_pct }}%"></div>
+    </div>
+    <span class="budget-text">{{ project.budget.used }}/{{ project.budget.total_heats }} heats ({{ budget_pct }}%)</span>
+</div>
+
+<!-- Activity feed -->
+<section class="activity-feed">
+    <h2>Recent Activity</h2>
+    {% for heat in project.recent_heats|reverse %}
+    <div class="heat-card">
+        <div class="heat-header">
+            <span class="heat-signal">{{ heat.get('signal', '🟢') }}</span>
+            <span class="heat-number">Heat {{ heat.get('heat', '?') }}</span>
+            <span class="heat-stage stage-{{ heat.get('stage', '') }}">{{ heat.get('stage', '') }}</span>
+            <span class="heat-value">{{ heat.get('value', '') }}</span>
+        </div>
+        <p class="heat-notes">{{ heat.get('notes', '') }}</p>
+    </div>
+    {% endfor %}
+
+    {% if not project.recent_heats %}
+    <p class="muted">No heats recorded yet.</p>
+    {% endif %}
+</section>
+
+{% if project.whats_missing %}
+<section class="whats-missing">
+    <h2>What's Missing</h2>
+    <ul>
+    {% for item in project.whats_missing %}
+        <li>{{ item }}</li>
+    {% endfor %}
+    </ul>
+</section>
+{% endif %}
+{% endblock %}
