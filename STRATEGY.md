@@ -1,6 +1,6 @@
 # Strategic Plan — The Forge
 
-*Updated after heat 224 | 2026-04-10*
+*Updated after heat 236 | 2026-04-10*
 
 ## Vision
 
@@ -40,12 +40,12 @@ An autonomous AI coworker that works in bounded 5-minute heats, self-directs acr
 |-------|----------|--------|-------|
 | Research | 88% | 24 | Landscape, interface, timeout — all research complete. |
 | Planning | 82% | 16 | Feedback protocol review, tutor feedback processed. |
-| Implementation | 97% | 76 | Tutor full redesign, Socratic moments, forge-repomap.sh. |
-| Testing | 87% | 40 | Tutor 63 tests, Commissioner E2E, forge-validate passes. |
-| Editing | 87% | 37 | State updates, STRATEGY refreshes, memory consolidation. |
-| Marketing | 83% | 25 | AARs, dispatch reports. |
+| Implementation | 98% | 85 | Tutor full redesign (14 templates, cards.py), Commissioner polish (tiers, briefing). |
+| Testing | 88% | 44 | 80 tutor tests, Commissioner E2E, forge-validate, full system verification. |
+| Editing | 88% | 41 | State updates, STRATEGY refreshes, memory consolidation, README rewrite. |
+| Marketing | 84% | 27 | AARs, dispatch reports, README. |
 
-**Overall progress**: ~90% | **Heats used**: 224 | **Wavefront phase**: finishing
+**Overall progress**: ~91% | **Heats used**: 236 | **Wavefront phase**: finishing
 
 ### What's Working
 
@@ -62,7 +62,8 @@ An autonomous AI coworker that works in bounded 5-minute heats, self-directs acr
 
 ### What's Missing
 
-- Commissioner: notification tier logic (push/quiet/in-app classification)
+- Tutor: offline card caching (PWA service worker)
+- Tutor: "teach it back" mode (unlocks after mastery)
 - Repo map for non-dogfood projects (t-044)
 - Lint→test→fix loop (t-045)
 - Self-critique / Reflexion (t-046)
