@@ -18,3 +18,9 @@ timestamp	heat	stage	task_id	outcome	value	notes
 2026-04-09T01:20:00Z	17	implementation	t-005	complete	0.8	Checkpoint file (.forge-checkpoint.json) for crash recovery
 2026-04-09T01:25:00Z	18	editing	t-010	complete	0.7	Pruned completed tasks and done ideas from state.json
 2026-04-09T01:30:00Z	19	editing	generated	complete	0.7	Final summary, STRATEGY update, queued beads research idea
+2026-04-09T01:35:00Z	20	research	t-012	complete	0.9	Beads system: git-backed task DAG, 7 states, 17 dependency types, Dolt SQL
+2026-04-09T01:40:00Z	21	implementation	generated	complete	0.8	Added blocked_by DAG dependencies to task schema + ready detection
+2026-04-09T01:45:00Z	22	implementation	t-007	complete	0.8	forge-init.sh: scaffold Forge files in any project directory
+2026-04-09T01:50:00Z	23	testing	t-009	complete	0.7	Fresh-session resume test: 28KB cold start, protocol self-contained
+2026-04-09T01:55:00Z	24	marketing	t-011	complete	0.7	Quick-start guide using forge-init.sh in README
+2026-04-09T02:00:00Z	25	implementation	t-006	complete	0.8	SessionEnd hook for automatic memory distillation

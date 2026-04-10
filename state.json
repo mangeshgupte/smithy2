@@ -1,39 +1,31 @@
 {
   "project": "ai-coworker",
   "budget": {
-    "total_heats": 19,
-    "used": 19,
+    "total_heats": 119,
+    "used": 25,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
-    "research":       {"target": 0.26, "heats": 4, "progress": 0.5, "value_ema": 0.63},
+    "research":       {"target": 0.22, "heats": 5, "progress": 0.6, "value_ema": 0.66},
     "planning":       {"target": 0.16, "heats": 2, "progress": 0.4, "value_ema": 0.63},
-    "implementation": {"target": 0.11, "heats": 4, "progress": 0.55, "value_ema": 0.65},
-    "testing":        {"target": 0.18, "heats": 3, "progress": 0.3, "value_ema": 0.59},
-    "editing":        {"target": 0.18, "heats": 4, "progress": 0.40, "value_ema": 0.63},
-    "marketing":      {"target": 0.11, "heats": 2, "progress": 0.3, "value_ema": 0.62}
+    "implementation": {"target": 0.08, "heats": 7, "progress": 0.65, "value_ema": 0.67},
+    "testing":        {"target": 0.20, "heats": 4, "progress": 0.35, "value_ema": 0.60},
+    "editing":        {"target": 0.20, "heats": 4, "progress": 0.40, "value_ema": 0.63},
+    "marketing":      {"target": 0.14, "heats": 3, "progress": 0.35, "value_ema": 0.62}
   },
   "allocator": {
     "integral": {
-      "research": 0.15,
-      "planning": -0.10,
-      "implementation": -0.35,
-      "testing": 0.18,
+      "research": 0.10,
+      "planning": 0.05,
+      "implementation": -0.50,
+      "testing": 0.15,
       "editing": 0.10,
-      "marketing": 0.12
+      "marketing": 0.10
     }
   },
-  "queue": [
-    {"id": "t-006", "stage": "implementation", "desc": "SessionEnd hook for automatic memory distillation", "status": "pending", "priority": 2, "blocked_by": []},
-    {"id": "t-007", "stage": "implementation", "desc": "Project template script to scaffold Forge files in new directory", "status": "pending", "priority": 3, "blocked_by": []},
-    {"id": "t-009", "stage": "testing", "desc": "Fresh-session resume test", "status": "pending", "priority": 4, "blocked_by": []},
-    {"id": "t-011", "stage": "marketing", "desc": "Quick-start guide for new projects", "status": "pending", "priority": 6, "blocked_by": ["t-007"]},
-    {"id": "t-012", "stage": "research", "desc": "Research beads system for git-backed task tracking with DAG dependencies", "status": "complete", "priority": 1, "blocked_by": []}
-  ],
-  "ideas": [
-    {"id": "i-008", "text": "Task tracking backed by git, dependencies as DAG, research beads system", "source": "prompt", "status": "done", "task_id": "t-012"}
-  ],
+  "queue": [],
+  "ideas": [],
   "inbox_cursor": 37,
   "human_priorities": [],
-  "overall_progress": 0.41
+  "overall_progress": 0.47
 }

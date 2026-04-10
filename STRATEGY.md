@@ -1,6 +1,6 @@
 # Strategic Plan — The Forge
 
-*Updated after heat 19 | 2026-04-09*
+*Updated after heat 25 | 2026-04-09*
 
 ## Vision
 
@@ -29,14 +29,14 @@ An autonomous AI coworker that works in bounded 5-minute heats, self-directs acr
 
 | Stage | Progress | Heats | Notes |
 |-------|----------|--------|-------|
-| Research | 50% | 4 | Patterns, session cycling, automation, integral windup fix. |
-| Planning | 40% | 2 | v0.1 done, v0.2 planned with 7 tasks. |
-| Implementation | 55% | 4 | Protocol gaps, idea pipeline, dashboard, checkpoint file. |
-| Testing | 30% | 3 | Consistency check, 10 scenarios, live keep/discard test. |
-| Editing | 40% | 4 | Inbox convention, vocabulary standardization, state pruning. |
-| Marketing | 30% | 2 | README with examples. |
+| Research | 60% | 5 | Patterns, session cycling, automation, windup, beads DAG. |
+| Planning | 40% | 2 | v0.1 done, v0.2 planned and executed. |
+| Implementation | 65% | 7 | Protocol, pipeline, dashboard, checkpoint, DAG deps, forge-init, SessionEnd hook. |
+| Testing | 35% | 4 | Consistency, 11 scenarios, keep/discard live, fresh-session resume. |
+| Editing | 40% | 4 | Inbox convention, vocabulary, state pruning. |
+| Marketing | 35% | 3 | README with examples + quick-start guide. |
 
-**Overall progress**: ~41% | **Heats used**: 19 | **Wavefront phase**: middle
+**Overall progress**: ~47% | **Heats used**: 25 | **Wavefront phase**: middle
 
 ### What's Working
 
