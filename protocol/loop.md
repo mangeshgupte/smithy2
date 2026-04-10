@@ -17,6 +17,8 @@ Read these files at the start of every heat:
 
 **Crash recovery**: If `.forge-checkpoint.json` exists, the previous heat was interrupted mid-work. Roll back: `git reset --hard <checkpoint.git_head>`. Delete the checkpoint file. Log the interrupted heat as "discard" in the worklog.
 
+**Repo map**: If `research/repo-map.md` doesn't exist and the project has source code (non-dogfood), run `forge-repomap.sh <project-dir>` to generate an orientation map. This helps the Forge understand new codebases quickly.
+
 **Stuck detection**: Scan the queue for any tasks with status "in_progress". These are leftovers from a previous heat that was interrupted. Reset to "pending" so they can be re-picked.
 
 **Review-first-heat**: Check `feedback.md` for new entries (lines after `feedback_cursor`). If new feedback exists:
