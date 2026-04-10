@@ -2,7 +2,7 @@
   "project": "ai-coworker",
   "budget": {
     "total_heats": 450,
-    "used": 441,
+    "used": 442,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 99,
+      "heats": 100,
       "progress": 0.98,
-      "value_ema": 0.841
+      "value_ema": 0.859
     },
     "testing": {
       "target": 0.183,
@@ -218,7 +218,7 @@
       "id": "t-076",
       "stage": "implementation",
       "desc": "Smithy: add-task and complete-task commands",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": []
     },
@@ -239,6 +239,14 @@
       "blocked_by": [
         "t-076"
       ]
+    },
+    {
+      "id": "t-079",
+      "stage": "testing",
+      "desc": "Test the new smithy commands",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": []
     }
   ],
   "ideas": [

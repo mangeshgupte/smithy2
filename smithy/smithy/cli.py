@@ -199,6 +199,65 @@ def status(ctx):
     })
 
 
+@cli.command("add-task")
+@click.argument("stage", type=click.Choice(VALID_STAGES))
+@click.argument("desc")
+@click.option("--priority", type=int, default=2, help="Priority (0=highest, 3=lowest)")
+@click.option("--blocked-by", multiple=True, help="Task IDs this is blocked by")
+@click.pass_context
+def add_task(ctx, stage, desc, priority, blocked_by):
+    """Add a new task to the queue."""
+    root = ctx.obj["root"]
+    state = load_state(root)
+    queue = state.get("queue", [])
+
+    # Generate next task ID
+    existing_ids = [t["id"] for t in queue]
+    max_num = 0
+    for tid in existing_ids:
+        if tid.startswith("t-"):
+            try:
+                max_num = max(max_num, int(tid[2:]))
+            except ValueError:
+                pass
+    new_id = f"t-{max_num + 1:03d}"
+
+    task = {
+        "id": new_id,
+        "stage": stage,
+        "desc": desc,
+        "status": "pending",
+        "priority": priority,
+        "blocked_by": list(blocked_by),
+    }
+    queue.append(task)
+    state["queue"] = queue
+    save_state(root, state)
+
+    _output({"task": task})
+    _err(f"Added {new_id}: {desc}")
+
+
+@cli.command("complete-task")
+@click.argument("task_id")
+@click.pass_context
+def complete_task(ctx, task_id):
+    """Mark a task as complete."""
+    root = ctx.obj["root"]
+    state = load_state(root)
+
+    for task in state.get("queue", []):
+        if task["id"] == task_id:
+            task["status"] = "complete"
+            save_state(root, state)
+            _output({"task": task})
+            _err(f"Completed {task_id}")
+            return
+
+    _output({"error": f"Task {task_id} not found"})
+    sys.exit(1)
+
+
 @cli.command("allocate")
 @click.pass_context
 def allocate(ctx):
@@ -321,6 +380,51 @@ def process_inbox(ctx):
 
     _output({"new_entries": entries, "cursor": len(lines), "count": len(entries)})
     _err(f"{len(entries)} new inbox entries")
+
+
+@cli.command("commit")
+@click.argument("message")
+@click.pass_context
+def commit(ctx, message):
+    """Git add changed files and commit with [stage] prefix."""
+    import subprocess
+    root = ctx.obj["root"]
+
+    # Check for checkpoint to get current stage
+    cp_path = root / ".forge-checkpoint.json"
+    stage = "misc"
+    if cp_path.exists():
+        cp = json.loads(cp_path.read_text())
+        stage = cp.get("stage", "misc")
+
+    full_msg = f"[{stage}] {message}"
+
+    # Git add tracked changes
+    result = subprocess.run(
+        ["git", "add", "-A"], cwd=root, capture_output=True, text=True
+    )
+    if result.returncode != 0:
+        _output({"error": f"git add failed: {result.stderr}"})
+        sys.exit(1)
+
+    # Check if there's anything to commit
+    status = subprocess.run(
+        ["git", "status", "--porcelain"], cwd=root, capture_output=True, text=True
+    )
+    if not status.stdout.strip():
+        _output({"error": "Nothing to commit"})
+        sys.exit(1)
+
+    # Commit
+    result = subprocess.run(
+        ["git", "commit", "-m", full_msg], cwd=root, capture_output=True, text=True
+    )
+    if result.returncode != 0:
+        _output({"error": f"git commit failed: {result.stderr}"})
+        sys.exit(1)
+
+    _output({"message": full_msg, "output": result.stdout.strip()})
+    _err(f"Committed: {full_msg}")
 
 
 if __name__ == "__main__":

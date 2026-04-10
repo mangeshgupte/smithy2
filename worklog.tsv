@@ -435,3 +435,4 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-10T13:45:00Z	439	marketing	generated	complete	0.7	🟢	Dispatch report
 2026-04-10T13:50:00Z	440	marketing	generated	complete	0.8	🟢	Budget exhausted. Final commit.
 2026-04-10T13:23:29Z	441	planning	generated	complete	0.7	🟢	Stale queue fixed (t-066-070 complete), 3 new tasks (t-076-078): add-task, complete-task, commit commands
+2026-04-10T13:24:26Z	442	implementation	t-076	complete	0.9	🟢	Smithy: add-task (auto ID), complete-task, commit commands. t-076 + t-077 done in one heat.
