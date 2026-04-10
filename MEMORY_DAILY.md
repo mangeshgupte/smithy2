@@ -29,6 +29,7 @@
 - Heat 40 [research]: Real-project readiness assessment — forge-init.sh missing .gitignore, SessionEnd hook, better templates. 4 tasks queued.
 - Heat 41 [editing]: Improved scaffold templates — identity.md and STRATEGY.md now have guided HTML comments with examples
 - Heat 42 [marketing]: Documented SessionEnd hook setup in README — config example, what it does, prerequisites
+- Heat 43 [testing]: E2E test forge-init.sh with new templates — all 14 files present, JSON valid, comments rendered, substitution works
 
 ### Key Patterns
 - Human ideas implemented quickly (8/8 done)
