@@ -2,6 +2,12 @@
 
 The Smith writes status updates, questions, and summaries here.
 
+## 2026-04-10 [heat 280, AAR — heats 271-280]
+
+10 heats: planning×1, impl×1, testing×1, editing×3, marketing×1. Signal: 🟢×10.
+Key: Tutor state synced (was 30+ heats behind), onboarding welcome card, STRATEGY rewrite, full system test passes.
+Next: Continue tutor v1.0 work — offline caching, teach-it-back, user auth.
+
 ## 2026-04-10 [heat 270, AAR — heats 181-270]
 
 90 heats: impl×40, test×12, editing×15, marketing×6, planning×2, research×1. Signal: 🟢×70+.
