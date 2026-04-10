@@ -21,6 +21,8 @@
 
 ### Heat 54 [marketing]: FAQ/Troubleshooting in README + memory consolidation
 ### Heat 55 [research]: Telegram bridge design — bash sidecar with curl+jq, no Python needed
+### Heat 56 [editing]: STRATEGY.md refresh to heat 56
+### Heat 57 [testing]: **Non-dogfood project test PASSED** — todo-cli scaffolded, 14 files, allocator bootstrap correct
 
 ### Key Patterns
 - **Unblocking override validated**: solved the integral recovery trap (h51-52)

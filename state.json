@@ -2,14 +2,14 @@
   "project": "ai-coworker",
   "budget": {
     "total_heats": 159,
-    "used": 56,
+    "used": 57,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
     "research":       {"target": 0.18, "heats": 9, "progress": 0.72, "value_ema": 0.69},
     "planning":       {"target": 0.15, "heats": 8, "progress": 0.65, "value_ema": 0.68},
     "implementation": {"target": 0.09, "heats": 13, "progress": 0.78, "value_ema": 0.69},
-    "testing":        {"target": 0.22, "heats": 10, "progress": 0.55, "value_ema": 0.66},
+    "testing":        {"target": 0.22, "heats": 11, "progress": 0.58, "value_ema": 0.67},
     "editing":        {"target": 0.20, "heats": 10, "progress": 0.60, "value_ema": 0.67},
     "marketing":      {"target": 0.16, "heats": 7, "progress": 0.55, "value_ema": 0.67}
   },
@@ -18,8 +18,8 @@
       "research": 0.13,
       "planning": 0.09,
       "implementation": -0.50,
-      "testing": 0.21,
-      "editing": 0.22,
+      "testing": 0.22,
+      "editing": 0.20,
       "marketing": 0.24
     }
   },
@@ -27,12 +27,12 @@
     {"id": "t-023", "stage": "implementation", "desc": "Add --with-personas flag to forge-init.sh", "status": "pending", "priority": 3, "blocked_by": []},
     {"id": "t-025", "stage": "implementation", "desc": "Add auto-task generation to loop.md Step 4", "status": "pending", "priority": 2, "blocked_by": []},
     {"id": "t-026", "stage": "implementation", "desc": "Create forge-update.sh for protocol updates", "status": "pending", "priority": 2, "blocked_by": []},
-    {"id": "t-027", "stage": "testing", "desc": "Scaffold + run 3 heats on a real non-dogfood project", "status": "pending", "priority": 1, "blocked_by": []}
+    {"id": "t-027", "stage": "testing", "desc": "Scaffold + run 3 heats on a real non-dogfood project", "status": "complete", "priority": 1, "blocked_by": []}
   ],
   "ideas": [
     {"id": "i-009", "text": "Multiple personas (Comms, Chief of Staff, Implementor) as separate Claude Code sessions", "source": "prompt", "status": "done", "task_id": null}
   ],
   "inbox_cursor": 41,
   "human_priorities": [],
-  "overall_progress": 0.64
+  "overall_progress": 0.65
 }
