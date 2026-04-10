@@ -2,13 +2,26 @@
 
 ## 2026-04-10
 
-### Heats 271-280: Short Self-Directed Run (10 heats)
-- **Tutor state sync** (h271): state.json was 30+ heats behind — synced to 110 heats, 82% overall
-- **Onboarding** (h272): welcome card for first-time users with feature highlights
-- **Full system test** (h273): 80 tutor tests pass, 12 routes across both apps, forge-validate pass
-- **STRATEGY refresh** (h274): tutor STRATEGY rewritten — v0.7-v0.9 complete, roadmap to v1.0
+### Heats 281-295: Self-Directed Run — Teach It Back + Visual Design Focus
+- **Teach It Back** (h282): student explains concept, AI evaluates, unlocks after mastery — top of Bloom's taxonomy
+- **Card editing** (h283): edit/delete from deck view, update_card + delete_card functions
+- **Integration tests** (h284): 20 new tests for full Learn→Create→Review→Edit flow — total 100 tests
+- **Session progress** (h285): exercises completed count on topic preview, increment after each answer
+- **CHANGELOG v0.8** (h286): documented heats 181-285 features
+- **Commissioner: last-active** (h287): timestamp on project cards from worklog
 
-### Key Patterns
-- State drift is real — tutor state.json fell 30+ heats behind because heats were logged to ai-coworker worklog but tutor state wasn't updated
-- Short runs (10 heats) are good for sync/cleanup/testing that accumulates during longer implementation runs
-- All queue tasks complete, all tests passing, both apps functional
+**Visual Design Focus (h289-294) — per human priority:**
+- Tutor animations: correct pulse, wrong shake, Socratic slide-up, streak bounce, hover lift, tab indicator
+- Exercise cards: larger padding, surface bg, rounded corners
+- Choice options: bigger tap targets, indigo hover with scale feedback
+- Buttons: rounded, hover states, active press
+- Review tab: stat box indigo accent, larger card, color-coded rating buttons
+- Create tab: deck card hover lift, tutor-speech border, labels uppercase
+- Learn landing: larger icons, bolder titles, accent gradients, continue hover
+- Commissioner: project card hover lift + shadow, decision card shadow, briefing header
+
+### Key Stats
+- 100 tests across 9 files
+- 1104 lines tutor CSS, 739 lines commissioner CSS
+- 5 CSS animations per Chisel spec
+- All routes pass on both apps
