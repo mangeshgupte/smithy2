@@ -6,36 +6,31 @@
 - Surveyed 4 reference projects, built protocol, wavefront allocator validated
 - 5 gaps identified and 3 fixed (stuck detection, output redirect, keep/discard)
 
-### Heats 6-12: Feature Build + Hardening
-- Idea pipeline, heat dashboard, vocabulary standardization (chunk→heat)
-- Anti-windup fix for PI controller (0.85 decay + ±1.0 clamp)
-- README shipped, all 6 stages covered
+### Heats 6-25: Feature Build → v0.2 Complete
+- Idea pipeline, dashboard, vocabulary fix, anti-windup, README
+- Beads DAG research → blocked_by dependencies implemented
+- forge-init.sh, SessionEnd hook, checkpoint file, fresh-session resume (28KB)
+- All v0.2 tasks complete
 
-### Heats 13-19: v0.2 Kickoff
-- Integral windup fixed, keep/discard live tested, v0.2 planned with 7 tasks
-- Checkpoint file implemented, state pruned
+### Heats 26-38: v0.3 — Personas + Production
+- Value measurement research, deep-dive doc, wavefront visualization
+- Persona system: designed → built → consolidated to 2 (Anvil + Forge)
+- v0.3 plan complete, dispatch system wired
 
-### Heats 20-25: v0.2 Complete
-- Beads research: git-backed task DAG with blocked_by dependencies
-- Implemented DAG dependencies (blocked_by array + ready detection in loop)
-- forge-init.sh: scaffold Forge in any directory
-- SessionEnd hook for automatic memory distillation
-- Fresh-session resume tested (28KB cold start)
-- Quick-start guide in README
-- **All v0.2 tasks complete. Queue empty.**
+### Heats 39-47: v0.4 — Real-Project Readiness
+- Persona verification: 2 stale refs fixed, all paths valid (h39)
+- Real-project readiness: 5 gaps in forge-init.sh identified (h40)
+- Templates improved with guided comments (h41), E2E tested (h43)
+- SessionEnd hook documented in README (h42), dashboard example added (h45)
+- v0.4 plan: multi-project isolation (copy not symlink), 6 tasks queued (h44)
+- STRATEGY.md full refresh (h46)
+- Adaptive queue management research: per-stage heuristic, anti-spiral guard (h47)
 
-### Heats 39+: Production Hardening
-- Heat 39 [testing]: Persona system verification — found 2 stale references from Lens→Anvil consolidation, all paths valid
-- Heat 40 [research]: Real-project readiness assessment — forge-init.sh missing .gitignore, SessionEnd hook, better templates. 4 tasks queued.
-- Heat 41 [editing]: Improved scaffold templates — identity.md and STRATEGY.md now have guided HTML comments with examples
-- Heat 42 [marketing]: Documented SessionEnd hook setup in README — config example, what it does, prerequisites
-- Heat 43 [testing]: E2E test forge-init.sh with new templates — all 14 files present, JSON valid, comments rendered, substitution works
-- Heat 44 [planning]: v0.4 plan — multi-project isolation via full copy (not symlink), forge-update.sh for protocol migration, 6 tasks queued
-- Heat 45 [marketing]: Example dashboard output in README — shows what The Forge looks like to a new user
-- Heat 46 [editing]: Full STRATEGY.md rewrite — updated all sections to heat 46 state, added persona system as idea #6, updated roadmap with completion status
-- Heat 47 [research]: Adaptive queue management — studied AutoGPT task creation agent, CrewAI decomposition. Designed per-stage generation heuristic + anti-spiral guard (3-in-a-row detection). Added t-025 blocked_by t-028.
+### Heat 48 [planning]: t-028 complete — auto-task generation design in plan.md. Memory consolidated.
 
 ### Key Patterns
-- Human ideas implemented quickly (8/8 done)
-- Anti-windup decay makes allocator balanced
-- Context growing — recommend session cycling after ~30 heats
+- 10/10 human ideas processed and implemented
+- Anti-windup decay (0.85) keeps allocator balanced across 47 heats
+- Implementation integral deeply negative (-1.0) from early over-allocation, recovering slowly
+- Exploration rule (every 5th heat) prevents allocator stagnation
+- Session context growing but manageable — session cycling validated at 28KB cold start

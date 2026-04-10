@@ -72,6 +72,38 @@ Make The Forge work reliably on non-dogfood projects. Complete the gaps found in
 | t-027 | testing | Scaffold + run 3 heats on a real (non-dogfood) project | 1 | t-021 |
 | t-028 | planning | Design auto-research trigger logic in allocator | 2 | |
 
+### Auto-Task Generation Design (t-028)
+
+**Trigger**: At Step 4 of the loop, after picking a stage, check:
+1. Queue has < 3 pending tasks total → generate 1-2 tasks
+2. No ready tasks for chosen stage → generate 1 task for that stage
+3. All pending tasks are blocked → generate 1 unblocked task
+
+**Generation heuristic per stage:**
+
+| Stage | How to Generate |
+|-------|-----------------|
+| Research | Read STRATEGY.md "What's Missing". Pick biggest unknown. |
+| Planning | Is current version plan complete? If yes, plan next version. |
+| Implementation | Check plan.md for pending impl tasks. If empty, check research for implementable improvements. |
+| Testing | Find recently completed implementation tasks. Each needs testing. |
+| Editing | Check STRATEGY.md staleness (heats since update > 5). Check protocol consistency. |
+| Marketing | Check README against features. Find undocumented features. |
+
+**Protocol change** (to loop.md Step 4): Add after "generate one yourself":
+```
+Queue health check (before picking a task):
+  pending_count = count of queue items with status "pending"
+  if pending_count < 3:
+    generate 1-2 tasks using the heuristic above for the highest-scoring stages
+    add to queue with status "pending"
+
+Anti-spiral: if 3 consecutive generated research tasks target the same topic,
+  write to outbox.md: "Stuck on <topic> — need human input"
+```
+
+**Implementation (t-025)**: Add the queue-depth check and generation heuristic to loop.md. This is a small protocol edit, not code.
+
 ### What "done" looks like for v0.4
 - forge-init.sh produces complete, ready-to-run scaffolds (with .gitignore)
 - forge-update.sh exists for protocol updates
