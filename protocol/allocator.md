@@ -1,98 +1,46 @@
 # The Wavefront Allocator
 
-Decides which stage to work on each heat.
+Run `smithy allocate` to get the recommended stage. The algorithm is implemented in `smithy/smithy/allocator.py`.
 
-## The 6 Stages (Dependency Chain)
+## How It Works
+
+```bash
+smithy allocate    # Returns: recommended_stage, scores, targets
+```
+
+### The 6 Stages (Dependency Chain)
 
 ```
 research → planning → implementation → testing → editing → marketing
 ```
 
-## Compute Benefit Per Stage
+### Benefit Computation
 
-For each stage, compute how much benefit additional work would produce:
+Each stage's benefit = readiness × (1 - own_progress):
+- **readiness** = progress of its prerequisite stage (1.0 for research)
+- This naturally creates a wavefront — effort flows from research → marketing
 
-```
-Dependency chain (each stage's prerequisite):
-  research:       none (always ready)
-  planning:       research
-  implementation: planning
-  testing:        implementation
-  editing:        implementation
-  marketing:      editing
+### PI Controller Scoring
 
 For each stage:
-  if stage is "research":
-    readiness = 1.0
-  else:
-    readiness = progress of its prerequisite stage (from the chain above)
-
-  benefit = readiness * (1.0 - own_progress)
 ```
-
-The key insight: a stage gets high benefit when its prerequisites are sufficiently done (`readiness` is high) but the stage itself still has work to do (`1 - own_progress` is high). This naturally creates a wavefront — effort concentrates on research first, then as research progresses, planning benefit rises, then implementation, etc.
-
-## Compute Dynamic Targets
-
-Normalize benefits to get target fractions:
-
-```
-total_benefit = sum of all stages' benefit (or 1 if zero)
-target[stage] = benefit[stage] / total_benefit
-```
-
-A floor of 0.05 per stage ensures nothing is completely starved. After applying floors, renormalize to sum to 1.0.
-
-Update the targets in state.json.
-
-## Score Each Stage (PI Controller)
-
-The dynamic targets feed into the PI controller to smooth allocation:
-
-```
-total_heats_used = sum of all stages' heats (or 1 if zero to avoid division by zero)
-actual_fraction = this_stage.heats / total_heats_used
+target = normalized benefit (with 0.05 floor)
 error = target - actual_fraction
-integral = state.allocator.integral[stage] * 0.85 + error    # decay old errors (anti-windup)
-integral = clamp(integral, -0.5, 0.5)                        # safety cap (soft clamp — prevents recovery traps)
-value_bonus = stage.value_ema * 0.3
-priority_boost = 2.0 if stage is in human_priorities, else 1.0
-
+integral = old_integral * 0.85 + error    (clamped ±0.5)
 score = (error + integral * 0.1 + value_bonus) * priority_boost
 ```
 
-Store the updated `integral` values back to state.json.
+### Stage Selection
 
-**Anti-windup**: The 0.85 decay factor means old errors lose ~50% weight after 5 heats and ~80% after 10. The ±0.5 soft clamp prevents recovery traps where over-allocated stages can never get picked again. This stops any single stage from permanently dominating the allocator due to early-phase imbalances.
+- Normally: pick highest-scoring stage
+- Every 5th heat: pick second-highest (exploration)
 
-## Unblocking Override
+### Bonuses
 
-After computing all scores, check for critical-path tasks:
+- **Unblocking override**: +0.3 for stages with critical-path tasks
+- **Queued task bonus**: +0.07 per pending task in a stage
+- **Priority boost**: 2× for stages in `human_priorities`
 
-```
-for each stage with a ready task:
-  unblock_count = count of queue tasks where blocked_by contains this task's ID
-  if unblock_count >= 2:
-    score[stage] += 0.3    # critical-path boost
-```
+## Don't Compute This Yourself
 
-This ensures tasks that unblock multiple downstream tasks get done even when their stage's integral is negative.
-
-## Queued Task Bonus
-
-After computing scores and unblocking override, prevent "dead tasks" (queued tasks in low-scoring stages that never get executed):
-
-```
-for each stage:
-  ready_count = count of queue tasks for this stage where:
-    - status = "pending"
-    - all tasks in blocked_by have status = "complete" (or blocked_by is empty)
-  score[stage] += ready_count * 0.07
-```
-
-This gives a proportional nudge: 1 task = +0.07, 2 = +0.14, 3 = +0.21. Enough to make a disfavored stage competitive without always overriding the allocator.
-
-## Pick Stage
-
-- Normally: pick the stage with the highest score.
-- Every 5th heat (heat number % 5 == 0): pick the **second-highest** scoring stage instead (exploration).
+The math is in Python. Just run `smithy allocate` and use the recommended stage. The explanation above is for understanding, not manual computation.
