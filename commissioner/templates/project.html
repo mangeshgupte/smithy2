@@ -16,6 +16,7 @@
         Decide
         {% if project.decisions %}<span class="badge">{{ project.decisions|length }}</span>{% endif %}
     </a>
+    <a href="/project/{{ project.name }}/direct" class="sub-tab {% if tab == 'direct' %}active{% endif %}">Direct</a>
 </nav>
 
 <!-- Stage progress -->

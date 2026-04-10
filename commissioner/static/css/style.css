@@ -413,6 +413,130 @@ body {
 .whats-missing ul { padding-left: 20px; }
 .whats-missing li { font-size: 14px; color: var(--text-muted); margin: 4px 0; }
 
+/* Direct tab */
+.direct-input-section {
+    margin: 16px 0;
+}
+
+.direct-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.direct-textarea {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    padding: 12px;
+    font-family: inherit;
+    font-size: 14px;
+    resize: vertical;
+}
+
+.direct-textarea:focus {
+    outline: none;
+    border-color: var(--blue);
+}
+
+.btn-primary {
+    background: var(--blue);
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.btn-small {
+    padding: 6px 14px;
+    font-size: 13px;
+    background: var(--border);
+    color: var(--text);
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+}
+
+.btn-small:hover { background: var(--surface-hover); }
+
+.quick-actions {
+    margin: 20px 0;
+}
+
+.quick-actions h2 { font-size: 16px; margin-bottom: 12px; }
+
+.action-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.action-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    padding: 16px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.15s;
+}
+
+.action-btn:hover { background: var(--surface-hover); }
+
+.intent-section, .budget-section, .tasks-section {
+    margin: 20px 0;
+}
+
+.intent-section h2, .budget-section h2, .tasks-section h2 {
+    font-size: 16px;
+    margin-bottom: 12px;
+}
+
+.intent-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    font-size: 13px;
+    white-space: pre-line;
+}
+
+.budget-bar.large { height: 8px; margin-bottom: 8px; }
+
+.budget-details {
+    display: flex;
+    gap: 8px;
+    font-size: 14px;
+    margin-bottom: 12px;
+}
+
+.budget-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.task-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin: 6px 0;
+    font-size: 13px;
+}
+
+.task-id { color: var(--text-muted); font-family: monospace; font-size: 12px; }
+.task-desc { flex: 1; }
+
 /* Utilities */
 .muted { color: var(--text-muted); }
 

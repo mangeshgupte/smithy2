@@ -63,6 +63,55 @@ async def project_decide(request: Request, project_name: str):
     })
 
 
+@app.get("/project/{project_name}/direct", response_class=HTMLResponse)
+async def project_direct(request: Request, project_name: str):
+    projects = discover_projects(PROJECTS_DIR)
+    project = next((p for p in projects if p["name"] == project_name), None)
+    if not project:
+        return HTMLResponse("<h1>Project not found</h1>", status_code=404)
+
+    # Read commander's intent from identity.md
+    identity_path = Path(project["dir"]) / "identity.md"
+    intent = ""
+    if identity_path.exists():
+        text = identity_path.read_text()
+        in_intent = False
+        for line in text.split("\n"):
+            if "Commander's Intent" in line:
+                in_intent = True
+                continue
+            if in_intent and line.startswith("## "):
+                break
+            if in_intent and line.startswith("- **"):
+                intent += line + "\n"
+    project["intent"] = intent.strip() or None
+
+    return templates.TemplateResponse(request=request, name="direct.html", context={
+        "project": project,
+        "tab": "direct",
+    })
+
+
+@app.post("/project/{project_name}/direct/send")
+async def project_direct_send(request: Request, project_name: str):
+    form = await request.form()
+    message = form.get("message", "").strip()
+
+    if message:
+        projects = discover_projects(PROJECTS_DIR)
+        project = next((p for p in projects if p["name"] == project_name), None)
+        if project:
+            inbox_path = Path(project["dir"]) / "inbox.md"
+            from datetime import datetime
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+            entry = f"\n\n## {timestamp} [via commissioner]\n{message}\n"
+            with open(inbox_path, "a") as f:
+                f.write(entry)
+
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(f"/project/{project_name}/direct", status_code=303)
+
+
 @app.get("/inbox", response_class=HTMLResponse)
 async def inbox(request: Request):
     projects = discover_projects(PROJECTS_DIR)

@@ -62,3 +62,12 @@ Directive: Operationalize the interface synthesis. Implement all 5 models: stopl
 ## 2026-04-09 [via prompt]
 Idea: Build a real project — an AI tutor that helps people learn. Focus on kids or adult university-level learning. First non-dogfood test of the Forge. Tests H5-H10 simultaneously.
 → dispatched (15 heats, see anvil-to-forge.md)
+
+## 2026-04-09 [via Chisel]
+Design: Commissioner App — mobile-first operational app for managing multiple Forge projects. 6 screens, lifecycle-adaptive cards, decision triage, morning briefing, voice-first. Full spec in design/2026-04-09-commissioner-app-design.md.
+→ dispatched to Forge (15 heats, see anvil-to-forge.md)
+
+
+## 2026-04-09 22:59 [via commissioner]
+Test from commissioner
+→ ✓ test message — Commissioner Direct tab POST works end-to-end
