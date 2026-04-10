@@ -17,12 +17,16 @@ Idea: Create a strategic plan (STRATEGY.md) that lists the current state of the 
 
 ## 2026-04-09 [via prompt]
 Directive: Run 1 heat focused on Inbox Idea Integration (protocol enhancement) — make the idea pipeline more robust.
-→ ✓ done in chunk 6 (4-step idea pipeline: capture→evaluate→track→acknowledge)
+→ ✓ done in heat 6 (4-step idea pipeline: capture→evaluate→track→acknowledge)
 
 ## 2026-04-09 [via prompt]
 Idea: Track progress per heat visually. If too hard, a good textual representation.
-→ ✓ done in chunk 8 (ASCII dashboard with progress bars printed after each heat)
+→ ✓ done in heat 8 (ASCII dashboard with progress bars printed after each heat)
 
 ## 2026-04-09 [via prompt]
 Idea: Each idea in inbox.md should have a status — whether considered and implemented (which heat), in queue (where), or not yet considered.
-→ ✓ done in chunk 8 (inline status annotations in inbox.md, added to logging protocol)
+→ ✓ done in heat 8 (inline status annotations in inbox.md, added to logging protocol)
+
+## 2026-04-09 [via prompt]
+Idea: Standardize vocabulary to use "heat" everywhere instead of mixing "heat" and "heat". Heat serves as a global timeline for the whole project.
+→ ✓ done in heat 12 (global find-and-replace across all protocol files, state.json keys, CLAUDE.md)

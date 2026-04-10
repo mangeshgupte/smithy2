@@ -1,17 +1,17 @@
 {
   "project": "ai-coworker",
   "budget": {
-    "total_chunks": 9,
+    "total_heats": 19,
     "used": 9,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
-    "research":       {"target": 0.288, "chunks": 2, "progress": 0.4, "value_ema": 0.63},
-    "planning":       {"target": 0.135, "chunks": 1, "progress": 0.3, "value_ema": 0.59},
-    "implementation": {"target": 0.072, "chunks": 3, "progress": 0.5, "value_ema": 0.65},
-    "testing":        {"target": 0.216, "chunks": 1, "progress": 0.1, "value_ema": 0.56},
-    "editing":        {"target": 0.192, "chunks": 1, "progress": 0.2, "value_ema": 0.56},
-    "marketing":      {"target": 0.096, "chunks": 1, "progress": 0.2, "value_ema": 0.59}
+    "research":       {"target": 0.288, "heats": 3, "progress": 0.5, "value_ema": 0.63},
+    "planning":       {"target": 0.135, "heats": 1, "progress": 0.3, "value_ema": 0.59},
+    "implementation": {"target": 0.072, "heats": 3, "progress": 0.5, "value_ema": 0.65},
+    "testing":        {"target": 0.216, "heats": 2, "progress": 0.2, "value_ema": 0.56},
+    "editing":        {"target": 0.192, "heats": 2, "progress": 0.3, "value_ema": 0.56},
+    "marketing":      {"target": 0.096, "heats": 1, "progress": 0.2, "value_ema": 0.59}
   },
   "allocator": {
     "integral": {

@@ -1,6 +1,6 @@
 # The Forge — Autonomous AI Coworker
 
-An AI worker that operates in bounded 5-minute chunks ("heats"), self-directs across project stages, and communicates asynchronously with a human.
+An AI worker that operates in bounded 5-minute heats ("heats"), self-directs across project stages, and communicates asynchronously with a human.
 
 ## How It Works
 
@@ -9,7 +9,7 @@ Give it a budget. Point it at a project. Walk away. It works.
 ```
 cd ~/vibes/ai-coworker
 claude
-> Run 20 chunks.
+> Run 20 heats.
 ```
 
 The Smith (the AI worker) reads `CLAUDE.md`, follows the protocol, and loops autonomously:
@@ -51,7 +51,7 @@ protocol/
 identity.md            ← Project context
 STRATEGY.md            ← Living strategic plan (updated each heat)
 state.json             ← Budget, stages, queue, allocator state
-worklog.tsv            ← Append-only chunk log
+worklog.tsv            ← Append-only heat log
 inbox.md / outbox.md   ← Async human-AI messages
 MEMORY_DAILY.md        ← Working memory
 MEMORY_WEEKLY.md       ← Validated patterns
@@ -72,5 +72,5 @@ plan.md                ← Living plan
 - **No Python.** The entire system is prose — CLAUDE.md + protocol files. Claude Code is the runtime.
 - **Flat files.** state.json, worklog.tsv, markdown. Inspect with `cat`, edit with `vim`.
 - **Git is the substrate.** Every heat's work is committed. The record is sacred.
-- **Budget-bounded.** Never exceeds allocated chunks. Say "Run N" to extend.
+- **Budget-bounded.** Never exceeds allocated heats. Say "Run N" to extend.
 - **Self-directed.** Generates its own tasks when the queue is empty.

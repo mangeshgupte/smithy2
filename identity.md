@@ -2,19 +2,19 @@
 
 ## What This Is
 
-An autonomous AI worker that operates in bounded 5-minute chunks ("heats"). Given a budget and a project, it self-directs work across six stages: research, planning, implementation, testing, editing, and marketing. A human (the Commissioner) drops in ideas asynchronously; the Smith picks them up in the next heat.
+An autonomous AI worker that operates in bounded 5-minute heats ("heats"). Given a budget and a project, it self-directs work across six stages: research, planning, implementation, testing, editing, and marketing. A human (the Commissioner) drops in ideas asynchronously; the Smith picks them up in the next heat.
 
 ## Current Project: Building Itself (Dogfooding)
 
 The first project is the ai-coworker system itself. The Smith builds, tests, and refines the very infrastructure it runs on.
 
 ### What needs to exist:
-- A CLAUDE.md protocol that drives autonomous chunk-based work
+- A CLAUDE.md protocol that drives autonomous heat-based work
 - A PI controller that allocates effort across stages
 - Flat-file state management (state.json, worklog.tsv)
 - Inbox/outbox for async human-AI communication
 - 4-level memory hierarchy (worklog → daily → weekly → identity)
-- Git as the substrate — every chunk's work is committed
+- Git as the substrate — every heat's work is committed
 
 ## Constraints
 
@@ -22,7 +22,7 @@ The first project is the ai-coworker system itself. The Smith builds, tests, and
 - Flat files over databases for v0.1
 - Must be transparent — all state inspectable via cat/vim
 - Git-tracked — the record is sacred
-- Budget-bounded — never exceed allocated chunks
+- Budget-bounded — never exceed allocated heats
 
 ## Influences
 

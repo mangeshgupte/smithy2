@@ -1,6 +1,6 @@
 # Plan
 
-## Current State (after chunk 1)
+## Current State (after heat 1)
 
 The Forge v0.1 scaffold is complete: CLAUDE.md hub, protocol files (loop, allocator, logging), flat-file state, inbox/outbox, 4-level memory hierarchy. The system is running its own heat loop (dogfooding).
 
@@ -11,7 +11,7 @@ Research identified 5 gaps from surveying autoresearch, Gas Town, NanoClaw, and 
 Ordered by impact-to-effort ratio. Items 1-3 are quick protocol edits. Items 4-5 are larger features.
 
 ### 1. Stuck Detection (protocol edit)
-**Gap**: No check for orphaned "in_progress" tasks from a previous chunk that crashed or was interrupted.
+**Gap**: No check for orphaned "in_progress" tasks from a previous heat that crashed or was interrupted.
 **Fix**: Add to Step 1 of loop.md — scan queue for tasks with status "in_progress". If found, either resume or reset to "pending" based on age.
 **Stage**: implementation
 **Effort**: Small
@@ -23,7 +23,7 @@ Ordered by impact-to-effort ratio. Items 1-3 are quick protocol edits. Items 4-5
 **Effort**: Small
 
 ### 3. Keep/Discard Pattern for Implementation (protocol edit)
-**Gap**: No mechanism to revert a chunk's work if it breaks things.
+**Gap**: No mechanism to revert a heat's work if it breaks things.
 **Fix**: At Step 5 start, note the current git HEAD. After executing, run a quick smoke check. If broken, `git reset --hard <saved-head>` and log outcome as "discard".
 **Stage**: implementation
 **Effort**: Small
@@ -35,7 +35,7 @@ Ordered by impact-to-effort ratio. Items 1-3 are quick protocol edits. Items 4-5
 **Effort**: Small
 
 ### 5. Episodic Store (v0.6 feature)
-**Gap**: Only flat-file memory. No semantic retrieval across chunks.
-**Fix**: Integrate Memory Substrate's ChromaDB episodic store. Session-end hook ingests chunk transcripts. Working memory buffer retrieves relevant episodes at chunk start.
+**Gap**: Only flat-file memory. No semantic retrieval across heats.
+**Fix**: Integrate Memory Substrate's ChromaDB episodic store. Session-end hook ingests heat transcripts. Working memory buffer retrieves relevant episodes at heat start.
 **Stage**: implementation
 **Effort**: Large (future)

@@ -50,8 +50,8 @@ Update the targets in state.json.
 The dynamic targets feed into the PI controller to smooth allocation:
 
 ```
-total_chunks_used = sum of all stages' chunks (or 1 if zero to avoid division by zero)
-actual_fraction = this_stage.chunks / total_chunks_used
+total_heats_used = sum of all stages' heats (or 1 if zero to avoid division by zero)
+actual_fraction = this_stage.heats / total_heats_used
 error = target - actual_fraction
 integral = state.allocator.integral[stage] + error
 value_bonus = stage.value_ema * 0.3
@@ -65,4 +65,4 @@ Store the updated `integral` values back to state.json.
 ## Pick Stage
 
 - Normally: pick the stage with the highest score.
-- Every 5th chunk (chunk number % 5 == 0): pick the **second-highest** scoring stage instead (exploration).
+- Every 5th heat (heat number % 5 == 0): pick the **second-highest** scoring stage instead (exploration).

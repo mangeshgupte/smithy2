@@ -7,14 +7,14 @@ Each heat follows these steps exactly:
 ## Step 1: Load Context
 
 Read these files at the start of every heat:
-- `state.json` — current chunk count, budget, stage stats, queue, priorities
+- `state.json` — current heat count, budget, stage stats, queue, priorities
 - `STRATEGY.md` — strategic plan, current state, main ideas being tried
 - `inbox.md` — check for new human messages (lines after `inbox_cursor`)
 - `MEMORY_DAILY.md` — recent working memory
 - `worklog.tsv` — last 10 entries for trajectory awareness
 
-**Stuck detection**: Scan the queue for any tasks with status "in_progress". These are leftovers from a previous chunk that was interrupted. For each:
-- If the worklog shows the task was logged in the last chunk → it was interrupted mid-work. Reset to "pending" so it can be re-picked.
+**Stuck detection**: Scan the queue for any tasks with status "in_progress". These are leftovers from a previous heat that was interrupted. For each:
+- If the worklog shows the task was logged in the last heat → it was interrupted mid-work. Reset to "pending" so it can be re-picked.
 - If the worklog does NOT mention it → it was orphaned. Reset to "pending".
 
 ## Step 2: Process Inbox
@@ -101,14 +101,14 @@ tail -n 30 .forge-output.log                   # Diagnose failures
 After completing work, git commit the changes:
 ```
 git add <specific files you changed>
-git commit -m "[stage] description of what this chunk accomplished"
+git commit -m "[stage] description of what this heat accomplished"
 ```
 
 ## Step 6: Log the Heat
 
 Read `protocol/logging.md` and follow the logging format.
 
-## Step 7: Memory Consolidation (every 6th chunk)
+## Step 7: Memory Consolidation (every 6th heat)
 
 When `budget.used % 6 == 0`:
 - Re-read MEMORY_DAILY.md
@@ -118,8 +118,8 @@ When `budget.used % 6 == 0`:
 
 ## Step 8: Check Budget
 
-- If `budget.used < budget.total_chunks` → **go to Step 1** (next heat)
-- If `budget.used >= budget.total_chunks`:
-  - Write a final summary to outbox.md covering what was accomplished across all chunks
+- If `budget.used < budget.total_heats` → **go to Step 1** (next heat)
+- If `budget.used >= budget.total_heats`:
+  - Write a final summary to outbox.md covering what was accomplished across all heats
   - Include: stages worked, tasks completed, key decisions made, what to do next
   - **STOP.**
