@@ -1,6 +1,6 @@
 # Strategic Plan — The Forge
 
-*Updated after heat 46 | 2026-04-09*
+*Updated after heat 56 | 2026-04-09*
 
 ## Vision
 
@@ -38,43 +38,44 @@ An autonomous AI coworker that works in bounded 5-minute heats, self-directs acr
 
 | Stage | Progress | Heats | Notes |
 |-------|----------|--------|-------|
-| Research | 65% | 7 | Patterns, session cycling, automation, windup, beads DAG, value measurement, real-project readiness. |
-| Planning | 55% | 6 | v0.1-v0.3 planned, persona system designed, v0.4 multi-project isolation designed. |
-| Implementation | 75% | 12 | Protocol, pipeline, dashboard, checkpoint, DAG deps, forge-init, SessionEnd hook, personas. |
-| Testing | 50% | 8 | Consistency, 11 scenarios, keep/discard live, fresh-session resume, persona verification, E2E forge-init. |
-| Editing | 50% | 7 | Inbox convention, vocabulary, state pruning, protocol review, strategy refresh, template improvements. |
-| Marketing | 50% | 6 | README with examples + quick-start, deep-dive doc, SessionEnd hook docs, dashboard example. |
+| Research | 72% | 9 | + real-project readiness, adaptive queue management, Telegram bridge design. |
+| Planning | 65% | 8 | + v0.4 plan, auto-task generation design, integral recovery fix. |
+| Implementation | 78% | 13 | + .gitignore in scaffold. Allocator fixes applied. |
+| Testing | 55% | 10 | + data integrity checks (8/8 pass), auto-task heuristic simulation. |
+| Editing | 58% | 9 | + protocol review, queue cleanup, STRATEGY refresh. |
+| Marketing | 55% | 7 | + SessionEnd hook docs, FAQ/troubleshooting, dashboard example. |
 
-**Overall progress**: ~58% | **Heats used**: 45 | **Wavefront phase**: middle-to-late
+**Overall progress**: ~64% | **Heats used**: 55 | **Wavefront phase**: late
 
 ### What's Working
 
-- Wavefront allocator with anti-windup (0.85 decay) — balanced across 6 stages over 45 heats
-- Exploration rule (every 5th heat picks second-highest) prevents local optima
-- DAG task dependencies (blocked_by) with ready detection
-- forge-init.sh scaffolds new projects with guided templates (E2E tested)
+- Wavefront allocator with soft clamp (±0.5) + unblocking override — balanced across 55 heats
+- Exploration rule (every 5th heat) + unblocking override (critical-path boost) prevent both stagnation and recovery traps
+- DAG task dependencies with ready detection
+- forge-init.sh with guided templates, .gitignore, E2E tested
 - 2-persona system (Anvil + Forge) with dispatch files
-- SessionEnd hook wired for automatic memory distillation
+- SessionEnd hook for automatic memory distillation
 - Checkpoint file for crash recovery
 - Idea pipeline: 10/10 human ideas processed
-- Protocol modular and human-readable
-- README comprehensive with examples, dashboard output, hook docs
+- Auto-task generation heuristic designed (per-stage, anti-spiral guard)
+- README with examples, FAQ, dashboard output, hook docs
+- Data integrity verified: 8 automated checks pass
 
 ### What's Missing
 
-- No non-dogfood project attempted yet — **priority for v0.4**
-- No .gitignore in scaffold (t-021, ready)
+- No non-dogfood project attempted yet — **priority, t-027 ready**
 - No forge-update.sh for protocol updates (t-026, ready)
-- No auto-research trigger (t-025, ready)
-- No messaging integration (Telegram/Slack) — v0.5
+- No auto-task generation in protocol yet (t-025, ready — design complete)
+- No --with-personas flag for forge-init.sh (t-023, ready)
+- No messaging integration — Telegram bridge designed (v0.5)
 - No episodic memory store — v0.6
 - No hard timeout enforcement on heats
 
 ## Main Ideas Being Tried
 
 ### 1. Wavefront Resource Allocation
-**Status**: Validated (45 heats)
-**Result**: Works well. Effort naturally distributed across all 6 stages. PI controller with anti-windup prevents oscillation. Exploration rule prevents stagnation.
+**Status**: Validated (55 heats), improved at heat 51
+**Result**: Works well. Soft clamp (±0.5) and unblocking override added to fix integral recovery trap. Effort naturally distributed across all 6 stages.
 
 ### 2. CLAUDE.md as the Entire Orchestrator
 **Status**: Validated (45 heats, multiple sessions)
@@ -99,10 +100,10 @@ An autonomous AI coworker that works in bounded 5-minute heats, self-directs acr
 
 ## Risks & Unknowns
 
-1. **Non-dogfood viability**: Has only been tested on itself. The first real project will reveal gaps the readiness assessment missed.
-2. **Value signal noise**: Self-assessment doesn't meaningfully differentiate stages. May need composite signals.
-3. **Context growth**: At 45 heats, context is large. Need to validate session cycling works for continuation.
-4. **Allocator implementation bias**: Implementation integral is deeply negative (-0.97) from early over-allocation. The anti-windup decay is handling it but it's slow to recover.
+1. **Non-dogfood viability**: Has only been tested on itself. t-027 is ready to test this.
+2. **Value signal noise**: Self-assessment doesn't meaningfully differentiate stages (0.7-0.8 cluster).
+3. **Context growth**: At 55 heats, context compression is active. Session cycling validated but not stress-tested.
+4. **Allocator integral recovery**: Fixed with soft clamp (±0.5) + unblocking override. Implementation integral recovering from -0.50.
 
 ## Roadmap
 
