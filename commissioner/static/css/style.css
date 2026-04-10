@@ -716,3 +716,12 @@ details.heat-card[open] .heat-summary {
     .container { max-width: 720px; padding: 24px; }
     .tab-bar { max-width: 720px; margin: 0 auto; left: 50%; transform: translateX(-50%); border-radius: 12px 12px 0 0; }
 }
+
+/* Phone-specific responsive */
+@media (max-width: 480px) {
+    .decision-buttons { flex-direction: column; }
+    .decide-btn { padding: 14px; font-size: 15px; }
+    .custom-input { font-size: 16px; } /* prevents zoom on iOS */
+    .confirmation-banner { flex-direction: column; gap: 8px; }
+    .day-header { flex-direction: column; gap: 4px; }
+}
