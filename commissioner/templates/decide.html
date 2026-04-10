@@ -36,7 +36,7 @@
             <span class="priority-badge {% if d.priority == 1 %}high{% elif d.priority == 0 %}critical{% else %}medium{% endif %}">
                 {% if d.priority == 0 %}CRITICAL{% elif d.priority == 1 %}HIGH{% else %}MEDIUM{% endif %}
             </span>
-            <span class="decision-stage">{{ d.stage }}</span>
+            <span class="decision-stage heat-stage stage-{{ d.stage }}">{{ d.stage }}</span>
         </div>
         <p class="decision-question">{{ d.question }}</p>
         {% if d.tier_label %}<span class="tier-label tier-{{ d.tier }}">{{ d.tier_label }}</span>{% endif %}
@@ -56,7 +56,8 @@
 </div>
 {% else %}
 <div class="empty-state">
-    <p>No pending decisions.</p>
+    <p style="font-size: 40px; margin-bottom: 12px;">✅</p>
+    <p>All clear</p>
     <p class="muted">Forge is running autonomously — nothing needs your input right now.</p>
 </div>
 {% endif %}
