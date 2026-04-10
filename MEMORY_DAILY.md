@@ -30,6 +30,7 @@
 - Heat 41 [editing]: Improved scaffold templates — identity.md and STRATEGY.md now have guided HTML comments with examples
 - Heat 42 [marketing]: Documented SessionEnd hook setup in README — config example, what it does, prerequisites
 - Heat 43 [testing]: E2E test forge-init.sh with new templates — all 14 files present, JSON valid, comments rendered, substitution works
+- Heat 44 [planning]: v0.4 plan — multi-project isolation via full copy (not symlink), forge-update.sh for protocol migration, 6 tasks queued
 
 ### Key Patterns
 - Human ideas implemented quickly (8/8 done)

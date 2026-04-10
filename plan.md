@@ -40,7 +40,45 @@ The protocol and infrastructure are solid. The gap is: **nobody has used this on
 2. **Multi-project isolation** (t-017) — needed before above
 3. **Polish the documentation** — deep-dive doc exists but STRATEGY.md needs a refresh
 
-## v0.4+ Outlook
+## v0.4: Multi-Project + Real-World Readiness
+
+### Goal
+Make The Forge work reliably on non-dogfood projects. Complete the gaps found in heat 40's readiness assessment.
+
+### Multi-Project Isolation Design (t-017)
+
+**Decision: Full isolation per project.** Each forge-init'd project is a self-contained directory with its own state, memory, and protocol files.
+
+| Concern | Approach |
+|---------|----------|
+| State | Fully isolated — each project has its own state.json, worklog, memory |
+| Protocol | Copied, not symlinked — explicit > implicit. Updates via `forge-update.sh` |
+| Memory | Per-project only — no cross-project memory sharing (too risky) |
+| Personas | Optional, per-project — only needed for complex projects |
+| Discovery | No global index — each project is a git repo with CLAUDE.md |
+
+**Why copy over symlink?** Symlinks create invisible dependencies. If the source protocol changes mid-run on another project, behavior becomes unpredictable. Copying means each project has a known-good snapshot.
+
+**Migration path:** `forge-update.sh` copies latest protocol files into an existing project, preserving state files. Git diff shows what changed.
+
+### Tasks
+
+| ID | Stage | Description | Priority | Blocked By |
+|----|-------|-------------|----------|------------|
+| t-021 | implementation | Add .gitignore to forge-init.sh scaffold | 1 | |
+| t-023 | implementation | Add --with-personas flag to forge-init.sh | 3 | t-021 |
+| t-025 | implementation | Auto-research trigger when queue depth < 3 | 2 | |
+| t-026 | implementation | Create forge-update.sh for protocol updates | 2 | |
+| t-027 | testing | Scaffold + run 3 heats on a real (non-dogfood) project | 1 | t-021 |
+| t-028 | planning | Design auto-research trigger logic in allocator | 2 | |
+
+### What "done" looks like for v0.4
+- forge-init.sh produces complete, ready-to-run scaffolds (with .gitignore)
+- forge-update.sh exists for protocol updates
+- At least one non-dogfood project has been scaffolded and run for 3+ heats
+- Auto-research trigger implemented (t-025)
+
+## v0.5+ Outlook
 - Telegram/Slack messaging sidecar
 - AI Collaborator integration for design debates
 - Dolt-backed task tracking (full beads)
