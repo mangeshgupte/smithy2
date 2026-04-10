@@ -1,5 +1,30 @@
 # Changelog
 
+## v0.8 — Tutor UI Redesign + Commissioner Polish (heats 181-285)
+
+### Tutor App — Full Redesign
+- **3-tab navigation**: Learn, Create, Review (bottom tab bar)
+- **Create tab**: student-created flashcards with AI review, deck view, card editing/deleting
+- **Review tab**: stats-first landing (due/done/total), SM-2 card player (forgot/hard/good/easy), review summary with strong/weak tracking
+- **Teach It Back**: student explains concept, AI evaluates — unlocks after mastery
+- **Design palette**: Deep Indigo, Wrong Amber, Hint Blue, subject accent bars, dark mode
+- **Session memory**: resume interrupted sessions, exercise progress tracking
+- **Streak counter**, weekly progress chart, onboarding welcome card
+- **100 tests** across 9 test files (17 card tests, 20 integration tests)
+
+### Commissioner App
+- **Tap-to-decide**: approve/defer/reject buttons on decision cards with confirmation + undo
+- **Notification tiers**: push/quiet/in-app classification based on priority
+- **Activity tab**: day-grouped heat feed with auto-summarization
+- **Inbox badges**: cross-project decision count
+- **Briefing**: decision queue section with tier counts
+
+### Protocol
+- **feedback_cursor**: explicit cursor-based feedback tracking (replaces "first heat" heuristic)
+- **Lint→test→fix loop**: run tests before commit, fix failures in-heat
+- **Self-critique (Reflexion)**: review before commit — edge cases, intent alignment, missed items
+- **forge-repomap.sh**: auto-generate repo map for new project orientation
+
 ## v0.5.1 — Interface Operationalization (heats 100-115)
 
 ### New Tools
