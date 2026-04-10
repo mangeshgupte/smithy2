@@ -2,6 +2,22 @@
 
 The Smith writes status updates, questions, and summaries here.
 
+## 2026-04-10 [heat 270, AAR — heats 181-270]
+
+90 heats: impl×40, test×12, editing×15, marketing×6, planning×2, research×1. Signal: 🟢×70+.
+Key: Three dispatches under budget (17 of 33 heats). Tutor fully redesigned: Learn→Create→Review loop, 80 tests, 15 templates, cards.py engine. Commissioner interactive: tap-to-decide, notification tiers, day groups.
+Next: Tutor offline caching, "teach it back" mode. More subjects.
+
+<details>
+<summary>Full AAR</summary>
+
+See `aar/2026-04-10-heats-181-270.md` for details.
+
+Key artifacts: tutor/cards.py (flashcard engine), 7 new templates, forge-repomap.sh, protocol improvements (lint→test→fix, self-critique, feedback_cursor).
+
+All queue tasks completed (t-044 through t-059). Overall progress: 91%.
+</details>
+
 ## 2026-04-10 [heat 180, AAR — heats 171-180]
 
 10 heats: 3 impl, 3 test, 2 edit, 1 plan, 1 mktg. Signal: 🟢×10.
