@@ -38,3 +38,4 @@ timestamp	heat	stage	task_id	outcome	value	notes
 2026-04-09T03:00:00Z	37	implementation	i-009	complete	0.9	Built 3 persona CLAUDE.md files + dispatch system
 2026-04-09T03:05:00Z	38	implementation	i-009	complete	0.8	Created dispatch files, added personas section to README
 2026-04-09T03:10:00Z	39	testing	generated	complete	0.7	Persona system verification: fixed stale Lens→Anvil ref, three→two count, all paths valid
+2026-04-09T03:15:00Z	40	research	generated	complete	0.8	Real-project readiness: tested forge-init.sh, found 5 gaps, generated 4 tasks
