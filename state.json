@@ -24,10 +24,12 @@
     }
   },
   "queue": [
-    {"id": "t-001", "stage": "implementation", "desc": "Add stuck detection to loop.md Step 1", "status": "complete", "priority": 1},
-    {"id": "t-002", "stage": "implementation", "desc": "Add output redirection guidance to loop.md stage table", "status": "complete", "priority": 2},
-    {"id": "t-003", "stage": "implementation", "desc": "Add keep/discard pattern to loop.md Step 5", "status": "complete", "priority": 3},
-    {"id": "t-004", "stage": "editing", "desc": "Add inbox idea integration convention", "status": "complete", "priority": 4}
+    {"id": "t-005", "stage": "implementation", "desc": "Add checkpoint file (.forge-checkpoint.json) before risky work", "status": "pending", "priority": 1},
+    {"id": "t-006", "stage": "implementation", "desc": "SessionEnd hook for automatic memory distillation", "status": "pending", "priority": 2},
+    {"id": "t-007", "stage": "implementation", "desc": "Project template script to scaffold Forge files in new directory", "status": "pending", "priority": 3},
+    {"id": "t-009", "stage": "testing", "desc": "Fresh-session resume test", "status": "pending", "priority": 4},
+    {"id": "t-010", "stage": "editing", "desc": "Prune completed tasks/ideas from state.json", "status": "pending", "priority": 5},
+    {"id": "t-011", "stage": "marketing", "desc": "Quick-start guide for new projects", "status": "pending", "priority": 6}
   ],
   "ideas": [
     {"id": "i-001", "text": "Effort allocation should depend on project stage and maximum benefit", "source": "prompt", "status": "done", "task_id": null},
