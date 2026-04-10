@@ -1,6 +1,6 @@
 # Strategic Plan — The Forge
 
-*Updated after heat 165 | 2026-04-09*
+*Updated after heat 188 | 2026-04-10*
 
 ## Vision
 
@@ -39,19 +39,19 @@ An autonomous AI coworker that works in bounded 5-minute heats, self-directs acr
 | Stage | Progress | Heats | Notes |
 |-------|----------|--------|-------|
 | Research | 88% | 24 | Landscape, interface, timeout — all research complete. |
-| Planning | 80% | 14 | v0.6 plan done. Commissioner dispatch complete. |
-| Implementation | 95% | 51 | Commissioner App (6 screens), AI Tutor, all tools. |
-| Testing | 82% | 28 | Commissioner E2E, forge-validate, integration suite. |
-| Editing | 84% | 29 | Protocol reviews, STRATEGY refreshes, state updates. |
-| Marketing | 80% | 20 | Commissioner README, CHANGELOG, AARs, dispatch reports. |
+| Planning | 82% | 16 | Feedback protocol review, tutor feedback processed. |
+| Implementation | 96% | 60 | Tap-to-decide, Activity tab day groups, inbox badges. |
+| Testing | 86% | 34 | Commissioner E2E with tap-to-decide, None bug fix. |
+| Editing | 86% | 32 | Protocol reviews, STRATEGY refreshes, memory consolidation. |
+| Marketing | 82% | 22 | AARs, dispatch reports, CHANGELOG. |
 
-**Overall progress**: ~85% | **Heats used**: 165 | **Wavefront phase**: finishing
+**Overall progress**: ~88% | **Heats used**: 188 | **Wavefront phase**: finishing
 
 ### What's Working
 
-- Wavefront allocator with 3 fixes (soft clamp, unblocking override, queued task bonus) — balanced across 165 heats
-- **3 real projects built**: ai-coworker (dogfood), ai-tutor (Python tutor), Commissioner App (project dashboard)
-- Commissioner App: 6 screens, reads real Forge state, Direct tab writes to inbox.md
+- Wavefront allocator with 3 fixes (soft clamp, unblocking override, queued task bonus) — balanced across 188 heats
+- **3 real projects built**: ai-coworker (dogfood), ai-tutor (Python + Singapore Math tutor), Commissioner App (project dashboard)
+- Commissioner App: 6 screens, tap-to-decide, day-grouped activity, inbox badges, feedback UI
 - forge-init.sh + forge-update.sh + forge-validate.sh + forge-status.sh — full tool suite
 - 5 interface models implemented: stoplight, uncertainty, commander's intent, AAR, L0-L4 compression
 - Personas (Anvil + Forge + Chisel) with dispatch system
@@ -61,8 +61,7 @@ An autonomous AI coworker that works in bounded 5-minute heats, self-directs acr
 
 ### What's Missing
 
-- Commissioner: tap-to-decide interaction (cards render but no action)
-- Commissioner: notification tier logic
+- Commissioner: notification tier logic (push/quiet/in-app classification)
 - Repo map for non-dogfood projects (t-044)
 - Lint→test→fix loop (t-045)
 - Self-critique / Reflexion (t-046)
