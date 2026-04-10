@@ -382,6 +382,51 @@ def process_inbox(ctx):
     _err(f"{len(entries)} new inbox entries")
 
 
+@cli.command("sync-stages")
+@click.pass_context
+def sync_stages(ctx):
+    """Recalculate stage heats from worklog.tsv to fix drift."""
+    root = ctx.obj["root"]
+    state = load_state(root)
+    worklog_path = root / "worklog.tsv"
+
+    if not worklog_path.exists():
+        _output({"error": "No worklog.tsv found"})
+        sys.exit(1)
+
+    # Count heats per stage from worklog
+    stage_counts = {s: 0 for s in VALID_STAGES}
+    lines = worklog_path.read_text().strip().split("\n")
+    for line in lines[1:]:  # skip header
+        parts = line.split("\t")
+        if len(parts) >= 3:
+            stage = parts[2]
+            if stage in stage_counts:
+                stage_counts[stage] += 1
+
+    # Update state
+    old_counts = {}
+    for stage in VALID_STAGES:
+        old_counts[stage] = state["stages"][stage].get("heats", 0)
+        state["stages"][stage]["heats"] = stage_counts[stage]
+
+    # Update budget.used to match worklog
+    total_heats = len(lines) - 1
+    old_used = state["budget"]["used"]
+    state["budget"]["used"] = total_heats
+
+    save_state(root, state)
+
+    _output({
+        "old_used": old_used,
+        "new_used": total_heats,
+        "stage_changes": {s: {"old": old_counts[s], "new": stage_counts[s]}
+                          for s in VALID_STAGES if old_counts[s] != stage_counts[s]},
+        "total_worklog_entries": total_heats,
+    })
+    _err(f"Synced stages from {total_heats} worklog entries")
+
+
 @cli.command("patrol")
 @click.option("--fix", is_flag=True, help="Auto-fix simple discrepancies")
 @click.pass_context

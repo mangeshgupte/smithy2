@@ -497,3 +497,4 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-10T15:25:31Z	496	testing	generated	complete	0.7	🟢	152 tests pass (111+12+29). Handoff consumed, patrol ran with fix.
 2026-04-10T15:25:53Z	497	marketing	generated	complete	0.7	🟢	Handoff saved for next session. Budget exhausted.
 2026-04-10T15:46:56Z	498	planning	generated	complete	0.7	🟢	3 tasks generated (t-088-090): sync-stages, full test, STRATEGY/CHANGELOG milestone
+2026-04-10T15:47:45Z	499	implementation	t-088	complete	0.9	🟢	smithy sync-stages: recalculated all stage heats from worklog. Patrol now fully clean (0 issues).

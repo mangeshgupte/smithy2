@@ -2,7 +2,7 @@
   "project": "ai-coworker",
   "budget": {
     "total_heats": 507,
-    "used": 498,
+    "used": 499,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -14,31 +14,31 @@
     },
     "planning": {
       "target": 0.21,
-      "heats": 22,
+      "heats": 26,
       "progress": 0.85,
       "value_ema": 0.71
     },
     "implementation": {
       "target": 0.049,
-      "heats": 106,
+      "heats": 157,
       "progress": 0.98,
-      "value_ema": 0.88
+      "value_ema": 0.886
     },
     "testing": {
       "target": 0.183,
-      "heats": 64,
+      "heats": 95,
       "progress": 0.88,
       "value_ema": 0.792
     },
     "editing": {
       "target": 0.183,
-      "heats": 65,
+      "heats": 132,
       "progress": 0.88,
       "value_ema": 0.782
     },
     "marketing": {
       "target": 0.219,
-      "heats": 34,
+      "heats": 62,
       "progress": 0.84,
       "value_ema": 0.75
     }
@@ -316,7 +316,7 @@
       "id": "t-088",
       "stage": "implementation",
       "desc": "smithy sync-stages: recalculate stage heats from worklog.tsv to fix drift",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": []
     },
