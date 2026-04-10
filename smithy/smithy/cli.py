@@ -670,6 +670,66 @@ def init(ctx, project_name, target, with_personas):
     _err(f"Initialized {project_name} at {target_path}")
 
 
+@cli.command("update")
+@click.argument("target")
+@click.pass_context
+def update(ctx, target):
+    """Copy protocol files to an existing project (replace forge-update.sh)."""
+    import shutil
+
+    target_path = Path(target).resolve()
+
+    # Verify target is a Forge project
+    if not (target_path / "state.json").exists():
+        _output({"error": f"{target} doesn't look like a Forge project (missing state.json)"})
+        sys.exit(1)
+
+    # Source protocol files are in the forge root (smithy's grandparent package)
+    # __file__ = smithy/smithy/smithy/cli.py -> grandparent = smithy/ (forge root)
+    forge_root = Path(__file__).parent.parent.parent  # smithy/smithy/smithy -> smithy/
+
+    protocol_files = [
+        "CLAUDE.md",
+        "protocol/loop.md",
+        "protocol/allocator.md",
+        "protocol/logging.md",
+        "protocol/reporting.md",
+    ]
+
+    results = {"updated": [], "added": [], "unchanged": [], "missing": []}
+
+    for relpath in protocol_files:
+        src = forge_root / relpath
+        dst = target_path / relpath
+
+        if not src.exists():
+            results["missing"].append(relpath)
+            continue
+
+        dst.parent.mkdir(parents=True, exist_ok=True)
+
+        if dst.exists():
+            if src.read_text() == dst.read_text():
+                results["unchanged"].append(relpath)
+            else:
+                shutil.copy2(src, dst)
+                results["updated"].append(relpath)
+        else:
+            shutil.copy2(src, dst)
+            results["added"].append(relpath)
+
+    # Copy .gitignore if missing
+    gi_src = forge_root / ".gitignore"
+    gi_dst = target_path / ".gitignore"
+    if gi_src.exists() and not gi_dst.exists():
+        shutil.copy2(gi_src, gi_dst)
+        results["added"].append(".gitignore")
+
+    _output(results)
+    total_changes = len(results["updated"]) + len(results["added"])
+    _err(f"Updated {total_changes} files, {len(results['unchanged'])} unchanged")
+
+
 @cli.command("commit")
 @click.argument("message")
 @click.pass_context
