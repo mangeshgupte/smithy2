@@ -2,7 +2,7 @@
   "project": "ai-coworker",
   "budget": {
     "total_heats": 507,
-    "used": 499,
+    "used": 500,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -26,9 +26,9 @@
     },
     "testing": {
       "target": 0.183,
-      "heats": 95,
+      "heats": 96,
       "progress": 0.88,
-      "value_ema": 0.792
+      "value_ema": 0.824
     },
     "editing": {
       "target": 0.183,
@@ -48,7 +48,7 @@
       "research": 0.266,
       "planning": 0.5,
       "implementation": -0.5,
-      "testing": -0.085,
+      "testing": -0.081,
       "editing": -0.126,
       "marketing": 0.488
     }
@@ -324,7 +324,7 @@
       "id": "t-089",
       "stage": "testing",
       "desc": "Full system test + patrol after sync-stages fix",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
