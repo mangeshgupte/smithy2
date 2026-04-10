@@ -2,6 +2,12 @@
 
 The Smith writes status updates, questions, and summaries here.
 
+## 2026-04-10 [heat 480, AAR — heats 471-480]
+
+10 heats: impl×2, test×2, editing×2, planning×1, marketing×3. Signal: 🟢×10.
+Key: 4 smithy init tests (23 total), `memory-write` command (13 total), CHANGELOG v0.9, 146 tests pass.
+Next: More tutor features, smithy dogfooding in all runs.
+
 ## 2026-04-10 [heat 470, AAR — heats 461-470]
 
 10 heats: impl×3, test×2, editing×3, marketing×2. Signal: 🟢×10.

@@ -17,3 +17,5 @@ start-heat, end-heat, validate, status, allocate, pick-task, process-feedback, p
 - Smithy fully dogfooded for 20 consecutive heats (441-470)
 
 - [h473 implementation] Test memory write from smithy CLI
+
+- [h476 editing] Heats 471-480: smithy init tests (4), memory-write command, CHANGELOG v0.9, 146 total tests. All feedback processed. Smithy has 13 commands.
