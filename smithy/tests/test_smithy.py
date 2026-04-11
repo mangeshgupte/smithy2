@@ -998,3 +998,189 @@ class TestQueueShortcuts:
         data = json.loads(result.output)
         priorities = [t["priority"] for t in data["tasks"]]
         assert priorities == sorted(priorities)
+
+
+class TestSyncStages:
+    """Tests for sync-stages command."""
+
+    def test_sync_stages_from_worklog(self, project, runner):
+        """sync-stages recalculates stage heats from worklog entries."""
+        # Add worklog entries
+        worklog = "timestamp\theat\tstage\ttask_id\toutcome\tvalue\tsignal\tnotes\n"
+        worklog += "2026-04-10T10:00:00\t1\timplementation\tt-001\tcomplete\t0.8\t🟢\tnote\n"
+        worklog += "2026-04-10T10:05:00\t2\ttesting\tt-001\tcomplete\t0.9\t🟢\tnote\n"
+        worklog += "2026-04-10T10:10:00\t3\timplementation\tt-001\tcomplete\t0.7\t🟡\tnote\n"
+        (project / "worklog.tsv").write_text(worklog)
+
+        result = runner.invoke(cli, ["--dir", str(project), "sync-stages"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["new_used"] == 3
+
+        state = json.loads((project / "state.json").read_text())
+        assert state["stages"]["implementation"]["heats"] == 2
+        assert state["stages"]["testing"]["heats"] == 1
+
+    def test_sync_stages_empty_worklog(self, project, runner):
+        """sync-stages with header-only worklog zeroes everything."""
+        result = runner.invoke(cli, ["--dir", str(project), "sync-stages"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["new_used"] == 0
+
+
+class TestMemoryWrite:
+    """Tests for memory-write command."""
+
+    def test_memory_write_creates_file(self, project, runner):
+        """memory-write creates MEMORY_DAILY.md if missing."""
+        result = runner.invoke(cli, ["--dir", str(project), "memory-write", "Test note"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["note"] == "Test note"
+        assert (project / "MEMORY_DAILY.md").exists()
+        content = (project / "MEMORY_DAILY.md").read_text()
+        assert "Test note" in content
+
+    def test_memory_write_with_heat(self, project, runner):
+        """memory-write with --heat adds prefix."""
+        result = runner.invoke(cli, ["--dir", str(project), "memory-write", "Heat note", "--heat", "42", "--stage", "testing"])
+        assert result.exit_code == 0
+        content = (project / "MEMORY_DAILY.md").read_text()
+        assert "[h42 testing]" in content
+
+    def test_memory_write_appends(self, project, runner):
+        """Multiple writes append under same date header."""
+        runner.invoke(cli, ["--dir", str(project), "memory-write", "Note 1"])
+        runner.invoke(cli, ["--dir", str(project), "memory-write", "Note 2"])
+        content = (project / "MEMORY_DAILY.md").read_text()
+        assert "Note 1" in content
+        assert "Note 2" in content
+
+
+class TestProcessInbox:
+    """Tests for process-inbox command."""
+
+    def test_process_inbox_empty(self, project, runner):
+        """process-inbox with empty inbox returns no entries."""
+        result = runner.invoke(cli, ["--dir", str(project), "process-inbox"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["count"] == 0
+
+    def test_process_inbox_reads_new(self, project, runner):
+        """process-inbox reads entries after cursor."""
+        (project / "inbox.md").write_text("# Inbox\n\n- Idea one\n- Idea two\n")
+        result = runner.invoke(cli, ["--dir", str(project), "process-inbox"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["count"] == 2
+        assert "Idea one" in data["new_entries"][0]
+
+    def test_process_inbox_cursor_advances(self, project, runner):
+        """process-inbox advances cursor, second call sees nothing new."""
+        (project / "inbox.md").write_text("# Inbox\n\n- Idea one\n")
+        runner.invoke(cli, ["--dir", str(project), "process-inbox"])
+        result = runner.invoke(cli, ["--dir", str(project), "process-inbox"])
+        data = json.loads(result.output)
+        assert data["count"] == 0
+
+
+class TestStats:
+    """Tests for stats command."""
+
+    def test_stats_basic(self, project, runner):
+        """stats command returns stage distribution and signal counts."""
+        worklog = "timestamp\theat\tstage\ttask_id\toutcome\tvalue\tsignal\tnotes\n"
+        worklog += "2026-04-10T10:00:00\t1\timplementation\tt-001\tcomplete\t0.8\t🟢\tnote\n"
+        (project / "worklog.tsv").write_text(worklog)
+        result = runner.invoke(cli, ["--dir", str(project), "stats"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["total_heats"] == 1
+        assert "implementation" in data["stage_distribution"]
+        assert data["signals"]["🟢"] == 1
+
+
+class TestRejectCompleteInitiative:
+    """Tests for reject and complete-initiative commands."""
+
+    def _setup_initiative(self, project):
+        state = json.loads((project / "state.json").read_text())
+        state.setdefault("themes", []).append({"id": "th-001", "name": "Test", "status": "active"})
+        state.setdefault("initiatives", []).append({
+            "id": "ini-001", "title": "Init", "description": "Desc",
+            "theme_id": "th-001", "status": "proposed", "heats_used": 0
+        })
+        (project / "state.json").write_text(json.dumps(state))
+
+    def test_reject_initiative(self, project, runner):
+        self._setup_initiative(project)
+        result = runner.invoke(cli, ["--dir", str(project), "reject", "ini-001"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["initiative"]["status"] == "rejected"
+
+    def test_reject_not_found(self, project, runner):
+        result = runner.invoke(cli, ["--dir", str(project), "reject", "ini-999"])
+        assert result.exit_code != 0
+
+    def test_complete_initiative(self, project, runner):
+        self._setup_initiative(project)
+        # First approve, then complete
+        state = json.loads((project / "state.json").read_text())
+        state["initiatives"][0]["status"] = "active"
+        (project / "state.json").write_text(json.dumps(state))
+        result = runner.invoke(cli, ["--dir", str(project), "complete-initiative", "ini-001"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["initiative"]["status"] == "done"
+
+    def test_complete_not_found(self, project, runner):
+        result = runner.invoke(cli, ["--dir", str(project), "complete-initiative", "ini-999"])
+        assert result.exit_code != 0
+
+
+class TestCommit:
+    """Tests for commit command — mock git subprocess."""
+
+    def test_commit_with_checkpoint(self, project, runner, monkeypatch):
+        """commit reads stage from checkpoint and uses [stage] prefix."""
+        import subprocess as sp
+
+        (project / ".forge-checkpoint.json").write_text(json.dumps({"stage": "testing"}))
+        # Create a tracked file change so git has something to commit
+        calls = []
+
+        def fake_run(cmd, **kw):
+            calls.append(cmd)
+            if cmd[1] == "add":
+                return sp.CompletedProcess(cmd, 0, "", "")
+            if cmd[1] == "status":
+                return sp.CompletedProcess(cmd, 0, "M file.py\n", "")
+            if cmd[1] == "commit":
+                return sp.CompletedProcess(cmd, 0, "", "")
+            return sp.CompletedProcess(cmd, 0, "", "")
+
+        monkeypatch.setattr(sp, "run", fake_run)
+        result = runner.invoke(cli, ["--dir", str(project), "commit", "Fixed the bug"])
+        assert result.exit_code == 0
+        # Find commit call and check message
+        commit_calls = [c for c in calls if len(c) > 1 and c[1] == "commit"]
+        assert len(commit_calls) == 1
+        assert "[testing] Fixed the bug" in " ".join(commit_calls[0])
+
+    def test_commit_nothing_to_commit(self, project, runner, monkeypatch):
+        """commit with no changes → error."""
+        import subprocess as sp
+
+        def fake_run(cmd, **kw):
+            if cmd[1] == "add":
+                return sp.CompletedProcess(cmd, 0, "", "")
+            if cmd[1] == "status":
+                return sp.CompletedProcess(cmd, 0, "", "")  # empty = nothing to commit
+            return sp.CompletedProcess(cmd, 0, "", "")
+
+        monkeypatch.setattr(sp, "run", fake_run)
+        result = runner.invoke(cli, ["--dir", str(project), "commit", "Empty"])
+        assert result.exit_code != 0
