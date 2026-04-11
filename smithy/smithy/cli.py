@@ -122,10 +122,26 @@ def end_heat(ctx, value, signal, notes, outcome, progress):
     state["allocator"]["integral"][stage] = round(integral, 3)
 
     # Mark task complete if outcome is complete
+    completed_task = None
     if outcome == "complete" and task_id != "generated":
         for task in state.get("queue", []):
             if task["id"] == task_id:
                 task["status"] = "complete"
+                completed_task = task
+                break
+
+    # Increment initiative heats_used
+    ini_id = completed_task.get("initiative_id") if completed_task else None
+    if ini_id:
+        for ini in state.get("initiatives", []):
+            if ini["id"] == ini_id:
+                ini["heats_used"] = ini.get("heats_used", 0) + 1
+                if ini.get("budget_cap") and ini["heats_used"] >= ini["budget_cap"]:
+                    # Append warning to outbox
+                    outbox_path = root / "outbox.md"
+                    if outbox_path.exists():
+                        warning = f"\n\n**⚠️ Initiative {ini_id} ({ini['title']}) has reached its budget cap ({ini['budget_cap']} heats).**\n"
+                        outbox_path.write_text(outbox_path.read_text() + warning)
                 break
 
     # Update overall progress
@@ -204,12 +220,23 @@ def status(ctx):
 @click.argument("desc")
 @click.option("--priority", type=int, default=2, help="Priority (0=highest, 3=lowest)")
 @click.option("--blocked-by", multiple=True, help="Task IDs this is blocked by")
+@click.option("--initiative", "initiative_id", default=None, help="Link to initiative ID")
 @click.pass_context
-def add_task(ctx, stage, desc, priority, blocked_by):
+def add_task(ctx, stage, desc, priority, blocked_by, initiative_id):
     """Add a new task to the queue."""
     root = ctx.obj["root"]
     state = load_state(root)
     queue = state.get("queue", [])
+
+    # Validate initiative if provided
+    if initiative_id:
+        ini_map = {i["id"]: i for i in state.get("initiatives", [])}
+        if initiative_id not in ini_map:
+            _output({"error": f"Initiative {initiative_id} not found"})
+            sys.exit(1)
+        if ini_map[initiative_id]["status"] not in ("approved", "active"):
+            _output({"error": f"Initiative {initiative_id} status is '{ini_map[initiative_id]['status']}' — must be approved or active"})
+            sys.exit(1)
 
     # Generate next task ID
     existing_ids = [t["id"] for t in queue]
@@ -230,6 +257,9 @@ def add_task(ctx, stage, desc, priority, blocked_by):
         "priority": priority,
         "blocked_by": list(blocked_by),
     }
+    if initiative_id:
+        task["initiative_id"] = initiative_id
+
     queue.append(task)
     state["queue"] = queue
     save_state(root, state)
@@ -302,6 +332,9 @@ def pick_task(ctx, stage):
     state = load_state(root)
     queue = state.get("queue", [])
 
+    # Build initiative status lookup
+    ini_map = {i["id"]: i for i in state.get("initiatives", [])}
+
     # Find ready tasks
     complete_ids = {t["id"] for t in queue if t["status"] == "complete"}
     ready = []
@@ -309,14 +342,27 @@ def pick_task(ctx, stage):
         if task["stage"] != stage or task["status"] != "pending":
             continue
         blocked = task.get("blocked_by", [])
-        if all(bid in complete_ids for bid in blocked):
-            ready.append(task)
+        if not all(bid in complete_ids for bid in blocked):
+            continue
+        # Initiative gating: skip tasks whose initiative isn't approved/active
+        ini_id = task.get("initiative_id")
+        if ini_id and ini_id in ini_map:
+            if ini_map[ini_id]["status"] not in ("approved", "active"):
+                continue
+        ready.append(task)
 
     ready.sort(key=lambda t: t.get("priority", 3))
 
     if ready:
-        _output({"task": ready[0], "alternatives": len(ready) - 1})
-        _err(f"Task: {ready[0]['id']} — {ready[0]['desc']}")
+        picked = ready[0]
+        # Activate initiative on first task pick
+        ini_id = picked.get("initiative_id")
+        if ini_id and ini_id in ini_map and ini_map[ini_id]["status"] == "approved":
+            ini_map[ini_id]["status"] = "active"
+            save_state(root, state)
+
+        _output({"task": picked, "alternatives": len(ready) - 1})
+        _err(f"Task: {picked['id']} — {picked['desc']}")
     else:
         _output({"task": None, "message": f"No ready tasks for {stage} — generate one"})
         _err(f"No ready tasks for {stage}")
