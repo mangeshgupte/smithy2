@@ -1,5 +1,44 @@
 # Changelog
 
+## v1.3 — User Sessions + Creative Writing + Init Fix + Stats (heats 576-600)
+
+### Creative Writing — 5th Subject
+- **10 topics** across 5 levels: show-don't-tell, strong verbs, sensory details, sentence variety, eliminating wordiness, voice & tone, figurative language, dialogue, scene vs summary, opening hooks
+- **26 exercises**: free_response (rewrites, analysis), multiple_choice (identify technique), fill_in_blank
+- Pink accent color (#EC4899)
+
+### User Sessions
+- **Cookie-based user ID** with middleware — each user gets isolated progress and cards
+- **User switcher** (`/user`): enter name, stored as cookie, displayed in nav bar 👤 tab
+- **Per-user storage**: `~/.tutor/users/<id>/progress.json` + `cards.json`
+- Backward compatible: no user cookie = global (legacy) progress
+
+### Intent Hierarchy
+- **Themes + Initiatives** in state.json with full validation
+- **9 CLI commands**: add-theme, list-themes, pause/activate-theme, propose, approve, reject, complete-initiative, list-initiatives
+- **Task gating**: `--initiative` on add-task, pick-task filters by initiative status, auto-activates, heats_used tracking
+- **Allocator gating**: only eligible tasks affect scoring
+- **Bellows Board page**: themes → initiatives, approve/reject from UI, status-colored cards
+- **Bellows home badges**: blue proposal count on project cards
+
+### smithy init — End-to-End Fix
+- Now generates **CLAUDE.md** (protocol hub)
+- Copies **all 4 protocol files** (loop.md, allocator.md, logging.md, reporting.md)
+- **Commander's Intent template** in identity.md with placeholders
+- Prints **next steps** after init
+
+### New Features
+- **Tutor stats page** (`/stats`): subjects, topics completed, cards, streak, per-subject breakdown
+- **Bellows live indicator**: pulsing green "running" badge when checkpoint exists
+- **`smithy stats` command**: stage distribution, signal counts, theme/initiative summary
+- **SW v2**: network-first for localhost (fixes dev caching)
+
+### Stats
+- **5 tutor subjects**: Python, Math, English, Logic, Creative Writing — 49 topics, 188 exercises
+- **28 smithy commands**, 45 smithy tests
+- **172 total tests** (111 tutor + 16 bellows + 45 smithy)
+- **600 heats milestone**
+
 ## v1.2 — PWA Offline + Content Expansion + Naming (heats 548-567)
 
 ### PWA Offline Support
