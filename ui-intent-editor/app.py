@@ -94,6 +94,18 @@ async def index(request: Request):
     # Auto-decompose if intent exists
     decomposition = _decompose_intent(intent) if intent else []
 
+    # Compare with existing state to mark new/existing
+    existing_theme_names = {t["name"] for t in existing_themes}
+    existing_ini_titles = {(i["theme_id"], i["title"]) for i in existing_initiatives}
+    theme_id_by_name = {t["name"]: t["id"] for t in existing_themes}
+
+    for d in decomposition:
+        d["is_new"] = d["name"] not in existing_theme_names
+        th_id = theme_id_by_name.get(d["name"])
+        for i, ini in enumerate(d["initiatives"]):
+            is_new = (th_id, ini) not in existing_ini_titles if th_id else True
+            d["initiatives"][i] = {"title": ini, "is_new": is_new}
+
     return templates.TemplateResponse(request=request, name="index.html", context={
         "project": state.get("project", "unknown"),
         "intent": intent,

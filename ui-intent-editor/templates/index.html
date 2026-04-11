@@ -31,16 +31,16 @@
 
             {% for theme in decomposition %}
             <div class="tree-theme">
-                <div class="tree-node theme-node">
+                <div class="tree-node theme-node {{ 'new-item' if theme.is_new }}">
                     <span class="node-icon">📁</span>
                     <span class="node-name">{{ theme.name }}</span>
-                    <span class="node-type">theme</span>
+                    <span class="node-type">{% if theme.is_new %}+ new theme{% else %}existing{% endif %}</span>
                 </div>
                 {% for ini in theme.initiatives %}
-                <div class="tree-node ini-node">
+                <div class="tree-node ini-node {{ 'new-item' if ini.is_new }}">
                     <span class="node-icon">📋</span>
-                    <span class="node-name">{{ ini }}</span>
-                    <span class="node-type">initiative (proposed)</span>
+                    <span class="node-name">{{ ini.title }}</span>
+                    <span class="node-type">{% if ini.is_new %}+ new{% else %}exists{% endif %}</span>
                 </div>
                 {% endfor %}
                 {% if not theme.initiatives %}

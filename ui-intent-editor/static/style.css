@@ -35,6 +35,9 @@ textarea:focus { outline: none; border-color: var(--blue); }
 .node-type { font-size: 11px; color: var(--text-muted); }
 .muted { color: var(--text-muted); }
 
+.new-item { background: rgba(63,185,80,0.08); border-left: 3px solid #3fb950; margin-left: -3px; }
+.new-item .node-type { color: #3fb950; font-weight: 600; }
+
 .apply-btn {
     width: 100%; background: var(--green); color: #fff; border: none;
     border-radius: var(--radius); padding: 14px; font-size: 15px;
