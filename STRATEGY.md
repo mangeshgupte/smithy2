@@ -1,6 +1,6 @@
 # Strategic Plan — The Smithy
 
-*Updated after heat 605 | 2026-04-11*
+*Updated after heat 641 | 2026-04-11*
 
 ## Vision
 
@@ -50,14 +50,14 @@ See `research/gas-town-integration-synthesis.md` for the full analysis.
 
 | Stage | Progress | Heats | Notes |
 |-------|----------|--------|-------|
-| Research | 90% | 29 | Landscape, interface, Gas Town, PWA, 4th subject selection. |
-| Planning | 85% | 31 | Sprint planning, mid-sprint reviews. |
-| Implementation | 98% | 199 | Smithy CLI (28 cmds), Tutor (5 subjects, PWA, user sessions, stats), Bellows (board, live indicator, project creation). |
-| Testing | 88% | 113 | 172 tests (111 tutor + 16 bellows + 45 smithy). Patrol clean. E2E init verified. |
-| Editing | 88% | 151 | Protocol, STRATEGY, CHANGELOG v1.3, READMEs, WALKTHROUGH.md. |
-| Marketing | 84% | 82 | AARs, dispatch reports, CHANGELOGs, walkthrough. |
+| Research | 90% | 33 | Landscape, Gas Town, PWA, subjects, steering patterns. |
+| Planning | 85% | 33 | Sprint planning, mid-sprint reviews. |
+| Implementation | 98% | 221 | Smithy CLI (28 cmds), Tutor (5 subjects, PWA, sessions), Bellows, 4 steering UIs. |
+| Testing | 88% | 117 | 172 tests (111 tutor + 16 bellows + 45 smithy). Patrol clean. |
+| Editing | 88% | 153 | Protocol, STRATEGY, CHANGELOG v1.4, READMEs, WALKTHROUGH. |
+| Marketing | 84% | 84 | AARs, dispatch reports, CHANGELOGs, walkthrough. |
 
-**Overall progress**: ~90% | **Heats used**: 605 | **Wavefront phase**: mature
+**Overall progress**: ~90% | **Heats used**: 641 | **Wavefront phase**: mature
 
 ### What's Working
 
