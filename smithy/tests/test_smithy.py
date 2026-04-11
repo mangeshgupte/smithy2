@@ -23,6 +23,8 @@ def project(tmp_path):
             {"id": "t-001", "stage": "implementation", "desc": "Test task", "status": "pending", "priority": 1, "blocked_by": []},
         ],
         "ideas": [],
+        "themes": [],
+        "initiatives": [],
         "feedback_cursor": 0,
         "inbox_cursor": 0,
         "human_priorities": [],
@@ -310,4 +312,85 @@ class TestRepomap:
     def test_missing_dir(self, runner, tmp_path):
         """Repomap on nonexistent dir should fail."""
         result = runner.invoke(cli, ["repomap", str(tmp_path / "nope")])
+        assert result.exit_code != 0
+
+
+class TestThemes:
+    def test_add_theme(self, project, runner):
+        result = runner.invoke(cli, ["--dir", str(project), "add-theme", "Test Theme"])
+        data = json.loads(result.output)
+        assert data["theme"]["id"] == "th-001"
+        assert data["theme"]["name"] == "Test Theme"
+        assert data["theme"]["status"] == "active"
+        assert data["theme"]["rank"] == 1
+
+    def test_list_themes(self, project, runner):
+        runner.invoke(cli, ["--dir", str(project), "add-theme", "Alpha"])
+        runner.invoke(cli, ["--dir", str(project), "add-theme", "Beta"])
+        result = runner.invoke(cli, ["--dir", str(project), "list-themes"])
+        data = json.loads(result.output)
+        assert data["count"] == 2
+        assert data["themes"][0]["rank"] < data["themes"][1]["rank"]
+
+    def test_pause_activate(self, project, runner):
+        runner.invoke(cli, ["--dir", str(project), "add-theme", "Test"])
+        result = runner.invoke(cli, ["--dir", str(project), "pause-theme", "th-001"])
+        data = json.loads(result.output)
+        assert data["theme"]["status"] == "paused"
+
+        result = runner.invoke(cli, ["--dir", str(project), "activate-theme", "th-001"])
+        data = json.loads(result.output)
+        assert data["theme"]["status"] == "active"
+
+
+class TestInitiatives:
+    def test_propose(self, project, runner):
+        runner.invoke(cli, ["--dir", str(project), "add-theme", "Theme1"])
+        result = runner.invoke(cli, ["--dir", str(project), "propose", "th-001", "Test Initiative", "Description here"])
+        data = json.loads(result.output)
+        assert data["initiative"]["id"] == "ini-001"
+        assert data["initiative"]["status"] == "proposed"
+        assert data["initiative"]["theme_id"] == "th-001"
+
+    def test_propose_invalid_theme(self, project, runner):
+        result = runner.invoke(cli, ["--dir", str(project), "propose", "th-999", "Bad", "No theme"])
+        assert result.exit_code != 0
+
+    def test_approve_reject(self, project, runner):
+        runner.invoke(cli, ["--dir", str(project), "add-theme", "T"])
+        runner.invoke(cli, ["--dir", str(project), "propose", "th-001", "Init", "Desc"])
+
+        result = runner.invoke(cli, ["--dir", str(project), "approve", "ini-001"])
+        data = json.loads(result.output)
+        assert data["initiative"]["status"] == "approved"
+
+    def test_approve_non_proposed_fails(self, project, runner):
+        runner.invoke(cli, ["--dir", str(project), "add-theme", "T"])
+        runner.invoke(cli, ["--dir", str(project), "propose", "th-001", "Init", "Desc"])
+        runner.invoke(cli, ["--dir", str(project), "approve", "ini-001"])
+        # Approving again should fail
+        result = runner.invoke(cli, ["--dir", str(project), "approve", "ini-001"])
+        assert result.exit_code != 0
+
+    def test_list_initiatives(self, project, runner):
+        runner.invoke(cli, ["--dir", str(project), "add-theme", "T"])
+        runner.invoke(cli, ["--dir", str(project), "propose", "th-001", "A", "d"])
+        runner.invoke(cli, ["--dir", str(project), "propose", "th-001", "B", "d"])
+        result = runner.invoke(cli, ["--dir", str(project), "list-initiatives"])
+        data = json.loads(result.output)
+        assert data["count"] == 2
+
+    def test_add_task_with_initiative(self, project, runner):
+        runner.invoke(cli, ["--dir", str(project), "add-theme", "T"])
+        runner.invoke(cli, ["--dir", str(project), "propose", "th-001", "Init", "Desc"])
+        runner.invoke(cli, ["--dir", str(project), "approve", "ini-001"])
+        result = runner.invoke(cli, ["--dir", str(project), "add-task", "implementation", "Task under init", "--initiative", "ini-001"])
+        data = json.loads(result.output)
+        assert data["task"]["initiative_id"] == "ini-001"
+
+    def test_add_task_unapproved_initiative_fails(self, project, runner):
+        runner.invoke(cli, ["--dir", str(project), "add-theme", "T"])
+        runner.invoke(cli, ["--dir", str(project), "propose", "th-001", "Init", "Desc"])
+        # Initiative is still "proposed" — should fail
+        result = runner.invoke(cli, ["--dir", str(project), "add-task", "implementation", "Bad", "--initiative", "ini-001"])
         assert result.exit_code != 0
