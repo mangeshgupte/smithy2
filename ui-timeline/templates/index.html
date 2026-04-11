@@ -11,6 +11,11 @@
         <h1>📅 Timeline</h1>
         <p class="subtitle">{{ project }} — drag bar endpoints to allocate budget</p>
         <p class="budget-info">Budget: {{ used }}/{{ total }} heats ({{ total - used }} remaining)</p>
+        <div class="zoom-controls">
+            <button onclick="setZoom(50)" class="zoom-btn">50h</button>
+            <button onclick="setZoom(100)" class="zoom-btn">100h</button>
+            <button onclick="setZoom(250)" class="zoom-btn active">250h</button>
+        </div>
     </header>
 
     <div class="timeline-container">
@@ -82,6 +87,11 @@
 
     <script>
     const TIMELINE_START = {{ timeline_start }};
+
+    function setZoom(range) {
+        // Reload with zoom parameter
+        window.location.href = '/?zoom=' + range;
+    }
     const TIMELINE_END = {{ timeline_end }};
     const RANGE = TIMELINE_END - TIMELINE_START || 1;
 

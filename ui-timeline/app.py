@@ -29,11 +29,12 @@ def _save_state(state):
 
 
 @app.get("/", response_class=HTMLResponse)
-async def index(request: Request):
+async def index(request: Request, zoom: int = 250):
     state = _load_state()
     budget = state.get("budget", {})
     used = budget.get("used", 0)
     total = budget.get("total_heats", 0)
+    timeline_end = used + zoom
 
     initiatives = [
         i for i in state.get("initiatives", [])
@@ -55,7 +56,8 @@ async def index(request: Request):
         "used": used,
         "total": total,
         "timeline_start": used,
-        "timeline_end": total,
+        "timeline_end": timeline_end,
+        "zoom": zoom,
     })
 
 
