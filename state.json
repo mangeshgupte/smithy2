@@ -1,7 +1,7 @@
 {
   "project": "the-smithy",
   "budget": {
-    "total_heats": 567,
+    "total_heats": 587,
     "used": 556,
     "started_at": "2026-04-09T00:00:00Z"
   },
@@ -638,6 +638,102 @@
       "desc": "Update STRATEGY.md to heat 555: new subject, Bellows rename, current stats",
       "status": "complete",
       "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-129",
+      "stage": "planning",
+      "desc": "Plan 20-heat sprint: PWA service worker for tutor offline + more tutor content",
+      "status": "in_progress",
+      "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-130",
+      "stage": "research",
+      "desc": "Research PWA service worker patterns for FastAPI + Jinja2 apps \u2014 cache strategies for offline-first",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-131",
+      "stage": "implementation",
+      "desc": "Tutor: PWA manifest.json + service worker registration",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-132",
+      "stage": "implementation",
+      "desc": "Tutor: service worker with cache-first strategy for static assets + app shell",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-133",
+      "stage": "implementation",
+      "desc": "Tutor: offline fallback page when network unavailable",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-134",
+      "stage": "testing",
+      "desc": "Test PWA: service worker registers, assets cached, offline fallback works",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-135",
+      "stage": "implementation",
+      "desc": "Tutor: expand Logic subject \u2014 add 3 more topics (truth tables, counterexamples, real-world arguments)",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-136",
+      "stage": "implementation",
+      "desc": "Tutor: add exercise difficulty indicators (stars or color) visible during practice",
+      "status": "pending",
+      "priority": 3,
+      "blocked_by": []
+    },
+    {
+      "id": "t-137",
+      "stage": "implementation",
+      "desc": "Bellows: add project creation from UI (form that calls smithy init)",
+      "status": "pending",
+      "priority": 3,
+      "blocked_by": []
+    },
+    {
+      "id": "t-138",
+      "stage": "testing",
+      "desc": "Full regression after PWA + content additions",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-139",
+      "stage": "editing",
+      "desc": "Update tutor README with PWA support + logic subject expansion",
+      "status": "pending",
+      "priority": 3,
+      "blocked_by": []
+    },
+    {
+      "id": "t-140",
+      "stage": "marketing",
+      "desc": "CHANGELOG v1.2: PWA + content sprint",
+      "status": "pending",
+      "priority": 3,
       "blocked_by": []
     }
   ],
