@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timeline — {{ project }}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header>
+        <h1>📅 Timeline</h1>
+        <p class="subtitle">{{ project }} — drag bar endpoints to allocate budget</p>
+        <p class="budget-info">Budget: {{ used }}/{{ total }} heats ({{ total - used }} remaining)</p>
+    </header>
+
+    <div class="timeline-container">
+        <!-- Axis -->
+        <div class="timeline-axis">
+            <div class="axis-labels">
+                {% set range_size = timeline_end - timeline_start %}
+                {% for i in range(6) %}
+                {% set heat = timeline_start + (range_size * i / 5)|int %}
+                <span class="axis-label" style="left: {{ (i / 5 * 100)|int }}%">h{{ heat }}</span>
+                {% endfor %}
+            </div>
+            <div class="axis-line"></div>
+            <!-- Current position marker -->
+            <div class="now-marker" style="left: 0%" title="Now (heat {{ used }})"></div>
+        </div>
+
+        <!-- Bars -->
+        <div class="timeline-bars">
+            {% for ini in initiatives %}
+            {% set range_size = timeline_end - timeline_start %}
+            {% set start_pct = ((ini.planned_start - timeline_start) / range_size * 100)|round(1) if range_size > 0 else 0 %}
+            {% set width_pct = ((ini.planned_end - ini.planned_start) / range_size * 100)|round(1) if range_size > 0 else 10 %}
+            <div class="timeline-row">
+                <div class="bar-label">{{ ini.title[:25] }}</div>
+                <div class="bar-track">
+                    <div class="bar-fill status-{{ ini.status }}"
+                         style="left: {{ start_pct }}%; width: {{ width_pct }}%"
+                         data-id="{{ ini.id }}"
+                         data-start="{{ ini.planned_start }}"
+                         data-end="{{ ini.planned_end }}"
+                         title="{{ ini.title }}: h{{ ini.planned_start }}-h{{ ini.planned_end }} ({{ ini.planned_end - ini.planned_start }}h)">
+                        <span class="bar-text">{{ ini.planned_end - ini.planned_start }}h</span>
+                    </div>
+                    <!-- Progress within bar -->
+                    {% if ini.heats_used > 0 %}
+                    {% set progress_pct = (ini.heats_used / (ini.planned_end - ini.planned_start) * width_pct)|round(1) if (ini.planned_end - ini.planned_start) > 0 else 0 %}
+                    <div class="bar-progress" style="left: {{ start_pct }}%; width: {{ progress_pct }}%"></div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+
+            {% if not initiatives %}
+            <div class="empty">No approved initiatives to schedule.</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="legend">
+        <span class="legend-item"><span class="dot approved"></span> Approved</span>
+        <span class="legend-item"><span class="dot active"></span> Active</span>
+        <span class="legend-item"><span class="dot progress"></span> Progress</span>
+    </div>
+</body>
+</html>
