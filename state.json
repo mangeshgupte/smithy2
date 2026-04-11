@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 843,
-    "used": 612,
+    "used": 613,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -38,9 +38,9 @@
     },
     "marketing": {
       "target": 0.219,
-      "heats": 81,
+      "heats": 82,
       "progress": 0.84,
-      "value_ema": 0.727
+      "value_ema": 0.719
     }
   },
   "allocator": {
@@ -1258,6 +1258,149 @@
       "id": "t-204",
       "stage": "marketing",
       "desc": "AAR + handoff for ini-009 through ini-013",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-205",
+      "stage": "implementation",
+      "desc": "UI C: Timeline \u2014 wire up drag interactivity. The /update POST endpoint exists in ui-timeline/app.py and writes planned_start/planned_end to state.json, but ui-timeline/templates/index.html has NO JavaScript. Add JS in a <script> tag or static/js/timeline.js: (1) dragstart on each .timeline-bar stores initiative id + original position, (2) dragover on the timeline container calculates new heat position from mouse X relative to the timeline width and heat range, (3) dragend calls POST /update with [{id, start, end}] via fetch(), (4) on success, update the bar position in DOM. Bars have draggable attribute and data-start/data-end attributes already. Match the drag UX from ui-priority-poker (which works). Also add resize handles on bar endpoints for changing duration (mousedown on edge \u2192 track mousemove \u2192 update width + POST). Snap to 5-heat increments.",
+      "status": "pending",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-012"
+    },
+    {
+      "id": "t-206",
+      "stage": "implementation",
+      "desc": "Wire allocator to read constraints. In smithy/smithy/allocator.py score_stages(): accept a 'constraints' list parameter. Check each active constraint: (1) budget-cap: if stage/initiative heats_used >= value, set that stage's score to -999 (effectively skip). (2) stage-block: if stage matches, set score to -999. (3) progress-floor: if stage progress < value, boost score by +0.5. (4) Custom constraints: skip (human-readable only, not machine-enforceable). Update cli.py allocate command to pass constraints from state.json. This makes the constraint board's output actually steer Forge.",
+      "status": "pending",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-011"
+    },
+    {
+      "id": "t-207",
+      "stage": "implementation",
+      "desc": "UI D: Intent Editor \u2014 add edit/delete for existing items. Currently one-way (write only). In ui-intent-editor/templates/index.html: (1) show existing themes and initiatives from state.json in the right panel as an editable tree (not just after Apply). (2) Add delete button on each initiative \u2014 POST /delete-initiative/{id} that sets status='rejected' in state.json. (3) Add delete button on each theme \u2014 POST /delete-theme/{id} that sets status='paused'. (4) Add inline edit on initiative descriptions \u2014 click to edit, blur to save via POST /edit-initiative/{id}. Add these endpoints to app.py.",
+      "status": "pending",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-013"
+    },
+    {
+      "id": "t-208",
+      "stage": "implementation",
+      "desc": "Priority Poker improvements (batch 1). In ui-priority-poker/: (1) Add auto-refresh \u2014 poll state.json every 5s via GET /api/state, update task counts and progress bars without full reload. (2) Add visual weight gradient \u2014 top card 100% opacity and 1.05x scale, each subsequent card dims by 10% and shrinks slightly. (3) Add theme grouping \u2014 show theme name as a section header, cards grouped under their theme. (4) Add proposed initiatives section below the stack \u2014 cards the human hasn't approved yet, with an Approve button that POSTs to move them into the stack. (5) Show allocation weight on each card (3x, 2x, 1x) as a badge.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-010"
+    },
+    {
+      "id": "t-209",
+      "stage": "implementation",
+      "desc": "Priority Poker improvements (batch 2). In ui-priority-poker/: (1) Add keyboard shortcuts \u2014 up/down arrows to move selected card, 'k' to kill, Enter to select. (2) Add undo \u2014 after kill or reorder, show undo bar for 5 seconds. Store previous state client-side. POST /undo endpoint restores previous state.json. (3) Add animation \u2014 cards slide smoothly on reorder (CSS transition on transform). (4) Add touch support for mobile drag. (5) Show what changed since last visit \u2014 highlight cards whose task count or heats_used changed (subtle glow for 3s on load).",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-010"
+    },
+    {
+      "id": "t-210",
+      "stage": "implementation",
+      "desc": "Priority Poker improvements (batch 3). In ui-priority-poker/: (1) Add a compact mode toggle \u2014 single-line cards showing just title + progress for when there are many initiatives. (2) Add drag-to-kill zone at bottom of screen (trash area) as alternative to X button. (3) Show Forge's current activity \u2014 if checkpoint exists, show 'Forge is working on [task] in [stage]' at the top. (4) Add history sidebar \u2014 last 10 reorder/kill actions with timestamps. (5) Sound/haptic feedback on drop (optional, toggleable).",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-010"
+    },
+    {
+      "id": "t-211",
+      "stage": "implementation",
+      "desc": "Constraint Board improvements (batch 1). In ui-constraint-board/: (1) Convert from form POST to AJAX \u2014 add/remove constraints via fetch() without page reload. (2) Add real-time violation checking \u2014 on page load and via polling, evaluate each constraint against state.json and show green/yellow/red status dot on each card. Yellow = within 20% of limit. Red = violated. (3) Add violation summary bar at top showing count of red/yellow/green. (4) Add toggle to activate/deactivate constraints without deleting (toggles a 'status' field between 'active' and 'inactive'). (5) Add constraint templates \u2014 predefined buttons for common constraints ('No new content', 'Focus on testing', 'Budget cap 10 heats').",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-011"
+    },
+    {
+      "id": "t-212",
+      "stage": "implementation",
+      "desc": "Constraint Board improvements (batch 2). In ui-constraint-board/: (1) Add visual constraint categories \u2014 group cards by type (budget, progress, block, deadline, custom) with section headers. (2) Add constraint impact preview \u2014 when hovering a constraint, show what would change in the allocator (which stages would be blocked/boosted). (3) Add 'active constraints' count in page title/header. (4) Add edit-in-place for constraint values (click the number to change it). (5) Add history log \u2014 show when each constraint was added/removed/triggered.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-011"
+    },
+    {
+      "id": "t-213",
+      "stage": "implementation",
+      "desc": "Constraint Board improvements (batch 3). In ui-constraint-board/: (1) Add smart constraint suggestions \u2014 based on current state, suggest constraints that might be useful ('research is at 90%, consider capping it'). Read state.json stages and propose. (2) Add constraint conflicts detection \u2014 warn if two constraints are contradictory ('block testing' + 'testing must stay above 80%'). (3) Add a 'what if' mode \u2014 temporarily add a constraint and see the simulated allocator output without persisting. Call smithy allocate with modified state. (4) Add keyboard shortcut 'n' to open new constraint form.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-011"
+    },
+    {
+      "id": "t-214",
+      "stage": "implementation",
+      "desc": "Timeline improvements (batch 1). In ui-timeline/: (1) After t-205 wires up drag, add snap-to-grid \u2014 snap to 5-heat increments on drag. (2) Add conflict detection \u2014 when total allocated heats exceed remaining budget, show a red warning bar and color overflowing bars red. (3) Add zoom controls \u2014 buttons for 50/100/250 heat view range, resize the timeline canvas accordingly. (4) Add initiative labels on bars with text truncation (ellipsis if too long). (5) Add 'now' marker \u2014 a vertical dashed line at current heat count with label.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-012"
+    },
+    {
+      "id": "t-215",
+      "stage": "implementation",
+      "desc": "Timeline improvements (batch 2). In ui-timeline/: (1) Add tooltip on hover \u2014 show initiative title, description, task count, heats_used/budget_cap, theme name. (2) Add auto-refresh \u2014 poll state.json every 5s, update bar fills to show Forge progress in real-time. (3) Add color coding \u2014 use theme colors or stage colors for bars. (4) Add summary row at bottom showing total allocated vs remaining heats. (5) Add new initiative creation \u2014 click empty space on timeline to create a bar, opens a form for title/description/theme.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-012"
+    },
+    {
+      "id": "t-216",
+      "stage": "implementation",
+      "desc": "Timeline improvements (batch 3). In ui-timeline/: (1) Add bar stacking \u2014 when bars overlap, stack them vertically with a subtle offset so both are visible. (2) Add dependency arrows \u2014 if one initiative blocks another (via task blocked_by), draw an arrow between them. (3) Add a compact 'plan' view that shows just bars without the y-axis labels. (4) Add undo for drag operations \u2014 store previous state client-side, show undo bar for 5s after any change. (5) Add keyboard navigation \u2014 left/right to select bars, shift+arrows to resize.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-012"
+    },
+    {
+      "id": "t-217",
+      "stage": "implementation",
+      "desc": "Intent Editor improvements (batch 1). In ui-intent-editor/: (1) Show current state.json themes/initiatives in the right panel on page load (not just after Apply). Read from GET /api/state endpoint. (2) Add Claude API integration for decomposition \u2014 when human submits intent, POST to /decompose endpoint that calls Claude (claude-sonnet-4-6 via anthropic SDK) with prompt: 'Given this intent and current project state, decompose into themes and initiatives. Return JSON matching state.json schema.' Show the proposed decomposition as a tree. (3) Add diff view \u2014 highlight what's new vs what already exists in state.json. Green = new, yellow = modified. (4) Selective apply \u2014 checkboxes on each node in the decomposition tree, Apply only creates checked items.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-013"
+    },
+    {
+      "id": "t-218",
+      "stage": "implementation",
+      "desc": "Intent Editor improvements (batch 2). In ui-intent-editor/: (1) Add intent history \u2014 store previous intents with timestamps in state.json or intents.json, show in a sidebar. Click to reload a previous intent. (2) Add 'current state' diff indicator \u2014 show how active state.json differs from what the last intent produced (initiatives added/removed outside the editor). (3) Add task preview \u2014 when hovering an initiative in the tree, show proposed tasks that would be generated. (4) Add natural language constraint extraction \u2014 if the intent says 'no more than 10 heats on research', auto-create a constraint card (integrate with constraint board data model).",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-013"
+    },
+    {
+      "id": "t-219",
+      "stage": "implementation",
+      "desc": "Intent Editor improvements (batch 3). In ui-intent-editor/: (1) Add iterative refinement \u2014 human edits intent, resubmits, sees diff of what changed vs previous decomposition. Only changed items highlighted. (2) Add template intents \u2014 predefined buttons for common intents ('Focus on testing and polish', 'Build new feature: [name]', 'Research and prototype'). (3) Add split view \u2014 left panel shows raw intent text, right panel shows structured tree, both scrollable and linked. (4) Add export \u2014 button to copy the current decomposition as CLI commands (smithy add-theme, smithy propose) for use outside the editor.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-013"
+    },
+    {
+      "id": "t-220",
+      "stage": "planning",
+      "desc": "Plan 60-heat sprint: UI polish + constraint enforcement + tutor content + testing",
       "status": "in_progress",
       "priority": 1,
       "blocked_by": []
@@ -1305,9 +1448,10 @@
       "theme_id": "th-001",
       "title": "Logic Subject Expansion",
       "description": "Add more topics and exercises to Logic & Critical Thinking",
-      "status": "proposed",
+      "status": "rejected",
       "budget_cap": null,
-      "heats_used": 0
+      "heats_used": 0,
+      "rank": 6
     },
     {
       "id": "ini-002",
@@ -1379,7 +1523,8 @@
       "description": "Research how humans steer autonomous systems \u2014 not monitor, STEER. The core question: what controls does a human need to change direction without becoming a bottleneck? Study: (1) Real-time strategy games (StarCraft command hierarchy \u2014 strategic goals, tactical orders, unit autonomy), (2) Military C2 frameworks (mission-type orders, commander's intent, OODA), (3) Product management (OKRs, roadmap prioritization, sprint planning), (4) Air traffic control (constraints not commands), (5) Existing AI tools (Devin's chat-to-steer, Cursor's accept/reject, Claude Code hooks). For each, extract: what decisions the human makes, at what frequency, what information they need to decide, and what the feedback loop looks like. Deliverable: research/steering-patterns.md with a taxonomy of steering modes and which are worth prototyping as UIs.",
       "status": "approved",
       "budget_cap": 10,
-      "heats_used": 2
+      "heats_used": 2,
+      "rank": 1
     },
     {
       "id": "ini-010",
@@ -1388,7 +1533,8 @@
       "description": "A desktop web UI where the human steers by ranking, not approving. Shows all active initiatives as cards. Human drags to reorder \u2014 that IS the steering. No approve/reject buttons. Everything proposed is fair game unless explicitly killed. The ranking determines allocation weight. Top card gets 3x budget share, second gets 2x, rest get 1x. Real-time: as Forge works, cards show live progress and the stack rebalances. The human's only job: keep the stack in the right order. Inspired by planning poker + priority queues. Build as a standalone page in Bellows.",
       "status": "approved",
       "budget_cap": 15,
-      "heats_used": 1
+      "heats_used": 1,
+      "rank": 2
     },
     {
       "id": "ini-011",
@@ -1397,7 +1543,8 @@
       "description": "A desktop web UI where the human steers by setting constraints, not giving orders. Instead of telling Forge what to do, the human defines boundaries: 'no more than 5 heats on research', 'testing must stay above 80%', 'don't touch tutor', 'ship something deployable by Friday'. Constraints are cards on a board. Forge works freely within them. When a constraint would be violated, Forge stops and asks. The human's only job: add/remove/adjust constraints. Inspired by air traffic control \u2014 direct through boundaries, not waypoints. Build as a standalone page in Bellows.",
       "status": "approved",
       "budget_cap": 15,
-      "heats_used": 1
+      "heats_used": 1,
+      "rank": 3
     },
     {
       "id": "ini-012",
@@ -1406,7 +1553,8 @@
       "description": "A desktop web UI where the human steers by shaping a timeline. Horizontal axis is heats (or time). Initiatives are horizontal bars showing planned start/end. The human drags bar endpoints to allocate budget. Overlapping bars = parallel work. Gaps = cool-down. The visual makes tradeoffs obvious \u2014 stretching one initiative squeezes another. Forge reads the timeline and works accordingly. Inspired by Gantt charts but interactive and simple. Build as a standalone page in Bellows.",
       "status": "approved",
       "budget_cap": 15,
-      "heats_used": 1
+      "heats_used": 1,
+      "rank": 4
     },
     {
       "id": "ini-013",
@@ -1415,7 +1563,8 @@
       "description": "A desktop web UI focused on natural-language steering. The human writes a short intent statement (2-3 sentences). The system decomposes it into themes, initiatives, and tasks automatically. Human reviews the decomposition and edits \u2014 delete a branch, promote a task, add a constraint. The intent is the source of truth, not the task list. When intent changes, the decomposition updates. Inspired by commander's intent in military doctrine. The human thinks in outcomes, the system thinks in tasks. Build as a standalone page in Bellows.",
       "status": "approved",
       "budget_cap": 20,
-      "heats_used": 1
+      "heats_used": 1,
+      "rank": 5
     }
   ],
   "feedback_cursor": 26,
