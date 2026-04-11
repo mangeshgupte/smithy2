@@ -180,6 +180,7 @@ def read_project(project_dir: str) -> dict:
         "initiatives": state.get("initiatives", []),
         "intent": intent,
         "is_running": (p / ".forge-checkpoint.json").exists(),
+        "strategy_text": strategy_text[:3000],  # first 3000 chars for display
     }
 
 

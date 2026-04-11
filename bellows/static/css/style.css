@@ -941,6 +941,17 @@ details.heat-card[open] .heat-summary {
     gap: 8px;
 }
 
+/* Strategy viewer */
+.strategy-section { margin: 20px 0; }
+.strategy-toggle { cursor: pointer; color: var(--blue); font-weight: 600; font-size: 14px; list-style: none; }
+.strategy-content {
+    margin-top: 12px; padding: 16px; background: var(--bg);
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    font-size: 12px; line-height: 1.5; color: var(--text-muted);
+    white-space: pre-wrap; max-height: 400px; overflow-y: auto;
+    font-family: 'JetBrains Mono', monospace;
+}
+
 /* New project form */
 .new-project-section { margin-top: 24px; }
 

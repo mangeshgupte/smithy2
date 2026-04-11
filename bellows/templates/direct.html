@@ -131,4 +131,14 @@
     {% endfor %}
 </section>
 {% endif %}
+
+<!-- Strategy -->
+{% if project.strategy_text %}
+<section class="strategy-section">
+    <details>
+        <summary class="strategy-toggle">📋 STRATEGY.md</summary>
+        <pre class="strategy-content">{{ project.strategy_text }}</pre>
+    </details>
+</section>
+{% endif %}
 {% endblock %}
