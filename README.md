@@ -30,15 +30,28 @@ smithy patrol --fix  # Find and fix state inconsistencies
 smithy status        # At-a-glance project summary
 ```
 
-28 commands total. 172 tests across all projects. Install: `pip install -e smithy/`
+28 commands total. 179 tests across all projects. Install: `pip install -e smithy/`
 
 ## Bellows
 
-A FastAPI dashboard for managing Forge projects from a browser. Morning briefings, decision queues, activity feeds, direct commands.
+A FastAPI dashboard for managing Forge projects from a browser. Morning briefings, decision queues, initiative board, activity sparklines, direct commands.
 
 ```
 cd bellows && uv run uvicorn app:app --port 8080
 ```
+
+## Steering UIs
+
+Four experimental UIs for directing Forge — each a different steering metaphor:
+
+| UI | Port | Metaphor | Start |
+|----|------|----------|-------|
+| **Priority Poker** | 8081 | Drag cards to rank. Rank IS steering. | `cd ui-priority-poker && uvicorn app:app --port 8081` |
+| **Constraint Board** | 8082 | Set boundaries, not commands. ATC-style. | `cd ui-constraint-board && uvicorn app:app --port 8082` |
+| **Timeline View** | 8083 | Drag bar endpoints to allocate budget. | `cd ui-timeline && uvicorn app:app --port 8083` |
+| **Intent Editor** | 8084 | Write outcomes, system creates tasks. | `cd ui-intent-editor && uvicorn app:app --port 8084` |
+
+All read/write `state.json` — Forge picks up changes on the next heat. No Forge code changes needed.
 
 ## Personas
 
@@ -68,7 +81,7 @@ claude
 
 ## Built With The Smithy
 
-The Smithy dogfoods itself. Over 600 heats, it built:
+The Smithy dogfoods itself. Over 640 heats, it built:
 
 - **The Smithy protocol** — the system you're reading about
 - **AI Tutor** — 5 subjects (Python, Math, English, Logic, Creative Writing), user sessions, PWA offline, SM-2 spaced repetition, teach-it-back, 111 tests
