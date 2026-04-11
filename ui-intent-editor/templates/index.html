@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intent Editor — {{ project }}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header>
+        <h1>🎯 Intent Editor</h1>
+        <p class="subtitle">{{ project }} — write outcomes, system creates tasks</p>
+    </header>
+
+    <form method="post" action="/apply">
+        <div class="intent-section">
+            <label for="intent">Your Intent</label>
+            <p class="hint">Write your goals as bullet points. Sub-bullets become initiatives. Use <strong>bold</strong> for theme names.</p>
+            <textarea id="intent" name="intent" rows="10" placeholder="- **Core Features**
+  - Build user authentication
+  - Add data export
+- **Quality**
+  - Reach 90% test coverage
+  - Fix all known bugs">{{ intent }}</textarea>
+        </div>
+
+        {% if decomposition %}
+        <div class="decomposition">
+            <h2>Decomposition</h2>
+            <p class="hint">This is what will be created in state.json when you apply.</p>
+
+            {% for theme in decomposition %}
+            <div class="tree-theme">
+                <div class="tree-node theme-node">
+                    <span class="node-icon">📁</span>
+                    <span class="node-name">{{ theme.name }}</span>
+                    <span class="node-type">theme</span>
+                </div>
+                {% for ini in theme.initiatives %}
+                <div class="tree-node ini-node">
+                    <span class="node-icon">📋</span>
+                    <span class="node-name">{{ ini }}</span>
+                    <span class="node-type">initiative (proposed)</span>
+                </div>
+                {% endfor %}
+                {% if not theme.initiatives %}
+                <div class="tree-node empty-node">
+                    <span class="node-icon">·</span>
+                    <span class="node-name muted">No sub-items</span>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <button type="submit" class="apply-btn">Apply to State</button>
+    </form>
+
+    {% if existing_themes %}
+    <div class="existing">
+        <h2>Current State</h2>
+        <div class="existing-list">
+            {% for th in existing_themes %}
+            <div class="existing-item">
+                📁 {{ th.name }} ({{ th.status }})
+                {% for ini in existing_initiatives %}
+                {% if ini.theme_id == th.id %}
+                <div class="existing-sub">📋 {{ ini.title }} — {{ ini.status }}</div>
+                {% endif %}
+                {% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</body>
+</html>

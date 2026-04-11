@@ -1,0 +1,48 @@
+/* Intent Editor — CSS */
+:root {
+    --bg: #0d1117; --surface: #161b22; --border: #30363d;
+    --text: #e6edf3; --text-muted: #8b949e;
+    --green: #3fb950; --blue: #58a6ff; --yellow: #d29922;
+    --radius: 12px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); max-width: 700px; margin: 0 auto; padding: 24px; }
+header { text-align: center; padding: 20px 0; }
+header h1 { font-size: 24px; }
+.subtitle { color: var(--text-muted); font-size: 14px; margin-top: 4px; }
+
+.intent-section { margin: 20px 0; }
+label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.hint { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; }
+textarea {
+    width: 100%; background: var(--surface); border: 2px solid var(--border);
+    border-radius: var(--radius); color: var(--text); padding: 16px;
+    font-size: 14px; font-family: 'JetBrains Mono', monospace; line-height: 1.6;
+    resize: vertical;
+}
+textarea:focus { outline: none; border-color: var(--blue); }
+
+.decomposition { margin: 24px 0; padding: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.decomposition h2 { font-size: 16px; margin-bottom: 12px; }
+
+.tree-theme { margin-bottom: 12px; }
+.tree-node { display: flex; align-items: center; gap: 8px; padding: 6px 8px; font-size: 14px; }
+.theme-node { font-weight: 600; }
+.ini-node { padding-left: 28px; }
+.empty-node { padding-left: 28px; }
+.node-icon { width: 20px; text-align: center; }
+.node-name { flex: 1; }
+.node-type { font-size: 11px; color: var(--text-muted); }
+.muted { color: var(--text-muted); }
+
+.apply-btn {
+    width: 100%; background: var(--green); color: #fff; border: none;
+    border-radius: var(--radius); padding: 14px; font-size: 15px;
+    font-weight: 600; cursor: pointer; margin-top: 12px;
+}
+.apply-btn:hover { opacity: 0.9; }
+
+.existing { margin-top: 32px; border-top: 1px solid var(--border); padding-top: 20px; }
+.existing h2 { font-size: 16px; margin-bottom: 12px; color: var(--text-muted); }
+.existing-item { padding: 8px 0; font-size: 14px; }
+.existing-sub { padding-left: 24px; font-size: 13px; color: var(--text-muted); margin-top: 2px; }
