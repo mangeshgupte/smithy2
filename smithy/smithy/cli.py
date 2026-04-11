@@ -904,7 +904,8 @@ def init(ctx, project_name, target, with_personas):
     # Scaffold files
     today = date.today().isoformat()
     templates = {
-        "identity.md": f"# {project_name}\n\n## What This Is\n\nAn autonomous AI worker building {project_name}.\n\n## Commander's Intent\n\n## Created\n\n{today}\n",
+        "CLAUDE.md": f"# The Smith Protocol\n\nYou are the Smith. You work The Forge — an autonomous AI worker.\n\nRead `identity.md` for the current project context. Read `STRATEGY.md` for the strategic plan.\n\n## Starting a Run\n\nWhen the human says \"Run N heats\":\n1. Read `state.json` and set budget.\n2. Read `protocol/loop.md` and begin the heat loop.\n\n## Protocol Files\n\n| File | Contains |\n|------|----------|\n| `protocol/loop.md` | The heat loop — steps 1-8 |\n| `protocol/allocator.md` | How to pick which stage to work on |\n| `protocol/logging.md` | How to log heats |\n\n## Rules\n\n1. **NEVER STOP.** Loop until budget exhausted.\n2. **One task per heat.** Scope tightly.\n3. **Commit every heat.** Format: `[stage] description`\n4. **The record is sacred.** Never edit worklog.tsv retroactively.\n5. **NEVER directly edit state.json or worklog.tsv.** Use smithy CLI commands.\n",
+        "identity.md": f"# {project_name}\n\n## What This Is\n\nDescribe your project here.\n\n## Commander's Intent\n\n- **Intent**: What are you building and why?\n- **Success looks like**: What does done look like?\n- **Tone**: Quality over speed? Move fast? Careful and tested?\n- **Boundaries**: What should the Smith NOT do?\n- **Not this**: What to avoid?\n\n## Created\n\n{today}\n",
         "STRATEGY.md": f"# Strategic Plan — {project_name}\n\n*Updated after heat 0 | {today}*\n\n## Vision\n\n## Current State\n\n### What Exists\n\nNothing yet.\n\n## Roadmap\n\n",
         "inbox.md": "# Inbox\n\nWrite messages below.\n",
         "outbox.md": "# Outbox\n\nThe Smith writes status updates here.\n",
@@ -924,13 +925,32 @@ def init(ctx, project_name, target, with_personas):
         (target_path / "dispatch" / "anvil-to-forge.md").write_text("# Dispatch: Anvil → Forge\n\n")
         (target_path / "dispatch" / "forge-to-anvil.md").write_text("# Dispatch: Forge → Anvil\n\n")
 
+    # Copy protocol files from forge root
+    import shutil
+    forge_root = Path(__file__).parent.parent.parent
+    protocol_files = ["protocol/loop.md", "protocol/allocator.md", "protocol/logging.md", "protocol/reporting.md"]
+    copied = []
+    for relpath in protocol_files:
+        src = forge_root / relpath
+        dst = target_path / relpath
+        if src.exists():
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dst)
+            copied.append(relpath)
+
+    all_files = list(templates.keys()) + ["state.json", "worklog.tsv"] + copied
     _output({
         "project": project_name,
         "dir": str(target_path),
         "personas": with_personas,
-        "files": list(templates.keys()) + ["state.json", "worklog.tsv"],
+        "files": all_files,
     })
     _err(f"Initialized {project_name} at {target_path}")
+    _err(f"\nNext steps:")
+    _err(f"  1. Edit {target_path}/identity.md — describe your project + commander's intent")
+    _err(f"  2. cd {target_path}")
+    _err(f"  3. claude")
+    _err(f"  4. > Run 20 heats")
 
 
 @cli.command("update")
