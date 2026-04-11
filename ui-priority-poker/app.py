@@ -63,10 +63,18 @@ async def index(request: Request):
     ranked = [i for i in initiatives if i["status"] in ("approved", "active")]
     proposed = [i for i in initiatives if i["status"] == "proposed"]
 
+    # Check if Forge is running
+    checkpoint_path = Path(STATE_DIR) / ".forge-checkpoint.json"
+    forge_activity = None
+    if checkpoint_path.exists():
+        cp = json.loads(checkpoint_path.read_text())
+        forge_activity = f"Heat {cp.get('heat', '?')} [{cp.get('stage', '?')}] — {cp.get('task_id', '?')}"
+
     return templates.TemplateResponse(request=request, name="index.html", context={
         "initiatives": ranked,
         "proposed": proposed,
         "project": state.get("project", "unknown"),
+        "forge_activity": forge_activity,
     })
 
 

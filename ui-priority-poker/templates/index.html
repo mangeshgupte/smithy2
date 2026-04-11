@@ -12,6 +12,13 @@
         <p class="subtitle">{{ project }} — drag to reorder. Rank IS steering.</p>
     </header>
 
+    {% if forge_activity %}
+    <div class="forge-activity">
+        <span class="activity-dot"></span>
+        <span>Forge is working: {{ forge_activity }}</span>
+    </div>
+    {% endif %}
+
     <div id="card-list" class="card-list">
         {% for ini in initiatives %}
         {% set weight = '3×' if loop.index == 1 else ('2×' if loop.index == 2 else '1×') %}

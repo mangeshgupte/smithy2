@@ -135,6 +135,18 @@ header h1 { font-size: 24px; }
 .weight-badge.weight-2 { background: var(--blue); color: #000; }
 .weight-badge:not(.weight-1):not(.weight-2) { background: var(--border); color: var(--text-muted); }
 
+.forge-activity {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px; background: rgba(63,185,80,0.08);
+    border: 1px solid var(--green); border-radius: var(--radius);
+    font-size: 13px; color: var(--green); margin-bottom: 16px;
+}
+.activity-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--green); animation: pulse 2s ease infinite;
+}
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
 .proposed-section { margin-top: 32px; border-top: 1px solid var(--border); padding-top: 20px; }
 .proposed-section h2 { font-size: 16px; color: var(--text-muted); margin-bottom: 12px; }
 
