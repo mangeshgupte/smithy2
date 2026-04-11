@@ -86,6 +86,19 @@ async def index(request: Request, start: int = None, end: int = None):
     abs_start = 0
     abs_end = max(total, furthest_end, used + 100)
 
+    # Compute overlaps between initiatives
+    overlaps = []
+    for i, a in enumerate(initiatives):
+        for b in initiatives[i+1:]:
+            o_start = max(a["planned_start"], b["planned_start"])
+            o_end = min(a["planned_end"], b["planned_end"])
+            if o_start < o_end:
+                overlaps.append({
+                    "start": o_start, "end": o_end,
+                    "a": a["title"][:20], "b": b["title"][:20],
+                    "heats": o_end - o_start,
+                })
+
     return templates.TemplateResponse(request=request, name="index.html", context={
         "initiatives": initiatives,
         "project": state.get("project", "unknown"),
@@ -95,6 +108,7 @@ async def index(request: Request, start: int = None, end: int = None):
         "timeline_end": timeline_end,
         "abs_start": abs_start,
         "abs_end": abs_end,
+        "overlaps": overlaps,
     })
 
 

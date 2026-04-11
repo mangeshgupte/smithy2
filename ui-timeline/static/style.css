@@ -57,6 +57,12 @@ header h1 { font-size: 24px; }
 }
 .over-budget { color: var(--red); font-weight: 600; }
 
+/* Overlap warnings */
+.overlap-section { margin-top: 12px; padding-left: 140px; }
+.overlap-header { font-size: 12px; font-weight: 600; color: var(--yellow); margin-bottom: 6px; text-transform: uppercase; }
+.overlap-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); padding: 3px 0; }
+.overlap-icon { font-size: 14px; }
+
 /* Rich tooltip */
 .bar-tooltip {
     position: absolute; z-index: 100; background: var(--surface);

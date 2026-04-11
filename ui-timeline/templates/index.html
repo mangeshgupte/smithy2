@@ -80,6 +80,19 @@
             <div class="empty">No approved initiatives to schedule.</div>
             {% endif %}
         </div>
+
+        <!-- Overlap warnings -->
+        {% if overlaps %}
+        <div class="overlap-section">
+            <div class="overlap-header">Overlapping ranges</div>
+            {% for ov in overlaps %}
+            <div class="overlap-item">
+                <span class="overlap-icon">⚠️</span>
+                <span class="overlap-text">{{ ov.a }} + {{ ov.b }}: {{ ov.heats }}h overlap (h{{ ov.start }}-h{{ ov.end }})</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
     </div>
 
     <!-- Summary -->
