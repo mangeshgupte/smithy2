@@ -65,5 +65,82 @@
         <span class="legend-item"><span class="dot active"></span> Active</span>
         <span class="legend-item"><span class="dot progress"></span> Progress</span>
     </div>
+
+    <script>
+    const TIMELINE_START = {{ timeline_start }};
+    const TIMELINE_END = {{ timeline_end }};
+    const RANGE = TIMELINE_END - TIMELINE_START || 1;
+
+    document.querySelectorAll('.bar-fill').forEach(bar => {
+        bar.style.cursor = 'ew-resize';
+        let dragging = false;
+        let startX, origLeft, origWidth;
+
+        bar.addEventListener('mousedown', e => {
+            e.preventDefault();
+            dragging = true;
+            const track = bar.parentElement;
+            const trackRect = track.getBoundingClientRect();
+            startX = e.clientX;
+            origLeft = parseFloat(bar.style.left);
+            origWidth = parseFloat(bar.style.width);
+
+            const onMove = e2 => {
+                if (!dragging) return;
+                const dx = e2.clientX - startX;
+                const dpct = (dx / trackRect.width) * 100;
+
+                // Determine if dragging left edge or right edge
+                const mouseRelToBar = startX - (trackRect.left + trackRect.width * origLeft / 100);
+                const barPixelWidth = trackRect.width * origWidth / 100;
+
+                if (mouseRelToBar < barPixelWidth * 0.3) {
+                    // Left edge: adjust start
+                    const newLeft = Math.max(0, Math.min(origLeft + origWidth - 2, origLeft + dpct));
+                    const newWidth = origWidth - (newLeft - origLeft);
+                    bar.style.left = newLeft + '%';
+                    bar.style.width = newWidth + '%';
+                } else if (mouseRelToBar > barPixelWidth * 0.7) {
+                    // Right edge: adjust end
+                    const newWidth = Math.max(2, Math.min(100 - origLeft, origWidth + dpct));
+                    bar.style.width = newWidth + '%';
+                } else {
+                    // Middle: move whole bar
+                    const newLeft = Math.max(0, Math.min(100 - origWidth, origLeft + dpct));
+                    bar.style.left = newLeft + '%';
+                }
+
+                // Update text
+                const left = parseFloat(bar.style.left);
+                const width = parseFloat(bar.style.width);
+                const newStart = Math.round(TIMELINE_START + left / 100 * RANGE);
+                const newEnd = Math.round(TIMELINE_START + (left + width) / 100 * RANGE);
+                bar.querySelector('.bar-text').textContent = (newEnd - newStart) + 'h';
+                bar.title = bar.dataset.id + ': h' + newStart + '-h' + newEnd;
+            };
+
+            const onUp = () => {
+                dragging = false;
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onUp);
+
+                // Save
+                const left = parseFloat(bar.style.left);
+                const width = parseFloat(bar.style.width);
+                const newStart = Math.round(TIMELINE_START + left / 100 * RANGE);
+                const newEnd = Math.round(TIMELINE_START + (left + width) / 100 * RANGE);
+
+                fetch('/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ updates: [{ id: bar.dataset.id, start: newStart, end: newEnd }] })
+                });
+            };
+
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+        });
+    });
+    </script>
 </body>
 </html>
