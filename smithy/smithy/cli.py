@@ -215,6 +215,68 @@ def status(ctx):
     })
 
 
+@cli.command("stats")
+@click.pass_context
+def stats(ctx):
+    """Show detailed project statistics — heat rate, stage distribution, value trends."""
+    root = ctx.obj["root"]
+    state = load_state(root)
+
+    # Read worklog for time-based stats
+    worklog_path = root / "worklog.tsv"
+    heats = []
+    if worklog_path.exists():
+        for line in worklog_path.read_text().strip().split("\n")[1:]:  # skip header
+            parts = line.split("\t")
+            if len(parts) >= 8:
+                heats.append({
+                    "timestamp": parts[0], "heat": parts[1], "stage": parts[2],
+                    "value": float(parts[5]) if parts[5] else 0,
+                    "signal": parts[6],
+                })
+
+    total_heats = len(heats)
+
+    # Stage distribution
+    stage_counts = {}
+    stage_values = {}
+    for h in heats:
+        s = h["stage"]
+        stage_counts[s] = stage_counts.get(s, 0) + 1
+        stage_values.setdefault(s, []).append(h["value"])
+
+    stage_dist = {}
+    for s in VALID_STAGES:
+        count = stage_counts.get(s, 0)
+        vals = stage_values.get(s, [])
+        stage_dist[s] = {
+            "heats": count,
+            "pct": round(count / total_heats * 100, 1) if total_heats else 0,
+            "avg_value": round(sum(vals) / len(vals), 2) if vals else 0,
+        }
+
+    # Signal counts
+    signals = {"🟢": 0, "🟡": 0, "🔴": 0}
+    for h in heats:
+        sig = h["signal"]
+        if sig in signals:
+            signals[sig] += 1
+
+    # Themes + initiatives
+    themes = state.get("themes", [])
+    initiatives = state.get("initiatives", [])
+    active_ini = [i for i in initiatives if i["status"] == "active"]
+
+    _output({
+        "total_heats": total_heats,
+        "stage_distribution": stage_dist,
+        "signals": signals,
+        "themes": len(themes),
+        "initiatives": {"total": len(initiatives), "active": len(active_ini)},
+        "queue_size": len([t for t in state.get("queue", []) if t["status"] == "pending"]),
+    })
+
+
 @cli.command("add-task")
 @click.argument("stage", type=click.Choice(VALID_STAGES))
 @click.argument("desc")
