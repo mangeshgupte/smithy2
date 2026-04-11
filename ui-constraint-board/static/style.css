@@ -18,6 +18,9 @@ header h1 { font-size: 24px; }
 .constraint-list { display: flex; flex-direction: column; gap: 10px; margin: 16px 0; }
 .constraint-card { display: flex; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; gap: 12px; }
 .constraint-card.violated { border-color: var(--red); background: rgba(248,81,73,0.05); }
+.constraint-card.status-yellow { border-color: var(--yellow); }
+.constraint-card.status-green { border-color: var(--green); border-left-width: 3px; }
+.constraint-card.status-red { border-color: var(--red); }
 .constraint-icon { font-size: 24px; width: 36px; text-align: center; }
 .constraint-body { flex: 1; }
 .constraint-title { font-size: 14px; font-weight: 600; }

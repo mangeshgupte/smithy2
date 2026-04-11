@@ -26,7 +26,7 @@
     <div class="constraint-list">
         {% for c in constraints %}
         {% if c.status in ['active', 'inactive'] %}
-        <div class="constraint-card type-{{ c.type }} {{ 'violated' if not c.get('_ok', True) }}">
+        <div class="constraint-card type-{{ c.type }} status-{{ c.get('_status', 'green') }} {{ 'violated' if not c.get('_ok', True) }}">
             <div class="constraint-icon">
                 {% if c.type == 'budget_cap' %}⏱{% elif c.type == 'floor' %}📊{% elif c.type == 'exclude' %}🚫{% endif %}
             </div>

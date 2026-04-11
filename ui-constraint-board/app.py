@@ -47,6 +47,11 @@ def _check_violations(state):
                 used = stages[stage].get("heats", 0)
                 if used >= cap:
                     violations.append({"constraint": c, "actual": used, "message": f"{stage} at {used}/{cap} heats"})
+                    c["_status"] = "red"
+                elif used >= cap * 0.8:
+                    c["_status"] = "yellow"
+                else:
+                    c["_status"] = "green"
                 c["_progress"] = f"{used}/{cap}"
                 c["_ok"] = used < cap
 
@@ -57,6 +62,11 @@ def _check_violations(state):
                 actual_pct = round(stages[stage].get("heats", 0) / total_heats * 100, 1)
                 if actual_pct < floor_pct:
                     violations.append({"constraint": c, "actual": actual_pct, "message": f"{stage} at {actual_pct}% (floor: {floor_pct}%)"})
+                    c["_status"] = "red"
+                elif actual_pct < floor_pct * 1.2:
+                    c["_status"] = "yellow"
+                else:
+                    c["_status"] = "green"
                 c["_progress"] = f"{actual_pct}%/{floor_pct}%"
                 c["_ok"] = actual_pct >= floor_pct
 
