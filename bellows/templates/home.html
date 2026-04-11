@@ -52,9 +52,15 @@
             {% endif %}
         </div>
 
-        {% if p.decisions %}
+        {% set proposed_count = p.initiatives|selectattr('status', 'equalto', 'proposed')|list|length %}
+        {% if p.decisions or proposed_count > 0 %}
         <div class="card-decisions">
+            {% if p.decisions %}
             <span class="decision-badge">{{ p.decisions|length }} decision{{ 's' if p.decisions|length > 1 }}</span>
+            {% endif %}
+            {% if proposed_count > 0 %}
+            <span class="initiative-badge">{{ proposed_count }} proposal{{ 's' if proposed_count > 1 }}</span>
+            {% endif %}
         </div>
         {% endif %}
 

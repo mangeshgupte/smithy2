@@ -248,6 +248,17 @@ body {
     font-weight: 600;
 }
 
+.initiative-badge {
+    background: rgba(88,166,255,0.2);
+    color: var(--blue);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.card-decisions { display: flex; gap: 8px; flex-wrap: wrap; }
+
 /* Budget bar */
 .card-budget { margin-top: 8px; }
 
