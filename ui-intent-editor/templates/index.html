@@ -63,10 +63,20 @@
         <div class="existing-list">
             {% for th in existing_themes %}
             <div class="existing-item">
-                📁 {{ th.name }} ({{ th.status }})
+                <div class="existing-header">
+                    <span>📁 {{ th.name }} ({{ th.status }})</span>
+                    <form method="post" action="/delete-theme/{{ th.id }}" style="display:inline">
+                        <button type="submit" class="delete-btn" title="Delete theme + initiatives" onclick="return confirm('Delete theme and all its initiatives?')">✕</button>
+                    </form>
+                </div>
                 {% for ini in existing_initiatives %}
                 {% if ini.theme_id == th.id %}
-                <div class="existing-sub">📋 {{ ini.title }} — {{ ini.status }}</div>
+                <div class="existing-sub">
+                    <span>📋 {{ ini.title }} — {{ ini.status }}</span>
+                    <form method="post" action="/delete-initiative/{{ ini.id }}" style="display:inline">
+                        <button type="submit" class="delete-btn" title="Delete initiative" onclick="return confirm('Delete this initiative?')">✕</button>
+                    </form>
+                </div>
                 {% endif %}
                 {% endfor %}
             </div>

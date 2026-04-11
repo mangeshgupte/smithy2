@@ -179,3 +179,22 @@ async def apply_decomposition(request: Request):
         identity_path.write_text("\n".join(new_lines))
 
     return RedirectResponse(url="/", status_code=303)
+
+
+@app.post("/delete-theme/{theme_id}")
+async def delete_theme(theme_id: str):
+    """Delete a theme and all its initiatives."""
+    state = _load_state()
+    state["themes"] = [t for t in state.get("themes", []) if t["id"] != theme_id]
+    state["initiatives"] = [i for i in state.get("initiatives", []) if i["theme_id"] != theme_id]
+    _save_state(state)
+    return RedirectResponse(url="/", status_code=303)
+
+
+@app.post("/delete-initiative/{initiative_id}")
+async def delete_initiative(initiative_id: str):
+    """Delete an initiative."""
+    state = _load_state()
+    state["initiatives"] = [i for i in state.get("initiatives", []) if i["id"] != initiative_id]
+    _save_state(state)
+    return RedirectResponse(url="/", status_code=303)
