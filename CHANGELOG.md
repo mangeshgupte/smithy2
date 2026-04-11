@@ -1,5 +1,35 @@
 # Changelog
 
+## v1.2 — PWA Offline + Content Expansion + Naming (heats 548-567)
+
+### PWA Offline Support
+- **Service worker** (`sw.js`): cache-first for `/static/`, network-first with fallback for pages
+- **manifest.json**: installable as app (standalone display, teal theme)
+- **Offline page**: graceful fallback when network unavailable
+- Service worker registration in base.html + `/manifest.json` and `/sw.js` FastAPI routes
+
+### Logic & Critical Thinking — 4th Subject
+- **10 topics** across 5 levels: number patterns, odd-one-out, if-then, syllogisms, fallacies, analogies, argument analysis, counterexamples, hidden assumptions, evaluating evidence
+- **32 exercises**: math_input, multiple_choice, fill_in_blank, free_response
+- Purple accent color with gradient overlay
+
+### New Features
+- **Difficulty indicators**: ●●○ dots on exercises (orange, 1-3 scale from curriculum data)
+- **Topic review mode**: 🔄 button on completed topics for quick practice replay
+- **Bellows Direct tab**: 6 quick-action buttons in 3-col grid (Run 10/20/50, Focus testing/building/design)
+
+### Naming & Cleanup
+- Commissioner app → **Bellows** (directory, app title, CSS, pyproject, README, templates)
+- Project name: ai-coworker → **the-smithy** (state.json, identity.md)
+- Bellows README: comprehensive docs for all 6 screens
+- Old `forge-*.sh` scripts removed (636 lines) — all in smithy CLI now
+
+### Stats
+- **4 tutor subjects** (Python, Math, English, Logic) — 39 topics, 130 exercises
+- **18 smithy commands**, 35 smithy tests
+- **158 total tests** (111 tutor + 12 bellows + 35 smithy)
+- Patrol clean across all runs
+
 ## v1.1 — Visual Design Sprint + CLI Completion (heats 518-547)
 
 ### Tutor Visual Redesign
