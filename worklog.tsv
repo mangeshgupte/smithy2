@@ -582,3 +582,9 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-10T19:09:57Z	581	implementation	t-158	complete	0.8	🟢	Bellows forge_reader: themes + initiatives + intent extracted from identity.md and passed to templates. 12 bellows tests pass. Could improve: nothing.
 2026-04-10T19:10:24Z	582	editing	t-157	complete	0.7	🟢	Protocol loop.md updated: Step 1 now includes list-themes + list-initiatives, removed dispatch/anvil-to-forge.md reference. Could improve: nothing.
 2026-04-10T19:11:07Z	583	testing	t-163	complete	0.8	🟢	Full regression: 168 tests (111+12+45), patrol clean, validate clean. Intent hierarchy fully functional. Could improve: nothing.
+2026-04-10T19:11:55Z	584	marketing	t-164	complete	0.7	🟢	AAR + handoff saved. Sprint complete. Could improve: nothing.
+2026-04-10T20:35:01Z	585	implementation	t-159	complete	0.9	🟢	Bellows board: themes grouped with initiatives, status-colored left borders (proposed=yellow, approved=blue, active=green), approve/reject buttons, Board tab added to all 4 project sub-pages. Route renders 200. Could improve: nothing.
+2026-04-10T20:36:28Z	586	implementation	t-156	complete	0.8	🟢	Allocator initiative gating: eligible_queue filters tasks by initiative status. Queued bonus and unblocking override only consider approved/active initiative tasks. 45 tests pass. Could improve: nothing.
+2026-04-10T20:37:33Z	587	implementation	t-160	complete	0.7	🟢	Bellows initiative badges on home cards: blue 'N proposals' badge alongside yellow decision badge. Flex layout for both. Could improve: nothing.
+2026-04-10T20:39:07Z	588	testing	t-162	complete	0.8	🟢	4 Bellows intent hierarchy tests: themes, initiatives, intent extraction, empty project fallback. 16 bellows tests total. Could improve: nothing.
+2026-04-10T20:39:54Z	589	editing	t-150	complete	0.7	🟢	STRATEGY.md updated to heat 589: 27 commands, 172 tests, intent hierarchy + responsive desktop reflected. Could improve: what's missing section still stale.

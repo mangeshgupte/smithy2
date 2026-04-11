@@ -2,6 +2,13 @@
 
 The Smith writes status updates, questions, and summaries here.
 
+## 2026-04-10 [heat 590, AAR — heats 585-590]
+
+6 heats: impl×4, testing×1, editing×1. Signal: 🟢×6.
+Key: **Intent hierarchy UI + allocator integration.** Bellows board page (themes→initiatives with approve/reject), proposal badges on home cards, allocator initiative gating, 4 Bellows tests, STRATEGY updated. 172 tests, patrol clean.
+
+Smithy CLI: 27 commands. Tests: 172 total (111+16+45).
+
 ## 2026-04-10 [heat 584, AAR — heats 576-584]
 
 9 heats: impl×6, testing×2, editing×1. Signal: 🟢×9.
