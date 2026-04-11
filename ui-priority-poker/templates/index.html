@@ -148,6 +148,27 @@
         card.classList.toggle('expanded');
     }
 
+    // Auto-refresh: poll for live progress every 5s
+    setInterval(() => {
+        fetch('/api/state').then(r => r.json()).then(data => {
+            document.querySelectorAll('.poker-card[data-id]').forEach(card => {
+                const id = card.dataset.id;
+                if (data[id]) {
+                    const meta = card.querySelector('.card-meta');
+                    if (meta) {
+                        const spans = meta.querySelectorAll('span');
+                        // Update heats and task count
+                        if (spans.length >= 3) {
+                            const d = data[id];
+                            spans[2].textContent = d.heats_used + 'h' + (d.budget_cap ? '/' + d.budget_cap : '');
+                            spans[3].textContent = d.task_count + ' tasks';
+                        }
+                    }
+                }
+            });
+        }).catch(() => {});
+    }, 5000);
+
     function approveCard(id) {
         fetch('/approve/' + id, { method: 'POST' })
             .then(() => location.reload());

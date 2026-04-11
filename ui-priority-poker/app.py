@@ -98,6 +98,28 @@ async def approve(initiative_id: str):
     return JSONResponse({"ok": True})
 
 
+@app.get("/api/state")
+async def api_state():
+    """Return current initiative state for auto-refresh."""
+    state = _load_state()
+    task_counts = {}
+    for t in state.get("queue", []):
+        ini_id = t.get("initiative_id")
+        if ini_id:
+            task_counts[ini_id] = task_counts.get(ini_id, 0) + 1
+
+    data = {}
+    for i in state.get("initiatives", []):
+        if i["status"] in ("approved", "active"):
+            data[i["id"]] = {
+                "heats_used": i.get("heats_used", 0),
+                "budget_cap": i.get("budget_cap"),
+                "task_count": task_counts.get(i["id"], 0),
+                "status": i["status"],
+            }
+    return JSONResponse(data)
+
+
 @app.post("/reject/{initiative_id}")
 async def reject(initiative_id: str):
     state = _load_state()
