@@ -69,4 +69,25 @@
     </a>
 {% endfor %}
 </div>
+
+<!-- New Project -->
+<section class="new-project-section">
+    <details class="new-project-toggle">
+        <summary class="btn btn-secondary" style="cursor: pointer; display: inline-block; margin-top: 20px;">+ New Project</summary>
+        <form action="/project/create" method="POST" class="new-project-form">
+            <div class="form-group">
+                <label for="project_name">Project name</label>
+                <input type="text" id="project_name" name="project_name" placeholder="my-project" required
+                       pattern="[a-z0-9-]+" title="Lowercase letters, numbers, and hyphens only"
+                       class="direct-textarea" style="resize: none; height: auto; padding: 10px;">
+            </div>
+            <div class="form-group">
+                <label for="project_dir">Directory</label>
+                <input type="text" id="project_dir" name="project_dir" placeholder="~/projects/my-project"
+                       class="direct-textarea" style="resize: none; height: auto; padding: 10px;">
+            </div>
+            <button type="submit" class="btn btn-primary" style="margin-top: 8px;">Create Project</button>
+        </form>
+    </details>
+</section>
 {% endblock %}

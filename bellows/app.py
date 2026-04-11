@@ -6,7 +6,7 @@ from pathlib import Path
 import json
 from datetime import datetime
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -36,6 +36,26 @@ async def home(request: Request):
         "tab": "home",
         "total_decisions": count_all_decisions(projects),
     })
+
+
+@app.post("/project/create")
+async def create_project(project_name: str = Form(...), project_dir: str = Form("")):
+    """Create a new Forge project using smithy init."""
+    import subprocess
+
+    target = project_dir.strip() or str(Path(PROJECTS_DIR) / project_name)
+    target = os.path.expanduser(target)
+
+    result = subprocess.run(
+        ["smithy", "init", project_name, "--target", target],
+        capture_output=True, text=True
+    )
+
+    if result.returncode != 0:
+        # Fall back to home with error (could improve with flash messages)
+        return RedirectResponse(url="/", status_code=303)
+
+    return RedirectResponse(url="/", status_code=303)
 
 
 @app.get("/briefing", response_class=HTMLResponse)
