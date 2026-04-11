@@ -158,6 +158,28 @@ async def remove_constraint(constraint_id: str):
     return RedirectResponse(url="/", status_code=303)
 
 
+@app.post("/edit/{constraint_id}")
+async def edit_constraint(
+    constraint_id: str,
+    request: Request,
+):
+    data = await request.json()
+    state = _load_state()
+    for c in state.get("constraints", []):
+        if c["id"] == constraint_id:
+            if "value" in data:
+                c["value"] = int(data["value"])
+            if "stage" in data:
+                c["stage"] = data["stage"] or None
+            if "description" in data:
+                c["description"] = data["description"]
+            break
+    else:
+        return JSONResponse({"error": "Constraint not found"}, status_code=404)
+    _save_state(state)
+    return JSONResponse({"ok": True, "id": constraint_id})
+
+
 @app.post("/toggle/{constraint_id}")
 async def toggle_constraint(constraint_id: str):
     state = _load_state()

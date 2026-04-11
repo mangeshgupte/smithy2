@@ -31,23 +31,23 @@
                 {% if c.type == 'budget_cap' %}⏱{% elif c.type == 'floor' %}📊{% elif c.type == 'exclude' %}🚫{% endif %}
             </div>
             <div class="constraint-body">
-                <div class="constraint-title">
-                    {% if c.type == 'budget_cap' %}Budget: {{ c.stage }} ≤ {{ c.value }} heats
-                    {% elif c.type == 'floor' %}Floor: {{ c.stage }} ≥ {{ c.value }}%
+                <div class="constraint-title" onclick="startEdit(this, '{{ c.id }}', '{{ c.type }}', '{{ c.stage or '' }}', {{ c.value or 0 }}, '{{ c.description|e }}')" title="Click to edit">
+                    {% if c.type == 'budget_cap' %}Budget: {{ c.stage }} &le; {{ c.value }} heats
+                    {% elif c.type == 'floor' %}Floor: {{ c.stage }} &ge; {{ c.value }}%
                     {% elif c.type == 'exclude' %}Exclude: {{ c.description }}
                     {% endif %}
                 </div>
                 {% if c.get('_progress') %}
                 <div class="constraint-progress {{ 'ok' if c.get('_ok') else 'bad' }}">
-                    {{ c._progress }} {% if c.get('_ok') %}✓{% else %}⚠{% endif %}
+                    {{ c._progress }} {% if c.get('_ok') %}&check;{% else %}&xwedge;{% endif %}
                 </div>
                 {% endif %}
             </div>
             <form method="post" action="/toggle/{{ c.id }}" style="display:inline">
-                <button type="submit" class="toggle-btn" title="{% if c.status == 'active' %}Pause{% else %}Activate{% endif %}">{% if c.status == 'active' %}⏸{% else %}▶{% endif %}</button>
+                <button type="submit" class="toggle-btn" title="{% if c.status == 'active' %}Pause{% else %}Activate{% endif %}">{% if c.status == 'active' %}&#9208;{% else %}&#9654;{% endif %}</button>
             </form>
             <form method="post" action="/remove/{{ c.id }}" class="remove-form" style="display:inline">
-                <button type="submit" class="remove-btn" title="Remove">✕</button>
+                <button type="submit" class="remove-btn" title="Remove">&times;</button>
             </form>
         </div>
         {% endif %}
@@ -110,5 +110,39 @@
             <button type="submit" class="submit-btn">Add Constraint</button>
         </form>
     </details>
+
+    <script>
+    function startEdit(el, id, type, stage, value, description) {
+        if (el.querySelector('input')) return; // already editing
+
+        let html;
+        if (type === 'exclude') {
+            html = `<input type="text" class="edit-input" value="${description}" onkeydown="if(event.key==='Enter')saveEdit('${id}',this)" onblur="saveEdit('${id}',this)" data-field="description" autofocus>`;
+        } else {
+            html = `${type === 'budget_cap' ? 'Budget' : 'Floor'}: ${stage} ${type === 'budget_cap' ? '&le;' : '&ge;'} <input type="number" class="edit-input" value="${value}" min="0" style="width:60px" onkeydown="if(event.key==='Enter')saveEdit('${id}',this)" onblur="saveEdit('${id}',this)" data-field="value" autofocus>${type === 'budget_cap' ? ' heats' : '%'}`;
+        }
+        el.innerHTML = html;
+        el.querySelector('input').focus();
+    }
+
+    function saveEdit(id, input) {
+        const field = input.dataset.field;
+        const val = field === 'value' ? parseInt(input.value) : input.value;
+        fetch('/edit/' + id, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({[field]: val})
+        }).then(r => {
+            if (r.ok) location.reload();
+        });
+    }
+
+    // Confirm before removing
+    document.querySelectorAll('.remove-form').forEach(f => {
+        f.addEventListener('submit', e => {
+            if (!confirm('Remove this constraint?')) e.preventDefault();
+        });
+    });
+    </script>
 </body>
 </html>

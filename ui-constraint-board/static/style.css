@@ -53,3 +53,7 @@ select, input[type=number], input[type=text] { flex: 1; background: var(--surfac
 .template-btn:hover { background: var(--bg); border-color: var(--blue); }
 
 .empty { text-align: center; padding: 48px; color: var(--text-muted); }
+
+.constraint-title { cursor: pointer; }
+.constraint-title:hover { color: var(--blue); }
+.edit-input { background: var(--bg); border: 1px solid var(--blue); border-radius: 4px; color: var(--text); padding: 2px 6px; font-size: 14px; }
