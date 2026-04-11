@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 843,
-    "used": 613,
+    "used": 618,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -14,15 +14,15 @@
     },
     "planning": {
       "target": 0.21,
-      "heats": 32,
+      "heats": 33,
       "progress": 0.85,
-      "value_ema": 0.772
+      "value_ema": 0.75
     },
     "implementation": {
       "target": 0.049,
-      "heats": 201,
+      "heats": 205,
       "progress": 0.98,
-      "value_ema": 0.876
+      "value_ema": 0.873
     },
     "testing": {
       "target": 0.183,
@@ -1112,7 +1112,7 @@
       "id": "t-187",
       "stage": "testing",
       "desc": "UI A: Priority Poker \u2014 test. Start the app, verify: cards render for all approved/active initiatives, drag reorder works and persists to state.json, kill button rejects initiative, allocation weights display correctly, auto-refresh picks up state changes, empty state renders, dark theme consistent.",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-010"
@@ -1266,7 +1266,7 @@
       "id": "t-205",
       "stage": "implementation",
       "desc": "UI C: Timeline \u2014 wire up drag interactivity. The /update POST endpoint exists in ui-timeline/app.py and writes planned_start/planned_end to state.json, but ui-timeline/templates/index.html has NO JavaScript. Add JS in a <script> tag or static/js/timeline.js: (1) dragstart on each .timeline-bar stores initiative id + original position, (2) dragover on the timeline container calculates new heat position from mouse X relative to the timeline width and heat range, (3) dragend calls POST /update with [{id, start, end}] via fetch(), (4) on success, update the bar position in DOM. Bars have draggable attribute and data-start/data-end attributes already. Match the drag UX from ui-priority-poker (which works). Also add resize handles on bar endpoints for changing duration (mousedown on edge \u2192 track mousemove \u2192 update width + POST). Snap to 5-heat increments.",
-      "status": "pending",
+      "status": "complete",
       "priority": 0,
       "blocked_by": [],
       "initiative_id": "ini-012"
@@ -1275,7 +1275,7 @@
       "id": "t-206",
       "stage": "implementation",
       "desc": "Wire allocator to read constraints. In smithy/smithy/allocator.py score_stages(): accept a 'constraints' list parameter. Check each active constraint: (1) budget-cap: if stage/initiative heats_used >= value, set that stage's score to -999 (effectively skip). (2) stage-block: if stage matches, set score to -999. (3) progress-floor: if stage progress < value, boost score by +0.5. (4) Custom constraints: skip (human-readable only, not machine-enforceable). Update cli.py allocate command to pass constraints from state.json. This makes the constraint board's output actually steer Forge.",
-      "status": "pending",
+      "status": "complete",
       "priority": 0,
       "blocked_by": [],
       "initiative_id": "ini-011"
@@ -1284,7 +1284,7 @@
       "id": "t-207",
       "stage": "implementation",
       "desc": "UI D: Intent Editor \u2014 add edit/delete for existing items. Currently one-way (write only). In ui-intent-editor/templates/index.html: (1) show existing themes and initiatives from state.json in the right panel as an editable tree (not just after Apply). (2) Add delete button on each initiative \u2014 POST /delete-initiative/{id} that sets status='rejected' in state.json. (3) Add delete button on each theme \u2014 POST /delete-theme/{id} that sets status='paused'. (4) Add inline edit on initiative descriptions \u2014 click to edit, blur to save via POST /edit-initiative/{id}. Add these endpoints to app.py.",
-      "status": "pending",
+      "status": "complete",
       "priority": 0,
       "blocked_by": [],
       "initiative_id": "ini-013"
@@ -1293,7 +1293,7 @@
       "id": "t-208",
       "stage": "implementation",
       "desc": "Priority Poker improvements (batch 1). In ui-priority-poker/: (1) Add auto-refresh \u2014 poll state.json every 5s via GET /api/state, update task counts and progress bars without full reload. (2) Add visual weight gradient \u2014 top card 100% opacity and 1.05x scale, each subsequent card dims by 10% and shrinks slightly. (3) Add theme grouping \u2014 show theme name as a section header, cards grouped under their theme. (4) Add proposed initiatives section below the stack \u2014 cards the human hasn't approved yet, with an Approve button that POSTs to move them into the stack. (5) Show allocation weight on each card (3x, 2x, 1x) as a badge.",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-010"
@@ -1401,9 +1401,27 @@
       "id": "t-220",
       "stage": "planning",
       "desc": "Plan 60-heat sprint: UI polish + constraint enforcement + tutor content + testing",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 1,
       "blocked_by": []
+    },
+    {
+      "id": "t-221",
+      "stage": "implementation",
+      "desc": "UI reactivity: manual refresh on all 4 UIs. For each of ui-priority-poker/, ui-constraint-board/, ui-timeline/, ui-intent-editor/: (1) Add GET /api/state endpoint in app.py that returns the current UI-relevant data as JSON (initiatives, themes, tasks, constraints \u2014 whatever that UI displays). (2) Add a visible 'Refresh' button in the page header (top-right, subtle but always visible). (3) Add JS function refreshState() that fetches /api/state and re-renders the DOM without full page reload \u2014 update card contents, progress bars, counts, violation status etc. (4) Wire the Refresh button to call refreshState(). (5) Show a brief 'Updated' flash indicator after successful refresh. Use the same dark theme button styling. Priority Poker already has some AJAX \u2014 extend its pattern to the other 3.",
+      "status": "pending",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-014"
+    },
+    {
+      "id": "t-222",
+      "stage": "implementation",
+      "desc": "UI reactivity: SSE enhancement. For each of the 4 UIs: (1) Add GET /events SSE endpoint in app.py that watches state.json for modification (use os.path.getmtime polling at 2s interval in an async generator \u2014 simpler than watchdog). Yield a 'state-changed' event when mtime changes. (2) Add JS EventSource connection to /events. On 'state-changed' event, call refreshState() automatically. (3) Show a subtle 'live' indicator dot in the header when SSE is connected (green = connected, gray = disconnected). (4) Fallback: if SSE disconnects, the manual Refresh button still works. No auto-polling \u2014 SSE is event-driven.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-014"
     }
   ],
   "ideas": [
@@ -1533,7 +1551,7 @@
       "description": "A desktop web UI where the human steers by ranking, not approving. Shows all active initiatives as cards. Human drags to reorder \u2014 that IS the steering. No approve/reject buttons. Everything proposed is fair game unless explicitly killed. The ranking determines allocation weight. Top card gets 3x budget share, second gets 2x, rest get 1x. Real-time: as Forge works, cards show live progress and the stack rebalances. The human's only job: keep the stack in the right order. Inspired by planning poker + priority queues. Build as a standalone page in Bellows.",
       "status": "approved",
       "budget_cap": 15,
-      "heats_used": 1,
+      "heats_used": 2,
       "rank": 2
     },
     {
@@ -1543,7 +1561,7 @@
       "description": "A desktop web UI where the human steers by setting constraints, not giving orders. Instead of telling Forge what to do, the human defines boundaries: 'no more than 5 heats on research', 'testing must stay above 80%', 'don't touch tutor', 'ship something deployable by Friday'. Constraints are cards on a board. Forge works freely within them. When a constraint would be violated, Forge stops and asks. The human's only job: add/remove/adjust constraints. Inspired by air traffic control \u2014 direct through boundaries, not waypoints. Build as a standalone page in Bellows.",
       "status": "approved",
       "budget_cap": 15,
-      "heats_used": 1,
+      "heats_used": 2,
       "rank": 3
     },
     {
@@ -1553,8 +1571,8 @@
       "description": "A desktop web UI where the human steers by shaping a timeline. Horizontal axis is heats (or time). Initiatives are horizontal bars showing planned start/end. The human drags bar endpoints to allocate budget. Overlapping bars = parallel work. Gaps = cool-down. The visual makes tradeoffs obvious \u2014 stretching one initiative squeezes another. Forge reads the timeline and works accordingly. Inspired by Gantt charts but interactive and simple. Build as a standalone page in Bellows.",
       "status": "approved",
       "budget_cap": 15,
-      "heats_used": 1,
-      "rank": 4
+      "heats_used": 2,
+      "rank": 5
     },
     {
       "id": "ini-013",
@@ -1563,8 +1581,17 @@
       "description": "A desktop web UI focused on natural-language steering. The human writes a short intent statement (2-3 sentences). The system decomposes it into themes, initiatives, and tasks automatically. Human reviews the decomposition and edits \u2014 delete a branch, promote a task, add a constraint. The intent is the source of truth, not the task list. When intent changes, the decomposition updates. Inspired by commander's intent in military doctrine. The human thinks in outcomes, the system thinks in tasks. Build as a standalone page in Bellows.",
       "status": "approved",
       "budget_cap": 20,
-      "heats_used": 1,
-      "rank": 5
+      "heats_used": 2,
+      "rank": 4
+    },
+    {
+      "id": "ini-014",
+      "theme_id": "th-003",
+      "title": "UI reactivity \u2014 state change detection",
+      "description": "All 4 steering UIs should reflect state.json changes without auto-polling. Options: (1) Manual refresh button visible on every UI \u2014 'Refresh' button in header that reloads data via AJAX (not full page reload). (2) File watcher via SSE \u2014 backend watches state.json with watchdog/inotify and pushes events to frontend via Server-Sent Events. Frontend updates DOM on event. (3) Hybrid \u2014 manual refresh button always visible, plus optional SSE for live updates. Start with manual refresh button on all 4 UIs (simplest, no dependencies). Then add SSE as an enhancement. Each UI needs: a GET /api/state endpoint returning current data as JSON, a JS function that fetches it and re-renders the relevant DOM elements, a visible Refresh button in the header that calls this function.",
+      "status": "approved",
+      "budget_cap": 10,
+      "heats_used": 0
     }
   ],
   "feedback_cursor": 26,
@@ -1572,5 +1599,16 @@
   "human_priorities": [
     "visual design"
   ],
-  "overall_progress": 0.89
+  "overall_progress": 0.89,
+  "constraints": [
+    {
+      "id": "con-001",
+      "type": "budget_cap",
+      "stage": "research",
+      "value": 5,
+      "description": "",
+      "status": "active",
+      "created": "2026-04-11T10:30:03.694834"
+    }
+  ]
 }
