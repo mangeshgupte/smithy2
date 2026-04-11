@@ -2,15 +2,15 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 843,
-    "used": 642,
+    "used": 649,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
     "research": {
       "target": 0.156,
-      "heats": 33,
+      "heats": 34,
       "progress": 0.9,
-      "value_ema": 0.854
+      "value_ema": 0.838
     },
     "planning": {
       "target": 0.21,
@@ -20,27 +20,27 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 221,
+      "heats": 224,
       "progress": 0.98,
-      "value_ema": 0.756
+      "value_ema": 0.799
     },
     "testing": {
       "target": 0.183,
-      "heats": 117,
+      "heats": 118,
       "progress": 0.88,
-      "value_ema": 0.795
+      "value_ema": 0.827
     },
     "editing": {
       "target": 0.183,
-      "heats": 154,
+      "heats": 155,
       "progress": 0.88,
-      "value_ema": 0.73
+      "value_ema": 0.721
     },
     "marketing": {
       "target": 0.219,
-      "heats": 84,
+      "heats": 85,
       "progress": 0.84,
-      "value_ema": 0.709
+      "value_ema": 0.706
     }
   },
   "allocator": {
@@ -48,8 +48,8 @@
       "research": 0.5,
       "planning": 0.5,
       "implementation": -0.5,
-      "testing": -0.02,
-      "editing": -0.444,
+      "testing": -0.017,
+      "editing": -0.434,
       "marketing": 0.5
     }
   },
@@ -1509,7 +1509,116 @@
       "id": "t-233",
       "stage": "marketing",
       "desc": "30-heat AAR + handoff",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-234",
+      "stage": "research",
+      "desc": "Research Dolt for multi-agent state: can it replace flat-file state.json?",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-235",
+      "stage": "implementation",
+      "desc": "Smithy: smithy export \u2014 export project as a self-contained tar.gz for sharing",
+      "status": "complete",
+      "priority": 3,
+      "blocked_by": []
+    },
+    {
+      "id": "t-236",
+      "stage": "implementation",
+      "desc": "Tutor: achievement badges \u2014 first lesson, first card, 5-day streak, all topics in a subject",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-237",
+      "stage": "implementation",
+      "desc": "Tutor: daily goal \u2014 set a target (e.g., 5 exercises/day), track progress",
+      "status": "pending",
+      "priority": 3,
+      "blocked_by": []
+    },
+    {
+      "id": "t-238",
+      "stage": "implementation",
+      "desc": "Bellows: activity sparkline on home project cards (tiny chart of last 20 heats)",
+      "status": "complete",
+      "priority": 3,
+      "blocked_by": []
+    },
+    {
+      "id": "t-239",
+      "stage": "testing",
+      "desc": "Write tests for all 4 steering UIs (route verification + POST endpoints)",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-240",
+      "stage": "editing",
+      "desc": "Update README with steering UIs documentation",
+      "status": "complete",
+      "priority": 3,
+      "blocked_by": []
+    },
+    {
+      "id": "t-241",
+      "stage": "implementation",
+      "desc": "Marshal: persona scaffold. Create personas/marshal/CLAUDE.md. The Marshal is a persistent AI agent session that reads all steering signals and produces an ordered task list. It runs as a long-lived Claude session (cd personas/marshal && claude), not spawned per heat. Forge communicates via dispatch/forge-to-marshal.md writing a prioritize request after each heat. Marshal reads all signals: (1) state.json \u2014 themes (ranked), initiatives (status, budget_cap, heats_used, planned_start/end), tasks (pending, priority, blocked_by, initiative_id), constraints (active rules). (2) worklog.tsv \u2014 last 10 heats for context. (3) identity.md \u2014 commander intent. Ordering rules in priority: (a) Constraints are hard \u2014 blocked stages/initiatives excluded, budget caps respected. (b) Priority poker ranking \u2014 higher-ranked initiative tasks first. (c) Timeline \u2014 defer tasks whose initiative planned_start is in the future. (d) Task priority within initiative \u2014 p0 > p1 > p2. (e) blocked_by \u2014 exclude tasks with incomplete deps. (f) Stage balance \u2014 light wavefront signal for variety. Output: write next_tasks (ordered list of max 10 task IDs) and prioritization_rationale to state.json. Then wait for next request.",
       "status": "in_progress",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-015"
+    },
+    {
+      "id": "t-242",
+      "stage": "implementation",
+      "desc": "Marshal: CLI + communication protocol. (1) Add smithy next-task command in cli.py that reads state.json next_tasks list and returns the first entry (popping it). This replaces smithy allocate + smithy pick-task in Forge workflow. (2) Create dispatch/forge-to-marshal.md \u2014 Forge writes a prioritize request here after completing each heat (heat number, what was done, outcome). Marshal reads this file and re-prioritizes. (3) Create dispatch/marshal-to-forge.md \u2014 Marshal writes its rationale and any notes here. (4) Add next_tasks and prioritization_rationale fields to state.json schema. Update validate_state() to accept them. (5) No spawning \u2014 Marshal is already running. The communication is file-based, same as Anvil\u2194Forge.",
+      "status": "pending",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-015"
+    },
+    {
+      "id": "t-243",
+      "stage": "editing",
+      "desc": "Marshal: update Forge protocol. In protocol/loop.md: (1) Replace Steps 3-4 (allocate + pick-task) with: check next_tasks in state.json. If empty or stale, write a prioritize request to dispatch/forge-to-marshal.md and wait briefly, then read next_tasks. Run smithy next-task to pop the top entry. (2) Remove allocator math from protocol \u2014 Forge no longer computes scores. (3) Add note: The Marshal agent is a separate session that orders your queue. You execute in order. (4) After each heat, write to dispatch/forge-to-marshal.md: heat N complete, task X done, outcome Y. (5) Update Step 0: on session start, check if Marshal session is running (next_tasks exists and is recent).",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-015"
+    },
+    {
+      "id": "t-244",
+      "stage": "implementation",
+      "desc": "Marshal: Bellows + steering UI integration. (1) In bellows upcoming heats section: read from state.json next_tasks, show prioritization_rationale as subtitle. (2) Add Re-prioritize button in Bellows that writes a prioritize request to dispatch/forge-to-marshal.md (or directly updates state.json to trigger Marshal). (3) In all 4 steering UIs: after any state change (reorder, constraint add, timeline drag), show banner: Steering changed \u2014 Marshal will re-prioritize on next cycle with a manual trigger button. (4) Show Marshal status: is the session running? When was last prioritization? How many tasks in next_tasks?",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-015"
+    },
+    {
+      "id": "t-245",
+      "stage": "testing",
+      "desc": "Prioritizer: end-to-end test. (1) Set up steering signals: add 2 themes, 3 initiatives with tasks, 2 constraints (one stage-block, one budget-cap), poker ranking. (2) Run smithy prioritize. (3) Verify next_tasks respects: constraints (blocked stage tasks excluded), poker ranking (higher-ranked initiative tasks first), blocked_by (dependent tasks deferred), budget caps (capped initiative tasks excluded). (4) Verify smithy next-task returns first entry and pops it. (5) Change a steering signal (reorder poker), re-prioritize, verify next_tasks changed. (6) Verify Bellows upcoming section shows the prioritized list.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-015"
+    },
+    {
+      "id": "t-246",
+      "stage": "marketing",
+      "desc": "Final AAR + handoff for 60-heat sprint",
+      "status": "pending",
       "priority": 1,
       "blocked_by": []
     }
@@ -1695,6 +1804,15 @@
       "planned_start": 640,
       "planned_end": 655,
       "rank": 6
+    },
+    {
+      "id": "ini-015",
+      "theme_id": "th-002",
+      "title": "Marshal agent",
+      "description": "New persona sitting between Anvil and Forge. An AI agent (Claude session) that runs before every heat and decides task ordering. Replaces the wavefront allocator. Reads all steering signals: theme rankings, initiative status/budget caps, constraint board rules, priority poker order, timeline allocations, task priorities, blocked_by deps, recent worklog history, human_priorities. Produces a single ordered list of next N tasks written to state.json. Forge becomes a pure executor \u2014 reads the list, pops the top task, does the work. The Marshal makes the steering UIs meaningful: they're all inputs that the Marshal synthesizes into one queue. Architecture: Anvil (strategy) \u2192 Marshal (ordering) \u2192 Forge (execution).",
+      "status": "approved",
+      "budget_cap": 25,
+      "heats_used": 0
     }
   ],
   "feedback_cursor": 26,

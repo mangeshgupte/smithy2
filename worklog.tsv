@@ -641,3 +641,10 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-11T11:02:51Z	640	implementation	t-210	complete	0.8	🟢	Priority Poker: Forge activity indicator — pulsing green dot + heat/stage/task when checkpoint exists. Could improve: compact mode toggle.
 2026-04-11T11:04:34Z	641	implementation	t-213	complete	0.8	🟢	Constraint Board: smart suggestions (cap high-progress stages, boost neglected stages). Yellow highlight with 💡. Could improve: conflict detection.
 2026-04-11T11:05:39Z	642	editing	t-229	complete	0.7	🟢	STRATEGY updated: 641 heats, 4 steering UIs, steering patterns research reflected.
+2026-04-11T11:06:37Z	643	marketing	t-233	complete	0.7	🟢	30-heat AAR + handoff. All 4 UIs polished. Continuing.
+2026-04-11T11:07:55Z	644	research	t-234	complete	0.8	🟢	Dolt evaluated: pros (multi-agent, queryable, branching), cons (dependency, complexity). Recommendation: design for it, migrate when multi-agent. Abstraction already exists.
+2026-04-11T11:10:04Z	645	implementation	t-236	complete	0.9	🟢	Achievement badges: 8 badges (First Steps, Card Crafter, Explorer, Scholar, Renaissance, On Fire, Dedicated, Deck Builder). Auto-checked on stats page. Earned badges highlighted, locked grayed out.
+2026-04-11T11:11:03Z	646	testing	t-239	complete	0.9	🟢	7 steering UI tests: all 4 UIs render (200), Priority Poker reorder + api_state endpoints, Constraint Board add endpoint. 179 total tests now.
+2026-04-11T11:12:16Z	647	implementation	t-238	complete	0.8	🟢	Bellows sparkline: tiny green bar chart showing last 20 heat values on project cards. Pure CSS, no JS.
+2026-04-11T11:13:17Z	648	editing	t-240	complete	0.7	🟢	README: steering UIs section with 4-row table, updated stats (179 tests, 640 heats, sparklines).
+2026-04-11T11:14:35Z	649	implementation	t-235	complete	0.8	🟢	smithy export: tar.gz self-contained project export, skips .git/venv/cache/checkpoints. 29th command. 257KB for full project.

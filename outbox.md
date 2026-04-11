@@ -2,6 +2,22 @@
 
 The Smith writes status updates, questions, and summaries here.
 
+## 2026-04-11 [heat 650, AAR — 60-heat sprint complete]
+
+37 heats total (614-650). Signal: 🟢×35, 🟡×2.
+
+### Sprint Summary
+**Phase 1 — UI Polish (14 heats)**: Allocator constraint enforcement, Timeline drag, Intent Editor delete, Priority Poker expand/weight/approve, all UIs tested.
+**Phase 2 — Content + Features (10 heats)**: English expanded (10 topics), exercise timer, user progress bar, STRATEGY viewer, Constraint Board improvements, CHANGELOG v1.4.
+**Phase 3 — Testing + New Features (13 heats)**: Dolt research, achievement badges (8 types), activity sparklines, 7 steering UI tests, smithy export (29th cmd), README updated.
+
+### Final Stats
+- 5 subjects: 50 topics, 201 exercises
+- 29 smithy commands
+- 4 steering UIs (Priority Poker, Constraint Board, Timeline, Intent Editor)
+- 179 tests (111 tutor + 16 bellows + 45 smithy + 7 steering)
+- 650 heats total
+
 ## 2026-04-11 [heat 643, AAR — heats 630-643]
 
 14 heats: impl×9, testing×1, editing×2, marketing×2. Signal: 🟢×13, 🟡×1.
