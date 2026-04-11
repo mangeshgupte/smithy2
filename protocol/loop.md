@@ -25,8 +25,13 @@ smithy process-inbox       # New inbox entries (returns JSON, updates cursor)
 Also read (read-only, don't edit):
 - `identity.md` — commander's intent
 - `STRATEGY.md` — strategic plan
-- `dispatch/anvil-to-forge.md` — pending direction from Anvil
 - `MEMORY_DAILY.md` — recent working memory
+
+Check themes and initiatives:
+```bash
+smithy list-themes         # Active themes (strategic priorities)
+smithy list-initiatives    # Proposed/approved/active initiatives
+```
 
 **Review-first-heat**: If `smithy process-feedback` returns new entries:
 1. This heat becomes a **review heat** (stage = "planning")
