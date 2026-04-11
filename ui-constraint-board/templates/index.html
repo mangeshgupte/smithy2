@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Constraint Board — {{ project }}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header>
+        <h1>🛡️ Constraint Board</h1>
+        <p class="subtitle">{{ project }} — steer through boundaries, not commands</p>
+    </header>
+
+    {% if violations %}
+    <div class="violation-banner">
+        ⚠️ {{ violations|length }} constraint{{ 's' if violations|length > 1 }} violated:
+        {% for v in violations %}
+        <span class="violation-item">{{ v.message }}</span>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="all-clear">✓ All constraints satisfied</div>
+    {% endif %}
+
+    <div class="constraint-list">
+        {% for c in constraints %}
+        {% if c.status == 'active' %}
+        <div class="constraint-card type-{{ c.type }} {{ 'violated' if not c.get('_ok', True) }}">
+            <div class="constraint-icon">
+                {% if c.type == 'budget_cap' %}⏱{% elif c.type == 'floor' %}📊{% elif c.type == 'exclude' %}🚫{% endif %}
+            </div>
+            <div class="constraint-body">
+                <div class="constraint-title">
+                    {% if c.type == 'budget_cap' %}Budget: {{ c.stage }} ≤ {{ c.value }} heats
+                    {% elif c.type == 'floor' %}Floor: {{ c.stage }} ≥ {{ c.value }}%
+                    {% elif c.type == 'exclude' %}Exclude: {{ c.description }}
+                    {% endif %}
+                </div>
+                {% if c.get('_progress') %}
+                <div class="constraint-progress {{ 'ok' if c.get('_ok') else 'bad' }}">
+                    {{ c._progress }} {% if c.get('_ok') %}✓{% else %}⚠{% endif %}
+                </div>
+                {% endif %}
+            </div>
+            <form method="post" action="/remove/{{ c.id }}" class="remove-form">
+                <button type="submit" class="remove-btn" title="Remove">✕</button>
+            </form>
+        </div>
+        {% endif %}
+        {% endfor %}
+
+        {% if not constraints %}
+        <div class="empty">No constraints set. Forge has full autonomy.</div>
+        {% endif %}
+    </div>
+
+    <details class="add-section" open>
+        <summary class="add-toggle">+ Add Constraint</summary>
+        <form method="post" action="/add" class="add-form">
+            <div class="form-row">
+                <select name="type" required>
+                    <option value="budget_cap">⏱ Budget cap (stage ≤ N heats)</option>
+                    <option value="floor">📊 Floor (stage ≥ N%)</option>
+                    <option value="exclude">🚫 Exclude (don't touch)</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <select name="stage">
+                    <option value="">Select stage...</option>
+                    {% for s in stages %}
+                    <option value="{{ s }}">{{ s }}</option>
+                    {% endfor %}
+                </select>
+                <input type="number" name="value" placeholder="Value" min="0" value="10">
+            </div>
+            <div class="form-row">
+                <input type="text" name="description" placeholder="Description (for exclude type)">
+            </div>
+            <button type="submit" class="submit-btn">Add Constraint</button>
+        </form>
+    </details>
+</body>
+</html>
