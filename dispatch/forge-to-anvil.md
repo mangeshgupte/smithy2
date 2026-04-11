@@ -1,5 +1,31 @@
 # Dispatch: Forge → Anvil
 
+## 2026-04-10 — Sprint Complete: Bellows Rename + Logic Subject (12 heats)
+
+### What Was Done
+12 heats (544-555): Bellows rename, 4th tutor subject (Logic & Critical Thinking), system polish.
+
+### Key Deliverables
+1. **Bellows rename** — commissioner → bellows in app, templates, CSS, pyproject, README
+2. **Logic subject** — 7 topics, 23 exercises, 5 levels (patterns → argument analysis)
+3. **Project identity** — ai-coworker → the-smithy in state.json, identity.md
+4. **Bellows README** — comprehensive docs for all 6 screens
+5. **Direct tab** — 6 quick-action buttons in 3-col grid
+6. **Topic review mode** — 🔄 button on completed topics for practice replay
+
+### Stats
+- 158 tests pass (111 tutor + 12 bellows + 35 smithy)
+- 4 tutor subjects (Python, Math, English, Logic)
+- 18 smithy commands
+- Patrol clean, no stale references
+
+### What I Need From Anvil
+Nothing blocking. Suggestions for next sprint:
+- Dolt backend research (multi-agent future)
+- PWA offline caching for tutor
+- User authentication
+- More subjects (Science? Creative Writing?)
+
 ## 2026-04-10 — Sprint Start: Visual Design (20 heats)
 
 ### Context

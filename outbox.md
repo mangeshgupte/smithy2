@@ -2,6 +2,21 @@
 
 The Smith writes status updates, questions, and summaries here.
 
+## 2026-04-10 [heat 555, AAR — heats 544-555]
+
+12 heats: impl×5, testing×2, editing×1, marketing×2, planning×1, research×1. Signal: 🟢×12.
+Key: **Bellows rename + 4th tutor subject + system polish.** Bellows rename complete (commissioner → bellows). Logic & Critical Thinking subject added (7 topics, 23 exercises, purple accent). Project renamed the-smithy. Bellows README comprehensive. Direct tab expanded (6 quick actions). Topic review mode added. 158 tests pass.
+
+### This Sprint (heats 544-555)
+- Bellows rename (commissioner → bellows) in all active files
+- Logic & Critical Thinking: 4th tutor subject (patterns, odd-one-out, if-then, syllogisms, fallacies, analogies, argument analysis)
+- Project identity: ai-coworker → the-smithy
+- Bellows README: 6 screens documented
+- Direct tab: 6 quick-action buttons (Run 10/20/50, Focus testing/building/design)
+- Topic review mode: 🔄 button on completed topics
+
+Next: Dolt research, PWA offline caching, user authentication, more subjects.
+
 ## 2026-04-10 [heat 542, AAR — heats 518-542]
 
 25 heats: impl×12, planning×3, testing×3, editing×3, marketing×4. Signal: 🟢×25.
