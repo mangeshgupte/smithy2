@@ -1,5 +1,34 @@
 # Changelog
 
+## v1.4 — Steering UIs + Constraint Enforcement + Content Expansion (heats 607-633)
+
+### 4 Steering UIs — Research + Prototypes
+- **Steering patterns research** — 5 domains (RTS, military C2, product mgmt, ATC, AI tools), 6-mode taxonomy
+- **Priority Poker** (`ui-priority-poker/`) — drag-to-rank, click-to-expand (desc + progress + tasks), visual weight gradient, allocation badges (3×/2×/1×), proposed section with approve, kill zone
+- **Constraint Board** (`ui-constraint-board/`) — budget caps, floors, excludes, violation detection, toggle activate/deactivate, quick templates
+- **Timeline View** (`ui-timeline/`) — Gantt-style bars, drag interactivity (left/right/middle edges), snap-to-5 grid, summary row with over-budget warning
+- **Intent Editor** (`ui-intent-editor/`) — bullet-point intent → auto-decompose, diff mode (new items green), delete themes/initiatives, apply to state.json
+
+### Constraint Enforcement
+- Allocator reads `constraints` from state.json
+- `budget_cap` constraint → stage score suppressed to -1.0
+- `floor` constraint → underfunded stage boosted proportionally
+
+### Tutor Content Expansion
+- **English Vocab**: 3 new topics (homophones, compound words, connotation) — now 10 topics / 37 exercises
+- All 5 subjects now have 10 topics each (except Math with 14)
+
+### New Features
+- **Exercise timer** — ⏱ counter on lesson page, counts from page load
+- **User page progress bar** — overall completion % across all subjects
+- **Bellows STRATEGY.md viewer** — collapsible on Direct tab
+
+### Stats
+- **5 subjects**: 50 topics, 201 exercises
+- **28 smithy commands**, 172 tests (111 + 16 + 45)
+- **4 standalone steering UIs** — each ~200 lines, dark theme, vanilla JS
+- **633 heats**
+
 ## v1.3 — User Sessions + Creative Writing + Init Fix + Stats (heats 576-600)
 
 ### Creative Writing — 5th Subject
