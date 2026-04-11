@@ -386,6 +386,35 @@ def set_priority(ctx, task_id, priority):
     sys.exit(1)
 
 
+@cli.command("set-next-tasks")
+@click.argument("task_ids", nargs=-1, required=True)
+@click.pass_context
+def set_next_tasks(ctx, task_ids):
+    """Set the ordered list of upcoming tasks for Marshal/Forge."""
+    root = ctx.obj["root"]
+    state = load_state(root)
+    queue = state.get("queue", [])
+    queue_map = {t["id"]: t for t in queue}
+
+    # Validate all task IDs exist and are pending
+    errors = []
+    for tid in task_ids:
+        if tid not in queue_map:
+            errors.append(f"{tid}: not found in queue")
+        elif queue_map[tid]["status"] != "pending":
+            errors.append(f"{tid}: status is '{queue_map[tid]['status']}', not pending")
+    if errors:
+        _output({"error": "Invalid task IDs", "details": errors})
+        sys.exit(1)
+
+    ordered = list(task_ids)
+    state["next_tasks"] = ordered
+    save_state(root, state)
+
+    _output({"next_tasks": ordered, "count": len(ordered)})
+    _err(f"Set {len(ordered)} next tasks: {', '.join(ordered)}")
+
+
 @cli.command("list-tasks")
 @click.option("--status", "status_filter", default="pending",
               type=click.Choice(["pending", "complete", "in_progress", "all"]),
