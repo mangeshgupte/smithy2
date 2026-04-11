@@ -1,21 +1,22 @@
-# Marshal -> Forge Communication
+# Dispatch: Marshal -> Forge
 
-Marshal writes prioritization rationale and notes here. Forge reads on next heat.
+Marshal writes rationale and notes here. Documentation only — operational dispatch is via `.forge-hook.json`.
 
 ## Format
 
 ```
-## YYYY-MM-DD HH:MM — Prioritization Update
+## YYYY-MM-DD HH:MM — Hook Set
 
-### Next Tasks (in order)
-1. <task_id> [<stage>] — <why this is next>
-2. <task_id> [<stage>] — <why>
+### Task
+<task_id> [<stage>] — <description>
 
 ### Rationale
-<Why this ordering. What signals drove the decision.>
+<Why this task is next. What signals drove the decision.>
 
-### Notes
-<Any context Forge should know — constraints changing, initiative status, etc.>
+### Queue (next 5)
+1. <task_id> — <why>
+2. <task_id> — <why>
+...
 ```
 
-Forge: this is informational. The actual task order is in state.json next_tasks.
+Forge: this is informational. Your work comes from `smithy check-hook`, not this file.
