@@ -57,7 +57,15 @@
                          data-id="{{ ini.id }}"
                          data-start="{{ ini.planned_start }}"
                          data-end="{{ ini.planned_end }}"
-                         title="{{ ini.title }}: h{{ ini.planned_start }}-h{{ ini.planned_end }} ({{ ini.planned_end - ini.planned_start }}h)">
+                         data-title="{{ ini.title }}"
+                         data-theme="{{ ini.theme_name }}"
+                         data-desc="{{ ini.description[:100] }}"
+                         data-heats="{{ ini.heats_used }}"
+                         data-cap="{{ ini.budget_cap or '' }}"
+                         data-tasks-pending="{{ ini.task_pending }}"
+                         data-tasks-complete="{{ ini.task_complete }}"
+                         onmouseenter="showTooltip(event, this)"
+                         onmouseleave="hideTooltip()">
                         <span class="bar-text">{{ ini.planned_end - ini.planned_start }}h</span>
                     </div>
                     {% if ini.heats_used > 0 %}
@@ -331,6 +339,54 @@
 
     // Init
     updateRangeControl();
+
+    // --- Rich Tooltip ---
+    const tooltip = document.createElement('div');
+    tooltip.className = 'bar-tooltip';
+    tooltip.style.display = 'none';
+    document.body.appendChild(tooltip);
+
+    function showTooltip(e, bar) {
+        const title = bar.dataset.title;
+        const theme = bar.dataset.theme;
+        const desc = bar.dataset.desc;
+        const heats = bar.dataset.heats;
+        const cap = bar.dataset.cap;
+        const pending = bar.dataset.tasksPending;
+        const complete = bar.dataset.tasksComplete;
+        const s = parseInt(bar.dataset.start);
+        const en = parseInt(bar.dataset.end);
+
+        let html = `<strong>${title}</strong>`;
+        html += `<br><span class="tt-theme">${theme}</span>`;
+        if (desc) html += `<br><span class="tt-desc">${desc}</span>`;
+        html += `<br>Range: h${s} – h${en} (${en-s}h)`;
+        html += `<br>Progress: ${heats}h${cap ? '/' + cap + 'h' : ''}`;
+        html += `<br>Tasks: ${pending} pending, ${complete} done`;
+
+        tooltip.innerHTML = html;
+        tooltip.style.display = 'block';
+        const rect = bar.getBoundingClientRect();
+        tooltip.style.left = (rect.left + rect.width/2 - tooltip.offsetWidth/2) + 'px';
+        tooltip.style.top = (rect.top - tooltip.offsetHeight - 8 + window.scrollY) + 'px';
+    }
+
+    function hideTooltip() {
+        tooltip.style.display = 'none';
+    }
+
+    // --- Auto-refresh: poll progress every 5s ---
+    setInterval(() => {
+        fetch('/api/state').then(r => r.json()).then(data => {
+            document.querySelectorAll('.bar-fill').forEach(bar => {
+                const id = bar.dataset.id;
+                if (data[id]) {
+                    bar.dataset.heats = data[id].heats_used;
+                    if (data[id].budget_cap) bar.dataset.cap = data[id].budget_cap;
+                }
+            });
+        }).catch(() => {});
+    }, 5000);
     </script>
 </body>
 </html>

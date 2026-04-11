@@ -57,4 +57,15 @@ header h1 { font-size: 24px; }
 }
 .over-budget { color: var(--red); font-weight: 600; }
 
+/* Rich tooltip */
+.bar-tooltip {
+    position: absolute; z-index: 100; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px;
+    font-size: 12px; line-height: 1.6; color: var(--text);
+    max-width: 280px; pointer-events: none;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+.tt-theme { color: var(--blue); font-size: 11px; }
+.tt-desc { color: var(--text-muted); font-size: 11px; }
+
 .empty { text-align: center; padding: 48px; color: var(--text-muted); }

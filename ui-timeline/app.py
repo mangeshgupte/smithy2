@@ -41,9 +41,24 @@ async def index(request: Request, start: int = None, end: int = None):
     ]
 
     themes = {th["id"]: th["name"] for th in state.get("themes", [])}
+
+    # Count tasks per initiative
+    task_counts = {}
+    for t in state.get("queue", []):
+        ini_id = t.get("initiative_id")
+        if ini_id:
+            if ini_id not in task_counts:
+                task_counts[ini_id] = {"pending": 0, "complete": 0}
+            if t["status"] == "complete":
+                task_counts[ini_id]["complete"] += 1
+            else:
+                task_counts[ini_id]["pending"] += 1
+
     furthest_end = 0
     for ini in initiatives:
         ini["theme_name"] = themes.get(ini["theme_id"], "?")
+        ini["task_pending"] = task_counts.get(ini["id"], {}).get("pending", 0)
+        ini["task_complete"] = task_counts.get(ini["id"], {}).get("complete", 0)
         if "planned_start" not in ini:
             ini["planned_start"] = used
         if "planned_end" not in ini:
@@ -98,3 +113,18 @@ async def update_timeline(request: Request):
 
     _save_state(state)
     return JSONResponse({"ok": True})
+
+
+@app.get("/api/state")
+async def api_state():
+    """Return initiative progress data for auto-refresh."""
+    state = _load_state()
+    data = {}
+    for ini in state.get("initiatives", []):
+        if ini["status"] in ("approved", "active"):
+            data[ini["id"]] = {
+                "heats_used": ini.get("heats_used", 0),
+                "budget_cap": ini.get("budget_cap"),
+                "status": ini["status"],
+            }
+    return JSONResponse(data)
