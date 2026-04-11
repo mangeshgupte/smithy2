@@ -432,6 +432,51 @@ def pick_task(ctx, stage):
         _err(f"No ready tasks for {stage}")
 
 
+@cli.command("next-task")
+@click.pass_context
+def next_task(ctx):
+    """Pop the next task from Marshal's next_tasks list.
+
+    If next_tasks is populated (by Marshal), returns and removes the first entry.
+    Falls back to allocate + pick-task if next_tasks is empty.
+    """
+    root = ctx.obj["root"]
+    state = load_state(root)
+    next_tasks = state.get("next_tasks", [])
+
+    if next_tasks:
+        entry = next_tasks.pop(0)
+        task_id = entry.get("task_id")
+        stage = entry.get("stage")
+        rationale = entry.get("rationale", "")
+
+        # Find the actual task in queue
+        task = None
+        for t in state.get("queue", []):
+            if t["id"] == task_id:
+                task = t
+                break
+
+        state["next_tasks"] = next_tasks
+        save_state(root, state)
+
+        _output({
+            "source": "marshal",
+            "task": task,
+            "stage": stage,
+            "rationale": rationale,
+            "remaining_queued": len(next_tasks),
+        })
+        _err(f"Next task (from Marshal): {task_id} [{stage}] — {rationale}")
+    else:
+        _output({
+            "source": "none",
+            "task": None,
+            "message": "next_tasks empty — use smithy allocate + smithy pick-task",
+        })
+        _err("No Marshal-queued tasks. Use allocate + pick-task.")
+
+
 @cli.command("process-feedback")
 @click.pass_context
 def process_feedback(ctx):

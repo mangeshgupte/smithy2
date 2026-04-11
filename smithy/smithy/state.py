@@ -103,6 +103,25 @@ def validate_state(state: dict) -> list[str]:
         if ini_ref is not None and ini_ref not in ini_id_set:
             errors.append(f"task {task['id']} references unknown initiative: {ini_ref}")
 
+    # Marshal next_tasks validation (optional field)
+    next_tasks = state.get("next_tasks", [])
+    if not isinstance(next_tasks, list):
+        errors.append("next_tasks must be a list")
+    else:
+        task_id_set = set(ids)
+        for entry in next_tasks:
+            if not isinstance(entry, dict):
+                errors.append("next_tasks entry must be a dict")
+                continue
+            tid = entry.get("task_id")
+            if tid and tid not in task_id_set:
+                errors.append(f"next_tasks references unknown task: {tid}")
+
+    # prioritization_rationale (optional string)
+    rationale = state.get("prioritization_rationale")
+    if rationale is not None and not isinstance(rationale, str):
+        errors.append("prioritization_rationale must be a string")
+
     return errors
 
 
