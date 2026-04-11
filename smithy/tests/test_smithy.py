@@ -469,3 +469,174 @@ class TestValidateNextTasks:
         state["prioritization_rationale"] = 42
         errors = validate_state(state)
         assert any("prioritization_rationale must be a string" in e for e in errors)
+
+
+class TestNudgeHelpers:
+    """Tests for _nudge_queue_path, _queue_nudge, _persona_is_busy."""
+
+    def test_nudge_queue_path(self, tmp_path):
+        from smithy.cli import _nudge_queue_path
+        p = _nudge_queue_path(tmp_path, "forge")
+        assert p == tmp_path / ".smithy-nudge-queue" / "forge.jsonl"
+
+    def test_queue_nudge_creates_dir_and_file(self, tmp_path):
+        from smithy.cli import _queue_nudge
+        result = _queue_nudge(tmp_path, "forge", "hello forge")
+        queue_file = tmp_path / ".smithy-nudge-queue" / "forge.jsonl"
+        assert queue_file.exists()
+        assert result == queue_file
+        lines = queue_file.read_text().strip().split("\n")
+        assert len(lines) == 1
+        entry = json.loads(lines[0])
+        assert entry["message"] == "hello forge"
+        assert "timestamp" in entry
+
+    def test_queue_nudge_appends(self, tmp_path):
+        from smithy.cli import _queue_nudge
+        _queue_nudge(tmp_path, "forge", "msg1")
+        _queue_nudge(tmp_path, "forge", "msg2")
+        queue_file = tmp_path / ".smithy-nudge-queue" / "forge.jsonl"
+        lines = queue_file.read_text().strip().split("\n")
+        assert len(lines) == 2
+        assert json.loads(lines[0])["message"] == "msg1"
+        assert json.loads(lines[1])["message"] == "msg2"
+
+    def test_persona_is_busy_no_checkpoint(self, tmp_path):
+        from smithy.cli import _persona_is_busy
+        assert _persona_is_busy(tmp_path, "forge") is False
+
+    def test_persona_is_busy_with_checkpoint(self, tmp_path):
+        from smithy.cli import _persona_is_busy
+        (tmp_path / ".forge-checkpoint.json").write_text("{}")
+        assert _persona_is_busy(tmp_path, "forge") is True
+
+    def test_persona_is_busy_generic(self, tmp_path):
+        from smithy.cli import _persona_is_busy
+        (tmp_path / ".marshal-checkpoint.json").write_text("{}")
+        assert _persona_is_busy(tmp_path, "marshal") is True
+
+
+class TestNudgeCommand:
+    """Tests for the 'nudge' CLI command — mocks tmux subprocess calls."""
+
+    def test_nudge_queues_when_busy(self, project, runner):
+        """When persona has a checkpoint, nudge should queue instead of sending."""
+        (project / ".forge-checkpoint.json").write_text("{}")
+        result = runner.invoke(cli, ["--dir", str(project), "nudge", "forge", "wake up"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["queued"] is True
+        assert data["nudged"] is False
+        assert "mid-heat" in data["reason"]
+        # Verify queue file was written
+        queue_file = project / ".smithy-nudge-queue" / "forge.jsonl"
+        assert queue_file.exists()
+        entry = json.loads(queue_file.read_text().strip())
+        assert entry["message"] == "wake up"
+
+    def test_nudge_queues_when_no_tmux(self, project, runner, monkeypatch):
+        """When tmux session doesn't exist, nudge should queue with fallback."""
+        import subprocess as sp
+
+        def fake_run(cmd, **kwargs):
+            return sp.CompletedProcess(cmd, returncode=1, stdout="", stderr="no session")
+
+        monkeypatch.setattr(sp, "run", fake_run)
+        result = runner.invoke(cli, ["--dir", str(project), "nudge", "forge", "hello"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["queued"] is True
+        assert data["nudged"] is False
+        assert "session not found" in data["reason"]
+
+    def test_nudge_queues_when_window_missing(self, project, runner, monkeypatch):
+        """When tmux session exists but persona window is missing, queue the nudge."""
+        import subprocess as sp
+
+        def fake_run(cmd, **kwargs):
+            if "has-session" in cmd:
+                return sp.CompletedProcess(cmd, 0, stdout="", stderr="")
+            if "list-windows" in cmd:
+                return sp.CompletedProcess(cmd, 0, stdout="anvil\nmarshal\n", stderr="")
+            return sp.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+        monkeypatch.setattr(sp, "run", fake_run)
+        result = runner.invoke(cli, ["--dir", str(project), "nudge", "forge", "hello"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["queued"] is True
+        assert "window" in data["reason"]
+
+    def test_nudge_sends_via_tmux(self, project, runner, monkeypatch):
+        """When session and window exist and persona is not busy, send via tmux."""
+        import subprocess as sp
+
+        def fake_run(cmd, **kwargs):
+            if "has-session" in cmd:
+                return sp.CompletedProcess(cmd, 0, stdout="", stderr="")
+            if "list-windows" in cmd:
+                return sp.CompletedProcess(cmd, 0, stdout="forge\nanvil\nmarshal\n", stderr="")
+            if "send-keys" in cmd:
+                return sp.CompletedProcess(cmd, 0, stdout="", stderr="")
+            return sp.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+        monkeypatch.setattr(sp, "run", fake_run)
+        result = runner.invoke(cli, ["--dir", str(project), "nudge", "forge", "new task"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["nudged"] is True
+        assert data["queued"] is False
+
+
+class TestDrainNudges:
+    """Tests for the 'drain-nudges' CLI command."""
+
+    def test_drain_empty(self, project, runner):
+        """No queue file — should return empty list."""
+        result = runner.invoke(cli, ["--dir", str(project), "drain-nudges", "forge"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["count"] == 0
+        assert data["nudges"] == []
+
+    def test_drain_reads_and_clears(self, project, runner):
+        """Queue file with entries — should return them and delete the file."""
+        from smithy.cli import _queue_nudge
+        _queue_nudge(project, "forge", "msg1")
+        _queue_nudge(project, "forge", "msg2")
+
+        result = runner.invoke(cli, ["--dir", str(project), "drain-nudges", "forge"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["count"] == 2
+        assert data["nudges"][0]["message"] == "msg1"
+        assert data["nudges"][1]["message"] == "msg2"
+        # Queue file should be deleted
+        queue_file = project / ".smithy-nudge-queue" / "forge.jsonl"
+        assert not queue_file.exists()
+
+    def test_drain_handles_malformed_line(self, project, runner):
+        """Malformed JSONL lines should be captured with parse_error flag."""
+        queue_dir = project / ".smithy-nudge-queue"
+        queue_dir.mkdir(exist_ok=True)
+        queue_file = queue_dir / "forge.jsonl"
+        queue_file.write_text('{"message": "good"}\nnot-json\n')
+
+        result = runner.invoke(cli, ["--dir", str(project), "drain-nudges", "forge"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["count"] == 2
+        assert data["nudges"][0]["message"] == "good"
+        assert data["nudges"][1]["parse_error"] is True
+
+    def test_drain_per_persona_isolation(self, project, runner):
+        """Draining forge's queue should not affect marshal's queue."""
+        from smithy.cli import _queue_nudge
+        _queue_nudge(project, "forge", "forge-msg")
+        _queue_nudge(project, "marshal", "marshal-msg")
+
+        runner.invoke(cli, ["--dir", str(project), "drain-nudges", "forge"])
+        # Marshal's queue should still exist
+        marshal_queue = project / ".smithy-nudge-queue" / "marshal.jsonl"
+        assert marshal_queue.exists()
+        assert "marshal-msg" in marshal_queue.read_text()
