@@ -74,6 +74,34 @@
     </div>
 </div>
 
+<!-- Marshal: Upcoming heats -->
+{% if project.next_tasks %}
+<section class="upcoming-heats">
+    <h2>
+        Upcoming Heats
+        <span class="marshal-badge">Marshal</span>
+    </h2>
+    {% if project.prioritization_rationale %}
+    <p class="marshal-rationale">{{ project.prioritization_rationale }}</p>
+    {% endif %}
+    <div class="upcoming-list">
+        {% for nt in project.next_tasks[:6] %}
+        <div class="upcoming-item">
+            <span class="upcoming-rank">#{{ loop.index }}</span>
+            <span class="upcoming-stage stage-{{ nt.stage }}">{{ nt.stage[:4] }}</span>
+            <span class="upcoming-task">{{ nt.task_id }}</span>
+            {% if nt.rationale %}
+            <span class="upcoming-rationale">{{ nt.rationale[:60] }}</span>
+            {% endif %}
+        </div>
+        {% endfor %}
+        {% if project.next_tasks|length > 6 %}
+        <p class="muted">+{{ project.next_tasks|length - 6 }} more queued</p>
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+
 <!-- Activity feed -->
 <section class="activity-feed">
     <h2>Activity</h2>

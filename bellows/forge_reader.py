@@ -182,6 +182,9 @@ def read_project(project_dir: str) -> dict:
         "intent": intent,
         "is_running": (p / ".forge-checkpoint.json").exists(),
         "strategy_text": strategy_text[:3000],  # first 3000 chars for display
+        "next_tasks": state.get("next_tasks", []),
+        "prioritization_rationale": state.get("prioritization_rationale", ""),
+        "marshal_active": len(state.get("next_tasks", [])) > 0,
     }
 
 
