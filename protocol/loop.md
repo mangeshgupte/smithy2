@@ -14,6 +14,8 @@ smithy sync-stages         # Ensure stage heats match worklog
 
 Read the handoff context notes and next steps if present.
 
+**Marshal check**: Run `smithy next-task` to see if a Marshal session has populated `next_tasks`. If `source: "marshal"`, the Marshal is active and directing your queue. If `source: "none"`, you're self-directed via the allocator.
+
 ## Step 1: Load Context
 
 ```bash
@@ -47,15 +49,22 @@ If `smithy process-inbox` returns new entries, parse for:
 - **New tasks** → `smithy add-task <stage> "<desc>"`
 - **Ideas** → evaluate, track, acknowledge in outbox.md
 
-## Step 3: Run the Allocator
+## Step 3: Get Next Task
+
+**Option A — Marshal is running** (preferred):
+
+```bash
+smithy next-task           # Pops from Marshal's prioritized next_tasks list
+```
+
+If `source: "marshal"`, use the returned task and stage. The Marshal agent is a separate session that orders your queue — you execute in order.
+
+**Option B — No Marshal** (fallback):
+
+If `smithy next-task` returns `source: "none"`, fall back to the allocator:
 
 ```bash
 smithy allocate            # Returns recommended stage + scores
-```
-
-## Step 4: Pick a Task
-
-```bash
 smithy pick-task <stage>   # Returns highest-priority ready task
 ```
 
@@ -96,6 +105,19 @@ smithy end-heat <value> <signal> "<notes>" [--outcome complete|partial|blocked]
 ```
 
 This atomically: increments budget.used, updates stage heats + value_ema + integral, appends worklog, marks task complete, updates overall_progress, deletes checkpoint.
+
+**Report to Marshal** (if Marshal is running): After end-heat, append to `dispatch/forge-to-marshal.md`:
+
+```
+## YYYY-MM-DD HH:MM — Heat N Complete
+- **Stage**: <stage>
+- **Task**: <task_id> — <description>
+- **Outcome**: complete|partial|blocked
+- **Value**: <0.0-1.0>
+- **Notes**: <what happened>
+```
+
+This lets Marshal re-prioritize based on what just happened. If no Marshal session, skip this step.
 
 **Self-assessment** (the `value` argument):
 - 0.9-1.0: Major breakthrough
