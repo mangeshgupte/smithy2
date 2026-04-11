@@ -1183,6 +1183,43 @@ def repomap(ctx, target):
     _err(f"Repo map: {outfile}")
 
 
+@cli.command("export")
+@click.option("--output", default=None, help="Output filename")
+@click.pass_context
+def export_project(ctx, output):
+    """Export project as a self-contained tar.gz."""
+    import tarfile
+    from datetime import datetime
+
+    root = ctx.obj["root"]
+    state = load_state(root)
+    project_name = state.get("project", "project")
+
+    if not output:
+        ts = datetime.now().strftime("%Y%m%d-%H%M")
+        output = f"{project_name}-{ts}.tar.gz"
+
+    output_path = Path(output).resolve()
+
+    skip_dirs = {".git", "__pycache__", ".venv", "venv", "node_modules", ".mypy_cache"}
+    skip_files = {".forge-checkpoint.json", ".forge-output.log"}
+
+    with tarfile.open(output_path, "w:gz") as tar:
+        import os
+        for dirpath, dirnames, filenames in os.walk(root):
+            dirnames[:] = [d for d in dirnames if d not in skip_dirs]
+            for f in filenames:
+                if f in skip_files:
+                    continue
+                filepath = Path(dirpath) / f
+                arcname = str(filepath.relative_to(root))
+                tar.add(filepath, arcname=arcname)
+
+    size_kb = output_path.stat().st_size // 1024
+    _output({"file": str(output_path), "size_kb": size_kb, "project": project_name})
+    _err(f"Exported to {output_path} ({size_kb} KB)")
+
+
 @cli.command("commit")
 @click.argument("message")
 @click.pass_context
