@@ -59,6 +59,30 @@ class TestPriorityPoker:
         r = c.post("/reorder", json={"order": ["ini-001"]})
         assert r.status_code == 200
 
+    def test_reorder_persists_ranks(self, state_with_initiatives, monkeypatch):
+        """Verify drag-drop reorder updates rank fields in state.json immediately."""
+        monkeypatch.setenv("FORGE_PROJECT_DIR", str(state_with_initiatives))
+        # Add ini-002 as approved so it can be ranked
+        state = json.loads((state_with_initiatives / "state.json").read_text())
+        state["initiatives"][1]["status"] = "approved"
+        state["initiatives"][1]["rank"] = 2
+        (state_with_initiatives / "state.json").write_text(json.dumps(state, indent=2))
+
+        sys.path.insert(0, str(Path(__file__).parent.parent / "ui-priority-poker"))
+        import importlib
+        app_mod = importlib.import_module("app")
+        importlib.reload(app_mod)
+        from starlette.testclient import TestClient
+        c = TestClient(app_mod.app)
+        # Reorder: ini-002 first, ini-001 second (swap)
+        r = c.post("/reorder", json={"order": ["ini-002", "ini-001"]})
+        assert r.status_code == 200
+        # Read state.json and verify ranks persisted
+        saved = json.loads((state_with_initiatives / "state.json").read_text())
+        ini_map = {i["id"]: i for i in saved["initiatives"]}
+        assert ini_map["ini-002"]["rank"] == 1
+        assert ini_map["ini-001"]["rank"] == 2
+
     def test_api_state(self, state_with_initiatives, monkeypatch):
         monkeypatch.setenv("FORGE_PROJECT_DIR", str(state_with_initiatives))
         sys.path.insert(0, str(Path(__file__).parent.parent / "ui-priority-poker"))

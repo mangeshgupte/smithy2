@@ -137,16 +137,48 @@
         const cards = [...list.querySelectorAll('.poker-card')];
         const order = cards.map(c => c.dataset.id);
 
-        // Update rank numbers
+        // Update rank numbers, weight badges, and visual hierarchy
         cards.forEach((c, i) => {
             c.querySelector('.card-rank').textContent = '#' + (i + 1);
+            const badge = c.querySelector('.weight-badge');
+            if (badge) {
+                const weight = i === 0 ? '3×' : (i === 1 ? '2×' : '1×');
+                badge.textContent = weight;
+                badge.className = 'weight-badge weight-' + (i + 1);
+            }
+            c.style.opacity = Math.max(0.5, 1.0 - (i * 0.08));
+            c.style.transform = 'scale(' + Math.max(0.95, 1.03 - (i * 0.01)) + ')';
         });
 
         fetch('/reorder', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ order })
+        }).then(r => {
+            if (!r.ok) throw new Error('Save failed');
+            showSaved();
+        }).catch(() => {
+            showError();
         });
+    }
+
+    function showSaved() {
+        const h1 = document.querySelector('header h1');
+        const indicator = document.createElement('span');
+        indicator.textContent = ' ✓ saved';
+        indicator.style.cssText = 'font-size:13px;color:var(--green);opacity:1;transition:opacity 1s';
+        h1.appendChild(indicator);
+        setTimeout(() => { indicator.style.opacity = '0'; }, 1000);
+        setTimeout(() => indicator.remove(), 2000);
+    }
+
+    function showError() {
+        const h1 = document.querySelector('header h1');
+        const indicator = document.createElement('span');
+        indicator.textContent = ' ✕ save failed';
+        indicator.style.cssText = 'font-size:13px;color:var(--red)';
+        h1.appendChild(indicator);
+        setTimeout(() => indicator.remove(), 3000);
     }
 
     function toggleExpand(card) {
