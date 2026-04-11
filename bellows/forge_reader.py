@@ -169,6 +169,7 @@ def read_project(project_dir: str) -> dict:
         "budget": state.get("budget", {}),
         "stages": state.get("stages", {}),
         "recent_heats": recent_heats[-10:],
+        "sparkline": [float(h.get("value", 0.7)) for h in worklog[-20:]],
         "heat_days": heat_days,
         "decisions": decisions,
         "whats_missing": whats_missing[:5],

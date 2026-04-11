@@ -941,6 +941,10 @@ details.heat-card[open] .heat-summary {
     gap: 8px;
 }
 
+/* Sparkline */
+.sparkline { display: flex; align-items: flex-end; gap: 1px; height: 20px; margin: 8px 0; }
+.spark-bar { flex: 1; background: var(--green); border-radius: 1px; min-width: 2px; opacity: 0.7; }
+
 /* Strategy viewer */
 .strategy-section { margin: 20px 0; }
 .strategy-toggle { cursor: pointer; color: var(--blue); font-weight: 600; font-size: 14px; list-style: none; }
