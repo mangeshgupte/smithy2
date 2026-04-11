@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 843,
-    "used": 604,
+    "used": 606,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -26,15 +26,15 @@
     },
     "testing": {
       "target": 0.183,
-      "heats": 112,
+      "heats": 113,
       "progress": 0.88,
-      "value_ema": 0.817
+      "value_ema": 0.842
     },
     "editing": {
       "target": 0.183,
-      "heats": 151,
+      "heats": 152,
       "progress": 0.88,
-      "value_ema": 0.727
+      "value_ema": 0.719
     },
     "marketing": {
       "target": 0.219,
@@ -48,8 +48,8 @@
       "research": 0.5,
       "planning": 0.5,
       "implementation": -0.5,
-      "testing": -0.033,
-      "editing": -0.47,
+      "testing": -0.032,
+      "editing": -0.467,
       "marketing": 0.5
     }
   },
@@ -1226,7 +1226,7 @@
       "id": "t-200",
       "stage": "testing",
       "desc": "Test smithy init end-to-end: init + validate + patrol on fresh project",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -1250,7 +1250,7 @@
       "id": "t-203",
       "stage": "editing",
       "desc": "Update STRATEGY.md to heat 604 with all new features",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     }
