@@ -86,8 +86,9 @@ def start_heat(ctx, stage, task_id):
 @click.argument("notes")
 @click.option("--outcome", type=click.Choice(VALID_OUTCOMES), default="complete")
 @click.option("--progress", type=float, default=None, help="Stage progress override (0-1)")
+@click.option("--no-nudge", is_flag=True, default=False, help="Skip auto-nudge to marshal")
 @click.pass_context
-def end_heat(ctx, value, signal, notes, outcome, progress):
+def end_heat(ctx, value, signal, notes, outcome, progress, no_nudge):
     """End the current heat. Updates all counters and logs."""
     root = ctx.obj["root"]
     state = load_state(root)
@@ -159,7 +160,7 @@ def end_heat(ctx, value, signal, notes, outcome, progress):
     # Delete checkpoint
     delete_checkpoint(root)
 
-    _output({
+    result = {
         "heat": heat,
         "stage": stage,
         "task_id": task_id,
@@ -168,8 +169,22 @@ def end_heat(ctx, value, signal, notes, outcome, progress):
         "signal": signal,
         "overall_progress": state["overall_progress"],
         "budget_remaining": state["budget"]["total_heats"] - heat,
-    })
-    _err(f"Heat {heat} [{stage}] {signal} — {notes[:60]}")
+    }
+
+    # Auto-nudge marshal so it can re-prioritize and assign next task
+    if not no_nudge:
+        nudge_msg = f"HEAT_DONE: {task_id} {outcome}, value={value}, signal={signal}. Re-prioritize."
+        nudge_result = _nudge_persona("marshal", nudge_msg)
+        result["nudge"] = nudge_result
+        if nudge_result["nudged"]:
+            _err(f"Heat {heat} [{stage}] {signal} — {notes[:60]} — nudged marshal")
+        else:
+            _err(f"Heat {heat} [{stage}] {signal} — {notes[:60]} — marshal nudge skipped: {nudge_result['reason']}")
+    else:
+        result["nudge"] = {"nudged": False, "reason": "skipped (--no-nudge)"}
+        _err(f"Heat {heat} [{stage}] {signal} — {notes[:60]}")
+
+    _output(result)
 
 
 @cli.command("validate")
@@ -380,8 +395,9 @@ def set_priority(ctx, task_id, priority):
 
 @cli.command("set-next-tasks")
 @click.argument("task_ids", nargs=-1, required=True)
+@click.option("--no-nudge", is_flag=True, default=False, help="Skip auto-nudge to forge")
 @click.pass_context
-def set_next_tasks(ctx, task_ids):
+def set_next_tasks(ctx, task_ids, no_nudge):
     """Set the ordered list of upcoming tasks for Marshal/Forge."""
     root = ctx.obj["root"]
     state = load_state(root)
@@ -403,8 +419,24 @@ def set_next_tasks(ctx, task_ids):
     state["next_tasks"] = ordered
     save_state(root, state)
 
-    _output({"next_tasks": ordered, "count": len(ordered)})
-    _err(f"Set {len(ordered)} next tasks: {', '.join(ordered)}")
+    result = {"next_tasks": ordered, "count": len(ordered)}
+
+    # Auto-nudge forge with queue summary
+    if not no_nudge:
+        top_task = queue_map.get(ordered[0], {})
+        top_desc = top_task.get("desc", "")[:60]
+        nudge_msg = f"Queue updated. {len(ordered)} tasks ready. Top: {ordered[0]} — {top_desc}"
+        nudge_result = _nudge_persona("forge", nudge_msg)
+        result["nudge"] = nudge_result
+        if nudge_result["nudged"]:
+            _err(f"Set {len(ordered)} next tasks: {', '.join(ordered)} — nudged forge")
+        else:
+            _err(f"Set {len(ordered)} next tasks: {', '.join(ordered)} — nudge skipped: {nudge_result['reason']}")
+    else:
+        result["nudge"] = {"nudged": False, "reason": "skipped (--no-nudge)"}
+        _err(f"Set {len(ordered)} next tasks: {', '.join(ordered)}")
+
+    _output(result)
 
 
 @cli.command("queue")
@@ -436,25 +468,34 @@ def queue_show(ctx):
 
 
 def _nudge_persona(persona, message):
-    """Send a message to a running smithy tmux session. Returns dict with result."""
+    """Send a message to a persona's window in the smithy2 tmux session. Returns dict with result."""
     import subprocess
-    session = f"smithy-{persona}"
+    target = f"smithy2:{persona}"
 
+    # Check smithy2 session exists
     result = subprocess.run(
-        ["tmux", "has-session", "-t", session],
+        ["tmux", "has-session", "-t", "smithy2"],
         capture_output=True, text=True,
     )
     if result.returncode != 0:
-        return {"nudged": False, "reason": "session not found", "session": session}
+        return {"nudged": False, "reason": "smithy2 session not found", "target": target}
+
+    # Check window exists
+    result = subprocess.run(
+        ["tmux", "list-windows", "-t", "smithy2", "-F", "#{window_name}"],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0 or persona not in result.stdout.strip().split("\n"):
+        return {"nudged": False, "reason": f"window '{persona}' not found in smithy2", "target": target}
 
     result = subprocess.run(
-        ["tmux", "send-keys", "-t", session, message, "Enter"],
+        ["tmux", "send-keys", "-t", target, message, "Enter"],
         capture_output=True, text=True,
     )
     if result.returncode != 0:
-        return {"nudged": False, "reason": f"send-keys failed: {result.stderr.strip()}", "session": session}
+        return {"nudged": False, "reason": f"send-keys failed: {result.stderr.strip()}", "target": target}
 
-    return {"nudged": True, "persona": persona, "session": session, "message": message}
+    return {"nudged": True, "persona": persona, "target": target, "message": message}
 
 
 @cli.command("queue-push")
@@ -742,92 +783,121 @@ def next_task(ctx):
 @click.argument("message")
 @click.pass_context
 def nudge(ctx, persona, message):
-    """Send a message to a running smithy tmux session."""
+    """Send a message to a persona's window in the smithy2 tmux session."""
     result = _nudge_persona(persona, message)
     _output(result)
     if result["nudged"]:
-        _err(f"Nudged {result['session']}: {message[:60]}")
+        _err(f"Nudged {result['target']}: {message[:60]}")
     else:
-        _err(f"Warning: {result['reason']} ({result['session']})")
+        _err(f"Warning: {result['reason']} ({result['target']})")
 
 
 @cli.command("sessions")
 @click.pass_context
 def sessions(ctx):
-    """List running smithy tmux sessions."""
+    """List persona windows in the smithy2 tmux session."""
     import subprocess
 
+    # Check smithy2 session exists
     result = subprocess.run(
-        ["tmux", "list-sessions", "-F", "#{session_name}\t#{session_created}\t#{session_attached}"],
+        ["tmux", "has-session", "-t", "smithy2"],
         capture_output=True, text=True,
     )
-
     if result.returncode != 0:
-        # tmux not running or no sessions
-        _output({"sessions": [], "count": 0})
-        _err("No tmux sessions found")
+        _output({"session": "smithy2", "windows": [], "count": 0})
+        _err("No smithy2 session found")
+        return
+
+    # List windows in smithy2
+    result = subprocess.run(
+        ["tmux", "list-windows", "-t", "smithy2", "-F",
+         "#{window_name}\t#{window_activity}\t#{window_active}"],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        _output({"session": "smithy2", "windows": [], "count": 0})
+        _err("Failed to list smithy2 windows")
         return
 
     from datetime import datetime
-    smithy_sessions = []
+    windows = []
     for line in result.stdout.strip().split("\n"):
         if not line:
             continue
         parts = line.split("\t")
         if len(parts) < 3:
             continue
-        name, created_ts, attached = parts[0], parts[1], parts[2]
-        if not name.startswith("smithy-"):
-            continue
+        name, activity_ts, active = parts[0], parts[1], parts[2]
         try:
-            created = datetime.fromtimestamp(int(created_ts)).isoformat()
+            last_activity = datetime.fromtimestamp(int(activity_ts)).isoformat()
         except (ValueError, OSError):
-            created = created_ts
-        smithy_sessions.append({
+            last_activity = activity_ts
+        windows.append({
             "name": name,
-            "created": created,
-            "attached": attached == "1",
+            "target": f"smithy2:{name}",
+            "last_activity": last_activity,
+            "active": active == "1",
         })
 
-    _output({"sessions": smithy_sessions, "count": len(smithy_sessions)})
-    _err(f"{len(smithy_sessions)} smithy session(s)")
+    _output({"session": "smithy2", "windows": windows, "count": len(windows)})
+    _err(f"{len(windows)} window(s) in smithy2")
 
 
 @cli.command("start")
 @click.argument("persona", type=click.Choice(VALID_PERSONAS))
 @click.pass_context
 def start_session(ctx, persona):
-    """Start a tmux session for a persona running claude."""
+    """Start a persona as a named window in the smithy2 tmux session."""
     import subprocess
     root = ctx.obj["root"]
-    session = f"smithy-{persona}"
+    target = f"smithy2:{persona}"
     persona_dir = root / "personas" / persona
 
     if not persona_dir.exists():
         _output({"error": f"Persona directory not found: {persona_dir}"})
         sys.exit(1)
 
-    # Check if session already exists
+    # Ensure smithy2 session exists
     result = subprocess.run(
-        ["tmux", "has-session", "-t", session],
-        capture_output=True, text=True,
-    )
-    if result.returncode == 0:
-        _output({"started": False, "reason": "session already exists", "session": session})
-        _err(f"Warning: tmux session '{session}' already exists")
-        return
-
-    # Create new detached session
-    result = subprocess.run(
-        ["tmux", "new-session", "-d", "-s", session, "-c", str(persona_dir), "claude"],
+        ["tmux", "has-session", "-t", "smithy2"],
         capture_output=True, text=True,
     )
     if result.returncode != 0:
-        _output({"error": f"Failed to create session: {result.stderr.strip()}"})
+        # Create the session with this persona as the first window
+        result = subprocess.run(
+            ["tmux", "new-session", "-d", "-s", "smithy2", "-n", persona,
+             "-c", str(persona_dir), "claude"],
+            capture_output=True, text=True,
+        )
+        if result.returncode != 0:
+            _output({"error": f"Failed to create smithy2 session: {result.stderr.strip()}"})
+            sys.exit(1)
+        _output({"started": True, "target": target, "persona": persona, "dir": str(persona_dir), "created_session": True})
+        _err(f"Created smithy2 session with {persona} window in {persona_dir}")
+        return
+
+    # Check if window already exists
+    result = subprocess.run(
+        ["tmux", "list-windows", "-t", "smithy2", "-F", "#{window_name}"],
+        capture_output=True, text=True,
+    )
+    if persona in result.stdout.strip().split("\n"):
+        _output({"started": False, "reason": "window already exists", "target": target})
+        _err(f"Warning: window '{persona}' already exists in smithy2")
+        return
+
+    # Create new window in smithy2
+    result = subprocess.run(
+        ["tmux", "new-window", "-t", "smithy2", "-n", persona,
+         "-c", str(persona_dir), "claude"],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        _output({"error": f"Failed to create window: {result.stderr.strip()}"})
         sys.exit(1)
 
-    _output({"started": True, "session": session, "persona": persona, "dir": str(persona_dir)})
-    _err(f"Started {session} in {persona_dir}")
+    _output({"started": True, "target": target, "persona": persona, "dir": str(persona_dir)})
+    _err(f"Started {persona} window in smithy2 ({persona_dir})")
 
 
 @cli.command("process-feedback")
