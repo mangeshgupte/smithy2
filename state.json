@@ -1,28 +1,28 @@
 {
   "project": "the-smithy",
   "budget": {
-    "total_heats": 687,
-    "used": 590,
+    "total_heats": 843,
+    "used": 599,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
     "research": {
       "target": 0.156,
-      "heats": 29,
+      "heats": 31,
       "progress": 0.9,
-      "value_ema": 0.813
+      "value_ema": 0.806
     },
     "planning": {
       "target": 0.21,
-      "heats": 31,
+      "heats": 32,
       "progress": 0.85,
-      "value_ema": 0.76
+      "value_ema": 0.772
     },
     "implementation": {
       "target": 0.049,
-      "heats": 191,
+      "heats": 197,
       "progress": 0.98,
-      "value_ema": 0.8
+      "value_ema": 0.801
     },
     "testing": {
       "target": 0.183,
@@ -940,7 +940,7 @@
       "id": "t-166",
       "stage": "planning",
       "desc": "Plan 50-heat sprint: end-to-end validation, 5th subject, tutor auth, CHANGELOG v1.3",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 1,
       "blocked_by": []
     },
@@ -948,7 +948,7 @@
       "id": "t-167",
       "stage": "research",
       "desc": "Research end-to-end: what gaps exist when running smithy init + 20 heats on a fresh project?",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": []
     },
@@ -956,7 +956,7 @@
       "id": "t-168",
       "stage": "implementation",
       "desc": "End-to-end test: smithy init a fresh project, run 5 heats autonomously, verify state",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": []
     },
@@ -964,7 +964,7 @@
       "id": "t-169",
       "stage": "implementation",
       "desc": "Tutor: 5th subject \u2014 Creative Writing (prompts, feedback, revision exercises)",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": []
     },
@@ -972,7 +972,7 @@
       "id": "t-170",
       "stage": "research",
       "desc": "Research creative writing pedagogy: what makes a good writing tutor?",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -980,7 +980,7 @@
       "id": "t-171",
       "stage": "implementation",
       "desc": "Tutor: basic user sessions \u2014 cookie-based user ID for progress isolation",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -988,7 +988,7 @@
       "id": "t-172",
       "stage": "implementation",
       "desc": "Tutor: user switcher \u2014 simple name input on first visit, stored in cookie",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -996,7 +996,7 @@
       "id": "t-173",
       "stage": "implementation",
       "desc": "Tutor: per-user progress files (progress/<user_id>/)",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -1012,7 +1012,7 @@
       "id": "t-175",
       "stage": "implementation",
       "desc": "Tutor: stats page \u2014 lifetime stats across all subjects (total exercises, accuracy, streak, time)",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -1020,7 +1020,7 @@
       "id": "t-176",
       "stage": "implementation",
       "desc": "Bellows: live activity indicator \u2014 show 'running' badge when checkpoint exists",
-      "status": "pending",
+      "status": "complete",
       "priority": 3,
       "blocked_by": []
     },
@@ -1028,7 +1028,7 @@
       "id": "t-177",
       "stage": "implementation",
       "desc": "Smithy: smithy stats command \u2014 show heat rate, stage distribution, value trends",
-      "status": "pending",
+      "status": "complete",
       "priority": 3,
       "blocked_by": []
     },
@@ -1036,7 +1036,7 @@
       "id": "t-178",
       "stage": "testing",
       "desc": "Full regression after all new features",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 2,
       "blocked_by": []
     },
@@ -1071,6 +1071,132 @@
       "status": "pending",
       "priority": 3,
       "blocked_by": []
+    },
+    {
+      "id": "t-183",
+      "stage": "research",
+      "desc": "Steering patterns research. Write research/steering-patterns.md. Study 5 domains: (1) RTS games \u2014 StarCraft's strategic/tactical/unit hierarchy, how pros issue ~300 APM but only ~30 are strategic decisions, (2) Military C2 \u2014 mission-type orders (Auftragstaktik), commander's intent, OODA loop, how NATO delegates, (3) Product management \u2014 OKRs, roadmap prioritization, sprint planning, how PMs steer without coding, (4) Air traffic control \u2014 constraints not waypoints, separation rules, how controllers manage 20+ aircraft, (5) Existing AI dev tools \u2014 Devin chat-to-steer, Cursor accept/reject, Claude Code hooks, aider /architect. For each: what decisions the human makes, frequency, info needed, feedback loop. End with taxonomy of steering modes and recommendation of which to prototype.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-009"
+    },
+    {
+      "id": "t-184",
+      "stage": "research",
+      "desc": "Design spec for each steering UI. After research, write design/steering-ui-specs.md. For each of the 4 UIs (priority poker, constraint board, timeline, intent editor): define the exact controls, data flow (what gets written to state.json), how Forge reads the steering input, mockup of the key screen, and what 'success' looks like in a 5-minute demo. This is the blueprint Forge uses to build each one.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-009"
+    },
+    {
+      "id": "t-185",
+      "stage": "implementation",
+      "desc": "UI A: Priority Poker \u2014 scaffold and core. Create ui-priority-poker/ as standalone FastAPI app. Structure: app.py, templates/index.html, static/css/style.css, static/js/drag.js, pyproject.toml. The app reads state.json from a configurable FORGE_PROJECT_DIR (same pattern as bellows/forge_reader.py). Single page showing all approved/active initiatives as draggable cards in a vertical stack. Each card shows: title, theme tag, task progress (done/total), heats_used/budget_cap. Drag to reorder. Order determines allocation weight: position 1 = 3x, position 2 = 2x, rest = 1x. Use HTML5 drag-and-drop API. On drop, POST new order to backend which writes ranking to state.json (add a 'priority_rank' field to initiatives or use a separate 'steering.json'). Dark theme matching Bellows.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-010"
+    },
+    {
+      "id": "t-186",
+      "stage": "implementation",
+      "desc": "UI A: Priority Poker \u2014 live progress + polish. Add live progress indicators to cards: animated progress bar showing tasks done/total, heats_used as a mini budget bar, live stage indicator (what stage Forge is currently in). Add a 'kill' button (small X) that rejects an initiative \u2014 removes it from the stack. Add visual weight: top card is larger/brighter, cards get progressively smaller/dimmer down the stack to reinforce priority. Auto-refresh via polling (every 5s read state.json) or SSE. Add empty state when no initiatives exist.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-010"
+    },
+    {
+      "id": "t-187",
+      "stage": "testing",
+      "desc": "UI A: Priority Poker \u2014 test. Start the app, verify: cards render for all approved/active initiatives, drag reorder works and persists to state.json, kill button rejects initiative, allocation weights display correctly, auto-refresh picks up state changes, empty state renders, dark theme consistent.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-010"
+    },
+    {
+      "id": "t-188",
+      "stage": "implementation",
+      "desc": "UI B: Constraint Board \u2014 scaffold and core. Create ui-constraint-board/ as standalone FastAPI app. Structure: app.py, templates/index.html, static/css/style.css, static/js/constraints.js, pyproject.toml. Single page with a board of constraint cards. Each constraint has: type (budget-cap, progress-floor, stage-block, deadline, custom), value, active/inactive toggle. Predefined constraint types: (1) budget-cap: 'no more than N heats on [initiative/stage]', (2) progress-floor: '[stage] must stay above N%', (3) stage-block: 'don't work on [stage]', (4) deadline: 'ship [initiative] by heat N', (5) custom: free-text constraint. Add form to create new constraints. Store constraints in state.json under a new 'constraints' key (or steering.json). Backend reads/writes constraints. Dark theme.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-011"
+    },
+    {
+      "id": "t-189",
+      "stage": "implementation",
+      "desc": "UI B: Constraint Board \u2014 violation detection + enforcement. Add constraint checking logic: on each page load, evaluate all active constraints against current state.json. Show violation status on each card: green (satisfied), yellow (approaching limit \u2014 within 20%), red (violated). For violated constraints, show what's wrong ('research at 12 heats, limit is 10'). Add a 'violations' summary bar at top of page showing count. Write a constraints.json or add to state.json that Forge's allocator can read \u2014 the allocator should skip stages/initiatives that violate constraints. Add toggle to activate/deactivate constraints without deleting them.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-011"
+    },
+    {
+      "id": "t-190",
+      "stage": "testing",
+      "desc": "UI B: Constraint Board \u2014 test. Start the app, verify: can create each constraint type, constraints persist to state.json/constraints.json, violation detection works (create a budget-cap below current usage \u2014 should show red), toggle active/inactive works, delete works, empty state renders, dark theme consistent.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-011"
+    },
+    {
+      "id": "t-191",
+      "stage": "implementation",
+      "desc": "UI C: Timeline View \u2014 scaffold and core. Create ui-timeline/ as standalone FastAPI app. Structure: app.py, templates/index.html, static/css/style.css, static/js/timeline.js, pyproject.toml. Single page with horizontal timeline. X-axis = heats (show used heats as past, remaining as future). Each approved/active initiative is a horizontal bar. Bar length = budget_cap (or estimated heats if no cap). Bar fill = heats_used. Bars can overlap (parallel work) or be sequential. Use HTML5 canvas or SVG for rendering. Bars are draggable: drag endpoints to resize budget, drag bar to reposition in time. On change, POST updated initiative budget_cap and planned_start_heat to backend. Show a 'now' marker at current heat count. Past heats shown as completed (dimmer). Dark theme.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-012"
+    },
+    {
+      "id": "t-192",
+      "stage": "implementation",
+      "desc": "UI C: Timeline View \u2014 interactivity + polish. Add: (1) snap-to-grid when dragging (snap to 5-heat increments), (2) conflict detection \u2014 highlight when total allocated heats exceed remaining budget (bars turn red), (3) zoom controls (show 50/100/250 heats), (4) initiative labels on bars with truncation, (5) stage color coding on bars (use Bellows stage colors), (6) tooltip on hover showing initiative details (title, description, tasks, progress), (7) auto-refresh to show Forge progress in real-time. Add a summary row at bottom showing total allocated vs remaining.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-012"
+    },
+    {
+      "id": "t-193",
+      "stage": "testing",
+      "desc": "UI C: Timeline View \u2014 test. Start the app, verify: initiatives render as bars at correct positions, drag to resize updates budget_cap, drag to reposition works, conflict detection shows when over-allocated, zoom works, tooltip shows details, auto-refresh picks up state changes, empty state renders, dark theme consistent.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-012"
+    },
+    {
+      "id": "t-194",
+      "stage": "implementation",
+      "desc": "UI D: Intent Editor \u2014 scaffold and core. Create ui-intent-editor/ as standalone FastAPI app. Structure: app.py, templates/index.html, static/css/style.css, static/js/editor.js, pyproject.toml. Two-panel layout: LEFT panel is a textarea where the human writes intent in natural language (2-5 sentences). RIGHT panel shows the decomposition: a tree of theme -> initiatives -> tasks generated from the intent. On submit, backend sends intent to Claude API (claude-sonnet-4-6 via anthropic SDK) with a prompt that decomposes it into themes/initiatives/tasks matching the state.json schema. Response renders as an editable tree on the right. Human can: delete nodes, edit descriptions, drag to reorder, toggle include/exclude. 'Apply' button writes the approved decomposition to state.json via smithy CLI commands. Dark theme.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-013"
+    },
+    {
+      "id": "t-195",
+      "stage": "implementation",
+      "desc": "UI D: Intent Editor \u2014 diff mode + iteration. When intent changes and is resubmitted, show a diff between old decomposition and new. Highlight: added initiatives (green), removed (red), modified (yellow). Human reviews the diff and approves changes selectively \u2014 checkbox per change. Support iterative refinement: human edits intent, sees what changes, approves subset. Add 'history' sidebar showing previous intents and when they were applied. Add a 'current state' indicator showing how the active state.json differs from the last applied intent. Store intent history in state.json or a separate intents.json.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-013"
+    },
+    {
+      "id": "t-196",
+      "stage": "testing",
+      "desc": "UI D: Intent Editor \u2014 test. Start the app, verify: intent textarea accepts input, submit triggers Claude API decomposition, tree renders themes/initiatives/tasks, can delete/edit/reorder nodes, Apply writes to state.json correctly, diff mode shows changes on re-submit, history sidebar shows previous intents, empty state renders, dark theme consistent, API errors handled gracefully (show error message, don't crash).",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-013"
     }
   ],
   "ideas": [
@@ -1094,6 +1220,18 @@
       "id": "th-001",
       "name": "Tutor Content",
       "rank": 1,
+      "status": "paused"
+    },
+    {
+      "id": "th-002",
+      "name": "Collaboration research",
+      "rank": 2,
+      "status": "active"
+    },
+    {
+      "id": "th-003",
+      "name": "UI experimentation",
+      "rank": 3,
       "status": "active"
     }
   ],
@@ -1105,6 +1243,114 @@
       "description": "Add more topics and exercises to Logic & Critical Thinking",
       "status": "proposed",
       "budget_cap": null,
+      "heats_used": 0
+    },
+    {
+      "id": "ini-002",
+      "theme_id": "th-002",
+      "title": "Collaboration patterns landscape",
+      "description": "Research how humans and AI agents collaborate effectively. Survey existing frameworks: OODA loops, PDCA, delegation matrices, trust calibration, oversight gradients (from full autonomy to pair programming). Study real systems: Devin, Cursor, Codex, aider, Claude Code, GPT-Pilot. Identify patterns that Smithy doesn't use yet. Deliverable: research/collaboration-patterns.md with a taxonomy of collaboration modes and recommendations for which to prototype.",
+      "status": "rejected",
+      "budget_cap": 8,
+      "heats_used": 0
+    },
+    {
+      "id": "ini-003",
+      "theme_id": "th-002",
+      "title": "Async handoff protocols",
+      "description": "Research and design better async handoff between human and AI. Current model: inbox.md/outbox.md + dispatch files. Problems: context loss between sessions, no structured status requests, human has to read raw files. Explore: structured status requests (human asks a question, gets an answer next heat), decision queues with deadlines, progress summaries that compress intelligently, proactive alerts (not just outbox dumps). Deliverable: research doc + design for improved async protocol.",
+      "status": "rejected",
+      "budget_cap": 8,
+      "heats_used": 0
+    },
+    {
+      "id": "ini-004",
+      "theme_id": "th-002",
+      "title": "Trust and autonomy calibration",
+      "description": "Research how to dynamically adjust AI autonomy based on track record. Currently Forge has fixed autonomy (full within budget). Explore: earned autonomy (start supervised, earn independence), risk-based gating (low-risk tasks auto-approved, high-risk need human), confidence signals (AI reports its own uncertainty, human decides when to intervene), learning from corrections (human corrects, AI adjusts future behavior). Deliverable: research doc + design for adaptive autonomy.",
+      "status": "rejected",
+      "budget_cap": 8,
+      "heats_used": 0
+    },
+    {
+      "id": "ini-005",
+      "theme_id": "th-003",
+      "title": "Terminal dashboard (Rich)",
+      "description": "Build a terminal-based dashboard using Python Rich library. Real-time view of Forge state without leaving the terminal. Shows: budget bar, stage progress (colored bars), current heat, last 5 worklog entries, pending tasks, initiative board (compact). Single command: 'smithy dashboard' that refreshes on file changes (watchdog or polling). Complements Bellows \u2014 Bellows for steering, terminal for monitoring while Forge runs.",
+      "status": "rejected",
+      "budget_cap": 10,
+      "heats_used": 0
+    },
+    {
+      "id": "ini-006",
+      "theme_id": "th-003",
+      "title": "Slack/Discord bot interface",
+      "description": "Build a bot that bridges Forge to a messaging platform. Human sends messages in Slack/Discord, they appear in inbox.md. Forge outbox updates post to a channel. Decision cards become interactive messages with approve/defer/reject buttons. Status requests return formatted summaries. Start with one platform (likely Discord \u2014 free, good bot API). Lightweight: just a bridge, not a replacement for Bellows.",
+      "status": "rejected",
+      "budget_cap": 15,
+      "heats_used": 0
+    },
+    {
+      "id": "ini-007",
+      "theme_id": "th-003",
+      "title": "Email digest",
+      "description": "Build an email digest that summarizes Forge activity. Daily or per-run summary sent via email (or written to a file for manual sending). Contains: heats completed, stage progress deltas, decisions needing attention, notable events (yellows/reds), link to Bellows. Template-based (Jinja2). Could also serve as the foundation for a webhook/notification system.",
+      "status": "rejected",
+      "budget_cap": 8,
+      "heats_used": 0
+    },
+    {
+      "id": "ini-008",
+      "theme_id": "th-003",
+      "title": "Mobile-first Bellows redesign",
+      "description": "Redesign Bellows for phone-first use. Current Bellows is desktop-oriented. The human checks status from their phone more than laptop. Key screens: (1) project list with signal dots \u2014 one glance, (2) initiative approval \u2014 swipe to approve/reject, (3) status summary \u2014 compact, no scrolling needed. CSS-only responsive or a separate mobile template. PWA with push notifications for decisions.",
+      "status": "rejected",
+      "budget_cap": 12,
+      "heats_used": 0
+    },
+    {
+      "id": "ini-009",
+      "theme_id": "th-002",
+      "title": "Steering patterns research",
+      "description": "Research how humans steer autonomous systems \u2014 not monitor, STEER. The core question: what controls does a human need to change direction without becoming a bottleneck? Study: (1) Real-time strategy games (StarCraft command hierarchy \u2014 strategic goals, tactical orders, unit autonomy), (2) Military C2 frameworks (mission-type orders, commander's intent, OODA), (3) Product management (OKRs, roadmap prioritization, sprint planning), (4) Air traffic control (constraints not commands), (5) Existing AI tools (Devin's chat-to-steer, Cursor's accept/reject, Claude Code hooks). For each, extract: what decisions the human makes, at what frequency, what information they need to decide, and what the feedback loop looks like. Deliverable: research/steering-patterns.md with a taxonomy of steering modes and which are worth prototyping as UIs.",
+      "status": "approved",
+      "budget_cap": 10,
+      "heats_used": 0
+    },
+    {
+      "id": "ini-010",
+      "theme_id": "th-003",
+      "title": "UI A: Priority poker",
+      "description": "A desktop web UI where the human steers by ranking, not approving. Shows all active initiatives as cards. Human drags to reorder \u2014 that IS the steering. No approve/reject buttons. Everything proposed is fair game unless explicitly killed. The ranking determines allocation weight. Top card gets 3x budget share, second gets 2x, rest get 1x. Real-time: as Forge works, cards show live progress and the stack rebalances. The human's only job: keep the stack in the right order. Inspired by planning poker + priority queues. Build as a standalone page in Bellows.",
+      "status": "approved",
+      "budget_cap": 15,
+      "heats_used": 0
+    },
+    {
+      "id": "ini-011",
+      "theme_id": "th-003",
+      "title": "UI B: Constraint board",
+      "description": "A desktop web UI where the human steers by setting constraints, not giving orders. Instead of telling Forge what to do, the human defines boundaries: 'no more than 5 heats on research', 'testing must stay above 80%', 'don't touch tutor', 'ship something deployable by Friday'. Constraints are cards on a board. Forge works freely within them. When a constraint would be violated, Forge stops and asks. The human's only job: add/remove/adjust constraints. Inspired by air traffic control \u2014 direct through boundaries, not waypoints. Build as a standalone page in Bellows.",
+      "status": "approved",
+      "budget_cap": 15,
+      "heats_used": 0
+    },
+    {
+      "id": "ini-012",
+      "theme_id": "th-003",
+      "title": "UI C: Timeline view",
+      "description": "A desktop web UI where the human steers by shaping a timeline. Horizontal axis is heats (or time). Initiatives are horizontal bars showing planned start/end. The human drags bar endpoints to allocate budget. Overlapping bars = parallel work. Gaps = cool-down. The visual makes tradeoffs obvious \u2014 stretching one initiative squeezes another. Forge reads the timeline and works accordingly. Inspired by Gantt charts but interactive and simple. Build as a standalone page in Bellows.",
+      "status": "approved",
+      "budget_cap": 15,
+      "heats_used": 0
+    },
+    {
+      "id": "ini-013",
+      "theme_id": "th-003",
+      "title": "UI D: Intent editor",
+      "description": "A desktop web UI focused on natural-language steering. The human writes a short intent statement (2-3 sentences). The system decomposes it into themes, initiatives, and tasks automatically. Human reviews the decomposition and edits \u2014 delete a branch, promote a task, add a constraint. The intent is the source of truth, not the task list. When intent changes, the decomposition updates. Inspired by commander's intent in military doctrine. The human thinks in outcomes, the system thinks in tasks. Build as a standalone page in Bellows.",
+      "status": "approved",
+      "budget_cap": 20,
       "heats_used": 0
     }
   ],
