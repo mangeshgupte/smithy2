@@ -167,3 +167,35 @@ def delete_checkpoint(project_dir: Path):
     path = project_dir / ".forge-checkpoint.json"
     if path.exists():
         path.unlink()
+
+
+# --- Hook file I/O ---
+
+def write_hook(project_dir: Path, task_id: str, stage: str,
+               hooked_by: str, context: str, rationale: str):
+    """Write .forge-hook.json — Marshal hooks a task for Forge to execute."""
+    hook = {
+        "task_id": task_id,
+        "stage": stage,
+        "hooked_by": hooked_by,
+        "hooked_at": datetime.now().isoformat(),
+        "context": context,
+        "rationale": rationale,
+    }
+    path = project_dir / ".forge-hook.json"
+    path.write_text(json.dumps(hook, indent=2) + "\n")
+
+
+def read_hook(project_dir: Path):
+    """Read .forge-hook.json if it exists. Returns dict or None."""
+    path = project_dir / ".forge-hook.json"
+    if not path.exists():
+        return None
+    return json.loads(path.read_text())
+
+
+def delete_hook(project_dir: Path):
+    """Delete .forge-hook.json if it exists."""
+    path = project_dir / ".forge-hook.json"
+    if path.exists():
+        path.unlink()
