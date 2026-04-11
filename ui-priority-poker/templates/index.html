@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Priority Poker — {{ project }}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header>
+        <h1>🃏 Priority Poker</h1>
+        <p class="subtitle">{{ project }} — drag to reorder. Rank IS steering.</p>
+    </header>
+
+    <div id="card-list" class="card-list">
+        {% for ini in initiatives %}
+        <div class="poker-card status-{{ ini.status }}" draggable="true" data-id="{{ ini.id }}">
+            <div class="card-rank">#{{ loop.index }}</div>
+            <div class="card-body">
+                <div class="card-title">{{ ini.title }}</div>
+                <div class="card-meta">
+                    <span class="card-theme">{{ ini.theme_name }}</span>
+                    <span class="card-status">{{ ini.status }}</span>
+                    <span>{{ ini.heats_used }}h{% if ini.budget_cap %}/{{ ini.budget_cap }}{% endif %}</span>
+                    <span>{{ ini.task_count }} tasks</span>
+                </div>
+                <div class="card-desc">{{ ini.description[:120] }}{% if ini.description|length > 120 %}...{% endif %}</div>
+            </div>
+            <button class="kill-btn" onclick="rejectCard('{{ ini.id }}')" title="Reject">✕</button>
+        </div>
+        {% endfor %}
+
+        {% if not initiatives %}
+        <div class="empty">No active initiatives. Use <code>smithy propose</code> to create some.</div>
+        {% endif %}
+    </div>
+
+    <div class="kill-zone" id="kill-zone">
+        <span>🗑️ Drop here to reject</span>
+    </div>
+
+    <script>
+    const list = document.getElementById('card-list');
+    let dragEl = null;
+
+    list.addEventListener('dragstart', e => {
+        if (!e.target.classList.contains('poker-card')) return;
+        dragEl = e.target;
+        e.target.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+    });
+
+    list.addEventListener('dragend', e => {
+        e.target.classList.remove('dragging');
+        saveOrder();
+    });
+
+    list.addEventListener('dragover', e => {
+        e.preventDefault();
+        const afterEl = getDragAfterElement(list, e.clientY);
+        if (afterEl == null) {
+            list.appendChild(dragEl);
+        } else {
+            list.insertBefore(dragEl, afterEl);
+        }
+    });
+
+    function getDragAfterElement(container, y) {
+        const cards = [...container.querySelectorAll('.poker-card:not(.dragging)')];
+        return cards.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset, element: child };
+            }
+            return closest;
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    function saveOrder() {
+        const cards = [...list.querySelectorAll('.poker-card')];
+        const order = cards.map(c => c.dataset.id);
+
+        // Update rank numbers
+        cards.forEach((c, i) => {
+            c.querySelector('.card-rank').textContent = '#' + (i + 1);
+        });
+
+        fetch('/reorder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order })
+        });
+    }
+
+    function rejectCard(id) {
+        if (!confirm('Reject this initiative?')) return;
+        fetch('/reject/' + id, { method: 'POST' })
+            .then(() => location.reload());
+    }
+
+    // Kill zone drag-drop
+    const killZone = document.getElementById('kill-zone');
+    killZone.addEventListener('dragover', e => {
+        e.preventDefault();
+        killZone.classList.add('active');
+    });
+    killZone.addEventListener('dragleave', () => killZone.classList.remove('active'));
+    killZone.addEventListener('drop', e => {
+        e.preventDefault();
+        killZone.classList.remove('active');
+        if (dragEl) {
+            rejectCard(dragEl.dataset.id);
+        }
+    });
+    </script>
+</body>
+</html>
