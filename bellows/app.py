@@ -82,6 +82,38 @@ async def project_detail(request: Request, project_name: str):
     })
 
 
+@app.get("/project/{project_name}/board", response_class=HTMLResponse)
+async def project_board(request: Request, project_name: str):
+    projects = discover_projects(PROJECTS_DIR)
+    project = next((p for p in projects if p["name"] == project_name), None)
+    if not project:
+        return HTMLResponse("<h1>Project not found</h1>", status_code=404)
+    return templates.TemplateResponse(request=request, name="board.html", context={
+        "project": project,
+        "tab": "board",
+        "total_decisions": count_all_decisions(projects),
+    })
+
+
+@app.post("/project/{project_name}/initiative/{initiative_id}/{action}")
+async def initiative_action(request: Request, project_name: str, initiative_id: str, action: str):
+    """Approve or reject an initiative from the board."""
+    import subprocess
+    if action not in ("approve", "reject"):
+        return RedirectResponse(url=f"/project/{project_name}/board", status_code=303)
+
+    projects = discover_projects(PROJECTS_DIR)
+    project = next((p for p in projects if p["name"] == project_name), None)
+    if not project:
+        return RedirectResponse(url="/", status_code=303)
+
+    subprocess.run(
+        ["smithy", "--dir", project["dir"], action, initiative_id],
+        capture_output=True, text=True
+    )
+    return RedirectResponse(url=f"/project/{project_name}/board", status_code=303)
+
+
 @app.get("/project/{project_name}/decide", response_class=HTMLResponse)
 async def project_decide(request: Request, project_name: str, decided: str = None, action: str = None):
     projects = discover_projects(PROJECTS_DIR)

@@ -845,6 +845,81 @@ details.heat-card[open] .heat-summary {
 
 .empty-state .muted { font-size: 13px; max-width: 300px; margin: 0 auto; }
 
+/* Board — themes + initiatives */
+.board-theme {
+    margin: 16px 0;
+    padding: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+
+.board-theme.paused { opacity: 0.6; }
+
+.theme-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.theme-header h2 { font-size: 16px; flex: 1; }
+.theme-rank { font-size: 12px; color: var(--text-muted); }
+.theme-status-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(139,148,158,0.15);
+    color: var(--text-muted);
+}
+
+.initiative-list { display: flex; flex-direction: column; gap: 8px; }
+
+.initiative-card {
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+}
+
+.initiative-card.status-proposed { border-left-color: var(--yellow); }
+.initiative-card.status-approved { border-left-color: var(--blue); }
+.initiative-card.status-active { border-left-color: var(--green); }
+.initiative-card.status-done { border-left-color: var(--text-muted); opacity: 0.7; }
+.initiative-card.status-rejected { border-left-color: var(--red); opacity: 0.5; }
+
+.initiative-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.initiative-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+}
+
+.status-proposed .initiative-status-dot { background: var(--yellow); }
+.status-approved .initiative-status-dot { background: var(--blue); }
+.status-active .initiative-status-dot { background: var(--green); }
+.status-done .initiative-status-dot { background: var(--text-muted); }
+.status-rejected .initiative-status-dot { background: var(--red); }
+
+.initiative-title { flex: 1; font-weight: 600; font-size: 14px; }
+.initiative-status { font-size: 11px; color: var(--text-muted); text-transform: uppercase; }
+.initiative-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
+.initiative-meta { font-size: 12px; color: var(--text-muted); }
+
+.initiative-actions {
+    margin-top: 8px;
+    display: flex;
+    gap: 8px;
+}
+
 /* New project form */
 .new-project-section { margin-top: 24px; }
 

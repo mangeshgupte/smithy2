@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title_suffix %} — {{ project.name }} — Board{% endblock %}
+{% block content %}
+<header class="page-header">
+    <a href="/" class="back-link">← Projects</a>
+    <div class="project-title-row">
+        <span class="signal signal-{{ project.signal }}"></span>
+        <h1>{{ project.name }}</h1>
+    </div>
+</header>
+
+<nav class="sub-tabs">
+    <a href="/project/{{ project.name }}" class="sub-tab">Activity</a>
+    <a href="/project/{{ project.name }}/decide" class="sub-tab">
+        Decide
+        {% if project.decisions %}<span class="badge">{{ project.decisions|length }}</span>{% endif %}
+    </a>
+    <a href="/project/{{ project.name }}/board" class="sub-tab active">Board</a>
+    <a href="/project/{{ project.name }}/direct" class="sub-tab">Direct</a>
+</nav>
+
+<!-- Themes -->
+{% if project.themes %}
+{% for theme in project.themes %}
+<section class="board-theme {% if theme.status == 'paused' %}paused{% endif %}">
+    <div class="theme-header">
+        <h2>{{ theme.name }}</h2>
+        <span class="theme-rank">#{{ theme.rank }}</span>
+        {% if theme.status == 'paused' %}<span class="theme-status-badge">paused</span>{% endif %}
+    </div>
+
+    {% set theme_initiatives = [] %}
+    {% for ini in project.initiatives if ini.theme_id == theme.id %}
+        {% if theme_initiatives.append(ini) %}{% endif %}
+    {% endfor %}
+
+    {% if theme_initiatives %}
+    <div class="initiative-list">
+        {% for ini in theme_initiatives %}
+        <div class="initiative-card status-{{ ini.status }}">
+            <div class="initiative-header">
+                <span class="initiative-status-dot"></span>
+                <span class="initiative-title">{{ ini.title }}</span>
+                <span class="initiative-status">{{ ini.status }}</span>
+            </div>
+            <p class="initiative-desc">{{ ini.description }}</p>
+            <div class="initiative-meta">
+                {% if ini.budget_cap %}
+                <span>{{ ini.heats_used }}/{{ ini.budget_cap }} heats</span>
+                {% else %}
+                <span>{{ ini.heats_used }} heats</span>
+                {% endif %}
+                {% set task_count = 0 %}
+                {% for t in project.queue if t.get('initiative_id') == ini.id %}
+                    {% if task_count.__class__(task_count + 1) %}{% endif %}
+                {% endfor %}
+            </div>
+
+            {% if ini.status == 'proposed' %}
+            <div class="initiative-actions">
+                <form method="post" action="/project/{{ project.name }}/initiative/{{ ini.id }}/approve" style="display:inline">
+                    <button type="submit" class="decide-btn approve">Approve</button>
+                </form>
+                <form method="post" action="/project/{{ project.name }}/initiative/{{ ini.id }}/reject" style="display:inline">
+                    <button type="submit" class="decide-btn reject">Reject</button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="muted" style="padding: 8px 0;">No initiatives under this theme yet.</p>
+    {% endif %}
+</section>
+{% endfor %}
+
+{% else %}
+<div class="empty-state">
+    <p style="font-size: 40px; margin-bottom: 12px;">🎯</p>
+    <p>No themes set</p>
+    <p class="muted">Use <code>smithy add-theme "Theme Name"</code> to create strategic themes, then <code>smithy propose</code> to add initiatives.</p>
+</div>
+{% endif %}
+{% endblock %}
