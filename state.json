@@ -1,8 +1,8 @@
 {
   "project": "the-smithy",
   "budget": {
-    "total_heats": 637,
-    "used": 589,
+    "total_heats": 687,
+    "used": 590,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -38,9 +38,9 @@
     },
     "marketing": {
       "target": 0.219,
-      "heats": 78,
+      "heats": 79,
       "progress": 0.84,
-      "value_ema": 0.718
+      "value_ema": 0.713
     }
   },
   "allocator": {
@@ -49,7 +49,7 @@
       "planning": 0.5,
       "implementation": -0.5,
       "testing": -0.035,
-      "editing": -0.481,
+      "editing": -0.478,
       "marketing": 0.5
     }
   },
@@ -932,8 +932,144 @@
       "id": "t-165",
       "stage": "marketing",
       "desc": "Final AAR + handoff",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-166",
+      "stage": "planning",
+      "desc": "Plan 50-heat sprint: end-to-end validation, 5th subject, tutor auth, CHANGELOG v1.3",
       "status": "in_progress",
       "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-167",
+      "stage": "research",
+      "desc": "Research end-to-end: what gaps exist when running smithy init + 20 heats on a fresh project?",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-168",
+      "stage": "implementation",
+      "desc": "End-to-end test: smithy init a fresh project, run 5 heats autonomously, verify state",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-169",
+      "stage": "implementation",
+      "desc": "Tutor: 5th subject \u2014 Creative Writing (prompts, feedback, revision exercises)",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-170",
+      "stage": "research",
+      "desc": "Research creative writing pedagogy: what makes a good writing tutor?",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-171",
+      "stage": "implementation",
+      "desc": "Tutor: basic user sessions \u2014 cookie-based user ID for progress isolation",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-172",
+      "stage": "implementation",
+      "desc": "Tutor: user switcher \u2014 simple name input on first visit, stored in cookie",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-173",
+      "stage": "implementation",
+      "desc": "Tutor: per-user progress files (progress/<user_id>/)",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-174",
+      "stage": "testing",
+      "desc": "Test user sessions: two users see different progress",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-175",
+      "stage": "implementation",
+      "desc": "Tutor: stats page \u2014 lifetime stats across all subjects (total exercises, accuracy, streak, time)",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-176",
+      "stage": "implementation",
+      "desc": "Bellows: live activity indicator \u2014 show 'running' badge when checkpoint exists",
+      "status": "pending",
+      "priority": 3,
+      "blocked_by": []
+    },
+    {
+      "id": "t-177",
+      "stage": "implementation",
+      "desc": "Smithy: smithy stats command \u2014 show heat rate, stage distribution, value trends",
+      "status": "pending",
+      "priority": 3,
+      "blocked_by": []
+    },
+    {
+      "id": "t-178",
+      "stage": "testing",
+      "desc": "Full regression after all new features",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-179",
+      "stage": "editing",
+      "desc": "CHANGELOG v1.3: 5th subject, user auth, end-to-end validation",
+      "status": "pending",
+      "priority": 3,
+      "blocked_by": []
+    },
+    {
+      "id": "t-180",
+      "stage": "editing",
+      "desc": "Update all READMEs with new features",
+      "status": "pending",
+      "priority": 3,
+      "blocked_by": []
+    },
+    {
+      "id": "t-181",
+      "stage": "marketing",
+      "desc": "Write end-to-end walkthrough: init \u2192 run \u2192 review \u2192 iterate",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-182",
+      "stage": "marketing",
+      "desc": "AAR for 50-heat sprint",
+      "status": "pending",
+      "priority": 3,
       "blocked_by": []
     }
   ],
