@@ -23,6 +23,7 @@
         <div class="card-header">
             <span class="signal signal-{{ p.signal }}"></span>
             <span class="project-name">{{ p.name }}</span>
+            {% if p.is_running %}<span class="running-badge">running</span>{% endif %}
             <span class="progress-badge">{{ progress_pct }}%</span>
         </div>
 

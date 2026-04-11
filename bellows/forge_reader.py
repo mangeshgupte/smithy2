@@ -179,6 +179,7 @@ def read_project(project_dir: str) -> dict:
         "themes": state.get("themes", []),
         "initiatives": state.get("initiatives", []),
         "intent": intent,
+        "is_running": (p / ".forge-checkpoint.json").exists(),
     }
 
 
