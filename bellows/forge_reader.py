@@ -53,8 +53,21 @@ def read_project(project_dir: str) -> dict:
 
     # Read identity for commander's intent
     identity_text = ""
+    intent = ""
     if (p / "identity.md").exists():
         identity_text = (p / "identity.md").read_text()
+        # Extract intent from ## Commander's Intent section
+        in_intent = False
+        intent_lines = []
+        for line in identity_text.split("\n"):
+            if "Commander's Intent" in line:
+                in_intent = True
+                continue
+            if in_intent and line.startswith("## "):
+                break
+            if in_intent and line.strip():
+                intent_lines.append(line.strip())
+        intent = " ".join(intent_lines[:3]) if intent_lines else ""
 
     # Extract what's missing section
     whats_missing = []
@@ -163,6 +176,9 @@ def read_project(project_dir: str) -> dict:
         "last_active": last_active,
         "bottleneck": _find_bottleneck(state.get("stages", {})),
         "queue": state.get("queue", []),
+        "themes": state.get("themes", []),
+        "initiatives": state.get("initiatives", []),
+        "intent": intent,
     }
 
 
