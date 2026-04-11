@@ -359,6 +359,63 @@ def complete_task(ctx, task_id):
     sys.exit(1)
 
 
+@cli.command("list-tasks")
+@click.option("--status", "status_filter", default="pending",
+              type=click.Choice(["pending", "complete", "in_progress", "all"]),
+              help="Filter by status (default: pending)")
+@click.option("--stage", "stage_filter", default=None,
+              type=click.Choice(VALID_STAGES),
+              help="Filter by stage")
+@click.option("--initiative", "initiative_filter", default=None,
+              help="Filter by initiative ID")
+@click.option("--limit", "limit", type=int, default=20,
+              help="Max tasks to return (default: 20)")
+@click.pass_context
+def list_tasks(ctx, status_filter, stage_filter, initiative_filter, limit):
+    """List tasks from the queue with optional filters."""
+    root = ctx.obj["root"]
+    state = load_state(root)
+    queue = state.get("queue", [])
+    ini_map = {i["id"]: i for i in state.get("initiatives", [])}
+
+    # Filter
+    tasks = queue
+    if status_filter != "all":
+        tasks = [t for t in tasks if t.get("status") == status_filter]
+    if stage_filter:
+        tasks = [t for t in tasks if t.get("stage") == stage_filter]
+    if initiative_filter:
+        tasks = [t for t in tasks if t.get("initiative_id") == initiative_filter]
+
+    # Sort by priority (ascending) then ID
+    tasks.sort(key=lambda t: (t.get("priority", 2), t.get("id", "")))
+    total_matching = len(tasks)
+
+    # Apply limit
+    tasks = tasks[:limit]
+
+    # Build output with initiative titles resolved
+    result = []
+    for t in tasks:
+        entry = {
+            "id": t["id"],
+            "stage": t.get("stage", ""),
+            "priority": t.get("priority", 2),
+            "status": t.get("status", "pending"),
+            "desc": t.get("desc", "")[:120],
+            "blocked_by": t.get("blocked_by", []),
+        }
+        ini_id = t.get("initiative_id")
+        if ini_id:
+            entry["initiative_id"] = ini_id
+            ini = ini_map.get(ini_id)
+            entry["initiative_title"] = ini["title"] if ini else "unknown"
+        result.append(entry)
+
+    _output({"tasks": result, "count": len(result), "total_matching": total_matching})
+    _err(f"Listed {len(result)} tasks (status={status_filter})")
+
+
 @cli.command("allocate")
 @click.pass_context
 def allocate(ctx):
