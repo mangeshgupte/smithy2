@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 843,
-    "used": 628,
+    "used": 633,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 211,
+      "heats": 214,
       "progress": 0.98,
-      "value_ema": 0.773
+      "value_ema": 0.747
     },
     "testing": {
       "target": 0.183,
@@ -32,15 +32,15 @@
     },
     "editing": {
       "target": 0.183,
-      "heats": 152,
+      "heats": 153,
       "progress": 0.88,
-      "value_ema": 0.719
+      "value_ema": 0.743
     },
     "marketing": {
       "target": 0.219,
-      "heats": 83,
+      "heats": 84,
       "progress": 0.84,
-      "value_ema": 0.713
+      "value_ema": 0.709
     }
   },
   "allocator": {
@@ -49,7 +49,7 @@
       "planning": 0.5,
       "implementation": -0.5,
       "testing": -0.023,
-      "editing": -0.467,
+      "editing": -0.456,
       "marketing": 0.5
     }
   },
@@ -1157,7 +1157,7 @@
       "id": "t-192",
       "stage": "implementation",
       "desc": "UI C: Timeline View \u2014 interactivity + polish. Add: (1) snap-to-grid when dragging (snap to 5-heat increments), (2) conflict detection \u2014 highlight when total allocated heats exceed remaining budget (bars turn red), (3) zoom controls (show 50/100/250 heats), (4) initiative labels on bars with truncation, (5) stage color coding on bars (use Bellows stage colors), (6) tooltip on hover showing initiative details (title, description, tasks, progress), (7) auto-refresh to show Forge progress in real-time. Add a summary row at bottom showing total allocated vs remaining.",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-012"
@@ -1184,7 +1184,7 @@
       "id": "t-195",
       "stage": "implementation",
       "desc": "UI D: Intent Editor \u2014 diff mode + iteration. When intent changes and is resubmitted, show a diff between old decomposition and new. Highlight: added initiatives (green), removed (red), modified (yellow). Human reviews the diff and approves changes selectively \u2014 checkbox per change. Support iterative refinement: human edits intent, sees what changes, approves subset. Add 'history' sidebar showing previous intents and when they were applied. Add a 'current state' indicator showing how the active state.json differs from the last applied intent. Store intent history in state.json or a separate intents.json.",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-013"
@@ -1242,7 +1242,7 @@
       "id": "t-202",
       "stage": "implementation",
       "desc": "Tutor: subject page header actions \u2014 Start Session + Stats + Due badge in a clean row",
-      "status": "pending",
+      "status": "complete",
       "priority": 3,
       "blocked_by": []
     },
@@ -1451,7 +1451,7 @@
       "id": "t-226",
       "stage": "implementation",
       "desc": "Bellows: upcoming heats on activity page. In bellows/templates/project.html, add an 'Upcoming' section above the activity feed. Show the next 5-10 heats that the allocator would pick, in order. For each: task ID, stage (with stage color), initiative name (if linked), task description (truncated). To generate this: in bellows/app.py, simulate the allocator \u2014 call smithy allocate + smithy pick-task for each stage repeatedly to build the queue order. Or simpler: read pending tasks, sort by priority, group by what the allocator would pick based on current scores. Add a 'Reorder' button next to each upcoming heat that lets the human drag to reprioritize \u2014 POST the new order back to state.json (update task priorities or add a 'forced_order' list). Also add 'Skip' button to defer a task (set priority to 3). This gives direct control: the human sees exactly what Forge will do next and can intervene before it happens.",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 0,
       "blocked_by": []
     },
@@ -1461,6 +1461,14 @@
       "desc": "Sprint AAR + handoff for heats 614-628",
       "status": "pending",
       "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-228",
+      "stage": "editing",
+      "desc": "CHANGELOG v1.4: UI polish sprint",
+      "status": "complete",
+      "priority": 2,
       "blocked_by": []
     }
   ],
@@ -1617,7 +1625,7 @@
       "description": "A desktop web UI where the human steers by shaping a timeline. Horizontal axis is heats (or time). Initiatives are horizontal bars showing planned start/end. The human drags bar endpoints to allocate budget. Overlapping bars = parallel work. Gaps = cool-down. The visual makes tradeoffs obvious \u2014 stretching one initiative squeezes another. Forge reads the timeline and works accordingly. Inspired by Gantt charts but interactive and simple. Build as a standalone page in Bellows.",
       "status": "approved",
       "budget_cap": 15,
-      "heats_used": 2,
+      "heats_used": 3,
       "rank": 5,
       "planned_start": 623,
       "planned_end": 638
@@ -1629,7 +1637,7 @@
       "description": "A desktop web UI focused on natural-language steering. The human writes a short intent statement (2-3 sentences). The system decomposes it into themes, initiatives, and tasks automatically. Human reviews the decomposition and edits \u2014 delete a branch, promote a task, add a constraint. The intent is the source of truth, not the task list. When intent changes, the decomposition updates. Inspired by commander's intent in military doctrine. The human thinks in outcomes, the system thinks in tasks. Build as a standalone page in Bellows.",
       "status": "approved",
       "budget_cap": 20,
-      "heats_used": 2,
+      "heats_used": 3,
       "rank": 4,
       "planned_start": 631,
       "planned_end": 649

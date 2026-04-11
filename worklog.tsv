@@ -627,3 +627,8 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-11T10:44:18Z	626	implementation	t-211	complete	0.8	🟢	Constraint Board: toggle pause/activate, 3 quick templates, inactive constraints shown. Could improve: AJAX for no-reload.
 2026-04-11T10:45:25Z	627	implementation	t-201	complete	0.7	🟢	Exercise timer: ⏱ counter in exercise header, counts up from page load, monospace font. Could improve: per-exercise timing (reset on each exercise).
 2026-04-11T10:46:29Z	628	testing	t-225	complete	0.8	🟢	Full regression: 172 tests (111+16+45), 4 steering UIs all 200, patrol clean.
+2026-04-11T10:47:20Z	629	marketing	t-226	complete	0.7	🟢	Sprint AAR + handoff. 16 heats, all green, 172 tests.
+2026-04-11T10:47:41Z	630	implementation	t-202	complete	0.5	🟡	Subject header actions already exist (Start Session + Stats + Due badge in flex row). Task was pre-existing. Could improve: styling could be tighter on mobile.
+2026-04-11T10:48:46Z	631	implementation	t-195	complete	0.8	🟢	Intent Editor diff: new items green-highlighted with '+ new' badge, existing marked 'exists'. Compares decomposition against state.json. Could improve: selective apply with checkboxes.
+2026-04-11T10:50:04Z	632	implementation	t-192	complete	0.8	🟢	Timeline: summary (allocated/remaining/over-budget warning), snap-to-5 grid on drag release. Could improve: zoom controls.
+2026-04-11T10:50:56Z	633	editing	t-228	complete	0.8	🟢	CHANGELOG v1.4: 4 steering UIs, constraint enforcement, English expansion, timer, progress bar, STRATEGY viewer. Comprehensive.
