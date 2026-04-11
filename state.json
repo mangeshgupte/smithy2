@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 843,
-    "used": 603,
+    "used": 604,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -38,9 +38,9 @@
     },
     "marketing": {
       "target": 0.219,
-      "heats": 80,
+      "heats": 81,
       "progress": 0.84,
-      "value_ema": 0.739
+      "value_ema": 0.727
     }
   },
   "allocator": {
@@ -1068,7 +1068,7 @@
       "id": "t-182",
       "stage": "marketing",
       "desc": "AAR for 50-heat sprint",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 3,
       "blocked_by": []
     },
@@ -1197,6 +1197,62 @@
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-013"
+    },
+    {
+      "id": "t-197",
+      "stage": "implementation",
+      "desc": "Tutor: add 5 more exercises to each of the 3 weakest subjects (English, Math, Logic)",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-198",
+      "stage": "implementation",
+      "desc": "Tutor: progress bar on user page showing overall completion across all subjects",
+      "status": "pending",
+      "priority": 3,
+      "blocked_by": []
+    },
+    {
+      "id": "t-199",
+      "stage": "implementation",
+      "desc": "Bellows: STRATEGY.md viewer on Direct tab (read-only rendered markdown)",
+      "status": "pending",
+      "priority": 3,
+      "blocked_by": []
+    },
+    {
+      "id": "t-200",
+      "stage": "testing",
+      "desc": "Test smithy init end-to-end: init + validate + patrol on fresh project",
+      "status": "in_progress",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-201",
+      "stage": "implementation",
+      "desc": "Tutor: exercise timer \u2014 show elapsed time per exercise, total session time",
+      "status": "pending",
+      "priority": 3,
+      "blocked_by": []
+    },
+    {
+      "id": "t-202",
+      "stage": "implementation",
+      "desc": "Tutor: subject page header actions \u2014 Start Session + Stats + Due badge in a clean row",
+      "status": "pending",
+      "priority": 3,
+      "blocked_by": []
+    },
+    {
+      "id": "t-203",
+      "stage": "editing",
+      "desc": "Update STRATEGY.md to heat 604 with all new features",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
     }
   ],
   "ideas": [
