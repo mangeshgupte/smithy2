@@ -640,3 +640,252 @@ class TestDrainNudges:
         marshal_queue = project / ".smithy-nudge-queue" / "marshal.jsonl"
         assert marshal_queue.exists()
         assert "marshal-msg" in marshal_queue.read_text()
+
+
+class TestSessions:
+    """Tests for sessions, start, start-all, stop, stop-all commands — mock tmux."""
+
+    def test_sessions_no_tmux(self, project, runner, monkeypatch):
+        """No smithy2 session → empty window list."""
+        import subprocess as sp
+        monkeypatch.setattr(sp, "run", lambda cmd, **kw: sp.CompletedProcess(cmd, 1, "", ""))
+        result = runner.invoke(cli, ["--dir", str(project), "sessions"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["count"] == 0
+        assert data["windows"] == []
+
+    def test_sessions_with_windows(self, project, runner, monkeypatch):
+        """smithy2 session with windows → lists them with metadata."""
+        import subprocess as sp
+
+        def fake_run(cmd, **kw):
+            if "has-session" in cmd:
+                return sp.CompletedProcess(cmd, 0, "", "")
+            if "list-windows" in cmd:
+                return sp.CompletedProcess(cmd, 0,
+                    "forge\t1712800000\t1\nanvil\t1712800000\t0\n", "")
+            return sp.CompletedProcess(cmd, 0, "", "")
+
+        monkeypatch.setattr(sp, "run", fake_run)
+        result = runner.invoke(cli, ["--dir", str(project), "sessions"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["count"] == 2
+        names = [w["name"] for w in data["windows"]]
+        assert "forge" in names
+        assert "anvil" in names
+        # Check active flag
+        forge_win = [w for w in data["windows"] if w["name"] == "forge"][0]
+        assert forge_win["active"] is True
+
+    def test_start_creates_session(self, project, runner, monkeypatch):
+        """Start a persona when no smithy2 session exists → creates session."""
+        import subprocess as sp
+        (project / "personas" / "forge").mkdir(parents=True, exist_ok=True)
+        calls = []
+
+        def fake_run(cmd, **kw):
+            calls.append(cmd)
+            if "has-session" in cmd:
+                return sp.CompletedProcess(cmd, 1, "", "no session")
+            if "new-session" in cmd:
+                return sp.CompletedProcess(cmd, 0, "", "")
+            return sp.CompletedProcess(cmd, 0, "", "")
+
+        monkeypatch.setattr(sp, "run", fake_run)
+        result = runner.invoke(cli, ["--dir", str(project), "start", "forge"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["started"] is True
+        assert data["created_session"] is True
+
+    def test_start_window_already_exists(self, project, runner, monkeypatch):
+        """Start a persona when window already exists → skip."""
+        import subprocess as sp
+        (project / "personas" / "forge").mkdir(parents=True, exist_ok=True)
+
+        def fake_run(cmd, **kw):
+            if "has-session" in cmd:
+                return sp.CompletedProcess(cmd, 0, "", "")
+            if "list-windows" in cmd:
+                return sp.CompletedProcess(cmd, 0, "forge\nanvil\n", "")
+            return sp.CompletedProcess(cmd, 0, "", "")
+
+        monkeypatch.setattr(sp, "run", fake_run)
+        result = runner.invoke(cli, ["--dir", str(project), "start", "forge"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["started"] is False
+        assert "already exists" in data["reason"]
+
+    def test_start_adds_window(self, project, runner, monkeypatch):
+        """Start a persona when session exists but window is new → creates window."""
+        import subprocess as sp
+        (project / "personas" / "forge").mkdir(parents=True, exist_ok=True)
+
+        def fake_run(cmd, **kw):
+            if "has-session" in cmd:
+                return sp.CompletedProcess(cmd, 0, "", "")
+            if "list-windows" in cmd:
+                return sp.CompletedProcess(cmd, 0, "anvil\nmarshal\n", "")
+            if "new-window" in cmd:
+                return sp.CompletedProcess(cmd, 0, "", "")
+            return sp.CompletedProcess(cmd, 0, "", "")
+
+        monkeypatch.setattr(sp, "run", fake_run)
+        result = runner.invoke(cli, ["--dir", str(project), "start", "forge"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["started"] is True
+
+    def test_start_missing_persona_dir(self, project, runner):
+        """Start persona with no persona directory → error."""
+        result = runner.invoke(cli, ["--dir", str(project), "start", "forge"])
+        assert result.exit_code != 0
+
+    def test_start_all_fresh(self, project, runner, monkeypatch):
+        """start-all with no existing session → creates session + 3 windows."""
+        import subprocess as sp
+        for p in ["anvil", "forge", "marshal"]:
+            (project / "personas" / p).mkdir(parents=True, exist_ok=True)
+        calls = []
+
+        def fake_run(cmd, **kw):
+            calls.append(cmd)
+            if "has-session" in cmd:
+                return sp.CompletedProcess(cmd, 1, "", "no session")
+            return sp.CompletedProcess(cmd, 0, "", "")
+
+        monkeypatch.setattr(sp, "run", fake_run)
+        result = runner.invoke(cli, ["--dir", str(project), "start-all"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert set(data["started"]) == {"anvil", "forge", "marshal"}
+
+    def test_start_all_skips_existing(self, project, runner, monkeypatch):
+        """start-all when some windows exist → only starts missing ones."""
+        import subprocess as sp
+        for p in ["anvil", "forge", "marshal"]:
+            (project / "personas" / p).mkdir(parents=True, exist_ok=True)
+
+        def fake_run(cmd, **kw):
+            if "has-session" in cmd:
+                return sp.CompletedProcess(cmd, 0, "", "")
+            if "list-windows" in cmd:
+                return sp.CompletedProcess(cmd, 0, "anvil\n", "")
+            return sp.CompletedProcess(cmd, 0, "", "")
+
+        monkeypatch.setattr(sp, "run", fake_run)
+        result = runner.invoke(cli, ["--dir", str(project), "start-all"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert "anvil" in data["skipped"]
+        assert "forge" in data["started"]
+        assert "marshal" in data["started"]
+
+    def test_stop_graceful(self, project, runner, monkeypatch):
+        """Stop a persona gracefully → sends /exit then exit."""
+        import subprocess as sp
+        import time
+        monkeypatch.setattr(time, "sleep", lambda s: None)
+        calls = []
+
+        def fake_run(cmd, **kw):
+            calls.append(cmd)
+            if "list-windows" in cmd:
+                return sp.CompletedProcess(cmd, 0, "forge\nanvil\n", "")
+            return sp.CompletedProcess(cmd, 0, "", "")
+
+        monkeypatch.setattr(sp, "run", fake_run)
+        result = runner.invoke(cli, ["--dir", str(project), "stop", "forge"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["stopped"] is True
+        assert data["method"] == "graceful"
+        # Should have sent /exit and exit via send-keys
+        send_keys_calls = [c for c in calls if "send-keys" in c]
+        assert len(send_keys_calls) == 2
+
+    def test_stop_kill(self, project, runner, monkeypatch):
+        """Stop a persona with --kill → kills window."""
+        import subprocess as sp
+        calls = []
+
+        def fake_run(cmd, **kw):
+            calls.append(cmd)
+            if "list-windows" in cmd:
+                return sp.CompletedProcess(cmd, 0, "forge\n", "")
+            return sp.CompletedProcess(cmd, 0, "", "")
+
+        monkeypatch.setattr(sp, "run", fake_run)
+        result = runner.invoke(cli, ["--dir", str(project), "stop", "forge", "--kill"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["stopped"] is True
+        assert data["method"] == "kill"
+
+    def test_stop_window_not_found(self, project, runner, monkeypatch):
+        """Stop persona not in session → reports not found."""
+        import subprocess as sp
+
+        def fake_run(cmd, **kw):
+            if "list-windows" in cmd:
+                return sp.CompletedProcess(cmd, 0, "anvil\n", "")
+            return sp.CompletedProcess(cmd, 0, "", "")
+
+        monkeypatch.setattr(sp, "run", fake_run)
+        result = runner.invoke(cli, ["--dir", str(project), "stop", "forge"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["stopped"] is False
+
+    def test_stop_all_kill(self, project, runner, monkeypatch):
+        """stop-all --kill → kills entire session."""
+        import subprocess as sp
+        calls = []
+
+        def fake_run(cmd, **kw):
+            calls.append(cmd)
+            if "has-session" in cmd:
+                return sp.CompletedProcess(cmd, 0, "", "")
+            return sp.CompletedProcess(cmd, 0, "", "")
+
+        monkeypatch.setattr(sp, "run", fake_run)
+        result = runner.invoke(cli, ["--dir", str(project), "stop-all", "--kill"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["stopped"] is True
+        assert data["method"] == "kill-session"
+        kill_calls = [c for c in calls if "kill-session" in c]
+        assert len(kill_calls) == 1
+
+    def test_stop_all_graceful(self, project, runner, monkeypatch):
+        """stop-all without --kill → graceful shutdown of all windows."""
+        import subprocess as sp
+        import time
+        monkeypatch.setattr(time, "sleep", lambda s: None)
+
+        def fake_run(cmd, **kw):
+            if "has-session" in cmd:
+                return sp.CompletedProcess(cmd, 0, "", "")
+            if "list-windows" in cmd:
+                return sp.CompletedProcess(cmd, 0, "forge\nanvil\nmarshal\n", "")
+            return sp.CompletedProcess(cmd, 0, "", "")
+
+        monkeypatch.setattr(sp, "run", fake_run)
+        result = runner.invoke(cli, ["--dir", str(project), "stop-all"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["stopped"] is True
+        assert data["method"] == "graceful"
+        assert set(data["personas"]) == {"forge", "anvil", "marshal"}
+
+    def test_stop_all_no_session(self, project, runner, monkeypatch):
+        """stop-all when no smithy2 session → reports not found."""
+        import subprocess as sp
+        monkeypatch.setattr(sp, "run", lambda cmd, **kw: sp.CompletedProcess(cmd, 1, "", ""))
+        result = runner.invoke(cli, ["--dir", str(project), "stop-all"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["stopped"] is False
