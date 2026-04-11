@@ -1,6 +1,6 @@
 # The Heat Loop
 
-**NEVER STOP.** Loop until budget exhausted. The human may be away. This is the core contract.
+**NEVER STOP.** Loop forever. Execute hooks. Idle when no hook. The human may be away.
 
 **RULE: Never directly edit state.json or worklog.tsv.** All state mutations go through `smithy` commands. If you need a state change and no command exists, flag it — don't work around it.
 
@@ -12,78 +12,39 @@ smithy patrol --fix        # Validate state, auto-repair discrepancies
 smithy sync-stages         # Ensure stage heats match worklog
 ```
 
-Read the handoff context notes and next steps if present.
+Read the handoff context notes and next steps if present. Then enter the loop.
 
-**Hook check**: Run `smithy check-hook`. If hooked, a task is already waiting for you — go straight to Step 5. No deliberation needed.
-
-## Step 1: Load Context
-
-```bash
-smithy status              # Budget, stages, pending tasks
-smithy process-feedback    # New feedback entries (returns JSON, updates cursor)
-smithy process-inbox       # New inbox entries (returns JSON, updates cursor)
-```
-
-Also read (read-only, don't edit):
-- `identity.md` — commander's intent
-- `STRATEGY.md` — strategic plan
-- `MEMORY_DAILY.md` — recent working memory
-
-Check themes and initiatives:
-```bash
-smithy list-themes         # Active themes (strategic priorities)
-smithy list-initiatives    # Proposed/approved/active initiatives
-```
-
-**Review-first-heat**: If `smithy process-feedback` returns new entries:
-1. This heat becomes a **review heat** (stage = "planning")
-2. For each feedback item, examine the relevant code/output
-3. Generate fix tasks: `smithy add-task <stage> "<desc>" --priority 0`
-4. Annotate feedback.md with `→ reviewed in heat N`
-5. Skip the allocator — the review IS the work
-
-## Step 2: Process Inbox
-
-If `smithy process-inbox` returns new entries, parse for:
-- **Priority overrides** → update human_priorities
-- **New tasks** → `smithy add-task <stage> "<desc>"`
-- **Ideas** → evaluate, track, acknowledge in outbox.md
-
-## Step 3: Get Next Task
-
-**Check your hook first:**
+## Step 1: Check Hook
 
 ```bash
 smithy check-hook          # Returns hook + task details, or {hooked: false}
 ```
 
-- **If hooked** → use the hooked task and stage. Skip the allocator. No deliberation. Go to Step 5.
-- **If not hooked** → check Marshal queue, then fall back to allocator:
+- **If hooked** → go to Step 3 (Execute). No deliberation.
+- **If not hooked** → go to Step 2 (Idle).
+
+## Step 2: Idle
+
+No hook means no work. Print "Waiting for hook..." and wait 30 seconds, then go to Step 1.
+
+Budget is NOT your concern. You don't check it, you don't enforce it. Marshal stops hooking when budget is exhausted. If no hooks come, you idle.
+
+While idling, process any pending feedback or inbox items:
 
 ```bash
-smithy next-task           # Pops from Marshal's next_tasks list (if populated)
+smithy process-feedback    # New feedback entries (returns JSON, updates cursor)
+smithy process-inbox       # New inbox entries (returns JSON, updates cursor)
 ```
 
-If `source: "marshal"`, use the returned task. If `source: "none"`, fall back:
+If feedback arrives, create fix tasks: `smithy add-task <stage> "<desc>" --priority 0`
 
-```bash
-smithy allocate            # Returns recommended stage + scores
-smithy pick-task <stage>   # Returns highest-priority ready task
-```
-
-If no ready tasks: generate one yourself, then `smithy add-task <stage> "<desc>"`.
-
-**Queue health check**: If < 3 pending tasks, generate 1-2 tasks for high-scoring stages.
-
-**Who hooks tasks?** Marshal, Anvil, or any agent can hook via `smithy hook <task_id>`. Forge just executes what's hooked.
-
-## Step 5: Execute (~4 minutes)
+## Step 3: Execute (~4 minutes)
 
 ```bash
 smithy start-heat <stage> --task <task_id>   # Writes checkpoint, marks task in_progress
 ```
 
-Do the actual work. Stay focused on the single task.
+Use the stage and task_id from the hook. Do the actual work. Stay focused on the single task.
 
 | Stage | What to do |
 |-------|-----------|
@@ -103,28 +64,24 @@ git add <specific files>
 git commit -m "[stage] description"
 ```
 
-## Step 6: Log the Heat
+## Step 4: Log the Heat
 
 ```bash
 smithy end-heat <value> <signal> "<notes>" [--outcome complete|partial|blocked]
 ```
 
-This atomically: increments budget.used, updates stage heats + value_ema + integral, appends worklog, marks task complete, updates overall_progress, deletes checkpoint.
+This atomically: increments budget.used, updates stage heats + value_ema + integral, appends worklog, marks task complete, updates overall_progress, deletes checkpoint. Auto-clears the hook if the completed task matches.
 
-`end-heat` auto-clears the hook if the completed task matches. No manual unhook needed.
-
-**Report to Marshal** (if Marshal is running): After end-heat, append to `dispatch/forge-to-marshal.md`:
+**Report to Marshal**: After end-heat, append to `dispatch/forge-to-marshal.md`:
 
 ```
-## YYYY-MM-DD HH:MM — Heat N Complete
-- **Stage**: <stage>
+## YYYY-MM-DD HH:MM — HOOK_DONE Heat N
 - **Task**: <task_id> — <description>
+- **Stage**: <stage>
 - **Outcome**: complete|partial|blocked
 - **Value**: <0.0-1.0>
 - **Notes**: <what happened>
 ```
-
-This lets Marshal re-prioritize based on what just happened. If no Marshal session, skip this step.
 
 **Self-assessment** (the `value` argument):
 - 0.9-1.0: Major breakthrough
@@ -135,21 +92,11 @@ This lets Marshal re-prioritize based on what just happened. If no Marshal sessi
 
 **Signal**: 🟢 (normal), 🟡 (value < 0.7 or stalled), 🔴 (rollback or blocked)
 
-## Step 7: Memory (every 6th heat)
+## Step 5: Memory (every 6th heat)
 
 When heat number % 6 == 0:
 ```bash
 smithy memory-write "<consolidated insight>" --heat <N> --stage <stage>
 ```
 
-## Step 8: Check Budget
-
-```bash
-smithy status              # Check budget remaining
-```
-
-- If remaining > 0 → go to Step 1
-- If remaining == 0:
-  1. Write AAR to outbox.md (L1 summary + L3 detail)
-  2. `smithy handoff "<context notes>" --next "<what next session should do>"`
-  3. **STOP.**
+Then go to **Step 1**.
