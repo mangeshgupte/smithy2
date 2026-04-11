@@ -60,10 +60,24 @@
         </div>
     </div>
 
+    <!-- Summary -->
+    <div class="timeline-summary">
+        {% set total_allocated = 0 %}
+        {% for ini in initiatives %}
+        {% set total_allocated = total_allocated + (ini.planned_end - ini.planned_start) %}
+        {% endfor %}
+        <span>Allocated: <strong>{{ total_allocated }}h</strong></span>
+        <span>Remaining: <strong>{{ total - used }}h</strong></span>
+        {% if total_allocated > (total - used) %}
+        <span class="over-budget">⚠️ Over-allocated by {{ total_allocated - (total - used) }}h</span>
+        {% endif %}
+    </div>
+
     <div class="legend">
         <span class="legend-item"><span class="dot approved"></span> Approved</span>
         <span class="legend-item"><span class="dot active"></span> Active</span>
         <span class="legend-item"><span class="dot progress"></span> Progress</span>
+        <span class="legend-item muted">Drag bars to reallocate</span>
     </div>
 
     <script>
@@ -124,11 +138,12 @@
                 document.removeEventListener('mousemove', onMove);
                 document.removeEventListener('mouseup', onUp);
 
-                // Save
+                // Save (snap to 5-heat grid)
                 const left = parseFloat(bar.style.left);
                 const width = parseFloat(bar.style.width);
-                const newStart = Math.round(TIMELINE_START + left / 100 * RANGE);
-                const newEnd = Math.round(TIMELINE_START + (left + width) / 100 * RANGE);
+                const snap = v => Math.round(v / 5) * 5;
+                const newStart = snap(TIMELINE_START + left / 100 * RANGE);
+                const newEnd = snap(TIMELINE_START + (left + width) / 100 * RANGE);
 
                 fetch('/update', {
                     method: 'POST',
