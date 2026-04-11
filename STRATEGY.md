@@ -1,6 +1,6 @@
 # Strategic Plan — The Smithy
 
-*Updated after heat 535 | 2026-04-10*
+*Updated after heat 555 | 2026-04-10*
 
 ## Vision
 
@@ -52,17 +52,17 @@ See `research/gas-town-integration-synthesis.md` for the full analysis.
 |-------|----------|--------|-------|
 | Research | 90% | 27 | Landscape, interface, Gas Town integration (5 docs). |
 | Planning | 85% | 28 | Approach B decision, visual design sprint planning. |
-| Implementation | 98% | 167 | Smithy CLI (16 commands), Tutor (8 animations, button system, RR palette), Commissioner (6 stage colors, segmented budget bar). |
-| Testing | 88% | 101 | 152 tests (111 tutor + 12 commissioner + 29 smithy). Patrol clean. |
-| Editing | 88% | 141 | Protocol (handoff/resume/patrol), STRATEGY, CHANGELOG, READMEs updated for visual sprint. |
-| Marketing | 84% | 71 | AARs, dispatch reports, CHANGELOG v1.1, welcome card copy. |
+| Implementation | 98% | 176 | Smithy CLI (18 commands), Tutor (4 subjects, 8 animations, button system), Bellows (6 stage colors, segmented budget, quick actions). |
+| Testing | 88% | 105 | 158 tests (111 tutor + 12 bellows + 35 smithy). Patrol clean. |
+| Editing | 88% | 145 | Protocol, STRATEGY, CHANGELOG, READMEs, Bellows rename. |
+| Marketing | 84% | 74 | AARs, dispatch reports, CHANGELOG v1.1, README, welcome card. |
 
-**Overall progress**: ~90% | **Heats used**: 535 | **Wavefront phase**: mature
+**Overall progress**: ~90% | **Heats used**: 555 | **Wavefront phase**: mature
 
 ### What's Working
 
 - Wavefront allocator with 3 fixes (soft clamp, unblocking override, queued task bonus) — balanced across 188 heats
-- **3 real projects built**: ai-coworker (dogfood), ai-tutor (multi-subject tutor with full Learn→Create→Review loop), Commissioner App (project dashboard)
+- **3 real projects built**: the-smithy (dogfood), ai-tutor (4-subject tutor with full Learn→Create→Review loop), Bellows (project dashboard)
 - Commissioner App: 6 screens, tap-to-decide, day-grouped activity, inbox badges, feedback UI
 - AI Tutor: 3-tab nav, student flashcards + AI review, SM-2 card player, teach-it-back, streak, session memory, 6 animations, 100 tests
 - forge-init.sh + forge-update.sh + forge-validate.sh + forge-status.sh — full tool suite
