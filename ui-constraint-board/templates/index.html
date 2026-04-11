@@ -9,7 +9,7 @@
 <body>
     <header>
         <h1>🛡️ Constraint Board</h1>
-        <p class="subtitle">{{ project }} — steer through boundaries, not commands</p>
+        <p class="subtitle">{{ project }} — {{ constraints|selectattr('status', 'equalto', 'active')|list|length }} active constraints</p>
     </header>
 
     {% if violations %}
