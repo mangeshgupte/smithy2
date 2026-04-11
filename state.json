@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 843,
-    "used": 623,
+    "used": 627,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,15 +20,15 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 208,
+      "heats": 211,
       "progress": 0.98,
-      "value_ema": 0.81
+      "value_ema": 0.773
     },
     "testing": {
       "target": 0.183,
-      "heats": 114,
+      "heats": 115,
       "progress": 0.88,
-      "value_ema": 0.829
+      "value_ema": 0.79
     },
     "editing": {
       "target": 0.183,
@@ -48,7 +48,7 @@
       "research": 0.5,
       "planning": 0.5,
       "implementation": -0.5,
-      "testing": -0.028,
+      "testing": -0.025,
       "editing": -0.467,
       "marketing": 0.5
     }
@@ -1004,7 +1004,7 @@
       "id": "t-174",
       "stage": "testing",
       "desc": "Test user sessions: two users see different progress",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -1218,7 +1218,7 @@
       "id": "t-199",
       "stage": "implementation",
       "desc": "Bellows: STRATEGY.md viewer on Direct tab (read-only rendered markdown)",
-      "status": "pending",
+      "status": "complete",
       "priority": 3,
       "blocked_by": []
     },
@@ -1234,7 +1234,7 @@
       "id": "t-201",
       "stage": "implementation",
       "desc": "Tutor: exercise timer \u2014 show elapsed time per exercise, total session time",
-      "status": "pending",
+      "status": "complete",
       "priority": 3,
       "blocked_by": []
     },
@@ -1320,7 +1320,7 @@
       "id": "t-211",
       "stage": "implementation",
       "desc": "Constraint Board improvements (batch 1). In ui-constraint-board/: (1) Convert from form POST to AJAX \u2014 add/remove constraints via fetch() without page reload. (2) Add real-time violation checking \u2014 on page load and via polling, evaluate each constraint against state.json and show green/yellow/red status dot on each card. Yellow = within 20% of limit. Red = violated. (3) Add violation summary bar at top showing count of red/yellow/green. (4) Add toggle to activate/deactivate constraints without deleting (toggles a 'status' field between 'active' and 'inactive'). (5) Add constraint templates \u2014 predefined buttons for common constraints ('No new content', 'Focus on testing', 'Budget cap 10 heats').",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-011"
@@ -1437,6 +1437,22 @@
       "desc": "Sprint AAR + handoff",
       "status": "complete",
       "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-225",
+      "stage": "testing",
+      "desc": "Full regression: all tests + all UI routes + patrol",
+      "status": "in_progress",
+      "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-226",
+      "stage": "implementation",
+      "desc": "Bellows: upcoming heats on activity page. In bellows/templates/project.html, add an 'Upcoming' section above the activity feed. Show the next 5-10 heats that the allocator would pick, in order. For each: task ID, stage (with stage color), initiative name (if linked), task description (truncated). To generate this: in bellows/app.py, simulate the allocator \u2014 call smithy allocate + smithy pick-task for each stage repeatedly to build the queue order. Or simpler: read pending tasks, sort by priority, group by what the allocator would pick based on current scores. Add a 'Reorder' button next to each upcoming heat that lets the human drag to reprioritize \u2014 POST the new order back to state.json (update task priorities or add a 'forced_order' list). Also add 'Skip' button to defer a task (set priority to 3). This gives direct control: the human sees exactly what Forge will do next and can intervene before it happens.",
+      "status": "pending",
+      "priority": 0,
       "blocked_by": []
     }
   ],
@@ -1581,7 +1597,7 @@
       "description": "A desktop web UI where the human steers by setting constraints, not giving orders. Instead of telling Forge what to do, the human defines boundaries: 'no more than 5 heats on research', 'testing must stay above 80%', 'don't touch tutor', 'ship something deployable by Friday'. Constraints are cards on a board. Forge works freely within them. When a constraint would be violated, Forge stops and asks. The human's only job: add/remove/adjust constraints. Inspired by air traffic control \u2014 direct through boundaries, not waypoints. Build as a standalone page in Bellows.",
       "status": "approved",
       "budget_cap": 15,
-      "heats_used": 2,
+      "heats_used": 3,
       "rank": 3,
       "planned_start": 623,
       "planned_end": 638
@@ -1638,6 +1654,15 @@
       "description": "",
       "status": "active",
       "created": "2026-04-11T10:30:03.694834"
+    },
+    {
+      "id": "con-002",
+      "type": "floor",
+      "stage": "implementation",
+      "value": 10,
+      "description": "",
+      "status": "active",
+      "created": "2026-04-11T10:44:28.678810"
     }
   ]
 }
