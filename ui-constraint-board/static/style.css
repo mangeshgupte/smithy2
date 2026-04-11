@@ -34,4 +34,16 @@ header h1 { font-size: 24px; }
 select, input[type=number], input[type=text] { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 10px; font-size: 14px; }
 .submit-btn { background: var(--blue); color: #fff; border: none; border-radius: 8px; padding: 12px; font-size: 14px; font-weight: 600; cursor: pointer; }
 .submit-btn:hover { opacity: 0.9; }
+.toggle-btn { background: none; border: none; cursor: pointer; font-size: 14px; padding: 4px 6px; color: var(--text-muted); }
+.toggle-btn:hover { color: var(--blue); }
+
+.constraint-card:has(.toggle-btn:first-of-type) { }
+/* Inactive constraints */
+.constraint-card { transition: opacity 0.2s; }
+
+.quick-templates { margin: 16px 0; }
+.template-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.template-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 8px 12px; font-size: 13px; cursor: pointer; }
+.template-btn:hover { background: var(--bg); border-color: var(--blue); }
+
 .empty { text-align: center; padding: 48px; color: var(--text-muted); }

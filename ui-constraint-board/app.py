@@ -119,3 +119,14 @@ async def remove_constraint(constraint_id: str):
     state["constraints"] = [c for c in constraints if c["id"] != constraint_id]
     _save_state(state)
     return RedirectResponse(url="/", status_code=303)
+
+
+@app.post("/toggle/{constraint_id}")
+async def toggle_constraint(constraint_id: str):
+    state = _load_state()
+    for c in state.get("constraints", []):
+        if c["id"] == constraint_id:
+            c["status"] = "inactive" if c.get("status") == "active" else "active"
+            break
+    _save_state(state)
+    return RedirectResponse(url="/", status_code=303)

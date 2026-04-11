@@ -25,7 +25,7 @@
 
     <div class="constraint-list">
         {% for c in constraints %}
-        {% if c.status == 'active' %}
+        {% if c.status in ['active', 'inactive'] %}
         <div class="constraint-card type-{{ c.type }} {{ 'violated' if not c.get('_ok', True) }}">
             <div class="constraint-icon">
                 {% if c.type == 'budget_cap' %}⏱{% elif c.type == 'floor' %}📊{% elif c.type == 'exclude' %}🚫{% endif %}
@@ -43,7 +43,10 @@
                 </div>
                 {% endif %}
             </div>
-            <form method="post" action="/remove/{{ c.id }}" class="remove-form">
+            <form method="post" action="/toggle/{{ c.id }}" style="display:inline">
+                <button type="submit" class="toggle-btn" title="{% if c.status == 'active' %}Pause{% else %}Activate{% endif %}">{% if c.status == 'active' %}⏸{% else %}▶{% endif %}</button>
+            </form>
+            <form method="post" action="/remove/{{ c.id }}" class="remove-form" style="display:inline">
                 <button type="submit" class="remove-btn" title="Remove">✕</button>
             </form>
         </div>
@@ -53,6 +56,24 @@
         {% if not constraints %}
         <div class="empty">No constraints set. Forge has full autonomy.</div>
         {% endif %}
+    </div>
+
+    <div class="quick-templates">
+        <h2 style="font-size: 14px; color: var(--text-muted); margin-bottom: 8px;">Quick Add</h2>
+        <div class="template-row">
+            <form method="post" action="/add" style="display:inline">
+                <input type="hidden" name="type" value="budget_cap"><input type="hidden" name="stage" value="research"><input type="hidden" name="value" value="5"><input type="hidden" name="description" value="">
+                <button type="submit" class="template-btn">⏱ Research ≤ 5h</button>
+            </form>
+            <form method="post" action="/add" style="display:inline">
+                <input type="hidden" name="type" value="floor"><input type="hidden" name="stage" value="testing"><input type="hidden" name="value" value="15"><input type="hidden" name="description" value="">
+                <button type="submit" class="template-btn">📊 Testing ≥ 15%</button>
+            </form>
+            <form method="post" action="/add" style="display:inline">
+                <input type="hidden" name="type" value="budget_cap"><input type="hidden" name="stage" value="implementation"><input type="hidden" name="value" value="10"><input type="hidden" name="description" value="">
+                <button type="submit" class="template-btn">⏱ Impl ≤ 10h</button>
+            </form>
+        </div>
     </div>
 
     <details class="add-section" open>
