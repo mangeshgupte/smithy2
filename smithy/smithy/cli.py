@@ -628,6 +628,8 @@ def init(ctx, project_name, target, with_personas):
         "allocator": {"integral": {s: 0 for s in VALID_STAGES}},
         "queue": [],
         "ideas": [],
+        "themes": [],
+        "initiatives": [],
         "feedback_cursor": 0,
         "inbox_cursor": 0,
         "human_priorities": [],

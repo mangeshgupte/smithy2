@@ -7,6 +7,8 @@ from datetime import datetime
 VALID_STAGES = ["research", "planning", "implementation", "testing", "editing", "marketing"]
 VALID_SIGNALS = ["🟢", "🟡", "🔴"]
 VALID_OUTCOMES = ["complete", "partial", "blocked"]
+VALID_THEME_STATUSES = ["active", "paused"]
+VALID_INITIATIVE_STATUSES = ["proposed", "approved", "active", "done", "rejected"]
 
 
 def find_project_root(start: str = ".") -> Path:
@@ -73,6 +75,33 @@ def validate_state(state: dict) -> list[str]:
     for task in queue:
         if task["status"] not in ("pending", "in_progress", "complete"):
             errors.append(f"invalid task status for {task['id']}: {task['status']}")
+
+    # Themes validation
+    themes = state.get("themes", [])
+    theme_ids = [th["id"] for th in themes]
+    if len(theme_ids) != len(set(theme_ids)):
+        errors.append("duplicate theme IDs")
+    for th in themes:
+        if th.get("status") not in VALID_THEME_STATUSES:
+            errors.append(f"invalid theme status for {th['id']}: {th.get('status')}")
+
+    # Initiatives validation
+    initiatives = state.get("initiatives", [])
+    ini_ids = [ini["id"] for ini in initiatives]
+    if len(ini_ids) != len(set(ini_ids)):
+        errors.append("duplicate initiative IDs")
+    for ini in initiatives:
+        if ini.get("status") not in VALID_INITIATIVE_STATUSES:
+            errors.append(f"invalid initiative status for {ini['id']}: {ini.get('status')}")
+        if ini.get("theme_id") and ini["theme_id"] not in theme_ids:
+            errors.append(f"initiative {ini['id']} references unknown theme: {ini['theme_id']}")
+
+    # Task initiative_id references
+    ini_id_set = set(ini_ids)
+    for task in queue:
+        ini_ref = task.get("initiative_id")
+        if ini_ref is not None and ini_ref not in ini_id_set:
+            errors.append(f"task {task['id']} references unknown initiative: {ini_ref}")
 
     return errors
 

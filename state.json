@@ -1,7 +1,7 @@
 {
   "project": "the-smithy",
   "budget": {
-    "total_heats": 607,
+    "total_heats": 622,
     "used": 575,
     "started_at": "2026-04-09T00:00:00Z"
   },
@@ -48,8 +48,8 @@
       "research": 0.5,
       "planning": 0.5,
       "implementation": -0.5,
-      "testing": -0.037,
-      "editing": -0.498,
+      "testing": -0.036,
+      "editing": -0.496,
       "marketing": 0.5
     }
   },
@@ -823,6 +823,94 @@
       "status": "complete",
       "priority": 1,
       "blocked_by": []
+    },
+    {
+      "id": "t-152",
+      "stage": "implementation",
+      "desc": "Intent Hierarchy data model. Add 'themes' list to state.json: [{id: 'th-NNN', name: str, rank: int, status: 'active'|'paused'}]. Add 'initiatives' list: [{id: 'ini-NNN', theme_id: str, title: str, description: str, status: 'proposed'|'approved'|'active'|'done'|'rejected', budget_cap: null|int, heats_used: 0}]. Add optional 'initiative_id' field on task objects (null = standalone). Update validate_state() in smithy/smithy/state.py to validate: theme IDs unique, initiative IDs unique, initiative.theme_id references valid theme, task.initiative_id references valid initiative or is null, theme ranks are contiguous 1..N, initiative status in valid set. Initialize empty themes/initiatives lists in smithy init command (cli.py).",
+      "status": "in_progress",
+      "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-153",
+      "stage": "implementation",
+      "desc": "Theme CLI commands. In smithy/smithy/cli.py add: (1) 'smithy add-theme <name>' \u2014 auto-generate th-NNN id, set rank to max+1, status='active'. (2) 'smithy list-themes' \u2014 print themes sorted by rank with status. (3) 'smithy reorder-themes <id> <new_rank>' \u2014 move theme to new_rank, shift others up/down to keep ranks contiguous. (4) 'smithy pause-theme <id>' \u2014 set status='paused'. (5) 'smithy activate-theme <id>' \u2014 set status='active'. All commands load/save state.json via existing load_state/save_state.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-154",
+      "stage": "implementation",
+      "desc": "Initiative CLI commands. In smithy/smithy/cli.py add: (1) 'smithy propose <theme_id> <title> <description>' \u2014 auto-generate ini-NNN id, status='proposed', optional --budget-cap N (default null). Validate theme_id exists. (2) 'smithy approve <initiative_id>' \u2014 set status='approved'. Error if not 'proposed'. (3) 'smithy reject <initiative_id>' \u2014 set status='rejected'. (4) 'smithy complete-initiative <initiative_id>' \u2014 set status='done'. (5) 'smithy list-initiatives' \u2014 print all grouped by status (proposed first, then approved, active, done, rejected), optional --theme <id> filter. Show title, theme name, task count, heats_used/budget_cap.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-155",
+      "stage": "implementation",
+      "desc": "Task CLI updates for initiative gating. In smithy/smithy/cli.py: (1) Add --initiative <id> option to add-task command. If provided, validate initiative exists and status is approved or active. Store as 'initiative_id' field on task dict. If not provided, omit field (not null). (2) Update pick-task: filter out tasks where initiative_id is set AND the linked initiative status is not approved/active. When first task from an approved initiative is picked, set initiative status to 'active'. (3) Update end-heat: if completing a task with initiative_id, increment initiative.heats_used. If initiative.budget_cap is set and heats_used >= budget_cap, append warning to outbox.md.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-156",
+      "stage": "implementation",
+      "desc": "Allocator initiative gating. In smithy/smithy/allocator.py score_stages(): (1) Accept initiatives list as parameter. (2) Queued-task bonus (+0.07/task) only counts tasks where initiative_id is null OR linked initiative status is approved/active. Tasks from proposed/rejected initiatives generate zero backlog pressure. (3) Theme rank bonus: build a map of initiative_id -> theme_rank. For eligible tasks from rank-1 theme, multiply their stage's queued-task bonus by 1.5. Update cli.py allocate command to pass initiatives to score_stages().",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-157",
+      "stage": "editing",
+      "desc": "Protocol updates for intent hierarchy. (1) In protocol/loop.md Step 1: remove 'dispatch/anvil-to-forge.md' from the Also-read list. (2) In Step 4: add note that pick-task now gates by initiative status. Add: 'If no ready tasks and proposed initiatives exist, write to outbox.md: Proposed initiatives awaiting approval: [list titles]'. (3) In personas/anvil/CLAUDE.md: replace dispatch workflow section with initiative workflow \u2014 Anvil proposes initiatives via smithy propose, human approves in Bellows or CLI. Keep dispatch file reference as decision journal only.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-158",
+      "stage": "implementation",
+      "desc": "Bellows forge_reader: initiative support. In bellows/forge_reader.py read_project(): (1) Extract 'themes' and 'initiatives' from state.json. (2) Group tasks by initiative_id \u2014 build initiative_tasks dict mapping ini-NNN to list of tasks. (3) Compute initiative progress: tasks_done/tasks_total for each initiative. (4) Add 'proposed_count' to project dict \u2014 count of initiatives with status='proposed' (for badge on home.html). (5) Add 'initiatives' list to project dict with computed fields: title, theme_name, status, tasks_done, tasks_total, heats_used, budget_cap.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-159",
+      "stage": "implementation",
+      "desc": "Bellows board route + template. (1) In bellows/app.py add GET /project/{name}/board route that reads project data and renders board.html. Add 'Board' sub-tab to the nav in base template (alongside Activity, Decide, Direct). (2) Create bellows/templates/board.html: 4 kanban columns (Proposed, Approved, Active, Done). Each initiative renders as a card showing: title, theme name as colored tag, task progress (e.g. '3/7 tasks'), heats_used/budget_cap bar (if cap set), description truncated to 2 lines. Proposed column cards have Approve/Reject buttons (POST forms). Use existing CSS patterns from decide.html for card styling. Columns use CSS grid or flexbox, cards stack vertically within columns.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-160",
+      "stage": "implementation",
+      "desc": "Bellows initiative endpoints + home badge. (1) In bellows/app.py add POST /project/{name}/initiative/{id}/approve \u2014 loads state.json, finds initiative by id, sets status='approved', saves state. Redirect back to board. (2) Add POST /project/{name}/initiative/{id}/reject \u2014 same but status='rejected'. (3) In bellows/templates/home.html: add proposed-initiative badge next to existing decision badge on project cards. Show count of initiatives with status='proposed'. Use same badge styling as decision-badge.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-161",
+      "stage": "testing",
+      "desc": "Intent hierarchy CLI tests. In smithy/smithy/tests/ add test file test_hierarchy.py: (1) Theme tests: add-theme creates with auto-id and rank, list-themes returns sorted, reorder-themes shifts correctly, pause/activate toggles status. (2) Initiative tests: propose creates with proposed status, approve sets approved, reject sets rejected, complete sets done, approve on non-proposed errors, propose with invalid theme_id errors. (3) Task gating tests: add-task with --initiative stores initiative_id, add-task with invalid initiative errors, pick-task skips tasks from proposed/rejected initiatives, pick-task returns standalone tasks always, first pick from approved initiative sets it to active. (4) Allocator tests: queued-task bonus excludes ineligible tasks, theme rank bonus applies 1.5x for rank-1. (5) End-to-end: create theme -> propose initiative -> approve -> add tasks -> pick-task returns them. All tests use tmp_path fixture with smithy init scaffold.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-162",
+      "stage": "testing",
+      "desc": "Bellows intent hierarchy tests. In bellows/tests/ add or extend test file: (1) Board route returns 200, renders initiative cards. (2) Approve endpoint changes initiative status in state.json. (3) Reject endpoint changes initiative status. (4) forge_reader extracts initiatives, computes task counts, groups by initiative_id. (5) Home page shows proposed-initiative badge when proposed initiatives exist. Use existing test patterns from test_forge_reader.py.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
     }
   ],
   "ideas": [
@@ -841,6 +929,8 @@
       "task_id": null
     }
   ],
+  "themes": [],
+  "initiatives": [],
   "feedback_cursor": 26,
   "inbox_cursor": 131,
   "human_priorities": [
