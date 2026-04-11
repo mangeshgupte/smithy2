@@ -360,6 +360,32 @@ def complete_task(ctx, task_id):
     sys.exit(1)
 
 
+@cli.command("set-priority")
+@click.argument("task_id")
+@click.argument("priority", type=int)
+@click.pass_context
+def set_priority(ctx, task_id, priority):
+    """Set a task's priority (0=highest, 3=lowest)."""
+    root = ctx.obj["root"]
+
+    if priority < 0 or priority > 3:
+        _output({"error": f"Priority must be 0-3, got {priority}"})
+        sys.exit(1)
+
+    state = load_state(root)
+    for task in state.get("queue", []):
+        if task["id"] == task_id:
+            old_priority = task.get("priority", 2)
+            task["priority"] = priority
+            save_state(root, state)
+            _output({"task": task, "old_priority": old_priority})
+            _err(f"Set {task_id} priority: {old_priority} → {priority}")
+            return
+
+    _output({"error": f"Task {task_id} not found in queue"})
+    sys.exit(1)
+
+
 @cli.command("list-tasks")
 @click.option("--status", "status_filter", default="pending",
               type=click.Choice(["pending", "complete", "in_progress", "all"]),
