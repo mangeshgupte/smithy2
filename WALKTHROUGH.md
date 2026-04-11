@@ -42,22 +42,49 @@ A todo app with natural language input.
 - Not this: No web UI, no cloud sync
 ```
 
-## 4. Start the Forge
+## 4. Start All Personas
+
+The Smithy runs three personas in a tmux session — Anvil (your interface), Marshal (allocator), and Forge (worker):
 
 ```bash
 cd ~/projects/my-app
-claude                    # Start Claude Code
-> Run 20 heats.          # Tell it to work
+
+# Option A: One command (creates tmux session with all three)
+smithy start-all
+
+# Option B: Manual (start Anvil, it spawns the others)
+cd personas/anvil && claude
+> Start
 ```
 
-The Smith will:
-1. Read your intent from `identity.md`
-2. Use the wavefront allocator to pick what stage to work on
-3. Research, plan, implement, test, edit, and document — all autonomously
-4. Commit every heat with `[stage] description`
-5. Stop after 20 heats and save a handoff
+`smithy start-all` creates a `smithy2` tmux session with three windows. Each runs Claude Code. Tell Anvil "Start" and it spawns Marshal and Forge as Agent Teams teammates.
 
-## 5. Review the Work
+## 5. Queue Tasks and Watch Them Execute
+
+The workflow is queue-driven:
+
+```bash
+# Add tasks to the queue
+smithy add-task implementation "Build the CLI parser"
+smithy add-task testing "Write tests for CLI parser"
+
+# Marshal prioritizes and pushes to Forge
+smithy set-next-tasks t-001 t-002       # Marshal does this automatically
+
+# Forge pops and executes
+smithy queue-pop                        # Forge does this in its loop
+```
+
+When Forge finishes a heat, `end-heat` auto-nudges Marshal. Marshal re-prioritizes, calls `set-next-tasks` which auto-nudges Forge. The cycle is nudge-driven, not poll-driven.
+
+If a persona is mid-heat when nudged, the nudge queues to `.smithy-nudge-queue/<persona>.jsonl` and drains on the next idle:
+
+```bash
+smithy nudge forge "New priority task available"   # Queues if busy
+smithy drain-nudges forge                          # Read + clear queued nudges
+```
+
+## 6. Review the Work
 
 While the Forge runs (or after):
 
@@ -71,11 +98,14 @@ smithy stats
 # See what happened
 git log --oneline -20
 
+# List active windows
+smithy sessions
+
 # Read the AAR
 cat outbox.md
 ```
 
-## 6. Use Bellows (Dashboard)
+## 7. Use Bellows (Dashboard)
 
 ```bash
 cd bellows
@@ -85,7 +115,7 @@ FORGE_PROJECTS_DIR=~/projects uv run uvicorn app:app --port 8080
 
 Bellows shows: project cards, activity feeds, decision queues, initiative board, morning briefings.
 
-## 7. Give Feedback
+## 8. Give Feedback
 
 Write to `feedback.md`:
 ```markdown
@@ -96,7 +126,7 @@ Write to `feedback.md`:
 
 The Forge reads feedback at the start of each run and creates fix tasks.
 
-## 8. Steer with Themes + Initiatives
+## 9. Steer with Themes + Initiatives
 
 ```bash
 # Create a strategic theme
@@ -112,10 +142,18 @@ smithy approve ini-001
 smithy add-task implementation "Login route" --initiative ini-001
 ```
 
-## 9. Continue Working
+## 10. Stop and Resume
 
 ```bash
-> Run 20 heats.    # Extend the budget anytime
+# Graceful shutdown (sends /exit to each Claude session)
+smithy stop-all
+
+# Or kill immediately
+smithy stop-all --kill
+
+# Resume later
+smithy start-all
+# In Anvil: "Start"
 ```
 
 The Smith picks up from the handoff, reads new feedback/inbox, and keeps going.
@@ -126,4 +164,5 @@ The Smith picks up from the handoff, reads new feedback/inbox, and keeps going.
 - **Flat files** — everything inspectable with `cat`
 - **Git is the substrate** — every heat commits
 - **Budget-bounded** — never exceeds allocated heats
+- **Nudge-driven** — personas nudge each other, queue when busy
 - **Self-directed** — generates tasks when queue is empty
