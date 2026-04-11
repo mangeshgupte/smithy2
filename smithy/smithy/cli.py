@@ -11,6 +11,8 @@ from .state import (
     VALID_STAGES, VALID_SIGNALS, VALID_OUTCOMES,
 )
 
+VALID_PERSONAS = ["forge", "marshal"]
+
 
 def _output(data: dict):
     """Print JSON to stdout (for LLM consumption)."""
@@ -433,12 +435,37 @@ def queue_show(ctx):
     _err(f"Queue: {len(result)} tasks")
 
 
+def _nudge_persona(persona, message):
+    """Send a message to a running smithy tmux session. Returns dict with result."""
+    import subprocess
+    session = f"smithy-{persona}"
+
+    result = subprocess.run(
+        ["tmux", "has-session", "-t", session],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        return {"nudged": False, "reason": "session not found", "session": session}
+
+    result = subprocess.run(
+        ["tmux", "send-keys", "-t", session, message, "Enter"],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        return {"nudged": False, "reason": f"send-keys failed: {result.stderr.strip()}", "session": session}
+
+    return {"nudged": True, "persona": persona, "session": session, "message": message}
+
+
 @cli.command("queue-push")
 @click.argument("task_id")
 @click.option("--top/--bottom", default=True, help="Insert at top (default) or bottom")
+@click.option("--no-nudge", is_flag=True, default=False, help="Skip auto-nudge after push")
+@click.option("--to", "target_persona", type=click.Choice(VALID_PERSONAS), default="forge",
+              help="Persona to nudge (default: forge)")
 @click.pass_context
-def queue_push(ctx, task_id, top):
-    """Add a task to the next_tasks queue."""
+def queue_push(ctx, task_id, top, no_nudge, target_persona):
+    """Add a task to the next_tasks queue and nudge the target persona."""
     root = ctx.obj["root"]
     state = load_state(root)
     queue_map = {t["id"]: t for t in state.get("queue", [])}
@@ -461,8 +488,22 @@ def queue_push(ctx, task_id, top):
     save_state(root, state)
 
     position = "top" if top else "bottom"
-    _output({"task_id": task_id, "position": position, "queue_size": len(next_tasks)})
-    _err(f"Pushed {task_id} to {position} of queue ({len(next_tasks)} total)")
+    result = {"task_id": task_id, "position": position, "queue_size": len(next_tasks)}
+
+    # Auto-nudge unless --no-nudge
+    if not no_nudge:
+        nudge_msg = f"Task {task_id} queued. Run smithy queue-pop to start."
+        nudge_result = _nudge_persona(target_persona, nudge_msg)
+        result["nudge"] = nudge_result
+        if nudge_result["nudged"]:
+            _err(f"Pushed {task_id} to {position} of queue ({len(next_tasks)} total) — nudged {target_persona}")
+        else:
+            _err(f"Pushed {task_id} to {position} of queue ({len(next_tasks)} total) — nudge skipped: {nudge_result['reason']}")
+    else:
+        result["nudge"] = {"nudged": False, "reason": "skipped (--no-nudge)"}
+        _err(f"Pushed {task_id} to {position} of queue ({len(next_tasks)} total)")
+
+    _output(result)
 
 
 @cli.command("queue-pop")
@@ -696,40 +737,18 @@ def next_task(ctx):
 # commands removed in t-262. Use queue-push/queue-pop/queue instead.
 
 
-VALID_PERSONAS = ["forge", "marshal"]
-
-
 @cli.command("nudge")
 @click.argument("persona", type=click.Choice(VALID_PERSONAS))
 @click.argument("message")
 @click.pass_context
 def nudge(ctx, persona, message):
     """Send a message to a running smithy tmux session."""
-    import subprocess
-    session = f"smithy-{persona}"
-
-    # Check if session exists
-    result = subprocess.run(
-        ["tmux", "has-session", "-t", session],
-        capture_output=True, text=True,
-    )
-    if result.returncode != 0:
-        _output({"nudged": False, "reason": "session not found", "session": session})
-        _err(f"Warning: tmux session '{session}' not found")
-        return
-
-    # Send keys
-    result = subprocess.run(
-        ["tmux", "send-keys", "-t", session, message, "Enter"],
-        capture_output=True, text=True,
-    )
-    if result.returncode != 0:
-        _output({"nudged": False, "reason": f"send-keys failed: {result.stderr.strip()}", "session": session})
-        _err(f"Failed to nudge {session}: {result.stderr.strip()}")
-        return
-
-    _output({"nudged": True, "persona": persona, "session": session, "message": message})
-    _err(f"Nudged {session}: {message[:60]}")
+    result = _nudge_persona(persona, message)
+    _output(result)
+    if result["nudged"]:
+        _err(f"Nudged {result['session']}: {message[:60]}")
+    else:
+        _err(f"Warning: {result['reason']} ({result['session']})")
 
 
 @cli.command("sessions")

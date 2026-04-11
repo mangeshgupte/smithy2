@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 843,
-    "used": 679,
+    "used": 680,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 247,
+      "heats": 248,
       "progress": 0.98,
-      "value_ema": 0.793
+      "value_ema": 0.855
     },
     "testing": {
       "target": 0.183,
@@ -2022,9 +2022,9 @@
     }
   ],
   "next_tasks": [
+    "t-264",
     "t-262",
     "t-263",
-    "t-264",
     "t-265",
     "t-257",
     "t-259",

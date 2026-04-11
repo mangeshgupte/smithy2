@@ -678,3 +678,4 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-11T13:08:53Z	677	editing	t-259	complete	0.8	🟢	Rewrote Marshal CLAUDE.md for always-on model: startup sequence, 3-step loop (check marshal-hook, check HOOK_DONE, wait), queue-based commands (set-next-tasks, queue-push, set-priority), priority rules, signal sources.
 2026-04-11T14:12:50Z	678	editing	generated	complete	0.85	🟢	t-262: Removed 6 old hook CLI commands, 6 state.py hook functions, updated protocol/loop.md to queue-pop, updated patrol checks, rewrote test_hooks.py for queue mechanism
 2026-04-11T14:16:05Z	679	implementation	generated	complete	0.85	🟢	t-263: smithy nudge/sessions/start commands — tmux session management primitives
+2026-04-11T14:20:47Z	680	implementation	generated	complete	1.0	🟢	t-264: Wired nudge into queue-push with --no-nudge and --to flags. Refactored nudge into shared _nudge_persona helper.
