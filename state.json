@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 567,
-    "used": 552,
+    "used": 556,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,27 +20,27 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 173,
+      "heats": 174,
       "progress": 0.98,
-      "value_ema": 0.761
+      "value_ema": 0.743
     },
     "testing": {
       "target": 0.183,
-      "heats": 104,
+      "heats": 105,
       "progress": 0.88,
-      "value_ema": 0.803
+      "value_ema": 0.802
     },
     "editing": {
       "target": 0.183,
-      "heats": 144,
+      "heats": 145,
       "progress": 0.88,
-      "value_ema": 0.776
+      "value_ema": 0.753
     },
     "marketing": {
       "target": 0.219,
-      "heats": 73,
+      "heats": 74,
       "progress": 0.84,
-      "value_ema": 0.722
+      "value_ema": 0.715
     }
   },
   "allocator": {
@@ -48,7 +48,7 @@
       "research": 0.5,
       "planning": 0.5,
       "implementation": -0.5,
-      "testing": -0.039,
+      "testing": -0.041,
       "editing": -0.5,
       "marketing": 0.5
     }
@@ -596,7 +596,7 @@
       "id": "t-123",
       "stage": "testing",
       "desc": "Test Bellows rename: verify all apps still work after rename",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -604,7 +604,7 @@
       "id": "t-124",
       "stage": "implementation",
       "desc": "Tutor: add topic review mode \u2014 replay completed topic exercises for retention",
-      "status": "pending",
+      "status": "complete",
       "priority": 3,
       "blocked_by": []
     },
@@ -622,6 +622,22 @@
       "desc": "Write a concise project overview (1-page) for sharing externally",
       "status": "complete",
       "priority": 3,
+      "blocked_by": []
+    },
+    {
+      "id": "t-127",
+      "stage": "marketing",
+      "desc": "Final AAR + dispatch report for heats 544-563",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-128",
+      "stage": "editing",
+      "desc": "Update STRATEGY.md to heat 555: new subject, Bellows rename, current stats",
+      "status": "complete",
+      "priority": 2,
       "blocked_by": []
     }
   ],
