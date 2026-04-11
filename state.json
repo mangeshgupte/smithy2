@@ -1,8 +1,8 @@
 {
   "project": "the-smithy",
   "budget": {
-    "total_heats": 622,
-    "used": 583,
+    "total_heats": 637,
+    "used": 588,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,15 +20,15 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 188,
+      "heats": 191,
       "progress": 0.98,
-      "value_ema": 0.846
+      "value_ema": 0.8
     },
     "testing": {
       "target": 0.183,
-      "heats": 110,
+      "heats": 111,
       "progress": 0.88,
-      "value_ema": 0.836
+      "value_ema": 0.825
     },
     "editing": {
       "target": 0.183,
@@ -38,9 +38,9 @@
     },
     "marketing": {
       "target": 0.219,
-      "heats": 77,
+      "heats": 78,
       "progress": 0.84,
-      "value_ema": 0.726
+      "value_ema": 0.718
     }
   },
   "allocator": {
@@ -48,8 +48,8 @@
       "research": 0.5,
       "planning": 0.5,
       "implementation": -0.5,
-      "testing": -0.034,
-      "editing": -0.489,
+      "testing": -0.035,
+      "editing": -0.483,
       "marketing": 0.5
     }
   },
@@ -756,7 +756,7 @@
       "id": "t-143",
       "stage": "editing",
       "desc": "Update protocol/loop.md Step 1: remove dispatch/anvil-to-forge.md from Forge's read list \u2014 Forge reads task context instead",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": []
     },
@@ -764,7 +764,7 @@
       "id": "t-144",
       "stage": "testing",
       "desc": "Test context field: add-task with --context, pick-task returns context, context survives round-trip through state.json",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -812,7 +812,7 @@
       "id": "t-150",
       "stage": "editing",
       "desc": "STRATEGY.md update to heat 568",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 2,
       "blocked_by": []
     },
@@ -860,7 +860,7 @@
       "id": "t-156",
       "stage": "implementation",
       "desc": "Allocator initiative gating. In smithy/smithy/allocator.py score_stages(): (1) Accept initiatives list as parameter. (2) Queued-task bonus (+0.07/task) only counts tasks where initiative_id is null OR linked initiative status is approved/active. Tasks from proposed/rejected initiatives generate zero backlog pressure. (3) Theme rank bonus: build a map of initiative_id -> theme_rank. For eligible tasks from rank-1 theme, multiply their stage's queued-task bonus by 1.5. Update cli.py allocate command to pass initiatives to score_stages().",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -884,7 +884,7 @@
       "id": "t-159",
       "stage": "implementation",
       "desc": "Bellows board route + template. (1) In bellows/app.py add GET /project/{name}/board route that reads project data and renders board.html. Add 'Board' sub-tab to the nav in base template (alongside Activity, Decide, Direct). (2) Create bellows/templates/board.html: 4 kanban columns (Proposed, Approved, Active, Done). Each initiative renders as a card showing: title, theme name as colored tag, task progress (e.g. '3/7 tasks'), heats_used/budget_cap bar (if cap set), description truncated to 2 lines. Proposed column cards have Approve/Reject buttons (POST forms). Use existing CSS patterns from decide.html for card styling. Columns use CSS grid or flexbox, cards stack vertically within columns.",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -892,7 +892,7 @@
       "id": "t-160",
       "stage": "implementation",
       "desc": "Bellows initiative endpoints + home badge. (1) In bellows/app.py add POST /project/{name}/initiative/{id}/approve \u2014 loads state.json, finds initiative by id, sets status='approved', saves state. Redirect back to board. (2) Add POST /project/{name}/initiative/{id}/reject \u2014 same but status='rejected'. (3) In bellows/templates/home.html: add proposed-initiative badge next to existing decision badge on project cards. Show count of initiatives with status='proposed'. Use same badge styling as decision-badge.",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -908,7 +908,7 @@
       "id": "t-162",
       "stage": "testing",
       "desc": "Bellows intent hierarchy tests. In bellows/tests/ add or extend test file: (1) Board route returns 200, renders initiative cards. (2) Approve endpoint changes initiative status in state.json. (3) Reject endpoint changes initiative status. (4) forge_reader extracts initiatives, computes task counts, groups by initiative_id. (5) Home page shows proposed-initiative badge when proposed initiatives exist. Use existing test patterns from test_forge_reader.py.",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -924,7 +924,7 @@
       "id": "t-164",
       "stage": "marketing",
       "desc": "AAR + handoff for 15-heat sprint",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 1,
       "blocked_by": []
     }
