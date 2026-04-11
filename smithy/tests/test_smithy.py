@@ -394,3 +394,78 @@ class TestInitiatives:
         # Initiative is still "proposed" — should fail
         result = runner.invoke(cli, ["--dir", str(project), "add-task", "implementation", "Bad", "--initiative", "ini-001"])
         assert result.exit_code != 0
+
+
+class TestNextTask:
+    def test_empty_next_tasks(self, project, runner):
+        result = runner.invoke(cli, ["--dir", str(project), "next-task"])
+        data = json.loads(result.output)
+        assert data["source"] == "none"
+        assert data["task"] is None
+
+    def test_pop_next_task(self, project, runner):
+        # Manually add next_tasks to state
+        state = json.loads((project / "state.json").read_text())
+        state["next_tasks"] = [
+            {"task_id": "t-001", "stage": "implementation", "rationale": "highest priority"},
+        ]
+        (project / "state.json").write_text(json.dumps(state))
+
+        result = runner.invoke(cli, ["--dir", str(project), "next-task"])
+        data = json.loads(result.output)
+        assert data["source"] == "marshal"
+        assert data["task"]["id"] == "t-001"
+        assert data["stage"] == "implementation"
+        assert data["rationale"] == "highest priority"
+
+        # Verify it was popped
+        state2 = json.loads((project / "state.json").read_text())
+        assert len(state2.get("next_tasks", [])) == 0
+
+    def test_pop_preserves_remaining(self, project, runner):
+        state = json.loads((project / "state.json").read_text())
+        state["next_tasks"] = [
+            {"task_id": "t-001", "stage": "implementation", "rationale": "first"},
+            {"task_id": "t-001", "stage": "testing", "rationale": "second"},
+        ]
+        (project / "state.json").write_text(json.dumps(state))
+
+        result = runner.invoke(cli, ["--dir", str(project), "next-task"])
+        data = json.loads(result.output)
+        assert data["remaining_queued"] == 1
+
+        state2 = json.loads((project / "state.json").read_text())
+        assert len(state2["next_tasks"]) == 1
+        assert state2["next_tasks"][0]["rationale"] == "second"
+
+
+class TestValidateNextTasks:
+    def test_valid_next_tasks(self, project):
+        state = json.loads((project / "state.json").read_text())
+        state["next_tasks"] = [{"task_id": "t-001", "stage": "impl", "rationale": "test"}]
+        errors = validate_state(state)
+        assert not errors
+
+    def test_invalid_next_tasks_type(self, project):
+        state = json.loads((project / "state.json").read_text())
+        state["next_tasks"] = "not a list"
+        errors = validate_state(state)
+        assert any("next_tasks must be a list" in e for e in errors)
+
+    def test_unknown_task_reference(self, project):
+        state = json.loads((project / "state.json").read_text())
+        state["next_tasks"] = [{"task_id": "t-999", "stage": "impl"}]
+        errors = validate_state(state)
+        assert any("t-999" in e for e in errors)
+
+    def test_valid_rationale(self, project):
+        state = json.loads((project / "state.json").read_text())
+        state["prioritization_rationale"] = "Focus on testing"
+        errors = validate_state(state)
+        assert not errors
+
+    def test_invalid_rationale_type(self, project):
+        state = json.loads((project / "state.json").read_text())
+        state["prioritization_rationale"] = 42
+        errors = validate_state(state)
+        assert any("prioritization_rationale must be a string" in e for e in errors)
