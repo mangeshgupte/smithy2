@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 843,
-    "used": 622,
+    "used": 623,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -38,9 +38,9 @@
     },
     "marketing": {
       "target": 0.219,
-      "heats": 82,
+      "heats": 83,
       "progress": 0.84,
-      "value_ema": 0.719
+      "value_ema": 0.713
     }
   },
   "allocator": {
@@ -1004,7 +1004,7 @@
       "id": "t-174",
       "stage": "testing",
       "desc": "Test user sessions: two users see different progress",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 2,
       "blocked_by": []
     },
@@ -1435,7 +1435,7 @@
       "id": "t-224",
       "stage": "marketing",
       "desc": "Sprint AAR + handoff",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 1,
       "blocked_by": []
     }
