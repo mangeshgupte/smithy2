@@ -1,8 +1,8 @@
 {
   "project": "the-smithy",
   "budget": {
-    "total_heats": 587,
-    "used": 563,
+    "total_heats": 597,
+    "used": 564,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -38,9 +38,9 @@
     },
     "marketing": {
       "target": 0.219,
-      "heats": 74,
+      "heats": 75,
       "progress": 0.84,
-      "value_ema": 0.715
+      "value_ema": 0.71
     }
   },
   "allocator": {
@@ -49,7 +49,7 @@
       "planning": 0.5,
       "implementation": -0.5,
       "testing": -0.036,
-      "editing": -0.5,
+      "editing": -0.499,
       "marketing": 0.5
     }
   },
@@ -716,7 +716,7 @@
       "id": "t-138",
       "stage": "testing",
       "desc": "Full regression after PWA + content additions",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 2,
       "blocked_by": []
     },
@@ -740,8 +740,72 @@
       "id": "t-141",
       "stage": "marketing",
       "desc": "Final AAR + handoff for heats 557-563",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-142",
+      "stage": "implementation",
+      "desc": "Add --context option to smithy add-task: optional string field stored on task objects in state.json",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-143",
+      "stage": "editing",
+      "desc": "Update protocol/loop.md Step 1: remove dispatch/anvil-to-forge.md from Forge's read list \u2014 Forge reads task context instead",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-144",
+      "stage": "testing",
+      "desc": "Test context field: add-task with --context, pick-task returns context, context survives round-trip through state.json",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-145",
+      "stage": "implementation",
+      "desc": "Tutor responsive: nav sidebar + body shift. Bottom tab bar becomes 72px left sidebar at 1024px+. Active tab gets left border accent. Body gets margin-left: 72px. See design/2026-04-10-tutor-responsive-desktop.md sections 1-2.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-146",
+      "stage": "implementation",
+      "desc": "Tutor responsive: subject cards 2-col grid + welcome features row. .subject-list becomes 2-col grid, .welcome-features becomes row, .container widens to 960px. See design spec sections 3-4.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-147",
+      "stage": "implementation",
+      "desc": "Tutor responsive: lesson page 2-panel layout. Add page_class block to base.html, lesson-page class to lesson.html. CSS grid: concepts left (40%), exercises right (60%). See design spec section 6.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-148",
+      "stage": "implementation",
+      "desc": "Tutor responsive: remaining pages. Review card max-width 640px centered, deck-list 2-col grid, browse-topics 2-col grid, code inputs wider/taller. See design spec sections 7-12.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-149",
+      "stage": "testing",
+      "desc": "Tutor responsive: verify all 13 items in design spec testing checklist \u2014 sidebar, grids, 2-panel lesson, resize, animations, no horizontal scroll",
+      "status": "pending",
+      "priority": 2,
       "blocked_by": []
     }
   ],
