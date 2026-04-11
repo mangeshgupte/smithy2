@@ -30,7 +30,7 @@ smithy patrol --fix  # Find and fix state inconsistencies
 smithy status        # At-a-glance project summary
 ```
 
-18 commands total. 158 tests across all projects. Install: `pip install -e smithy/`
+28 commands total. 172 tests across all projects. Install: `pip install -e smithy/`
 
 ## Bellows
 
@@ -68,11 +68,11 @@ claude
 
 ## Built With The Smithy
 
-The Smithy dogfoods itself. Over 550 heats, it built:
+The Smithy dogfoods itself. Over 600 heats, it built:
 
 - **The Smithy protocol** — the system you're reading about
-- **AI Tutor** — 4 subjects (Python, Math, English, Logic), SM-2 spaced repetition, teach-it-back mode, 8 CSS animations, 111 tests
-- **Bellows** — project dashboard with stage-colored activity feeds, segmented budget bars, tap-to-decide, morning briefings
+- **AI Tutor** — 5 subjects (Python, Math, English, Logic, Creative Writing), user sessions, PWA offline, SM-2 spaced repetition, teach-it-back, 111 tests
+- **Bellows** — project dashboard with initiative board, live run indicator, stage-colored activity feeds, segmented budget bars, tap-to-decide
 
 ## Design Principles
 
