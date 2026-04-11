@@ -1,5 +1,44 @@
 # Changelog
 
+## v1.5 — Queue Unification + Nudge Integration (heats 634-687)
+
+### Unified Task Queue
+- **Removed old hook mechanism** (`.forge-hook.json`, `hook-marshal`) — replaced with single ordered queue
+- **`queue-push`** / **`queue-pop`** / **`queue`** / **`queue-clear`** — atomic queue operations on `next_tasks` in state.json
+- **`set-next-tasks`** — Marshal sets ordered task list, validates all IDs exist and are pending
+- **`set-priority`** — change task priority (0-3)
+- **`list-tasks`** — filter by status/stage/initiative, sort by priority, resolve initiative titles
+
+### Nudge System
+- **`nudge <persona> <message>`** — send a message to a persona's tmux window; if mid-heat (checkpoint exists), queues to `.smithy-nudge-queue/<persona>.jsonl`
+- **`drain-nudges <persona>`** — read and clear queued nudges (JSONL format, handles malformed lines)
+- **Auto-nudge** on `queue-push` (→ forge), `set-next-tasks` (→ forge), `end-heat` (→ marshal)
+- **`--no-nudge`** flag on queue-push, set-next-tasks, end-heat to suppress
+
+### Session Management
+- **`start-all`** — create `smithy2` tmux session with anvil, forge, marshal windows, each running Claude Code
+- **`start <persona>`** / **`stop <persona>`** — manage individual persona windows
+- **`stop-all`** — graceful (/exit → exit) or `--kill` shutdown
+- **`sessions`** — list active persona windows with last-activity timestamps
+
+### Always-On Loops
+- **Forge loop rewritten**: check queue → pop → execute → end-heat → repeat (no more allocator-first)
+- **Marshal loop rewritten**: queue-based, computes priorities and fills queue for Forge
+- **Agent Teams model**: Anvil spawns Marshal and Forge as Claude Code teammates — replaces flat-file dispatch
+
+### Persona Updates
+- **Anvil** — lead agent, spawns teammates, coordinates via SendMessage (replaces dispatch files)
+- **Marshal** — always-on allocator loop, uses set-next-tasks to assign work
+- **Forge** — queue-pop loop, GUPP principle, reports via SendMessage
+
+### Test Coverage (this cycle)
+- **40 new tests**: nudge helpers (6), nudge command with tmux mocking (4), drain-nudges (4), sessions/start/stop (14), queue shortcuts (12)
+- All tests use `monkeypatch` for subprocess isolation
+
+### Stats
+- **30+ smithy commands**
+- **687 heats**
+
 ## v1.4 — Steering UIs + Constraint Enforcement + Content Expansion (heats 607-633)
 
 ### 4 Steering UIs — Research + Prototypes
