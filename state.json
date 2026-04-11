@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 587,
-    "used": 561,
+    "used": 563,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,15 +20,15 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 177,
+      "heats": 178,
       "progress": 0.98,
-      "value_ema": 0.831
+      "value_ema": 0.792
     },
     "testing": {
       "target": 0.183,
-      "heats": 105,
+      "heats": 106,
       "progress": 0.88,
-      "value_ema": 0.802
+      "value_ema": 0.801
     },
     "editing": {
       "target": 0.183,
@@ -684,7 +684,7 @@
       "id": "t-134",
       "stage": "testing",
       "desc": "Test PWA: service worker registers, assets cached, offline fallback works",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -700,7 +700,7 @@
       "id": "t-136",
       "stage": "implementation",
       "desc": "Tutor: add exercise difficulty indicators (stars or color) visible during practice",
-      "status": "pending",
+      "status": "complete",
       "priority": 3,
       "blocked_by": []
     },
@@ -734,6 +734,14 @@
       "desc": "CHANGELOG v1.2: PWA + content sprint",
       "status": "pending",
       "priority": 3,
+      "blocked_by": []
+    },
+    {
+      "id": "t-141",
+      "stage": "marketing",
+      "desc": "Final AAR + handoff for heats 557-563",
+      "status": "in_progress",
+      "priority": 1,
       "blocked_by": []
     }
   ],

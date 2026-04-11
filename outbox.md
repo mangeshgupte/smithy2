@@ -2,6 +2,17 @@
 
 The Smith writes status updates, questions, and summaries here.
 
+## 2026-04-10 [heat 564, AAR — heats 557-563]
+
+7 heats: impl×4, research×1, testing×1, planning×1. Signal: 🟢×7.
+Key: **PWA offline + Logic expansion + difficulty indicators.**
+- PWA: manifest.json, service worker (cache-first static, network-first pages), offline fallback, 3 new routes
+- Logic: expanded from 7→10 topics (counterexamples, hidden assumptions, evaluating evidence), now 32 exercises
+- Difficulty: ●●○ dots on exercises showing level 1-3
+- All 158 tests pass, PWA verified with 6 checks
+
+Next: More tutor subjects, Bellows project creation UI, user auth.
+
 ## 2026-04-10 [heat 555, AAR — heats 544-555]
 
 12 heats: impl×5, testing×2, editing×1, marketing×2, planning×1, research×1. Signal: 🟢×12.
