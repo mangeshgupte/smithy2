@@ -33,11 +33,28 @@ def compute_targets(benefits: dict) -> dict:
     return {s: round(v / t_total, 3) for s, v in targets.items()}
 
 
-def score_stages(stages: dict, integrals: dict, human_priorities: list, queue: list, initiatives: list = None) -> dict:
+def score_stages(stages: dict, integrals: dict, human_priorities: list, queue: list, initiatives: list = None, constraints: list = None) -> dict:
     """Score each stage using PI controller + bonuses."""
     benefits = compute_benefits(stages)
     targets = compute_targets(benefits)
     total_heats = sum(s.get("heats", 0) for s in stages.values()) or 1
+
+    # Build constraint overrides
+    capped_stages = set()  # stages that have hit their budget cap
+    floor_stages = {}  # stages that need a boost to meet floor
+    if constraints:
+        for c in constraints:
+            if c.get("status") != "active":
+                continue
+            if c["type"] == "budget_cap" and c.get("stage"):
+                stage_heats = stages.get(c["stage"], {}).get("heats", 0)
+                if stage_heats >= c.get("value", 999):
+                    capped_stages.add(c["stage"])
+            elif c["type"] == "floor" and c.get("stage"):
+                floor_pct = c.get("value", 0)
+                actual_pct = stages.get(c["stage"], {}).get("heats", 0) / total_heats * 100
+                if actual_pct < floor_pct:
+                    floor_stages[c["stage"]] = floor_pct - actual_pct
 
     # Build set of active/approved initiative IDs for gating
     active_ini_ids = set()
@@ -85,6 +102,13 @@ def score_stages(stages: dict, integrals: dict, human_priorities: list, queue: l
     for stage in VALID_STAGES:
         pending_in_stage = sum(1 for t in eligible_queue if t["stage"] == stage and t["status"] == "pending")
         scores[stage] = scores.get(stage, 0) + pending_in_stage * 0.07
+
+    # Apply constraint overrides
+    for stage in capped_stages:
+        scores[stage] = -1.0  # suppress capped stages
+
+    for stage, deficit in floor_stages.items():
+        scores[stage] = scores.get(stage, 0) + deficit * 0.05  # boost underfunded stages
 
     return scores, targets, new_integrals
 
