@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 567,
-    "used": 547,
+    "used": 548,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 171,
+      "heats": 172,
       "progress": 0.98,
-      "value_ema": 0.824
+      "value_ema": 0.787
     },
     "testing": {
       "target": 0.183,
@@ -48,7 +48,7 @@
       "research": 0.5,
       "planning": 0.5,
       "implementation": -0.5,
-      "testing": -0.039,
+      "testing": -0.038,
       "editing": -0.5,
       "marketing": 0.5
     }
@@ -508,7 +508,7 @@
       "id": "t-112",
       "stage": "implementation",
       "desc": "Rename ai-coworker to Bellows in state.json, identity.md, README.md, STRATEGY.md, hooks, research docs, and all other references",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 1,
       "blocked_by": []
     },
@@ -516,7 +516,7 @@
       "id": "t-113",
       "stage": "testing",
       "desc": "Verify Bellows rename: app starts, grep -ri commissioner and ai-coworker return no hits outside git history/worklog",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 2,
       "blocked_by": []
     },
