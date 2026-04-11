@@ -12,9 +12,14 @@ header h1 { font-size: 24px; }
 .subtitle { color: var(--text-muted); font-size: 14px; margin-top: 4px; }
 .budget-info { color: var(--blue); font-size: 13px; margin-top: 8px; font-weight: 600; }
 
-.zoom-controls { display: flex; gap: 6px; justify-content: center; margin-top: 8px; }
-.zoom-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; color: var(--text-muted); padding: 4px 12px; font-size: 12px; cursor: pointer; }
-.zoom-btn:hover, .zoom-btn.active { border-color: var(--blue); color: var(--blue); }
+/* Range control — scrollbar-like viewport selector */
+.range-control { padding-left: 140px; margin-bottom: 12px; }
+.range-track { position: relative; height: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+.range-window { position: absolute; top: 2px; height: 10px; background: rgba(88,166,255,0.2); border: 1px solid var(--blue); border-radius: 4px; cursor: grab; min-width: 20px; }
+.range-window:active { cursor: grabbing; }
+.range-thumb { position: absolute; top: -1px; width: 10px; height: 16px; background: var(--blue); border-radius: 4px; cursor: ew-resize; transform: translateX(-50%); z-index: 2; }
+.range-thumb:hover { background: #79bbff; }
+.range-labels { display: flex; justify-content: space-between; margin-top: 4px; font-size: 11px; color: var(--text-muted); }
 
 .timeline-container { margin: 24px 0; }
 

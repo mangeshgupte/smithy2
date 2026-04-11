@@ -11,17 +11,25 @@
         <h1>📅 Timeline</h1>
         <p class="subtitle">{{ project }} — drag bar endpoints to allocate budget</p>
         <p class="budget-info">Budget: {{ used }}/{{ total }} heats ({{ total - used }} remaining)</p>
-        <div class="zoom-controls">
-            <button onclick="setZoom(50)" class="zoom-btn">50h</button>
-            <button onclick="setZoom(100)" class="zoom-btn">100h</button>
-            <button onclick="setZoom(250)" class="zoom-btn active">250h</button>
-        </div>
     </header>
 
-    <div class="timeline-container">
+    <div class="timeline-container" id="timeline-container">
+        <!-- Range control on the axis -->
+        <div class="range-control" id="range-control">
+            <div class="range-track">
+                <div class="range-thumb range-thumb-left" id="range-left"></div>
+                <div class="range-window" id="range-window"></div>
+                <div class="range-thumb range-thumb-right" id="range-right"></div>
+            </div>
+            <div class="range-labels">
+                <span id="range-start-label">h{{ timeline_start }}</span>
+                <span id="range-end-label">h{{ timeline_end }}</span>
+            </div>
+        </div>
+
         <!-- Axis -->
         <div class="timeline-axis">
-            <div class="axis-labels">
+            <div class="axis-labels" id="axis-labels">
                 {% set range_size = timeline_end - timeline_start %}
                 {% for i in range(6) %}
                 {% set heat = timeline_start + (range_size * i / 5)|int %}
@@ -30,11 +38,13 @@
             </div>
             <div class="axis-line"></div>
             <!-- Current position marker -->
-            <div class="now-marker" style="left: 0%" title="Now (heat {{ used }})"></div>
+            {% set range_size = timeline_end - timeline_start %}
+            {% set now_pct = ((used - timeline_start) / range_size * 100)|round(1) if range_size > 0 else 0 %}
+            <div class="now-marker" style="left: {{ now_pct }}%" title="Now (heat {{ used }})"></div>
         </div>
 
         <!-- Bars -->
-        <div class="timeline-bars">
+        <div class="timeline-bars" id="timeline-bars">
             {% for ini in initiatives %}
             {% set range_size = timeline_end - timeline_start %}
             {% set start_pct = ((ini.planned_start - timeline_start) / range_size * 100)|round(1) if range_size > 0 else 0 %}
@@ -50,7 +60,6 @@
                          title="{{ ini.title }}: h{{ ini.planned_start }}-h{{ ini.planned_end }} ({{ ini.planned_end - ini.planned_start }}h)">
                         <span class="bar-text">{{ ini.planned_end - ini.planned_start }}h</span>
                     </div>
-                    <!-- Progress within bar -->
                     {% if ini.heats_used > 0 %}
                     {% set progress_pct = (ini.heats_used / (ini.planned_end - ini.planned_start) * width_pct)|round(1) if (ini.planned_end - ini.planned_start) > 0 else 0 %}
                     <div class="bar-progress" style="left: {{ start_pct }}%; width: {{ progress_pct }}%"></div>
@@ -82,19 +91,175 @@
         <span class="legend-item"><span class="dot approved"></span> Approved</span>
         <span class="legend-item"><span class="dot active"></span> Active</span>
         <span class="legend-item"><span class="dot progress"></span> Progress</span>
-        <span class="legend-item muted">Drag bars to reallocate</span>
+        <span class="legend-item muted">Drag bars to reallocate · Scroll to pan · Ctrl+scroll to zoom</span>
     </div>
 
     <script>
-    const TIMELINE_START = {{ timeline_start }};
+    // View state
+    let viewStart = {{ timeline_start }};
+    let viewEnd = {{ timeline_end }};
+    const ABS_START = {{ abs_start }};
+    const ABS_END = {{ abs_end }};
+    const USED = {{ used }};
+    const MIN_WINDOW = 20;
+    const MAX_WINDOW = 300;
 
-    function setZoom(range) {
-        // Reload with zoom parameter
-        window.location.href = '/?zoom=' + range;
+    // --- Range control (scrollbar-like) ---
+    const rangeTrack = document.querySelector('.range-track');
+    const rangeWindow = document.getElementById('range-window');
+    const rangeLeft = document.getElementById('range-left');
+    const rangeRight = document.getElementById('range-right');
+    const rangeStartLabel = document.getElementById('range-start-label');
+    const rangeEndLabel = document.getElementById('range-end-label');
+
+    function updateRangeControl() {
+        const totalRange = ABS_END - ABS_START || 1;
+        const leftPct = (viewStart - ABS_START) / totalRange * 100;
+        const widthPct = (viewEnd - viewStart) / totalRange * 100;
+        rangeLeft.style.left = leftPct + '%';
+        rangeWindow.style.left = leftPct + '%';
+        rangeWindow.style.width = widthPct + '%';
+        rangeRight.style.left = (leftPct + widthPct) + '%';
+        rangeStartLabel.textContent = 'h' + viewStart;
+        rangeEndLabel.textContent = 'h' + viewEnd;
     }
-    const TIMELINE_END = {{ timeline_end }};
-    const RANGE = TIMELINE_END - TIMELINE_START || 1;
 
+    function clampView() {
+        let w = viewEnd - viewStart;
+        if (w < MIN_WINDOW) { viewEnd = viewStart + MIN_WINDOW; w = MIN_WINDOW; }
+        if (w > MAX_WINDOW) { viewEnd = viewStart + MAX_WINDOW; w = MAX_WINDOW; }
+        if (viewStart < ABS_START) { viewStart = ABS_START; viewEnd = viewStart + w; }
+        if (viewEnd > ABS_END) { viewEnd = ABS_END; viewStart = Math.max(ABS_START, viewEnd - w); }
+    }
+
+    function refreshTimeline() {
+        clampView();
+        updateRangeControl();
+        updateAxisLabels();
+        updateBars();
+        updateNowMarker();
+        // Update URL without reload
+        const url = new URL(window.location);
+        url.searchParams.set('start', viewStart);
+        url.searchParams.set('end', viewEnd);
+        history.replaceState(null, '', url);
+    }
+
+    function updateAxisLabels() {
+        const labels = document.getElementById('axis-labels');
+        labels.innerHTML = '';
+        const range = viewEnd - viewStart || 1;
+        for (let i = 0; i < 6; i++) {
+            const heat = viewStart + Math.round(range * i / 5);
+            const span = document.createElement('span');
+            span.className = 'axis-label';
+            span.style.left = (i / 5 * 100) + '%';
+            span.textContent = 'h' + heat;
+            labels.appendChild(span);
+        }
+    }
+
+    function updateNowMarker() {
+        const marker = document.querySelector('.now-marker');
+        if (!marker) return;
+        const range = viewEnd - viewStart || 1;
+        const pct = (USED - viewStart) / range * 100;
+        marker.style.left = pct + '%';
+        marker.style.display = (pct < -5 || pct > 105) ? 'none' : '';
+    }
+
+    function updateBars() {
+        const range = viewEnd - viewStart || 1;
+        document.querySelectorAll('.bar-fill').forEach(bar => {
+            const s = parseInt(bar.dataset.start);
+            const e = parseInt(bar.dataset.end);
+            const leftPct = (s - viewStart) / range * 100;
+            const widthPct = (e - s) / range * 100;
+            bar.style.left = leftPct + '%';
+            bar.style.width = widthPct + '%';
+        });
+        document.querySelectorAll('.bar-progress').forEach(prog => {
+            const bar = prog.parentElement.querySelector('.bar-fill');
+            if (bar) prog.style.left = bar.style.left;
+        });
+    }
+
+    // Draggable range thumbs
+    function setupRangeDrag(thumb, side) {
+        thumb.addEventListener('mousedown', e => {
+            e.preventDefault();
+            const trackRect = rangeTrack.getBoundingClientRect();
+            const totalRange = ABS_END - ABS_START || 1;
+
+            const onMove = e2 => {
+                const pct = (e2.clientX - trackRect.left) / trackRect.width;
+                const heat = Math.round(ABS_START + pct * totalRange);
+
+                if (side === 'left') {
+                    viewStart = Math.max(ABS_START, Math.min(viewEnd - MIN_WINDOW, heat));
+                } else {
+                    viewEnd = Math.min(ABS_END, Math.max(viewStart + MIN_WINDOW, heat));
+                }
+                refreshTimeline();
+            };
+            const onUp = () => {
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onUp);
+            };
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+        });
+    }
+    setupRangeDrag(rangeLeft, 'left');
+    setupRangeDrag(rangeRight, 'right');
+
+    // Draggable range window (pan)
+    rangeWindow.addEventListener('mousedown', e => {
+        if (e.target === rangeLeft || e.target === rangeRight) return;
+        e.preventDefault();
+        const trackRect = rangeTrack.getBoundingClientRect();
+        const totalRange = ABS_END - ABS_START || 1;
+        const startX = e.clientX;
+        const origStart = viewStart;
+        const origEnd = viewEnd;
+        const w = origEnd - origStart;
+
+        const onMove = e2 => {
+            const dx = e2.clientX - startX;
+            const dHeat = Math.round(dx / trackRect.width * totalRange);
+            viewStart = origStart + dHeat;
+            viewEnd = viewStart + w;
+            refreshTimeline();
+        };
+        const onUp = () => {
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+        };
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+    });
+
+    // Mouse wheel: scroll = pan, ctrl+scroll = zoom
+    document.getElementById('timeline-container').addEventListener('wheel', e => {
+        e.preventDefault();
+        const w = viewEnd - viewStart;
+
+        if (e.ctrlKey || e.metaKey) {
+            // Zoom
+            const zoomAmount = Math.round(w * 0.1) * (e.deltaY > 0 ? 1 : -1);
+            const center = (viewStart + viewEnd) / 2;
+            viewStart = Math.round(center - (w + zoomAmount) / 2);
+            viewEnd = Math.round(center + (w + zoomAmount) / 2);
+        } else {
+            // Pan
+            const panAmount = Math.round(w * 0.1) * (e.deltaY > 0 ? 1 : -1);
+            viewStart += panAmount;
+            viewEnd += panAmount;
+        }
+        refreshTimeline();
+    }, { passive: false });
+
+    // --- Bar drag (existing) ---
     document.querySelectorAll('.bar-fill').forEach(bar => {
         bar.style.cursor = 'ew-resize';
         let dragging = false;
@@ -113,32 +278,27 @@
                 if (!dragging) return;
                 const dx = e2.clientX - startX;
                 const dpct = (dx / trackRect.width) * 100;
-
-                // Determine if dragging left edge or right edge
                 const mouseRelToBar = startX - (trackRect.left + trackRect.width * origLeft / 100);
                 const barPixelWidth = trackRect.width * origWidth / 100;
 
                 if (mouseRelToBar < barPixelWidth * 0.3) {
-                    // Left edge: adjust start
                     const newLeft = Math.max(0, Math.min(origLeft + origWidth - 2, origLeft + dpct));
                     const newWidth = origWidth - (newLeft - origLeft);
                     bar.style.left = newLeft + '%';
                     bar.style.width = newWidth + '%';
                 } else if (mouseRelToBar > barPixelWidth * 0.7) {
-                    // Right edge: adjust end
                     const newWidth = Math.max(2, Math.min(100 - origLeft, origWidth + dpct));
                     bar.style.width = newWidth + '%';
                 } else {
-                    // Middle: move whole bar
                     const newLeft = Math.max(0, Math.min(100 - origWidth, origLeft + dpct));
                     bar.style.left = newLeft + '%';
                 }
 
-                // Update text
                 const left = parseFloat(bar.style.left);
                 const width = parseFloat(bar.style.width);
-                const newStart = Math.round(TIMELINE_START + left / 100 * RANGE);
-                const newEnd = Math.round(TIMELINE_START + (left + width) / 100 * RANGE);
+                const range = viewEnd - viewStart || 1;
+                const newStart = Math.round(viewStart + left / 100 * range);
+                const newEnd = Math.round(viewStart + (left + width) / 100 * range);
                 bar.querySelector('.bar-text').textContent = (newEnd - newStart) + 'h';
                 bar.title = bar.dataset.id + ': h' + newStart + '-h' + newEnd;
             };
@@ -148,12 +308,14 @@
                 document.removeEventListener('mousemove', onMove);
                 document.removeEventListener('mouseup', onUp);
 
-                // Save (snap to 5-heat grid)
                 const left = parseFloat(bar.style.left);
                 const width = parseFloat(bar.style.width);
+                const range = viewEnd - viewStart || 1;
                 const snap = v => Math.round(v / 5) * 5;
-                const newStart = snap(TIMELINE_START + left / 100 * RANGE);
-                const newEnd = snap(TIMELINE_START + (left + width) / 100 * RANGE);
+                const newStart = snap(viewStart + left / 100 * range);
+                const newEnd = snap(viewStart + (left + width) / 100 * range);
+                bar.dataset.start = newStart;
+                bar.dataset.end = newEnd;
 
                 fetch('/update', {
                     method: 'POST',
@@ -166,6 +328,9 @@
             document.addEventListener('mouseup', onUp);
         });
     });
+
+    // Init
+    updateRangeControl();
     </script>
 </body>
 </html>

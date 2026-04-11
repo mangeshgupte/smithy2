@@ -29,12 +29,11 @@ def _save_state(state):
 
 
 @app.get("/", response_class=HTMLResponse)
-async def index(request: Request, zoom: int = 250):
+async def index(request: Request, start: int = None, end: int = None):
     state = _load_state()
     budget = state.get("budget", {})
     used = budget.get("used", 0)
     total = budget.get("total_heats", 0)
-    timeline_end = used + zoom
 
     initiatives = [
         i for i in state.get("initiatives", [])
@@ -42,22 +41,45 @@ async def index(request: Request, zoom: int = 250):
     ]
 
     themes = {th["id"]: th["name"] for th in state.get("themes", [])}
+    furthest_end = 0
     for ini in initiatives:
         ini["theme_name"] = themes.get(ini["theme_id"], "?")
-        # Default timeline: start after current heat, end at start + budget_cap (or 10)
         if "planned_start" not in ini:
             ini["planned_start"] = used
         if "planned_end" not in ini:
             ini["planned_end"] = ini["planned_start"] + (ini.get("budget_cap") or 10)
+        furthest_end = max(furthest_end, ini.get("planned_end", 0))
+
+    # Smart defaults for visible range
+    if start is None:
+        timeline_start = max(0, used - 20)
+    else:
+        timeline_start = start
+    if end is None:
+        timeline_end = used + max(50, (furthest_end - used) + 10)
+    else:
+        timeline_end = end
+
+    # Clamp: never wider than 300h or narrower than 20h
+    window = timeline_end - timeline_start
+    if window < 20:
+        timeline_end = timeline_start + 20
+    elif window > 300:
+        timeline_end = timeline_start + 300
+
+    # Absolute bounds for the range slider (full project scope)
+    abs_start = 0
+    abs_end = max(total, furthest_end, used + 100)
 
     return templates.TemplateResponse(request=request, name="index.html", context={
         "initiatives": initiatives,
         "project": state.get("project", "unknown"),
         "used": used,
         "total": total,
-        "timeline_start": used,
+        "timeline_start": timeline_start,
         "timeline_end": timeline_end,
-        "zoom": zoom,
+        "abs_start": abs_start,
+        "abs_end": abs_end,
     })
 
 
