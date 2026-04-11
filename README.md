@@ -28,9 +28,22 @@ smithy end-heat      # Close a heat (log, update state, self-assess)
 smithy commit        # Git commit with [stage] prefix
 smithy patrol --fix  # Find and fix state inconsistencies
 smithy status        # At-a-glance project summary
+
+# Queue & coordination
+smithy queue-push    # Add a task to the next_tasks queue
+smithy queue-pop     # Claim the next task from the queue
+smithy set-next-tasks # Set ordered task list (Marshal → Forge)
+smithy list-tasks    # List tasks with filters (status, stage, limit)
+
+# Session management
+smithy start-all     # Launch smithy2 tmux session with all personas
+smithy stop-all      # Gracefully stop all persona sessions
+smithy sessions      # List active persona windows
+smithy nudge         # Send a message to a persona (queues if busy)
+smithy drain-nudges  # Read and clear queued nudges for a persona
 ```
 
-28 commands total. 179 tests across all projects. Install: `pip install -e smithy/`
+30+ commands total. Install: `pip install -e smithy/`
 
 ## Bellows
 
@@ -53,35 +66,43 @@ Four experimental UIs for directing Forge — each a different steering metaphor
 
 All read/write `state.json` — Forge picks up changes on the next heat. No Forge code changes needed.
 
-## Personas
+## Personas (Agent Teams)
 
-Two Claude Code sessions, two roles:
+Three personas coordinated via Claude Code Agent Teams — no dispatch files, no polling:
 
-| Persona | Role | Start |
-|---------|------|-------|
-| **Anvil** | Your interface. Explains state, brainstorms strategy, dispatches work. | `cd personas/anvil && claude` |
-| **Forge** | The autonomous worker. Runs heats, commits code, writes logs. | `cd personas/forge && claude` |
+| Persona | Role |
+|---------|------|
+| **Anvil** | Your interface. Explains state, brainstorms strategy, sets direction. Spawns Marshal and Forge as teammates. |
+| **Marshal** | The allocator. Computes priorities, orders the task queue, assigns work to Forge. |
+| **Forge** | The autonomous worker. Pops tasks from the queue, runs heats, commits code, writes logs. |
 
-Anvil sets direction in `dispatch/anvil-to-forge.md`. Forge reports back in `dispatch/forge-to-anvil.md`. Flat files, no magic.
+Anvil spawns Marshal and Forge as Agent Teams teammates. Marshal uses `smithy set-next-tasks` to fill the queue. Forge uses `smithy queue-pop` to claim work. When a persona is mid-heat, nudges queue to `.smithy-nudge-queue/` and drain on next idle.
 
 ## Getting Started
 
 ```bash
 # From the Smithy repo:
+pip install -e smithy/
 smithy init my-project ~/projects/my-project --with-personas
 
 # Describe your project:
 vim ~/projects/my-project/identity.md
 
-# Start:
-cd ~/projects/my-project/personas/forge
+# Start all personas in tmux:
+cd ~/projects/my-project
+smithy start-all
+
+# Or start manually:
+cd ~/projects/my-project/personas/anvil
 claude
-> Run 20 heats.
+> Start
 ```
+
+`smithy start-all` creates a `smithy2` tmux session with anvil, forge, and marshal windows, each running Claude Code. Tell Anvil "Start" and it spawns the other two as teammates.
 
 ## Built With The Smithy
 
-The Smithy dogfoods itself. Over 640 heats, it built:
+The Smithy dogfoods itself. Over 680 heats, it built:
 
 - **The Smithy protocol** — the system you're reading about
 - **AI Tutor** — 5 subjects (Python, Math, English, Logic, Creative Writing), user sessions, PWA offline, SM-2 spaced repetition, teach-it-back, 111 tests
