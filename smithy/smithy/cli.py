@@ -605,6 +605,83 @@ def memory_write(ctx, note, heat_num, stage):
     _err(f"Memory: {note[:60]}")
 
 
+@cli.command("add-theme")
+@click.argument("name")
+@click.pass_context
+def add_theme(ctx, name):
+    """Add a new theme to the intent hierarchy."""
+    root = ctx.obj["root"]
+    state = load_state(root)
+    themes = state.setdefault("themes", [])
+
+    # Auto-generate ID
+    max_num = 0
+    for th in themes:
+        try:
+            num = int(th["id"].split("-")[1])
+            if num > max_num:
+                max_num = num
+        except (IndexError, ValueError):
+            pass
+    new_id = f"th-{max_num + 1:03d}"
+
+    # Rank = max + 1
+    max_rank = max((th.get("rank", 0) for th in themes), default=0)
+
+    theme = {"id": new_id, "name": name, "rank": max_rank + 1, "status": "active"}
+    themes.append(theme)
+    save_state(root, state)
+
+    _output({"theme": theme})
+    _err(f"Added theme {new_id}: {name}")
+
+
+@cli.command("list-themes")
+@click.pass_context
+def list_themes(ctx):
+    """List themes sorted by rank."""
+    root = ctx.obj["root"]
+    state = load_state(root)
+    themes = sorted(state.get("themes", []), key=lambda t: t.get("rank", 0))
+    _output({"themes": themes, "count": len(themes)})
+
+
+@cli.command("pause-theme")
+@click.argument("theme_id")
+@click.pass_context
+def pause_theme(ctx, theme_id):
+    """Pause a theme."""
+    root = ctx.obj["root"]
+    state = load_state(root)
+    for th in state.get("themes", []):
+        if th["id"] == theme_id:
+            th["status"] = "paused"
+            save_state(root, state)
+            _output({"theme": th})
+            _err(f"Paused {theme_id}")
+            return
+    _output({"error": f"Theme {theme_id} not found"})
+    sys.exit(1)
+
+
+@cli.command("activate-theme")
+@click.argument("theme_id")
+@click.pass_context
+def activate_theme(ctx, theme_id):
+    """Activate a paused theme."""
+    root = ctx.obj["root"]
+    state = load_state(root)
+    for th in state.get("themes", []):
+        if th["id"] == theme_id:
+            th["status"] = "active"
+            save_state(root, state)
+            _output({"theme": th})
+            _err(f"Activated {theme_id}")
+            return
+    _output({"error": f"Theme {theme_id} not found"})
+    sys.exit(1)
+
+
 @cli.command("init")
 @click.argument("project_name")
 @click.option("--target", default=".", help="Target directory")

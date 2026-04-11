@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 622,
-    "used": 575,
+    "used": 576,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 183,
+      "heats": 184,
       "progress": 0.98,
-      "value_ema": 0.82
+      "value_ema": 0.844
     },
     "testing": {
       "target": 0.183,
@@ -48,8 +48,8 @@
       "research": 0.5,
       "planning": 0.5,
       "implementation": -0.5,
-      "testing": -0.036,
-      "editing": -0.496,
+      "testing": -0.035,
+      "editing": -0.494,
       "marketing": 0.5
     }
   },
@@ -828,7 +828,7 @@
       "id": "t-152",
       "stage": "implementation",
       "desc": "Intent Hierarchy data model. Add 'themes' list to state.json: [{id: 'th-NNN', name: str, rank: int, status: 'active'|'paused'}]. Add 'initiatives' list: [{id: 'ini-NNN', theme_id: str, title: str, description: str, status: 'proposed'|'approved'|'active'|'done'|'rejected', budget_cap: null|int, heats_used: 0}]. Add optional 'initiative_id' field on task objects (null = standalone). Update validate_state() in smithy/smithy/state.py to validate: theme IDs unique, initiative IDs unique, initiative.theme_id references valid theme, task.initiative_id references valid initiative or is null, theme ranks are contiguous 1..N, initiative status in valid set. Initialize empty themes/initiatives lists in smithy init command (cli.py).",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 1,
       "blocked_by": []
     },
@@ -836,7 +836,7 @@
       "id": "t-153",
       "stage": "implementation",
       "desc": "Theme CLI commands. In smithy/smithy/cli.py add: (1) 'smithy add-theme <name>' \u2014 auto-generate th-NNN id, set rank to max+1, status='active'. (2) 'smithy list-themes' \u2014 print themes sorted by rank with status. (3) 'smithy reorder-themes <id> <new_rank>' \u2014 move theme to new_rank, shift others up/down to keep ranks contiguous. (4) 'smithy pause-theme <id>' \u2014 set status='paused'. (5) 'smithy activate-theme <id>' \u2014 set status='active'. All commands load/save state.json via existing load_state/save_state.",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 1,
       "blocked_by": []
     },
@@ -929,7 +929,14 @@
       "task_id": null
     }
   ],
-  "themes": [],
+  "themes": [
+    {
+      "id": "th-001",
+      "name": "Tutor Content",
+      "rank": 1,
+      "status": "active"
+    }
+  ],
   "initiatives": [],
   "feedback_cursor": 26,
   "inbox_cursor": 131,
