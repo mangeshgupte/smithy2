@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 607,
-    "used": 574,
+    "used": 575,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -26,9 +26,9 @@
     },
     "testing": {
       "target": 0.183,
-      "heats": 107,
+      "heats": 108,
       "progress": 0.88,
-      "value_ema": 0.801
+      "value_ema": 0.831
     },
     "editing": {
       "target": 0.183,
@@ -48,7 +48,7 @@
       "research": 0.5,
       "planning": 0.5,
       "implementation": -0.5,
-      "testing": -0.038,
+      "testing": -0.037,
       "editing": -0.498,
       "marketing": 0.5
     }
@@ -804,7 +804,7 @@
       "id": "t-149",
       "stage": "testing",
       "desc": "Tutor responsive testing checklist. Start tutor app, verify at 1024px+: (1) subject cards 2x2 grid, (2) sidebar nav left on desktop / bottom tabs on mobile, (3) lesson 2-panel layout, (4) review card centered max-width 640px, (5) create deck cards 2-col, (6) smooth transition at 1024px resize, (7) all animations work, (8) code input good width, (9) tab badge visible in sidebar, (10) active tab left accent bar desktop / dot mobile, (11) no horizontal scrollbar, (12) welcome features horizontal, (13) mobile layout completely unchanged below 1024px.",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
