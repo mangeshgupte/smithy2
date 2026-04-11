@@ -14,10 +14,15 @@
 
     <div id="card-list" class="card-list">
         {% for ini in initiatives %}
-        <div class="poker-card status-{{ ini.status }}" draggable="true" data-id="{{ ini.id }}">
+        {% set weight = '3×' if loop.index == 1 else ('2×' if loop.index == 2 else '1×') %}
+        <div class="poker-card status-{{ ini.status }}" draggable="true" data-id="{{ ini.id }}"
+             style="opacity: {{ 1.0 - (loop.index0 * 0.08) }}; transform: scale({{ 1.03 - (loop.index0 * 0.01) }});">
             <div class="card-rank">#{{ loop.index }}</div>
             <div class="card-body">
-                <div class="card-title">{{ ini.title }}</div>
+                <div class="card-title">
+                    {{ ini.title }}
+                    <span class="weight-badge weight-{{ loop.index }}">{{ weight }}</span>
+                </div>
                 <div class="card-meta">
                     <span class="card-theme">{{ ini.theme_name }}</span>
                     <span class="card-status">{{ ini.status }}</span>
@@ -31,9 +36,29 @@
         {% endfor %}
 
         {% if not initiatives %}
-        <div class="empty">No active initiatives. Use <code>smithy propose</code> to create some.</div>
+        <div class="empty">No ranked initiatives. Approve proposals below or use <code>smithy propose</code>.</div>
         {% endif %}
     </div>
+
+    {% if proposed %}
+    <div class="proposed-section">
+        <h2>Proposals (need approval)</h2>
+        {% for ini in proposed %}
+        <div class="poker-card status-proposed" style="opacity: 0.7;">
+            <div class="card-rank">?</div>
+            <div class="card-body">
+                <div class="card-title">{{ ini.title }}</div>
+                <div class="card-meta">
+                    <span class="card-theme">{{ ini.theme_name }}</span>
+                    <span>{{ ini.description[:80] }}{% if ini.description|length > 80 %}...{% endif %}</span>
+                </div>
+            </div>
+            <button class="approve-btn" onclick="approveCard('{{ ini.id }}')" title="Approve">✓</button>
+            <button class="kill-btn" onclick="rejectCard('{{ ini.id }}')" title="Reject">✕</button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
 
     <div class="kill-zone" id="kill-zone">
         <span>🗑️ Drop here to reject</span>
@@ -91,6 +116,11 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ order })
         });
+    }
+
+    function approveCard(id) {
+        fetch('/approve/' + id, { method: 'POST' })
+            .then(() => location.reload());
     }
 
     function rejectCard(id) {

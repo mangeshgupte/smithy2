@@ -52,8 +52,12 @@ async def index(request: Request):
         ini["theme_name"] = themes.get(ini["theme_id"], "?")
         ini["task_count"] = task_counts.get(ini["id"], 0)
 
+    ranked = [i for i in initiatives if i["status"] in ("approved", "active")]
+    proposed = [i for i in initiatives if i["status"] == "proposed"]
+
     return templates.TemplateResponse(request=request, name="index.html", context={
-        "initiatives": initiatives,
+        "initiatives": ranked,
+        "proposed": proposed,
         "project": state.get("project", "unknown"),
     })
 
@@ -72,6 +76,18 @@ async def reorder(request: Request):
 
     _save_state(state)
     return JSONResponse({"ok": True, "order": new_order})
+
+
+@app.post("/approve/{initiative_id}")
+async def approve(initiative_id: str):
+    state = _load_state()
+    for ini in state.get("initiatives", []):
+        if ini["id"] == initiative_id:
+            if ini["status"] == "proposed":
+                ini["status"] = "approved"
+                break
+    _save_state(state)
+    return JSONResponse({"ok": True})
 
 
 @app.post("/reject/{initiative_id}")

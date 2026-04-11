@@ -92,6 +92,24 @@ header h1 { font-size: 24px; }
 }
 .kill-btn:hover { color: var(--red); }
 
+.approve-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 40px; background: none; border: none;
+    color: var(--green); cursor: pointer; font-size: 18px; font-weight: 700;
+}
+.approve-btn:hover { color: #4ade80; }
+
+.weight-badge {
+    font-size: 11px; font-weight: 700; padding: 1px 6px;
+    border-radius: 4px; margin-left: 8px;
+}
+.weight-badge.weight-1 { background: var(--green); color: #000; }
+.weight-badge.weight-2 { background: var(--blue); color: #000; }
+.weight-badge:not(.weight-1):not(.weight-2) { background: var(--border); color: var(--text-muted); }
+
+.proposed-section { margin-top: 32px; border-top: 1px solid var(--border); padding-top: 20px; }
+.proposed-section h2 { font-size: 16px; color: var(--text-muted); margin-bottom: 12px; }
+
 .kill-zone {
     text-align: center;
     padding: 24px;
