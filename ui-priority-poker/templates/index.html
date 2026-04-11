@@ -18,7 +18,7 @@
         <div class="poker-card status-{{ ini.status }}" draggable="true" data-id="{{ ini.id }}"
              style="opacity: {{ 1.0 - (loop.index0 * 0.08) }}; transform: scale({{ 1.03 - (loop.index0 * 0.01) }});">
             <div class="card-rank">#{{ loop.index }}</div>
-            <div class="card-body">
+            <div class="card-body" onclick="toggleExpand(this.parentElement)">
                 <div class="card-title">
                     {{ ini.title }}
                     <span class="weight-badge weight-{{ loop.index }}">{{ weight }}</span>
@@ -29,7 +29,31 @@
                     <span>{{ ini.heats_used }}h{% if ini.budget_cap %}/{{ ini.budget_cap }}{% endif %}</span>
                     <span>{{ ini.task_count }} tasks</span>
                 </div>
-                <div class="card-desc">{{ ini.description[:120] }}{% if ini.description|length > 120 %}...{% endif %}</div>
+                <div class="card-summary">{{ ini.description[:120] }}{% if ini.description|length > 120 %}...{% endif %}</div>
+                <div class="card-expanded">
+                    <div class="card-full-desc">{{ ini.description }}</div>
+                    {% if ini.budget_cap %}
+                    <div class="card-progress-bar">
+                        <div class="card-progress-fill" style="width: {{ (ini.heats_used / ini.budget_cap * 100)|int if ini.budget_cap else 0 }}%"></div>
+                    </div>
+                    <div class="card-progress-label">{{ ini.heats_used }}/{{ ini.budget_cap }} heats used</div>
+                    {% endif %}
+                    {% if ini.tasks %}
+                    <div class="card-tasks">
+                        <div class="card-tasks-title">Tasks ({{ ini.tasks|length }})</div>
+                        {% for task in ini.tasks[:8] %}
+                        <div class="card-task {{ task.status }}">
+                            <span class="task-status-dot">{% if task.status == 'complete' %}✓{% elif task.status == 'in_progress' %}▸{% else %}○{% endif %}</span>
+                            <span class="task-stage">{{ task.stage[:4] }}</span>
+                            <span class="task-desc">{{ task.desc[:60] }}{% if task.desc|length > 60 %}...{% endif %}</span>
+                        </div>
+                        {% endfor %}
+                        {% if ini.tasks|length > 8 %}
+                        <div class="card-task muted">+{{ ini.tasks|length - 8 }} more</div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
             </div>
             <button class="kill-btn" onclick="rejectCard('{{ ini.id }}')" title="Reject">✕</button>
         </div>
@@ -116,6 +140,12 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ order })
         });
+    }
+
+    function toggleExpand(card) {
+        // Don't expand while dragging
+        if (card.classList.contains('dragging')) return;
+        card.classList.toggle('expanded');
     }
 
     function approveCard(id) {

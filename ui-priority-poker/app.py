@@ -48,9 +48,17 @@ async def index(request: Request):
         if ini_id:
             task_counts[ini_id] = task_counts.get(ini_id, 0) + 1
 
+    # Group tasks by initiative
+    task_lists = {}
+    for t in state.get("queue", []):
+        ini_id = t.get("initiative_id")
+        if ini_id:
+            task_lists.setdefault(ini_id, []).append(t)
+
     for ini in initiatives:
         ini["theme_name"] = themes.get(ini["theme_id"], "?")
         ini["task_count"] = task_counts.get(ini["id"], 0)
+        ini["tasks"] = task_lists.get(ini["id"], [])
 
     ranked = [i for i in initiatives if i["status"] in ("approved", "active")]
     proposed = [i for i in initiatives if i["status"] == "proposed"]

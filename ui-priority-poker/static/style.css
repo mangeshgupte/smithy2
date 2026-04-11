@@ -77,7 +77,26 @@ header h1 { font-size: 24px; }
 .card-theme { color: var(--blue); }
 .card-status { text-transform: uppercase; font-weight: 600; }
 
-.card-desc { font-size: 13px; color: var(--text-muted); line-height: 1.4; }
+.card-summary { font-size: 13px; color: var(--text-muted); line-height: 1.4; }
+.card-body { cursor: pointer; }
+
+/* Expanded state */
+.card-expanded { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+.poker-card.expanded .card-expanded { display: block; }
+.poker-card.expanded .card-summary { display: none; }
+
+.card-full-desc { font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px; }
+
+.card-progress-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-bottom: 4px; }
+.card-progress-fill { height: 100%; background: var(--blue); border-radius: 3px; }
+.card-progress-label { font-size: 11px; color: var(--text-muted); margin-bottom: 10px; }
+
+.card-tasks-title { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; }
+.card-task { display: flex; gap: 8px; font-size: 12px; padding: 3px 0; align-items: center; }
+.card-task.complete { color: var(--text-muted); text-decoration: line-through; opacity: 0.6; }
+.task-status-dot { width: 16px; text-align: center; }
+.task-stage { color: var(--blue); font-size: 11px; width: 36px; }
+.task-desc { flex: 1; color: var(--text-muted); }
 
 .kill-btn {
     display: flex;
