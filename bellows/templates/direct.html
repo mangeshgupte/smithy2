@@ -32,19 +32,27 @@
     <div class="action-grid">
         <form action="/project/{{ project.name }}/direct/send" method="POST">
             <input type="hidden" name="message" value="Run 10 heats">
-            <button type="submit" class="action-btn">▶️ Run 10 heats</button>
+            <button type="submit" class="action-btn">▶️ Run 10</button>
         </form>
         <form action="/project/{{ project.name }}/direct/send" method="POST">
-            <input type="hidden" name="message" value="Run 25 heats">
-            <button type="submit" class="action-btn">▶️ Run 25 heats</button>
+            <input type="hidden" name="message" value="Run 20 heats">
+            <button type="submit" class="action-btn">▶️ Run 20</button>
+        </form>
+        <form action="/project/{{ project.name }}/direct/send" method="POST">
+            <input type="hidden" name="message" value="Run 50 heats">
+            <button type="submit" class="action-btn">▶️ Run 50</button>
         </form>
         <form action="/project/{{ project.name }}/direct/send" method="POST">
             <input type="hidden" name="message" value="Focus on testing">
-            <button type="submit" class="action-btn">🎯 Focus: Testing</button>
+            <button type="submit" class="action-btn">🎯 Testing</button>
         </form>
         <form action="/project/{{ project.name }}/direct/send" method="POST">
             <input type="hidden" name="message" value="Focus on implementation">
-            <button type="submit" class="action-btn">🎯 Focus: Building</button>
+            <button type="submit" class="action-btn">🎯 Building</button>
+        </form>
+        <form action="/project/{{ project.name }}/direct/send" method="POST">
+            <input type="hidden" name="message" value="Focus on visual design">
+            <button type="submit" class="action-btn">🎨 Design</button>
         </form>
     </div>
 </section>
