@@ -43,6 +43,17 @@ textarea:focus { outline: none; border-color: var(--blue); }
 .select-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; color: var(--text-muted); padding: 4px 10px; font-size: 12px; cursor: pointer; }
 .select-btn:hover { border-color: var(--blue); color: var(--blue); }
 
+/* Template buttons */
+.template-buttons { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+.template-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; color: var(--text-muted); padding: 5px 12px; font-size: 12px; cursor: pointer; }
+.template-btn:hover { border-color: var(--blue); color: var(--blue); }
+
+/* Action row */
+.action-row { display: flex; gap: 8px; margin-top: 12px; }
+.action-row .apply-btn { flex: 1; }
+.export-btn { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); color: var(--blue); padding: 14px 20px; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.export-btn:hover { border-color: var(--blue); }
+
 .apply-btn {
     width: 100%; background: var(--green); color: #fff; border: none;
     border-radius: var(--radius); padding: 14px; font-size: 15px;

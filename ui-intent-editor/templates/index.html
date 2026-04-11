@@ -16,6 +16,12 @@
         <div class="intent-section">
             <label for="intent">Your Intent</label>
             <p class="hint">Write your goals as bullet points. Sub-bullets become initiatives. Use <strong>bold</strong> for theme names.</p>
+            <div class="template-buttons">
+                <button type="button" class="template-btn" onclick="applyTemplate('testing')">Testing & Polish</button>
+                <button type="button" class="template-btn" onclick="applyTemplate('feature')">New Feature</button>
+                <button type="button" class="template-btn" onclick="applyTemplate('research')">Research</button>
+                <button type="button" class="template-btn" onclick="applyTemplate('ship')">Ship & Document</button>
+            </div>
             <textarea id="intent" name="intent" rows="10" placeholder="- **Core Features**
   - Build user authentication
   - Add data export
@@ -66,7 +72,10 @@
         </div>
         {% endif %}
 
-        <button type="submit" class="apply-btn">Apply Selected</button>
+        <div class="action-row">
+            <button type="submit" class="apply-btn">Apply Selected</button>
+            <button type="button" class="export-btn" onclick="exportCLI()">Copy as CLI</button>
+        </div>
     </form>
 
     {% if existing_themes %}
@@ -124,8 +133,44 @@
     function loadHistory(el) {
         const text = el.dataset.text;
         document.getElementById('intent').value = text;
-        // Scroll to top to show the textarea
         window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    const TEMPLATES = {
+        testing: `- **Quality**\n  - Full regression test suite\n  - Fix all known bugs\n  - Edge case coverage\n- **Polish**\n  - UI consistency pass\n  - Error message improvements`,
+        feature: `- **New Feature**\n  - Design and prototype\n  - Core implementation\n  - Tests and validation\n  - Documentation`,
+        research: `- **Research**\n  - Landscape analysis\n  - Prototype evaluation\n  - Findings documentation\n- **Planning**\n  - Task breakdown from findings\n  - Risk assessment`,
+        ship: `- **Documentation**\n  - README update\n  - CHANGELOG entry\n  - User guide\n- **Release**\n  - Final regression\n  - Export/package\n  - AAR and handoff`,
+    };
+
+    function applyTemplate(name) {
+        const ta = document.getElementById('intent');
+        const current = ta.value.trim();
+        if (current && !confirm('Replace current intent with template?')) return;
+        ta.value = TEMPLATES[name] || '';
+    }
+
+    function exportCLI() {
+        const checks = document.querySelectorAll('.node-check:checked');
+        if (!checks.length) { alert('No items checked'); return; }
+        let cmds = [];
+        const themes = new Set();
+        checks.forEach(cb => {
+            if (cb.name === 'themes') {
+                cmds.push(`smithy add-theme "${cb.value}"`);
+                themes.add(cb.value);
+            }
+        });
+        checks.forEach(cb => {
+            if (cb.name === 'initiatives') {
+                const [theme, title] = cb.value.split('::');
+                const thId = themes.has(theme) ? 'th-NEW' : 'th-???';
+                cmds.push(`smithy propose ${thId} "${title}" "${title}"`);
+            }
+        });
+        navigator.clipboard.writeText(cmds.join('\n')).then(() => {
+            alert('Copied ' + cmds.length + ' commands to clipboard');
+        });
     }
     </script>
 </body>
