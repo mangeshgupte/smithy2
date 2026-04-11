@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 567,
-    "used": 548,
+    "used": 552,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,27 +20,27 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 172,
+      "heats": 173,
       "progress": 0.98,
-      "value_ema": 0.787
+      "value_ema": 0.761
     },
     "testing": {
       "target": 0.183,
-      "heats": 103,
+      "heats": 104,
       "progress": 0.88,
-      "value_ema": 0.804
+      "value_ema": 0.803
     },
     "editing": {
       "target": 0.183,
-      "heats": 143,
+      "heats": 144,
       "progress": 0.88,
-      "value_ema": 0.766
+      "value_ema": 0.776
     },
     "marketing": {
       "target": 0.219,
-      "heats": 72,
+      "heats": 73,
       "progress": 0.84,
-      "value_ema": 0.732
+      "value_ema": 0.722
     }
   },
   "allocator": {
@@ -48,7 +48,7 @@
       "research": 0.5,
       "planning": 0.5,
       "implementation": -0.5,
-      "testing": -0.038,
+      "testing": -0.039,
       "editing": -0.5,
       "marketing": 0.5
     }
@@ -516,7 +516,7 @@
       "id": "t-113",
       "stage": "testing",
       "desc": "Verify Bellows rename: app starts, grep -ri commissioner and ai-coworker return no hits outside git history/worklog",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -588,7 +588,7 @@
       "id": "t-122",
       "stage": "implementation",
       "desc": "Commissioner: add a Direct tab quick-action for 'Run N heats' that writes to inbox.md",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -596,7 +596,7 @@
       "id": "t-123",
       "stage": "testing",
       "desc": "Test Bellows rename: verify all apps still work after rename",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 2,
       "blocked_by": []
     },
@@ -612,7 +612,7 @@
       "id": "t-125",
       "stage": "editing",
       "desc": "Commissioner README: document all 6 screens, setup, FORGE_PROJECTS_DIR",
-      "status": "pending",
+      "status": "complete",
       "priority": 3,
       "blocked_by": []
     },
@@ -620,7 +620,7 @@
       "id": "t-126",
       "stage": "marketing",
       "desc": "Write a concise project overview (1-page) for sharing externally",
-      "status": "pending",
+      "status": "complete",
       "priority": 3,
       "blocked_by": []
     }
