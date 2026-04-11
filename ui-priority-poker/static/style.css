@@ -43,6 +43,15 @@ header h1 { font-size: 24px; }
 
 .poker-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
 .poker-card.dragging { opacity: 0.4; transform: scale(0.98); }
+.poker-card.expanded { border-left-width: 6px; }
+
+/* Smooth reorder animation */
+.poker-card { transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease; }
+
+/* Touch support */
+@media (pointer: coarse) {
+    .poker-card { -webkit-touch-callout: none; touch-action: none; }
+}
 
 .poker-card.status-proposed { border-left-color: var(--yellow); }
 .poker-card.status-approved { border-left-color: var(--blue); }
