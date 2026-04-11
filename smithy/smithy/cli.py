@@ -682,6 +682,143 @@ def activate_theme(ctx, theme_id):
     sys.exit(1)
 
 
+@cli.command("propose")
+@click.argument("theme_id")
+@click.argument("title")
+@click.argument("description")
+@click.option("--budget-cap", type=int, default=None, help="Max heats for this initiative")
+@click.pass_context
+def propose(ctx, theme_id, title, description, budget_cap):
+    """Propose a new initiative under a theme."""
+    root = ctx.obj["root"]
+    state = load_state(root)
+
+    theme_ids = {th["id"] for th in state.get("themes", [])}
+    if theme_id not in theme_ids:
+        _output({"error": f"Theme {theme_id} not found"})
+        sys.exit(1)
+
+    initiatives = state.setdefault("initiatives", [])
+    max_num = 0
+    for ini in initiatives:
+        try:
+            num = int(ini["id"].split("-")[1])
+            if num > max_num:
+                max_num = num
+        except (IndexError, ValueError):
+            pass
+    new_id = f"ini-{max_num + 1:03d}"
+
+    initiative = {
+        "id": new_id,
+        "theme_id": theme_id,
+        "title": title,
+        "description": description,
+        "status": "proposed",
+        "budget_cap": budget_cap,
+        "heats_used": 0,
+    }
+    initiatives.append(initiative)
+    save_state(root, state)
+
+    _output({"initiative": initiative})
+    _err(f"Proposed {new_id}: {title}")
+
+
+@cli.command("approve")
+@click.argument("initiative_id")
+@click.pass_context
+def approve_initiative(ctx, initiative_id):
+    """Approve a proposed initiative."""
+    root = ctx.obj["root"]
+    state = load_state(root)
+    for ini in state.get("initiatives", []):
+        if ini["id"] == initiative_id:
+            if ini["status"] != "proposed":
+                _output({"error": f"Cannot approve: status is '{ini['status']}', expected 'proposed'"})
+                sys.exit(1)
+            ini["status"] = "approved"
+            save_state(root, state)
+            _output({"initiative": ini})
+            _err(f"Approved {initiative_id}")
+            return
+    _output({"error": f"Initiative {initiative_id} not found"})
+    sys.exit(1)
+
+
+@cli.command("reject")
+@click.argument("initiative_id")
+@click.pass_context
+def reject_initiative(ctx, initiative_id):
+    """Reject an initiative."""
+    root = ctx.obj["root"]
+    state = load_state(root)
+    for ini in state.get("initiatives", []):
+        if ini["id"] == initiative_id:
+            ini["status"] = "rejected"
+            save_state(root, state)
+            _output({"initiative": ini})
+            _err(f"Rejected {initiative_id}")
+            return
+    _output({"error": f"Initiative {initiative_id} not found"})
+    sys.exit(1)
+
+
+@cli.command("complete-initiative")
+@click.argument("initiative_id")
+@click.pass_context
+def complete_initiative(ctx, initiative_id):
+    """Mark an initiative as done."""
+    root = ctx.obj["root"]
+    state = load_state(root)
+    for ini in state.get("initiatives", []):
+        if ini["id"] == initiative_id:
+            ini["status"] = "done"
+            save_state(root, state)
+            _output({"initiative": ini})
+            _err(f"Completed {initiative_id}")
+            return
+    _output({"error": f"Initiative {initiative_id} not found"})
+    sys.exit(1)
+
+
+@cli.command("list-initiatives")
+@click.option("--theme", "theme_filter", default=None, help="Filter by theme ID")
+@click.pass_context
+def list_initiatives(ctx, theme_filter):
+    """List initiatives grouped by status."""
+    root = ctx.obj["root"]
+    state = load_state(root)
+    initiatives = state.get("initiatives", [])
+    themes = {th["id"]: th["name"] for th in state.get("themes", [])}
+
+    if theme_filter:
+        initiatives = [i for i in initiatives if i["theme_id"] == theme_filter]
+
+    # Group by status
+    order = ["proposed", "approved", "active", "done", "rejected"]
+    grouped = {s: [] for s in order}
+    for ini in initiatives:
+        grouped.setdefault(ini["status"], []).append(ini)
+
+    # Count tasks per initiative
+    task_counts = {}
+    for task in state.get("queue", []):
+        ini_id = task.get("initiative_id")
+        if ini_id:
+            task_counts[ini_id] = task_counts.get(ini_id, 0) + 1
+
+    result = []
+    for ini in initiatives:
+        result.append({
+            **ini,
+            "theme_name": themes.get(ini["theme_id"], "?"),
+            "task_count": task_counts.get(ini["id"], 0),
+        })
+
+    _output({"initiatives": result, "count": len(result)})
+
+
 @cli.command("init")
 @click.argument("project_name")
 @click.option("--target", default=".", help="Target directory")

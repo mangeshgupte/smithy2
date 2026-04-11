@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 622,
-    "used": 576,
+    "used": 577,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 184,
+      "heats": 185,
       "progress": 0.98,
-      "value_ema": 0.844
+      "value_ema": 0.831
     },
     "testing": {
       "target": 0.183,
@@ -836,7 +836,7 @@
       "id": "t-153",
       "stage": "implementation",
       "desc": "Theme CLI commands. In smithy/smithy/cli.py add: (1) 'smithy add-theme <name>' \u2014 auto-generate th-NNN id, set rank to max+1, status='active'. (2) 'smithy list-themes' \u2014 print themes sorted by rank with status. (3) 'smithy reorder-themes <id> <new_rank>' \u2014 move theme to new_rank, shift others up/down to keep ranks contiguous. (4) 'smithy pause-theme <id>' \u2014 set status='paused'. (5) 'smithy activate-theme <id>' \u2014 set status='active'. All commands load/save state.json via existing load_state/save_state.",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 1,
       "blocked_by": []
     },
@@ -844,7 +844,7 @@
       "id": "t-154",
       "stage": "implementation",
       "desc": "Initiative CLI commands. In smithy/smithy/cli.py add: (1) 'smithy propose <theme_id> <title> <description>' \u2014 auto-generate ini-NNN id, status='proposed', optional --budget-cap N (default null). Validate theme_id exists. (2) 'smithy approve <initiative_id>' \u2014 set status='approved'. Error if not 'proposed'. (3) 'smithy reject <initiative_id>' \u2014 set status='rejected'. (4) 'smithy complete-initiative <initiative_id>' \u2014 set status='done'. (5) 'smithy list-initiatives' \u2014 print all grouped by status (proposed first, then approved, active, done, rejected), optional --theme <id> filter. Show title, theme name, task count, heats_used/budget_cap.",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 1,
       "blocked_by": []
     },
@@ -937,7 +937,17 @@
       "status": "active"
     }
   ],
-  "initiatives": [],
+  "initiatives": [
+    {
+      "id": "ini-001",
+      "theme_id": "th-001",
+      "title": "Logic Subject Expansion",
+      "description": "Add more topics and exercises to Logic & Critical Thinking",
+      "status": "proposed",
+      "budget_cap": null,
+      "heats_used": 0
+    }
+  ],
   "feedback_cursor": 26,
   "inbox_cursor": 131,
   "human_priorities": [
