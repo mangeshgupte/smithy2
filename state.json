@@ -1,8 +1,8 @@
 {
   "project": "the-smithy",
   "budget": {
-    "total_heats": 597,
-    "used": 569,
+    "total_heats": 607,
+    "used": 574,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 179,
+      "heats": 183,
       "progress": 0.98,
-      "value_ema": 0.794
+      "value_ema": 0.82
     },
     "testing": {
       "target": 0.183,
@@ -38,9 +38,9 @@
     },
     "marketing": {
       "target": 0.219,
-      "heats": 76,
+      "heats": 77,
       "progress": 0.84,
-      "value_ema": 0.737
+      "value_ema": 0.726
     }
   },
   "allocator": {
@@ -772,7 +772,7 @@
       "id": "t-145",
       "stage": "implementation",
       "desc": "Tutor responsive: nav sidebar + body shift. All CSS in tutor/static/css/style.css behind @media (min-width: 1024px). .tab-bar: position fixed, top/left/bottom 0, right auto, width 72px, flex-direction column, justify-content flex-start, padding 24px 0 0 0, border-top none, border-right 1px solid var(--border), gap 8px. .tab: padding 12px 0. Remove .tab.active::after (display none). .tab.active: border-left 3px solid var(--indigo), background rgba(0,188,212,0.06). body: padding-bottom 0, margin-left 72px. .tab-badge repositions relative to vertical layout. Mobile below 1024px stays untouched.",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": []
     },
@@ -780,7 +780,7 @@
       "id": "t-146",
       "stage": "implementation",
       "desc": "Tutor responsive: grids + container. All CSS in tutor/static/css/style.css behind @media (min-width: 1024px). .container: max-width 960px, padding 32px. .subject-list: display grid, grid-template-columns repeat(2, 1fr), gap 20px. .welcome-features: flex-direction row, gap 24px. .welcome-feature: flex 1, text-align center. Cards fill width naturally, no other changes needed.",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": []
     },
@@ -788,7 +788,7 @@
       "id": "t-147",
       "stage": "implementation",
       "desc": "Tutor responsive: lesson 2-panel layout. ONE template change allowed: in tutor/templates/base.html add page_class block to <main>: <main class=\"container {% block page_class %}{% endblock %}\">. In tutor/templates/lesson.html add: {% block page_class %}lesson-page{% endblock %}. Then CSS in style.css behind @media (min-width: 1024px): .lesson-page: display grid, grid-template-columns 2fr 3fr, gap 0 32px, align-items start. .lesson-page .page-header: grid-column 1/-1. .lesson-page .lesson-section:last-child (practice): grid-column 2, grid-row 2/span 10. .lesson-page .lesson-section:not(:last-child): grid-column 1. Left=concepts/example/socratic (40%), right=exercises (60%). Both columns scroll naturally.",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": []
     },
@@ -796,7 +796,7 @@
       "id": "t-148",
       "stage": "implementation",
       "desc": "Tutor responsive: remaining pages. All CSS in tutor/static/css/style.css behind @media (min-width: 1024px). .review-card and .review-complete: max-width 640px, margin 0 auto. .deck-list: display grid, grid-template-columns repeat(2, 1fr), gap 20px. .browse-topics: display grid, grid-template-columns repeat(2, 1fr), gap 8px. .code-input: min-height 120px, font-size 14px. .example-block: font-size 14px, padding 16px. Result page stays centered single column, just wider.",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -804,7 +804,7 @@
       "id": "t-149",
       "stage": "testing",
       "desc": "Tutor responsive testing checklist. Start tutor app, verify at 1024px+: (1) subject cards 2x2 grid, (2) sidebar nav left on desktop / bottom tabs on mobile, (3) lesson 2-panel layout, (4) review card centered max-width 640px, (5) create deck cards 2-col, (6) smooth transition at 1024px resize, (7) all animations work, (8) code input good width, (9) tab badge visible in sidebar, (10) active tab left accent bar desktop / dot mobile, (11) no horizontal scrollbar, (12) welcome features horizontal, (13) mobile layout completely unchanged below 1024px.",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 2,
       "blocked_by": []
     },
@@ -820,7 +820,7 @@
       "id": "t-151",
       "stage": "marketing",
       "desc": "Final AAR + handoff for 10-heat sprint (heats 565-574)",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 1,
       "blocked_by": []
     }
