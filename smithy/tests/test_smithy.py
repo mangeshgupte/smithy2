@@ -191,7 +191,7 @@ class TestPatrol:
     def test_clean_state(self, project, runner):
         result = runner.invoke(cli, ["--dir", str(project), "patrol"])
         data = json.loads(result.output)
-        assert data["checks_run"] == 7
+        assert data["checks_run"] == 5
 
     def test_detects_stuck_task(self, project, runner):
         # Set a task to in_progress without checkpoint

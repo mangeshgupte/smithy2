@@ -1,6 +1,6 @@
 # The Heat Loop
 
-**NEVER STOP.** Loop forever. Execute hooks. Idle when no hook. The human may be away.
+**NEVER STOP.** Loop forever. Pop tasks from the queue and execute. Idle when queue is empty. The human may be away.
 
 **RULE: Never directly edit state.json or worklog.tsv.** All state mutations go through `smithy` commands. If you need a state change and no command exists, flag it — don't work around it.
 
@@ -14,20 +14,20 @@ smithy sync-stages         # Ensure stage heats match worklog
 
 Read the handoff context notes and next steps if present. Then enter the loop.
 
-## Step 1: Check Hook
+## Step 1: Pop Next Task
 
 ```bash
-smithy check-hook          # Returns hook + task details, or {hooked: false}
+smithy queue-pop           # Returns next task from queue, or {task: null} if empty
 ```
 
-- **If hooked** → go to Step 3 (Execute). No deliberation.
-- **If not hooked** → go to Step 2 (Idle).
+- **If task returned** → go to Step 3 (Execute). No deliberation.
+- **If queue empty** → go to Step 2 (Idle).
 
 ## Step 2: Idle
 
-No hook means no work. Print "Waiting for hook..." and wait 30 seconds, then go to Step 1.
+No queued tasks means no work. Print "Waiting for task..." and wait 30 seconds, then go to Step 1.
 
-Budget is NOT your concern. You don't check it, you don't enforce it. Marshal stops hooking when budget is exhausted. If no hooks come, you idle.
+Budget is NOT your concern. You don't check it, you don't enforce it. Marshal stops queuing when budget is exhausted. If no tasks come, you idle.
 
 While idling, process any pending feedback or inbox items:
 
@@ -44,7 +44,7 @@ If feedback arrives, create fix tasks: `smithy add-task <stage> "<desc>" --prior
 smithy start-heat <stage> --task <task_id>   # Writes checkpoint, marks task in_progress
 ```
 
-Use the stage and task_id from the hook. Do the actual work. Stay focused on the single task.
+Use the stage and task_id from queue-pop. Do the actual work. Stay focused on the single task.
 
 | Stage | What to do |
 |-------|-----------|
@@ -70,7 +70,7 @@ git commit -m "[stage] description"
 smithy end-heat <value> <signal> "<notes>" [--outcome complete|partial|blocked]
 ```
 
-This atomically: increments budget.used, updates stage heats + value_ema + integral, appends worklog, marks task complete, updates overall_progress, deletes checkpoint. Auto-clears the hook if the completed task matches.
+This atomically: increments budget.used, updates stage heats + value_ema + integral, appends worklog, marks task complete, updates overall_progress, deletes checkpoint.
 
 **Report to Marshal**: After end-heat, append to `dispatch/forge-to-marshal.md`:
 

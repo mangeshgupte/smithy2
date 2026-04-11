@@ -169,63 +169,7 @@ def delete_checkpoint(project_dir: Path):
         path.unlink()
 
 
-# --- Hook file I/O ---
 
-def write_hook(project_dir: Path, task_id: str, stage: str,
-               hooked_by: str, context: str, rationale: str):
-    """Write .forge-hook.json — Marshal hooks a task for Forge to execute."""
-    hook = {
-        "task_id": task_id,
-        "stage": stage,
-        "hooked_by": hooked_by,
-        "hooked_at": datetime.now().isoformat(),
-        "context": context,
-        "rationale": rationale,
-    }
-    path = project_dir / ".forge-hook.json"
-    path.write_text(json.dumps(hook, indent=2) + "\n")
-
-
-def read_hook(project_dir: Path):
-    """Read .forge-hook.json if it exists. Returns dict or None."""
-    path = project_dir / ".forge-hook.json"
-    if not path.exists():
-        return None
-    return json.loads(path.read_text())
-
-
-def delete_hook(project_dir: Path):
-    """Delete .forge-hook.json if it exists."""
-    path = project_dir / ".forge-hook.json"
-    if path.exists():
-        path.unlink()
-
-
-def write_marshal_hook(project_dir: Path, task_id: str, stage: str,
-                       hooked_by: str, context: str, rationale: str):
-    """Write .marshal-hook.json — hook a task for Marshal to process."""
-    hook = {
-        "task_id": task_id,
-        "stage": stage,
-        "hooked_by": hooked_by,
-        "hooked_at": datetime.now().isoformat(),
-        "context": context,
-        "rationale": rationale,
-    }
-    path = project_dir / ".marshal-hook.json"
-    path.write_text(json.dumps(hook, indent=2) + "\n")
-
-
-def read_marshal_hook(project_dir: Path):
-    """Read .marshal-hook.json if it exists. Returns dict or None."""
-    path = project_dir / ".marshal-hook.json"
-    if not path.exists():
-        return None
-    return json.loads(path.read_text())
-
-
-def delete_marshal_hook(project_dir: Path):
-    """Delete .marshal-hook.json if it exists."""
-    path = project_dir / ".marshal-hook.json"
-    if path.exists():
-        path.unlink()
+# NOTE: Old hook file I/O functions (write/read/delete_hook, write/read/delete_marshal_hook)
+# removed in t-262. Task assignment now uses the next_tasks queue mechanism
+# (queue-push/queue-pop/queue/queue-clear CLI commands).
