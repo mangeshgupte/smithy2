@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 622,
-    "used": 577,
+    "used": 582,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,21 +20,21 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 185,
+      "heats": 188,
       "progress": 0.98,
-      "value_ema": 0.831
+      "value_ema": 0.846
     },
     "testing": {
       "target": 0.183,
-      "heats": 108,
+      "heats": 109,
       "progress": 0.88,
-      "value_ema": 0.831
+      "value_ema": 0.852
     },
     "editing": {
       "target": 0.183,
-      "heats": 147,
+      "heats": 148,
       "progress": 0.88,
-      "value_ema": 0.726
+      "value_ema": 0.718
     },
     "marketing": {
       "target": 0.219,
@@ -48,8 +48,8 @@
       "research": 0.5,
       "planning": 0.5,
       "implementation": -0.5,
-      "testing": -0.035,
-      "editing": -0.494,
+      "testing": -0.033,
+      "editing": -0.489,
       "marketing": 0.5
     }
   },
@@ -844,7 +844,7 @@
       "id": "t-154",
       "stage": "implementation",
       "desc": "Initiative CLI commands. In smithy/smithy/cli.py add: (1) 'smithy propose <theme_id> <title> <description>' \u2014 auto-generate ini-NNN id, status='proposed', optional --budget-cap N (default null). Validate theme_id exists. (2) 'smithy approve <initiative_id>' \u2014 set status='approved'. Error if not 'proposed'. (3) 'smithy reject <initiative_id>' \u2014 set status='rejected'. (4) 'smithy complete-initiative <initiative_id>' \u2014 set status='done'. (5) 'smithy list-initiatives' \u2014 print all grouped by status (proposed first, then approved, active, done, rejected), optional --theme <id> filter. Show title, theme name, task count, heats_used/budget_cap.",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 1,
       "blocked_by": []
     },
@@ -852,7 +852,7 @@
       "id": "t-155",
       "stage": "implementation",
       "desc": "Task CLI updates for initiative gating. In smithy/smithy/cli.py: (1) Add --initiative <id> option to add-task command. If provided, validate initiative exists and status is approved or active. Store as 'initiative_id' field on task dict. If not provided, omit field (not null). (2) Update pick-task: filter out tasks where initiative_id is set AND the linked initiative status is not approved/active. When first task from an approved initiative is picked, set initiative status to 'active'. (3) Update end-heat: if completing a task with initiative_id, increment initiative.heats_used. If initiative.budget_cap is set and heats_used >= budget_cap, append warning to outbox.md.",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": []
     },
@@ -868,7 +868,7 @@
       "id": "t-157",
       "stage": "editing",
       "desc": "Protocol updates for intent hierarchy. (1) In protocol/loop.md Step 1: remove 'dispatch/anvil-to-forge.md' from the Also-read list. (2) In Step 4: add note that pick-task now gates by initiative status. Add: 'If no ready tasks and proposed initiatives exist, write to outbox.md: Proposed initiatives awaiting approval: [list titles]'. (3) In personas/anvil/CLAUDE.md: replace dispatch workflow section with initiative workflow \u2014 Anvil proposes initiatives via smithy propose, human approves in Bellows or CLI. Keep dispatch file reference as decision journal only.",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -876,7 +876,7 @@
       "id": "t-158",
       "stage": "implementation",
       "desc": "Bellows forge_reader: initiative support. In bellows/forge_reader.py read_project(): (1) Extract 'themes' and 'initiatives' from state.json. (2) Group tasks by initiative_id \u2014 build initiative_tasks dict mapping ini-NNN to list of tasks. (3) Compute initiative progress: tasks_done/tasks_total for each initiative. (4) Add 'proposed_count' to project dict \u2014 count of initiatives with status='proposed' (for badge on home.html). (5) Add 'initiatives' list to project dict with computed fields: title, theme_name, status, tasks_done, tasks_total, heats_used, budget_cap.",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -900,7 +900,7 @@
       "id": "t-161",
       "stage": "testing",
       "desc": "Intent hierarchy CLI tests. In smithy/smithy/tests/ add test file test_hierarchy.py: (1) Theme tests: add-theme creates with auto-id and rank, list-themes returns sorted, reorder-themes shifts correctly, pause/activate toggles status. (2) Initiative tests: propose creates with proposed status, approve sets approved, reject sets rejected, complete sets done, approve on non-proposed errors, propose with invalid theme_id errors. (3) Task gating tests: add-task with --initiative stores initiative_id, add-task with invalid initiative errors, pick-task skips tasks from proposed/rejected initiatives, pick-task returns standalone tasks always, first pick from approved initiative sets it to active. (4) Allocator tests: queued-task bonus excludes ineligible tasks, theme rank bonus applies 1.5x for rank-1. (5) End-to-end: create theme -> propose initiative -> approve -> add tasks -> pick-task returns them. All tests use tmp_path fixture with smithy init scaffold.",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -910,6 +910,14 @@
       "desc": "Bellows intent hierarchy tests. In bellows/tests/ add or extend test file: (1) Board route returns 200, renders initiative cards. (2) Approve endpoint changes initiative status in state.json. (3) Reject endpoint changes initiative status. (4) forge_reader extracts initiatives, computes task counts, groups by initiative_id. (5) Home page shows proposed-initiative badge when proposed initiatives exist. Use existing test patterns from test_forge_reader.py.",
       "status": "pending",
       "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-163",
+      "stage": "testing",
+      "desc": "Full regression: all tests + routes after intent hierarchy",
+      "status": "in_progress",
+      "priority": 1,
       "blocked_by": []
     }
   ],
