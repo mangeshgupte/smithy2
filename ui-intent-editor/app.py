@@ -50,6 +50,37 @@ def _load_intent():
     return "\n".join(lines).strip()
 
 
+def _load_intent_history():
+    """Load intent history from intents.json."""
+    path = Path(STATE_DIR) / "intents.json"
+    if not path.exists():
+        return []
+    return json.loads(path.read_text())
+
+
+def _save_intent_history(history):
+    """Save intent history to intents.json."""
+    path = Path(STATE_DIR) / "intents.json"
+    path.write_text(json.dumps(history, indent=2) + "\n")
+
+
+def _record_intent(intent_text):
+    """Record an intent snapshot to history."""
+    from datetime import datetime
+    history = _load_intent_history()
+    # Don't duplicate if same as last entry
+    if history and history[-1].get("text") == intent_text:
+        return
+    history.append({
+        "text": intent_text,
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
+    })
+    # Keep last 20 entries
+    if len(history) > 20:
+        history = history[-20:]
+    _save_intent_history(history)
+
+
 def _decompose_intent(intent_text):
     """Simple rule-based decomposition (no API call needed for prototype).
 
@@ -108,12 +139,15 @@ async def index(request: Request):
             is_new = (th_id, ini) not in existing_ini_titles if th_id else True
             d["initiatives"][i] = {"title": ini, "is_new": is_new}
 
+    history = _load_intent_history()
+
     return templates.TemplateResponse(request=request, name="index.html", context={
         "project": state.get("project", "unknown"),
         "intent": intent,
         "decomposition": decomposition,
         "existing_themes": existing_themes,
         "existing_initiatives": existing_initiatives,
+        "history": list(reversed(history[-10:])),
     })
 
 
@@ -178,6 +212,9 @@ async def apply_decomposition(request: Request):
                 })
 
     _save_state(state)
+
+    # Record intent in history
+    _record_intent(intent)
 
     # Also save intent back to identity.md
     identity_path = Path(STATE_DIR) / "identity.md"

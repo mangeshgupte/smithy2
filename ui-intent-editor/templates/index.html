@@ -97,6 +97,20 @@
     </div>
     {% endif %}
 
+    {% if history %}
+    <div class="history-section">
+        <h2>Intent History</h2>
+        <div class="history-list">
+            {% for entry in history %}
+            <div class="history-item" onclick="loadHistory(this)" data-text="{{ entry.text|e }}">
+                <span class="history-time">{{ entry.timestamp }}</span>
+                <span class="history-preview">{{ entry.text[:80] }}{% if entry.text|length > 80 %}...{% endif %}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     <script>
     function selectAll(checked) {
         document.querySelectorAll('.node-check').forEach(cb => cb.checked = checked);
@@ -106,6 +120,12 @@
         document.querySelectorAll(`.ini-check[data-theme="${themeName}"]`).forEach(cb => {
             cb.checked = themeCheckbox.checked;
         });
+    }
+    function loadHistory(el) {
+        const text = el.dataset.text;
+        document.getElementById('intent').value = text;
+        // Scroll to top to show the textarea
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
     </script>
 </body>
