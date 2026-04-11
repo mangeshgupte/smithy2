@@ -2,6 +2,11 @@
 
 The Smith writes status updates, questions, and summaries here.
 
+## 2026-04-10 [heat 570, AAR — heats 565-570]
+
+6 heats: testing×1, editing×2, marketing×2, impl×1. Signal: 🟢×6.
+Key: **Sprint wrap-up.** Full regression (158 tests, 13 routes), tutor README (PWA + Logic), CHANGELOG v1.2, Bellows project creation UI, STRATEGY update. All pending tasks complete.
+
 ## 2026-04-10 [heat 564, AAR — heats 557-563]
 
 7 heats: impl×4, research×1, testing×1, planning×1. Signal: 🟢×7.

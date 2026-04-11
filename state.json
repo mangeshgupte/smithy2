@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 597,
-    "used": 564,
+    "used": 569,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,27 +20,27 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 178,
+      "heats": 179,
       "progress": 0.98,
-      "value_ema": 0.792
+      "value_ema": 0.794
     },
     "testing": {
       "target": 0.183,
-      "heats": 106,
+      "heats": 107,
       "progress": 0.88,
       "value_ema": 0.801
     },
     "editing": {
       "target": 0.183,
-      "heats": 145,
+      "heats": 147,
       "progress": 0.88,
-      "value_ema": 0.753
+      "value_ema": 0.726
     },
     "marketing": {
       "target": 0.219,
-      "heats": 75,
+      "heats": 76,
       "progress": 0.84,
-      "value_ema": 0.71
+      "value_ema": 0.737
     }
   },
   "allocator": {
@@ -48,8 +48,8 @@
       "research": 0.5,
       "planning": 0.5,
       "implementation": -0.5,
-      "testing": -0.036,
-      "editing": -0.499,
+      "testing": -0.038,
+      "editing": -0.498,
       "marketing": 0.5
     }
   },
@@ -708,7 +708,7 @@
       "id": "t-137",
       "stage": "implementation",
       "desc": "Bellows: add project creation from UI (form that calls smithy init)",
-      "status": "pending",
+      "status": "complete",
       "priority": 3,
       "blocked_by": []
     },
@@ -716,7 +716,7 @@
       "id": "t-138",
       "stage": "testing",
       "desc": "Full regression after PWA + content additions",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -724,7 +724,7 @@
       "id": "t-139",
       "stage": "editing",
       "desc": "Update tutor README with PWA support + logic subject expansion",
-      "status": "pending",
+      "status": "complete",
       "priority": 3,
       "blocked_by": []
     },
@@ -732,7 +732,7 @@
       "id": "t-140",
       "stage": "marketing",
       "desc": "CHANGELOG v1.2: PWA + content sprint",
-      "status": "pending",
+      "status": "complete",
       "priority": 3,
       "blocked_by": []
     },
@@ -748,7 +748,7 @@
       "id": "t-142",
       "stage": "implementation",
       "desc": "Add --context option to smithy add-task: optional string field stored on task objects in state.json",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": []
     },
@@ -771,7 +771,7 @@
     {
       "id": "t-145",
       "stage": "implementation",
-      "desc": "Tutor responsive: nav sidebar + body shift. Bottom tab bar becomes 72px left sidebar at 1024px+. Active tab gets left border accent. Body gets margin-left: 72px. See design/2026-04-10-tutor-responsive-desktop.md sections 1-2.",
+      "desc": "Tutor responsive: nav sidebar + body shift. All CSS in tutor/static/css/style.css behind @media (min-width: 1024px). .tab-bar: position fixed, top/left/bottom 0, right auto, width 72px, flex-direction column, justify-content flex-start, padding 24px 0 0 0, border-top none, border-right 1px solid var(--border), gap 8px. .tab: padding 12px 0. Remove .tab.active::after (display none). .tab.active: border-left 3px solid var(--indigo), background rgba(0,188,212,0.06). body: padding-bottom 0, margin-left 72px. .tab-badge repositions relative to vertical layout. Mobile below 1024px stays untouched.",
       "status": "pending",
       "priority": 1,
       "blocked_by": []
@@ -779,7 +779,7 @@
     {
       "id": "t-146",
       "stage": "implementation",
-      "desc": "Tutor responsive: subject cards 2-col grid + welcome features row. .subject-list becomes 2-col grid, .welcome-features becomes row, .container widens to 960px. See design spec sections 3-4.",
+      "desc": "Tutor responsive: grids + container. All CSS in tutor/static/css/style.css behind @media (min-width: 1024px). .container: max-width 960px, padding 32px. .subject-list: display grid, grid-template-columns repeat(2, 1fr), gap 20px. .welcome-features: flex-direction row, gap 24px. .welcome-feature: flex 1, text-align center. Cards fill width naturally, no other changes needed.",
       "status": "pending",
       "priority": 1,
       "blocked_by": []
@@ -787,7 +787,7 @@
     {
       "id": "t-147",
       "stage": "implementation",
-      "desc": "Tutor responsive: lesson page 2-panel layout. Add page_class block to base.html, lesson-page class to lesson.html. CSS grid: concepts left (40%), exercises right (60%). See design spec section 6.",
+      "desc": "Tutor responsive: lesson 2-panel layout. ONE template change allowed: in tutor/templates/base.html add page_class block to <main>: <main class=\"container {% block page_class %}{% endblock %}\">. In tutor/templates/lesson.html add: {% block page_class %}lesson-page{% endblock %}. Then CSS in style.css behind @media (min-width: 1024px): .lesson-page: display grid, grid-template-columns 2fr 3fr, gap 0 32px, align-items start. .lesson-page .page-header: grid-column 1/-1. .lesson-page .lesson-section:last-child (practice): grid-column 2, grid-row 2/span 10. .lesson-page .lesson-section:not(:last-child): grid-column 1. Left=concepts/example/socratic (40%), right=exercises (60%). Both columns scroll naturally.",
       "status": "pending",
       "priority": 1,
       "blocked_by": []
@@ -795,7 +795,7 @@
     {
       "id": "t-148",
       "stage": "implementation",
-      "desc": "Tutor responsive: remaining pages. Review card max-width 640px centered, deck-list 2-col grid, browse-topics 2-col grid, code inputs wider/taller. See design spec sections 7-12.",
+      "desc": "Tutor responsive: remaining pages. All CSS in tutor/static/css/style.css behind @media (min-width: 1024px). .review-card and .review-complete: max-width 640px, margin 0 auto. .deck-list: display grid, grid-template-columns repeat(2, 1fr), gap 20px. .browse-topics: display grid, grid-template-columns repeat(2, 1fr), gap 8px. .code-input: min-height 120px, font-size 14px. .example-block: font-size 14px, padding 16px. Result page stays centered single column, just wider.",
       "status": "pending",
       "priority": 2,
       "blocked_by": []
@@ -803,9 +803,25 @@
     {
       "id": "t-149",
       "stage": "testing",
-      "desc": "Tutor responsive: verify all 13 items in design spec testing checklist \u2014 sidebar, grids, 2-panel lesson, resize, animations, no horizontal scroll",
+      "desc": "Tutor responsive testing checklist. Start tutor app, verify at 1024px+: (1) subject cards 2x2 grid, (2) sidebar nav left on desktop / bottom tabs on mobile, (3) lesson 2-panel layout, (4) review card centered max-width 640px, (5) create deck cards 2-col, (6) smooth transition at 1024px resize, (7) all animations work, (8) code input good width, (9) tab badge visible in sidebar, (10) active tab left accent bar desktop / dot mobile, (11) no horizontal scrollbar, (12) welcome features horizontal, (13) mobile layout completely unchanged below 1024px.",
       "status": "pending",
       "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-150",
+      "stage": "editing",
+      "desc": "STRATEGY.md update to heat 568",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-151",
+      "stage": "marketing",
+      "desc": "Final AAR + handoff for 10-heat sprint (heats 565-574)",
+      "status": "in_progress",
+      "priority": 1,
       "blocked_by": []
     }
   ],

@@ -2,6 +2,40 @@
 
 Anvil writes direction here. Forge reads on startup and uses it to guide autonomous work.
 
+## 2026-04-10 22:00 — Direction: Task Context Field (3 heats)
+
+### What We Decided
+Tasks in state.json are currently one-liner descriptions. The strategic context lives separately in dispatch/anvil-to-forge.md, which Forge reads on startup. Problem: if a task is picked up later, the dispatch context has scrolled off and Forge works blind.
+
+**Decision:** Add an optional `context` field to tasks. This carries the "why" and constraints directly on the work item. Dispatch becomes Anvil's decision journal — Forge no longer reads it during execution.
+
+### Focus Areas
+
+**t-142 (implementation, priority 1):** Add `--context` option to `smithy add-task` in `smithy/smithy/cli.py`.
+- Optional string parameter: `@click.option("--context", default=None, help="Strategic context for this task")`
+- Store as `"context": "..."` on the task dict (omit key if None, keep state.json clean)
+- `pick-task` already returns the full task object, so context will flow through automatically
+- No changes needed to `pick-task`, `complete-task`, or `start-heat`
+
+**t-143 (editing, priority 1):** Update `protocol/loop.md` Step 1.
+- Remove `dispatch/anvil-to-forge.md` from the "Also read" list
+- Add a note: "Read the `context` field on your picked task for strategic direction"
+- The dispatch file stays in the repo as Anvil's decision log — just not read by Forge operationally
+
+**t-144 (testing, priority 2):** Test the context field.
+- `smithy add-task implementation "test task" --context "some context"` → task has context field
+- `smithy add-task implementation "no context task"` → task has no context key (not null, absent)
+- `smithy pick-task implementation` → returned task includes context when present
+- Round-trip: add with context, save, reload, pick — context survives
+
+### Constraints
+- Context field is optional — existing tasks without it must still work
+- Don't add context to existing tasks in state.json — only new tasks get it
+- Keep state.json clean: omit the key entirely when no context provided (not `"context": null`)
+
+### Budget
+3 heats
+
 ## 2026-04-10 21:30 — Direction: Rename to Bellows (3 heats)
 
 ### What We Decided
