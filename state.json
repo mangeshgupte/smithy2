@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 843,
-    "used": 633,
+    "used": 636,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 214,
+      "heats": 217,
       "progress": 0.98,
-      "value_ema": 0.747
+      "value_ema": 0.782
     },
     "testing": {
       "target": 0.183,
@@ -1103,7 +1103,7 @@
       "id": "t-186",
       "stage": "implementation",
       "desc": "UI A: Priority Poker \u2014 live progress + polish. Add live progress indicators to cards: animated progress bar showing tasks done/total, heats_used as a mini budget bar, live stage indicator (what stage Forge is currently in). Add a 'kill' button (small X) that rejects an initiative \u2014 removes it from the stack. Add visual weight: top card is larger/brighter, cards get progressively smaller/dimmer down the stack to reinforce priority. Auto-refresh via polling (every 5s read state.json) or SSE. Add empty state when no initiatives exist.",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-010"
@@ -1130,7 +1130,7 @@
       "id": "t-189",
       "stage": "implementation",
       "desc": "UI B: Constraint Board \u2014 violation detection + enforcement. Add constraint checking logic: on each page load, evaluate all active constraints against current state.json. Show violation status on each card: green (satisfied), yellow (approaching limit \u2014 within 20%), red (violated). For violated constraints, show what's wrong ('research at 12 heats, limit is 10'). Add a 'violations' summary bar at top of page showing count. Write a constraints.json or add to state.json that Forge's allocator can read \u2014 the allocator should skip stages/initiatives that violate constraints. Add toggle to activate/deactivate constraints without deleting them.",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-011"
@@ -1139,7 +1139,7 @@
       "id": "t-190",
       "stage": "testing",
       "desc": "UI B: Constraint Board \u2014 test. Start the app, verify: can create each constraint type, constraints persist to state.json/constraints.json, violation detection works (create a budget-cap below current usage \u2014 should show red), toggle active/inactive works, delete works, empty state renders, dark theme consistent.",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-011"
@@ -1166,7 +1166,7 @@
       "id": "t-193",
       "stage": "testing",
       "desc": "UI C: Timeline View \u2014 test. Start the app, verify: initiatives render as bars at correct positions, drag to resize updates budget_cap, drag to reposition works, conflict detection shows when over-allocated, zoom works, tooltip shows details, auto-refresh picks up state changes, empty state renders, dark theme consistent.",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-012"
@@ -1193,7 +1193,7 @@
       "id": "t-196",
       "stage": "testing",
       "desc": "UI D: Intent Editor \u2014 test. Start the app, verify: intent textarea accepts input, submit triggers Claude API decomposition, tree renders themes/initiatives/tasks, can delete/edit/reorder nodes, Apply writes to state.json correctly, diff mode shows changes on re-submit, history sidebar shows previous intents, empty state renders, dark theme consistent, API errors handled gracefully (show error message, don't crash).",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-013"
@@ -1347,7 +1347,7 @@
       "id": "t-214",
       "stage": "implementation",
       "desc": "Timeline improvements (batch 1). In ui-timeline/: (1) After t-205 wires up drag, add snap-to-grid \u2014 snap to 5-heat increments on drag. (2) Add conflict detection \u2014 when total allocated heats exceed remaining budget, show a red warning bar and color overflowing bars red. (3) Add zoom controls \u2014 buttons for 50/100/250 heat view range, resize the timeline canvas accordingly. (4) Add initiative labels on bars with text truncation (ellipsis if too long). (5) Add 'now' marker \u2014 a vertical dashed line at current heat count with label.",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-012"
@@ -1470,6 +1470,23 @@
       "status": "complete",
       "priority": 2,
       "blocked_by": []
+    },
+    {
+      "id": "t-229",
+      "stage": "implementation",
+      "desc": "Bellows: tasks view. Add a 'Tasks' sub-tab to bellows project pages (alongside Activity, Decide, Direct, Board). In bellows/templates/tasks.html: show all pending tasks grouped by initiative (standalone tasks in their own group). Each task shows: ID, stage (colored badge), priority, description (truncated, expandable on click), blocked_by status. Controls per task: (1) drag to reorder priority within group, (2) 'Skip' button sets priority to 3, (3) 'Boost' button sets priority to 0, (4) 'Delete' button removes from queue. Add filter bar at top: filter by stage, by initiative, by priority. Add GET /project/{name}/tasks route in app.py, add POST /project/{name}/task/{id}/priority endpoint for reorder/boost/skip, add POST /project/{name}/task/{id}/delete endpoint. In forge_reader.py: expose pending tasks grouped by initiative_id with initiative title.",
+      "status": "pending",
+      "priority": 0,
+      "blocked_by": []
+    },
+    {
+      "id": "t-230",
+      "stage": "implementation",
+      "desc": "Priority Poker: clickable task count expands card. In ui-priority-poker/: The task count on each card (e.g. '3/7 tasks') should be a clickable element. Clicking it expands the card inline to show two sections: (1) UPCOMING \u2014 pending tasks for this initiative sorted by priority, showing task ID, stage badge, description. These are what Forge will work on next. (2) RECENTLY COMPLETED \u2014 last 5 completed tasks for this initiative, showing task ID, stage badge, description, dimmed styling. Click again to collapse. Add GET /api/tasks/{initiative_id} endpoint in app.py that returns {pending: [...], completed: [...]} filtered by initiative_id. Add Skip/Boost/Delete controls on pending tasks (POST /api/task/{id}/priority, POST /api/task/{id}/delete). Also add a 'Standalone tasks' section at the bottom of the poker stack showing tasks not linked to any initiative \u2014 these steal heats from initiative work. Same expand/collapse pattern.",
+      "status": "pending",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-010"
     }
   ],
   "ideas": [
@@ -1591,8 +1608,8 @@
       "budget_cap": 10,
       "heats_used": 2,
       "rank": 1,
-      "planned_start": 619,
-      "planned_end": 629
+      "planned_start": 635,
+      "planned_end": 645
     },
     {
       "id": "ini-010",
@@ -1601,10 +1618,10 @@
       "description": "A desktop web UI where the human steers by ranking, not approving. Shows all active initiatives as cards. Human drags to reorder \u2014 that IS the steering. No approve/reject buttons. Everything proposed is fair game unless explicitly killed. The ranking determines allocation weight. Top card gets 3x budget share, second gets 2x, rest get 1x. Real-time: as Forge works, cards show live progress and the stack rebalances. The human's only job: keep the stack in the right order. Inspired by planning poker + priority queues. Build as a standalone page in Bellows.",
       "status": "approved",
       "budget_cap": 15,
-      "heats_used": 3,
+      "heats_used": 4,
       "rank": 2,
-      "planned_start": 624,
-      "planned_end": 635
+      "planned_start": 645,
+      "planned_end": 655
     },
     {
       "id": "ini-011",
@@ -1613,10 +1630,10 @@
       "description": "A desktop web UI where the human steers by setting constraints, not giving orders. Instead of telling Forge what to do, the human defines boundaries: 'no more than 5 heats on research', 'testing must stay above 80%', 'don't touch tutor', 'ship something deployable by Friday'. Constraints are cards on a board. Forge works freely within them. When a constraint would be violated, Forge stops and asks. The human's only job: add/remove/adjust constraints. Inspired by air traffic control \u2014 direct through boundaries, not waypoints. Build as a standalone page in Bellows.",
       "status": "approved",
       "budget_cap": 15,
-      "heats_used": 3,
+      "heats_used": 4,
       "rank": 3,
-      "planned_start": 623,
-      "planned_end": 638
+      "planned_start": 650,
+      "planned_end": 665
     },
     {
       "id": "ini-012",
@@ -1625,10 +1642,10 @@
       "description": "A desktop web UI where the human steers by shaping a timeline. Horizontal axis is heats (or time). Initiatives are horizontal bars showing planned start/end. The human drags bar endpoints to allocate budget. Overlapping bars = parallel work. Gaps = cool-down. The visual makes tradeoffs obvious \u2014 stretching one initiative squeezes another. Forge reads the timeline and works accordingly. Inspired by Gantt charts but interactive and simple. Build as a standalone page in Bellows.",
       "status": "approved",
       "budget_cap": 15,
-      "heats_used": 3,
+      "heats_used": 4,
       "rank": 5,
-      "planned_start": 623,
-      "planned_end": 638
+      "planned_start": 645,
+      "planned_end": 660
     },
     {
       "id": "ini-013",
@@ -1639,8 +1656,8 @@
       "budget_cap": 20,
       "heats_used": 3,
       "rank": 4,
-      "planned_start": 631,
-      "planned_end": 649
+      "planned_start": 645,
+      "planned_end": 665
     },
     {
       "id": "ini-014",
@@ -1650,8 +1667,8 @@
       "status": "approved",
       "budget_cap": 10,
       "heats_used": 1,
-      "planned_start": 619,
-      "planned_end": 632,
+      "planned_start": 640,
+      "planned_end": 655,
       "rank": 6
     }
   ],
