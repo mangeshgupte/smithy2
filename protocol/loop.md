@@ -14,7 +14,7 @@ smithy sync-stages         # Ensure stage heats match worklog
 
 Read the handoff context notes and next steps if present.
 
-**Marshal check**: Run `smithy next-task` to see if a Marshal session has populated `next_tasks`. If `source: "marshal"`, the Marshal is active and directing your queue. If `source: "none"`, you're self-directed via the allocator.
+**Hook check**: Run `smithy check-hook`. If hooked, a task is already waiting for you — go straight to Step 5. No deliberation needed.
 
 ## Step 1: Load Context
 
@@ -51,17 +51,20 @@ If `smithy process-inbox` returns new entries, parse for:
 
 ## Step 3: Get Next Task
 
-**Option A — Marshal is running** (preferred):
+**Check your hook first:**
 
 ```bash
-smithy next-task           # Pops from Marshal's prioritized next_tasks list
+smithy check-hook          # Returns hook + task details, or {hooked: false}
 ```
 
-If `source: "marshal"`, use the returned task and stage. The Marshal agent is a separate session that orders your queue — you execute in order.
+- **If hooked** → use the hooked task and stage. Skip the allocator. No deliberation. Go to Step 5.
+- **If not hooked** → check Marshal queue, then fall back to allocator:
 
-**Option B — No Marshal** (fallback):
+```bash
+smithy next-task           # Pops from Marshal's next_tasks list (if populated)
+```
 
-If `smithy next-task` returns `source: "none"`, fall back to the allocator:
+If `source: "marshal"`, use the returned task. If `source: "none"`, fall back:
 
 ```bash
 smithy allocate            # Returns recommended stage + scores
@@ -71,6 +74,8 @@ smithy pick-task <stage>   # Returns highest-priority ready task
 If no ready tasks: generate one yourself, then `smithy add-task <stage> "<desc>"`.
 
 **Queue health check**: If < 3 pending tasks, generate 1-2 tasks for high-scoring stages.
+
+**Who hooks tasks?** Marshal, Anvil, or any agent can hook via `smithy hook <task_id>`. Forge just executes what's hooked.
 
 ## Step 5: Execute (~4 minutes)
 
@@ -105,6 +110,8 @@ smithy end-heat <value> <signal> "<notes>" [--outcome complete|partial|blocked]
 ```
 
 This atomically: increments budget.used, updates stage heats + value_ema + integral, appends worklog, marks task complete, updates overall_progress, deletes checkpoint.
+
+`end-heat` auto-clears the hook if the completed task matches. No manual unhook needed.
 
 **Report to Marshal** (if Marshal is running): After end-heat, append to `dispatch/forge-to-marshal.md`:
 
