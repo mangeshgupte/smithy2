@@ -58,6 +58,15 @@
         {% endif %}
     </div>
 
+    {% if suggestions %}
+    <div class="suggestions">
+        <h2 style="font-size: 14px; color: var(--yellow); margin-bottom: 8px;">💡 Suggestions</h2>
+        {% for s in suggestions %}
+        <p class="suggestion-item">{{ s }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <div class="quick-templates">
         <h2 style="font-size: 14px; color: var(--text-muted); margin-bottom: 8px;">Quick Add</h2>
         <div class="template-row">

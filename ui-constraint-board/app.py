@@ -77,14 +77,39 @@ def _check_violations(state):
     return violations
 
 
+def _suggest_constraints(state):
+    """Suggest useful constraints based on current state."""
+    suggestions = []
+    stages = state.get("stages", {})
+    total_heats = sum(s.get("heats", 0) for s in stages.values()) or 1
+    existing_types = {(c.get("type"), c.get("stage")) for c in state.get("constraints", [])}
+
+    for name, s in stages.items():
+        pct = s.get("heats", 0) / total_heats * 100
+        heats = s.get("heats", 0)
+        progress = s.get("progress", 0)
+
+        # High-progress stage that's still consuming heats
+        if progress >= 0.9 and pct > 20 and ("budget_cap", name) not in existing_types:
+            suggestions.append(f"⏱ Cap {name} — at {progress*100:.0f}% progress but using {pct:.0f}% of heats")
+
+        # Low-progress stage getting no attention
+        if progress < 0.3 and pct < 5 and heats > 0 and ("floor", name) not in existing_types:
+            suggestions.append(f"📊 Boost {name} — only {pct:.0f}% of heats, {progress*100:.0f}% progress")
+
+    return suggestions
+
+
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     state = _load_state()
     constraints = state.get("constraints", [])
     violations = _check_violations(state)
+    suggestions = _suggest_constraints(state)
     return templates.TemplateResponse(request=request, name="index.html", context={
         "constraints": constraints,
         "violations": violations,
+        "suggestions": suggestions,
         "project": state.get("project", "unknown"),
         "stages": list(state.get("stages", {}).keys()),
     })
