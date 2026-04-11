@@ -889,3 +889,112 @@ class TestSessions:
         assert result.exit_code == 0
         data = json.loads(result.output)
         assert data["stopped"] is False
+
+
+class TestQueueShortcuts:
+    """Tests for set-priority, set-next-tasks, list-tasks commands."""
+
+    def test_set_priority(self, project, runner):
+        """Set a task's priority and verify update."""
+        result = runner.invoke(cli, ["--dir", str(project), "set-priority", "t-001", "0"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["task"]["priority"] == 0
+        assert data["old_priority"] == 1
+
+    def test_set_priority_invalid_range(self, project, runner):
+        """Priority outside 0-3 → error."""
+        result = runner.invoke(cli, ["--dir", str(project), "set-priority", "t-001", "5"])
+        assert result.exit_code != 0
+
+    def test_set_priority_task_not_found(self, project, runner):
+        """Non-existent task ID → error."""
+        result = runner.invoke(cli, ["--dir", str(project), "set-priority", "t-999", "1"])
+        assert result.exit_code != 0
+
+    def test_set_next_tasks(self, project, runner):
+        """Set next_tasks queue and verify persistence."""
+        result = runner.invoke(cli, ["--dir", str(project), "set-next-tasks", "t-001", "--no-nudge"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["next_tasks"] == ["t-001"]
+        assert data["count"] == 1
+        # Verify state persisted
+        state = json.loads((project / "state.json").read_text())
+        assert state["next_tasks"] == ["t-001"]
+
+    def test_set_next_tasks_invalid_id(self, project, runner):
+        """Non-existent task ID in set-next-tasks → error."""
+        result = runner.invoke(cli, ["--dir", str(project), "set-next-tasks", "t-999", "--no-nudge"])
+        assert result.exit_code != 0
+
+    def test_set_next_tasks_non_pending(self, project, runner):
+        """Completed task in set-next-tasks → error."""
+        state = json.loads((project / "state.json").read_text())
+        state["queue"][0]["status"] = "complete"
+        (project / "state.json").write_text(json.dumps(state))
+        result = runner.invoke(cli, ["--dir", str(project), "set-next-tasks", "t-001", "--no-nudge"])
+        assert result.exit_code != 0
+
+    def test_set_next_tasks_multiple(self, project, runner):
+        """Multiple task IDs in set-next-tasks."""
+        state = json.loads((project / "state.json").read_text())
+        state["queue"].append({"id": "t-002", "stage": "testing", "desc": "Second", "status": "pending", "priority": 2, "blocked_by": []})
+        (project / "state.json").write_text(json.dumps(state))
+        result = runner.invoke(cli, ["--dir", str(project), "set-next-tasks", "t-002", "t-001", "--no-nudge"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["next_tasks"] == ["t-002", "t-001"]
+
+    def test_list_tasks_default(self, project, runner):
+        """list-tasks with no filters returns pending tasks."""
+        result = runner.invoke(cli, ["--dir", str(project), "list-tasks"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["count"] == 1
+        assert data["tasks"][0]["id"] == "t-001"
+
+    def test_list_tasks_status_filter(self, project, runner):
+        """list-tasks --status all returns everything."""
+        state = json.loads((project / "state.json").read_text())
+        state["queue"].append({"id": "t-002", "stage": "testing", "desc": "Done", "status": "complete", "priority": 2, "blocked_by": []})
+        (project / "state.json").write_text(json.dumps(state))
+        result = runner.invoke(cli, ["--dir", str(project), "list-tasks", "--status", "all"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["count"] == 2
+
+    def test_list_tasks_stage_filter(self, project, runner):
+        """list-tasks --stage testing returns only testing tasks."""
+        state = json.loads((project / "state.json").read_text())
+        state["queue"].append({"id": "t-002", "stage": "testing", "desc": "Test task", "status": "pending", "priority": 2, "blocked_by": []})
+        (project / "state.json").write_text(json.dumps(state))
+        result = runner.invoke(cli, ["--dir", str(project), "list-tasks", "--stage", "testing"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["count"] == 1
+        assert data["tasks"][0]["stage"] == "testing"
+
+    def test_list_tasks_limit(self, project, runner):
+        """list-tasks --limit N caps output."""
+        state = json.loads((project / "state.json").read_text())
+        for i in range(2, 10):
+            state["queue"].append({"id": f"t-{i:03d}", "stage": "implementation", "desc": f"Task {i}", "status": "pending", "priority": 2, "blocked_by": []})
+        (project / "state.json").write_text(json.dumps(state))
+        result = runner.invoke(cli, ["--dir", str(project), "list-tasks", "--limit", "3"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["count"] == 3
+        assert data["total_matching"] == 9
+
+    def test_list_tasks_sorted_by_priority(self, project, runner):
+        """list-tasks sorts by priority ascending."""
+        state = json.loads((project / "state.json").read_text())
+        state["queue"].append({"id": "t-002", "stage": "testing", "desc": "Low pri", "status": "pending", "priority": 3, "blocked_by": []})
+        state["queue"].append({"id": "t-003", "stage": "testing", "desc": "High pri", "status": "pending", "priority": 0, "blocked_by": []})
+        (project / "state.json").write_text(json.dumps(state))
+        result = runner.invoke(cli, ["--dir", str(project), "list-tasks", "--status", "all"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        priorities = [t["priority"] for t in data["tasks"]]
+        assert priorities == sorted(priorities)
