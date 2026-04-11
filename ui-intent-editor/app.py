@@ -117,9 +117,13 @@ async def index(request: Request):
 
 @app.post("/apply")
 async def apply_decomposition(request: Request):
-    """Apply the decomposition to state.json — create themes + initiatives."""
+    """Apply selected decomposition items to state.json."""
     form = await request.form()
     intent = form.get("intent", "")
+
+    # Get selected items from checkboxes
+    selected_themes = set(form.getlist("themes"))
+    selected_initiatives = set(form.getlist("initiatives"))  # "theme::title" format
 
     decomposition = _decompose_intent(intent)
     if not decomposition:
@@ -139,6 +143,9 @@ async def apply_decomposition(request: Request):
         if existing_th:
             th_id = existing_th["id"]
         else:
+            # Only create if selected
+            if d["name"] not in selected_themes:
+                continue
             max_th += 1
             th_id = f"th-{max_th:03d}"
             themes.append({
@@ -153,6 +160,10 @@ async def apply_decomposition(request: Request):
                 None
             )
             if not existing_ini:
+                # Only create if selected
+                ini_key = f"{d['name']}::{ini_desc}"
+                if ini_key not in selected_initiatives:
+                    continue
                 max_ini += 1
                 initiatives.append({
                     "id": f"ini-{max_ini:03d}",

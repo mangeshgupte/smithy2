@@ -27,18 +27,30 @@
         {% if decomposition %}
         <div class="decomposition">
             <h2>Decomposition</h2>
-            <p class="hint">This is what will be created in state.json when you apply.</p>
+            <p class="hint">Check items to apply. Only checked new items will be created.</p>
+            <div class="select-controls">
+                <button type="button" class="select-btn" onclick="selectAll(true)">Select All New</button>
+                <button type="button" class="select-btn" onclick="selectAll(false)">Deselect All</button>
+            </div>
 
             {% for theme in decomposition %}
             <div class="tree-theme">
                 <div class="tree-node theme-node {{ 'new-item' if theme.is_new }}">
+                    {% if theme.is_new %}
+                    <input type="checkbox" name="themes" value="{{ theme.name }}" class="node-check" checked onchange="toggleThemeChildren(this)">
+                    {% else %}
                     <span class="node-icon">📁</span>
+                    {% endif %}
                     <span class="node-name">{{ theme.name }}</span>
                     <span class="node-type">{% if theme.is_new %}+ new theme{% else %}existing{% endif %}</span>
                 </div>
                 {% for ini in theme.initiatives %}
                 <div class="tree-node ini-node {{ 'new-item' if ini.is_new }}">
+                    {% if ini.is_new %}
+                    <input type="checkbox" name="initiatives" value="{{ theme.name }}::{{ ini.title }}" class="node-check ini-check" data-theme="{{ theme.name }}" checked>
+                    {% else %}
                     <span class="node-icon">📋</span>
+                    {% endif %}
                     <span class="node-name">{{ ini.title }}</span>
                     <span class="node-type">{% if ini.is_new %}+ new{% else %}exists{% endif %}</span>
                 </div>
@@ -54,7 +66,7 @@
         </div>
         {% endif %}
 
-        <button type="submit" class="apply-btn">Apply to State</button>
+        <button type="submit" class="apply-btn">Apply Selected</button>
     </form>
 
     {% if existing_themes %}
@@ -84,5 +96,17 @@
         </div>
     </div>
     {% endif %}
+
+    <script>
+    function selectAll(checked) {
+        document.querySelectorAll('.node-check').forEach(cb => cb.checked = checked);
+    }
+    function toggleThemeChildren(themeCheckbox) {
+        const themeName = themeCheckbox.value;
+        document.querySelectorAll(`.ini-check[data-theme="${themeName}"]`).forEach(cb => {
+            cb.checked = themeCheckbox.checked;
+        });
+    }
+    </script>
 </body>
 </html>

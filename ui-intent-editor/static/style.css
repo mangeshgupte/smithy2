@@ -38,6 +38,11 @@ textarea:focus { outline: none; border-color: var(--blue); }
 .new-item { background: rgba(63,185,80,0.08); border-left: 3px solid #3fb950; margin-left: -3px; }
 .new-item .node-type { color: #3fb950; font-weight: 600; }
 
+.node-check { width: 16px; height: 16px; accent-color: var(--green); cursor: pointer; flex-shrink: 0; }
+.select-controls { display: flex; gap: 8px; margin-bottom: 12px; }
+.select-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; color: var(--text-muted); padding: 4px 10px; font-size: 12px; cursor: pointer; }
+.select-btn:hover { border-color: var(--blue); color: var(--blue); }
+
 .apply-btn {
     width: 100%; background: var(--green); color: #fff; border: none;
     border-radius: var(--radius); padding: 14px; font-size: 15px;
