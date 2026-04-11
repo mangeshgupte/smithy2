@@ -158,6 +158,13 @@ def end_heat(ctx, value, signal, notes, outcome, progress):
     # Delete checkpoint
     delete_checkpoint(root)
 
+    # Auto-clear hook if this task was hooked
+    hook = read_hook(root)
+    hook_cleared = False
+    if hook and hook.get("task_id") == task_id:
+        delete_hook(root)
+        hook_cleared = True
+
     _output({
         "heat": heat,
         "stage": stage,
@@ -167,6 +174,7 @@ def end_heat(ctx, value, signal, notes, outcome, progress):
         "signal": signal,
         "overall_progress": state["overall_progress"],
         "budget_remaining": state["budget"]["total_heats"] - heat,
+        "hook_cleared": hook_cleared,
     })
     _err(f"Heat {heat} [{stage}] {signal} — {notes[:60]}")
 
@@ -723,6 +731,30 @@ def patrol(ctx, fix):
                     state[cursor_name] = line_count
                     fixes.append(f"Set {cursor_name} to {line_count}")
 
+    # 6. Check for stale hook (task already complete)
+    hook = read_hook(root)
+    if hook:
+        hook_task = None
+        for t in state.get("queue", []):
+            if t["id"] == hook["task_id"]:
+                hook_task = t
+                break
+        if hook_task and hook_task["status"] == "complete":
+            issues.append(f"Stale hook: {hook['task_id']} is already complete")
+            if fix:
+                delete_hook(root)
+                fixes.append(f"Removed stale hook for {hook['task_id']}")
+
+        # 7. Hook exists, no checkpoint, hook older than 30 min
+        if hook_task and not has_checkpoint:
+            from datetime import datetime, timedelta
+            try:
+                hooked_at = datetime.fromisoformat(hook["hooked_at"])
+                if datetime.now() - hooked_at > timedelta(minutes=30):
+                    issues.append(f"Hook for {hook['task_id']} is {int((datetime.now() - hooked_at).total_seconds() / 60)}m old with no checkpoint — possible GUPP violation")
+            except (ValueError, KeyError):
+                pass
+
     # Save fixes if any
     if fix and fixes:
         save_state(root, state)
@@ -731,7 +763,7 @@ def patrol(ctx, fix):
         "issues": issues,
         "fixes": fixes,
         "clean": len(issues) == 0,
-        "checks_run": 5,
+        "checks_run": 7,
     })
     if issues:
         _err(f"Patrol found {len(issues)} issues" + (f", fixed {len(fixes)}" if fixes else ""))
