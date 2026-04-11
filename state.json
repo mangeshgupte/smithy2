@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 843,
-    "used": 599,
+    "used": 603,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -26,21 +26,21 @@
     },
     "testing": {
       "target": 0.183,
-      "heats": 111,
+      "heats": 112,
       "progress": 0.88,
-      "value_ema": 0.825
+      "value_ema": 0.817
     },
     "editing": {
       "target": 0.183,
-      "heats": 149,
+      "heats": 151,
       "progress": 0.88,
-      "value_ema": 0.713
+      "value_ema": 0.727
     },
     "marketing": {
       "target": 0.219,
-      "heats": 79,
+      "heats": 80,
       "progress": 0.84,
-      "value_ema": 0.713
+      "value_ema": 0.739
     }
   },
   "allocator": {
@@ -48,8 +48,8 @@
       "research": 0.5,
       "planning": 0.5,
       "implementation": -0.5,
-      "testing": -0.035,
-      "editing": -0.478,
+      "testing": -0.033,
+      "editing": -0.47,
       "marketing": 0.5
     }
   },
@@ -1036,7 +1036,7 @@
       "id": "t-178",
       "stage": "testing",
       "desc": "Full regression after all new features",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -1044,7 +1044,7 @@
       "id": "t-179",
       "stage": "editing",
       "desc": "CHANGELOG v1.3: 5th subject, user auth, end-to-end validation",
-      "status": "pending",
+      "status": "complete",
       "priority": 3,
       "blocked_by": []
     },
@@ -1052,7 +1052,7 @@
       "id": "t-180",
       "stage": "editing",
       "desc": "Update all READMEs with new features",
-      "status": "pending",
+      "status": "complete",
       "priority": 3,
       "blocked_by": []
     },
@@ -1060,7 +1060,7 @@
       "id": "t-181",
       "stage": "marketing",
       "desc": "Write end-to-end walkthrough: init \u2192 run \u2192 review \u2192 iterate",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -1068,7 +1068,7 @@
       "id": "t-182",
       "stage": "marketing",
       "desc": "AAR for 50-heat sprint",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 3,
       "blocked_by": []
     },

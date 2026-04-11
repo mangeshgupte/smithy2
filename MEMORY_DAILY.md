@@ -31,3 +31,7 @@ start-heat, end-heat, validate, status, allocate, pick-task, process-feedback, p
 - [h552 implementation] Heats 544-552: Bellows rename complete (commissioner → bellows). 4th tutor subject: Logic & Critical Thinking (7 topics, 23 exercises, purple accent). Naming: project is 'the-smithy', dashboard is 'Bellows'. Bellows README comprehensive (6 screens). Direct tab: 6 quick-action buttons. 158 tests, patrol clean.
 
 - [h583 implementation] Heats 576-583: Intent hierarchy system built. Data model (themes + initiatives + task linking), Theme CLI (4 commands), Initiative CLI (5 commands), task gating (--initiative, pick-task filters, auto-activate, heats_used tracking). Bellows forge_reader exposes themes/initiatives/intent. Protocol updated. 168 tests (45 smithy), patrol clean.
+
+## 2026-04-11
+
+- [h600 implementation] Heats 591-600: Major sprint. Creative Writing (5th subject, 10 topics, 26 exercises). User sessions (cookie-based, per-user progress/cards). smithy init fixed (CLAUDE.md, protocol files, identity template, post-init guidance). Stats page. Bellows live indicator. smithy stats command (28th). 172 tests. 600 heats milestone.

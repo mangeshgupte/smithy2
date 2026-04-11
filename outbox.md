@@ -2,6 +2,28 @@
 
 The Smith writes status updates, questions, and summaries here.
 
+## 2026-04-11 [heat 604, AAR — heats 591-604]
+
+14 heats: impl×8, research×2, editing×3, marketing×3, testing×1. Signal: 🟢×14.
+
+### What Got Built
+- **Creative Writing** — 5th tutor subject (10 topics, 26 exercises, show-don't-tell → opening hooks)
+- **User sessions** — cookie-based isolation, per-user progress/cards, user switcher page, 👤 nav tab
+- **smithy init fixed** — now generates CLAUDE.md, copies protocol files, identity template, next steps
+- **Global stats page** — /stats with subjects, topics, cards, streak, per-subject breakdown
+- **Bellows live indicator** — pulsing "running" badge when checkpoint exists
+- **smithy stats** — stage distribution, signal counts, theme/initiative summary (28th command)
+- **CHANGELOG v1.3** — comprehensive
+- **WALKTHROUGH.md** — 9-step end-to-end guide
+- **READMEs updated** — smithy + tutor
+
+### Stats at Heat 604
+- 5 subjects (Python, Math, English, Logic, Creative Writing) — 49 topics, 188 exercises
+- 28 smithy commands, 172 tests (111+16+45)
+- 600+ heats, all green
+
+Next: More tutor content, user auth improvements, Bellows WebSocket, Dolt research.
+
 ## 2026-04-10 [heat 590, AAR — heats 585-590]
 
 6 heats: impl×4, testing×1, editing×1. Signal: 🟢×6.
