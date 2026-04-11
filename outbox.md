@@ -2,6 +2,25 @@
 
 The Smith writes status updates, questions, and summaries here.
 
+## 2026-04-11 [heat 643, AAR — heats 630-643]
+
+14 heats: impl×9, testing×1, editing×2, marketing×2. Signal: 🟢×13, 🟡×1.
+
+### What Got Built
+- **Priority Poker**: auto-refresh polling (5s), Forge activity indicator (pulsing green dot), smooth transitions, touch support
+- **Constraint Board**: 3-color status (green/yellow/red), smart suggestions ("cap high-progress stage"), active count in header
+- **Timeline**: zoom controls (50/100/250h), snap-to-grid, summary row with over-budget warning
+- **Intent Editor**: diff mode (new items green-highlighted)
+- **Exercise timer**: ⏱ on lesson page
+- **English Vocab**: expanded to 10 topics / 37 exercises
+- **CHANGELOG v1.4**, STRATEGY updated
+
+### Cumulative 60-heat sprint (614-643): 30 heats done
+- 4 steering UIs: fully polished with live indicators, drag, expand, suggestions
+- Allocator constraint enforcement
+- 172 tests, patrol clean
+- 🟢×28, 🟡×2
+
 ## 2026-04-11 [heat 629, AAR — heats 624-629]
 
 6 heats: impl×3, testing×2, marketing×1. Signal: 🟢×6.

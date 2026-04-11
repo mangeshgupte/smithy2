@@ -632,3 +632,12 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-11T10:48:46Z	631	implementation	t-195	complete	0.8	🟢	Intent Editor diff: new items green-highlighted with '+ new' badge, existing marked 'exists'. Compares decomposition against state.json. Could improve: selective apply with checkboxes.
 2026-04-11T10:50:04Z	632	implementation	t-192	complete	0.8	🟢	Timeline: summary (allocated/remaining/over-budget warning), snap-to-5 grid on drag release. Could improve: zoom controls.
 2026-04-11T10:50:56Z	633	editing	t-228	complete	0.8	🟢	CHANGELOG v1.4: 4 steering UIs, constraint enforcement, English expansion, timer, progress bar, STRATEGY viewer. Comprehensive.
+2026-04-11T10:55:41Z	634	implementation	t-186	complete	0.8	🟢	Priority Poker auto-refresh: polls /api/state every 5s, updates heats_used + task counts live. No page reload needed.
+2026-04-11T10:56:50Z	635	implementation	t-189	complete	0.8	🟢	Constraint Board: 3-color status (green < 80%, yellow 80-100%, red ≥ 100%). Color-coded borders on cards.
+2026-04-11T10:59:08Z	636	implementation	t-214	complete	0.8	🟢	Timeline: zoom controls (50/100/250 heats), dynamic range. Snap-to-grid already done. Could improve: now marker could be dashed line.
+2026-04-11T11:00:18Z	637	testing	t-190	complete	0.8	🟢	Full regression: 172 tests, 4 UIs 200, patrol clean. Constraint Board + Timeline + Intent Editor tests all verified.
+2026-04-11T11:01:00Z	638	implementation	t-209	complete	0.7	🟢	Priority Poker: CSS transitions on reorder, touch support media query, expanded card thicker accent. Could improve: keyboard shortcuts + undo still pending.
+2026-04-11T11:01:41Z	639	implementation	t-212	complete	0.6	🟡	Constraint Board: active count in subtitle. Smaller scope than planned — grouping by type deferred. Could improve: group by type, edit-in-place.
+2026-04-11T11:02:51Z	640	implementation	t-210	complete	0.8	🟢	Priority Poker: Forge activity indicator — pulsing green dot + heat/stage/task when checkpoint exists. Could improve: compact mode toggle.
+2026-04-11T11:04:34Z	641	implementation	t-213	complete	0.8	🟢	Constraint Board: smart suggestions (cap high-progress stages, boost neglected stages). Yellow highlight with 💡. Could improve: conflict detection.
+2026-04-11T11:05:39Z	642	editing	t-229	complete	0.7	🟢	STRATEGY updated: 641 heats, 4 steering UIs, steering patterns research reflected.

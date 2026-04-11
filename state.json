@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 843,
-    "used": 636,
+    "used": 642,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,21 +20,21 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 217,
+      "heats": 221,
       "progress": 0.98,
-      "value_ema": 0.782
+      "value_ema": 0.756
     },
     "testing": {
       "target": 0.183,
-      "heats": 116,
+      "heats": 117,
       "progress": 0.88,
-      "value_ema": 0.793
+      "value_ema": 0.795
     },
     "editing": {
       "target": 0.183,
-      "heats": 153,
+      "heats": 154,
       "progress": 0.88,
-      "value_ema": 0.743
+      "value_ema": 0.73
     },
     "marketing": {
       "target": 0.219,
@@ -48,8 +48,8 @@
       "research": 0.5,
       "planning": 0.5,
       "implementation": -0.5,
-      "testing": -0.023,
-      "editing": -0.456,
+      "testing": -0.02,
+      "editing": -0.444,
       "marketing": 0.5
     }
   },
@@ -1139,7 +1139,7 @@
       "id": "t-190",
       "stage": "testing",
       "desc": "UI B: Constraint Board \u2014 test. Start the app, verify: can create each constraint type, constraints persist to state.json/constraints.json, violation detection works (create a budget-cap below current usage \u2014 should show red), toggle active/inactive works, delete works, empty state renders, dark theme consistent.",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-011"
@@ -1302,7 +1302,7 @@
       "id": "t-209",
       "stage": "implementation",
       "desc": "Priority Poker improvements (batch 2). In ui-priority-poker/: (1) Add keyboard shortcuts \u2014 up/down arrows to move selected card, 'k' to kill, Enter to select. (2) Add undo \u2014 after kill or reorder, show undo bar for 5 seconds. Store previous state client-side. POST /undo endpoint restores previous state.json. (3) Add animation \u2014 cards slide smoothly on reorder (CSS transition on transform). (4) Add touch support for mobile drag. (5) Show what changed since last visit \u2014 highlight cards whose task count or heats_used changed (subtle glow for 3s on load).",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-010"
@@ -1311,7 +1311,7 @@
       "id": "t-210",
       "stage": "implementation",
       "desc": "Priority Poker improvements (batch 3). In ui-priority-poker/: (1) Add a compact mode toggle \u2014 single-line cards showing just title + progress for when there are many initiatives. (2) Add drag-to-kill zone at bottom of screen (trash area) as alternative to X button. (3) Show Forge's current activity \u2014 if checkpoint exists, show 'Forge is working on [task] in [stage]' at the top. (4) Add history sidebar \u2014 last 10 reorder/kill actions with timestamps. (5) Sound/haptic feedback on drop (optional, toggleable).",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-010"
@@ -1329,7 +1329,7 @@
       "id": "t-212",
       "stage": "implementation",
       "desc": "Constraint Board improvements (batch 2). In ui-constraint-board/: (1) Add visual constraint categories \u2014 group cards by type (budget, progress, block, deadline, custom) with section headers. (2) Add constraint impact preview \u2014 when hovering a constraint, show what would change in the allocator (which stages would be blocked/boosted). (3) Add 'active constraints' count in page title/header. (4) Add edit-in-place for constraint values (click the number to change it). (5) Add history log \u2014 show when each constraint was added/removed/triggered.",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-011"
@@ -1338,7 +1338,7 @@
       "id": "t-213",
       "stage": "implementation",
       "desc": "Constraint Board improvements (batch 3). In ui-constraint-board/: (1) Add smart constraint suggestions \u2014 based on current state, suggest constraints that might be useful ('research is at 90%, consider capping it'). Read state.json stages and propose. (2) Add constraint conflicts detection \u2014 warn if two constraints are contradictory ('block testing' + 'testing must stay above 80%'). (3) Add a 'what if' mode \u2014 temporarily add a constraint and see the simulated allocator output without persisting. Call smithy allocate with modified state. (4) Add keyboard shortcut 'n' to open new constraint form.",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-011"
@@ -1475,7 +1475,7 @@
       "id": "t-229",
       "stage": "implementation",
       "desc": "Bellows: tasks view. Add a 'Tasks' sub-tab to bellows project pages (alongside Activity, Decide, Direct, Board). In bellows/templates/tasks.html: show all pending tasks grouped by initiative (standalone tasks in their own group). Each task shows: ID, stage (colored badge), priority, description (truncated, expandable on click), blocked_by status. Controls per task: (1) drag to reorder priority within group, (2) 'Skip' button sets priority to 3, (3) 'Boost' button sets priority to 0, (4) 'Delete' button removes from queue. Add filter bar at top: filter by stage, by initiative, by priority. Add GET /project/{name}/tasks route in app.py, add POST /project/{name}/task/{id}/priority endpoint for reorder/boost/skip, add POST /project/{name}/task/{id}/delete endpoint. In forge_reader.py: expose pending tasks grouped by initiative_id with initiative title.",
-      "status": "pending",
+      "status": "complete",
       "priority": 0,
       "blocked_by": []
     },
@@ -1487,6 +1487,31 @@
       "priority": 0,
       "blocked_by": [],
       "initiative_id": "ini-010"
+    },
+    {
+      "id": "t-231",
+      "stage": "implementation",
+      "desc": "Timeline: replace zoom buttons with range control on the axis bar. In ui-timeline/: (1) Remove the 3 fixed zoom buttons (50h/100h/250h). (2) Add two draggable handles on the timeline axis itself \u2014 a left handle for timeline_start and a right handle for timeline_end. Dragging them adjusts the visible heat range. Like a scrollbar with resizable thumb. (3) Smart defaults in app.py: timeline_start = max(0, used - 20) (show some history), timeline_end = used + max(50, furthest planned_end + 10). Clamp so the window is never wider than 200h or narrower than 20h. If no initiatives have planned_end set, default to used + 50. (4) Pass start/end as query params (?start=X&end=Y) so the range survives page reload. The JS handles should POST or update query params on drag. (5) Add scroll \u2014 mouse wheel on the timeline area should pan left/right (shift the window by 10 heats). Pinch/ctrl+wheel to zoom in/out (resize the window).",
+      "status": "pending",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-012"
+    },
+    {
+      "id": "t-232",
+      "stage": "editing",
+      "desc": "STRATEGY update to heat 641",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-233",
+      "stage": "marketing",
+      "desc": "30-heat AAR + handoff",
+      "status": "in_progress",
+      "priority": 1,
+      "blocked_by": []
     }
   ],
   "ideas": [
@@ -1618,7 +1643,7 @@
       "description": "A desktop web UI where the human steers by ranking, not approving. Shows all active initiatives as cards. Human drags to reorder \u2014 that IS the steering. No approve/reject buttons. Everything proposed is fair game unless explicitly killed. The ranking determines allocation weight. Top card gets 3x budget share, second gets 2x, rest get 1x. Real-time: as Forge works, cards show live progress and the stack rebalances. The human's only job: keep the stack in the right order. Inspired by planning poker + priority queues. Build as a standalone page in Bellows.",
       "status": "approved",
       "budget_cap": 15,
-      "heats_used": 4,
+      "heats_used": 6,
       "rank": 2,
       "planned_start": 645,
       "planned_end": 655
@@ -1630,7 +1655,7 @@
       "description": "A desktop web UI where the human steers by setting constraints, not giving orders. Instead of telling Forge what to do, the human defines boundaries: 'no more than 5 heats on research', 'testing must stay above 80%', 'don't touch tutor', 'ship something deployable by Friday'. Constraints are cards on a board. Forge works freely within them. When a constraint would be violated, Forge stops and asks. The human's only job: add/remove/adjust constraints. Inspired by air traffic control \u2014 direct through boundaries, not waypoints. Build as a standalone page in Bellows.",
       "status": "approved",
       "budget_cap": 15,
-      "heats_used": 4,
+      "heats_used": 7,
       "rank": 3,
       "planned_start": 650,
       "planned_end": 665
