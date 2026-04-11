@@ -35,3 +35,5 @@ start-heat, end-heat, validate, status, allocate, pick-task, process-feedback, p
 ## 2026-04-11
 
 - [h600 implementation] Heats 591-600: Major sprint. Creative Writing (5th subject, 10 topics, 26 exercises). User sessions (cookie-based, per-user progress/cards). smithy init fixed (CLAUDE.md, protocol files, identity template, post-init guidance). Stats page. Bellows live indicator. smithy stats command (28th). 172 tests. 600 heats milestone.
+
+- [h628 implementation] Heats 614-628: UI polish sprint. Allocator reads constraints (budget_cap suppresses, floor boosts). Timeline drag (left/right/middle edges). Intent Editor delete (cascade). Priority Poker: expand on click (desc+progress+tasks), visual weight, allocation badges, approve proposals. Constraint Board: toggle, quick templates. English Vocab expanded (10 topics). User page progress bar. Bellows STRATEGY viewer. Exercise timer. 172 tests, 4 steering UIs verified.

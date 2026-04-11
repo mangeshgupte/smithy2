@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 843,
-    "used": 627,
+    "used": 628,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -26,9 +26,9 @@
     },
     "testing": {
       "target": 0.183,
-      "heats": 115,
+      "heats": 116,
       "progress": 0.88,
-      "value_ema": 0.79
+      "value_ema": 0.793
     },
     "editing": {
       "target": 0.183,
@@ -48,7 +48,7 @@
       "research": 0.5,
       "planning": 0.5,
       "implementation": -0.5,
-      "testing": -0.025,
+      "testing": -0.023,
       "editing": -0.467,
       "marketing": 0.5
     }
@@ -1443,7 +1443,7 @@
       "id": "t-225",
       "stage": "testing",
       "desc": "Full regression: all tests + all UI routes + patrol",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 1,
       "blocked_by": []
     },
@@ -1451,8 +1451,16 @@
       "id": "t-226",
       "stage": "implementation",
       "desc": "Bellows: upcoming heats on activity page. In bellows/templates/project.html, add an 'Upcoming' section above the activity feed. Show the next 5-10 heats that the allocator would pick, in order. For each: task ID, stage (with stage color), initiative name (if linked), task description (truncated). To generate this: in bellows/app.py, simulate the allocator \u2014 call smithy allocate + smithy pick-task for each stage repeatedly to build the queue order. Or simpler: read pending tasks, sort by priority, group by what the allocator would pick based on current scores. Add a 'Reorder' button next to each upcoming heat that lets the human drag to reprioritize \u2014 POST the new order back to state.json (update task priorities or add a 'forced_order' list). Also add 'Skip' button to defer a task (set priority to 3). This gives direct control: the human sees exactly what Forge will do next and can intervene before it happens.",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 0,
+      "blocked_by": []
+    },
+    {
+      "id": "t-227",
+      "stage": "marketing",
+      "desc": "Sprint AAR + handoff for heats 614-628",
+      "status": "pending",
+      "priority": 1,
       "blocked_by": []
     }
   ],

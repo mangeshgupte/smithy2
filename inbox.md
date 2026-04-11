@@ -129,3 +129,11 @@ Decision: Approach B confirmed — adopt Gas Town patterns into Smithy, stay ind
 
 ## 2026-04-10 16:30 [via commissioner]
 Decision on t-105: APPROVE (task: smithy update command: copy protocol files to existing project (replace forge-update.sh))
+
+
+## 2026-04-11 10:41 [via bellows]
+Decision on t-223: APPROVE (task: Priority Poker: click to expand card — show full description, task list, heats progress)
+
+
+## 2026-04-11 10:46 [via bellows]
+Decision on t-223: APPROVE (task: Priority Poker: click to expand card — show full description, task list, heats progress)

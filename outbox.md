@@ -2,6 +2,21 @@
 
 The Smith writes status updates, questions, and summaries here.
 
+## 2026-04-11 [heat 629, AAR — heats 624-629]
+
+6 heats: impl×3, testing×2, marketing×1. Signal: 🟢×6.
+
+- User sessions tested (cookie + per-user pages)
+- Bellows STRATEGY.md viewer on Direct tab
+- Constraint Board: toggle + quick templates
+- Exercise timer (⏱ counts from page load)
+- Full regression: 172 tests, 4 UIs verified, patrol clean
+
+Cumulative sprint (614-629): 16 heats, all green.
+- 5 subjects: 50 topics, 201 exercises
+- 4 steering UIs fully functional + polished
+- 28 smithy commands, 172 tests
+
 ## 2026-04-11 [heat 623, AAR — heats 614-623]
 
 10 heats: impl×6, testing×1, planning×1, marketing×2. Signal: 🟢×10.

@@ -621,3 +621,9 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-11T10:32:21Z	620	implementation	t-221	complete	0.9	🟢	Priority Poker click-to-expand: cards toggle expanded state showing full description, budget progress bar, task list (status dots, stage, description). Drag still works. Could improve: nothing.
 2026-04-11T10:34:25Z	621	implementation	t-197	complete	0.8	🟢	English Vocab expanded: 3 new topics (homophones, compound words, connotation), now 10 topics / 37 exercises matching Python. 111 tests pass. Could improve: nothing.
 2026-04-11T10:35:39Z	622	implementation	t-198	complete	0.7	🟢	User page: overall progress bar (topics completed/total), stats link button, clean layout. Could improve: nothing.
+2026-04-11T10:36:25Z	623	marketing	t-224	complete	0.7	🟢	Sprint AAR + handoff saved. 10 heats, all green.
+2026-04-11T10:40:45Z	624	testing	t-174	complete	0.7	🟢	User sessions tested: cookie set/clear, per-user pages render (200), stats work per user. Could improve: deeper isolation test with actual progress writes.
+2026-04-11T10:42:45Z	625	implementation	t-199	complete	0.8	🟢	Bellows STRATEGY viewer: collapsible details on Direct tab, monospace pre, scrollable max-height 400px. 16 bellows tests pass.
+2026-04-11T10:44:18Z	626	implementation	t-211	complete	0.8	🟢	Constraint Board: toggle pause/activate, 3 quick templates, inactive constraints shown. Could improve: AJAX for no-reload.
+2026-04-11T10:45:25Z	627	implementation	t-201	complete	0.7	🟢	Exercise timer: ⏱ counter in exercise header, counts up from page load, monospace font. Could improve: per-exercise timing (reset on each exercise).
+2026-04-11T10:46:29Z	628	testing	t-225	complete	0.8	🟢	Full regression: 172 tests (111+16+45), 4 steering UIs all 200, patrol clean.
