@@ -415,6 +415,108 @@ def set_next_tasks(ctx, task_ids):
     _err(f"Set {len(ordered)} next tasks: {', '.join(ordered)}")
 
 
+@cli.command("queue")
+@click.pass_context
+def queue_show(ctx):
+    """Show the current next_tasks queue with full task details."""
+    root = ctx.obj["root"]
+    state = load_state(root)
+    next_tasks = state.get("next_tasks", [])
+    queue = state.get("queue", [])
+    queue_map = {t["id"]: t for t in queue}
+
+    result = []
+    for tid in next_tasks:
+        task = queue_map.get(tid)
+        if task:
+            result.append({
+                "id": task["id"],
+                "stage": task.get("stage", ""),
+                "priority": task.get("priority", 2),
+                "status": task.get("status", "pending"),
+                "desc": task.get("desc", "")[:120],
+            })
+        else:
+            result.append({"id": tid, "error": "not found in queue"})
+
+    _output({"queue": result, "count": len(result)})
+    _err(f"Queue: {len(result)} tasks")
+
+
+@cli.command("queue-push")
+@click.argument("task_id")
+@click.option("--top/--bottom", default=True, help="Insert at top (default) or bottom")
+@click.pass_context
+def queue_push(ctx, task_id, top):
+    """Add a task to the next_tasks queue."""
+    root = ctx.obj["root"]
+    state = load_state(root)
+    queue_map = {t["id"]: t for t in state.get("queue", [])}
+
+    if task_id not in queue_map:
+        _output({"error": f"Task {task_id} not found in queue"})
+        sys.exit(1)
+    if queue_map[task_id]["status"] != "pending":
+        _output({"error": f"Task {task_id} is {queue_map[task_id]['status']}, not pending"})
+        sys.exit(1)
+
+    next_tasks = state.get("next_tasks", [])
+    # Remove if already present to avoid duplicates
+    next_tasks = [t for t in next_tasks if t != task_id]
+    if top:
+        next_tasks.insert(0, task_id)
+    else:
+        next_tasks.append(task_id)
+    state["next_tasks"] = next_tasks
+    save_state(root, state)
+
+    position = "top" if top else "bottom"
+    _output({"task_id": task_id, "position": position, "queue_size": len(next_tasks)})
+    _err(f"Pushed {task_id} to {position} of queue ({len(next_tasks)} total)")
+
+
+@cli.command("queue-pop")
+@click.pass_context
+def queue_pop(ctx):
+    """Remove and return the first task from the next_tasks queue."""
+    root = ctx.obj["root"]
+    state = load_state(root)
+    next_tasks = state.get("next_tasks", [])
+
+    if not next_tasks:
+        _output({"task": None, "message": "Queue empty"})
+        _err("Queue empty")
+        return
+
+    task_id = next_tasks.pop(0)
+    state["next_tasks"] = next_tasks
+    save_state(root, state)
+
+    # Find full task details
+    task = None
+    for t in state.get("queue", []):
+        if t["id"] == task_id:
+            task = t
+            break
+
+    _output({"task_id": task_id, "task": task, "remaining": len(next_tasks)})
+    _err(f"Popped {task_id} ({len(next_tasks)} remaining)")
+
+
+@cli.command("queue-clear")
+@click.pass_context
+def queue_clear(ctx):
+    """Clear the next_tasks queue."""
+    root = ctx.obj["root"]
+    state = load_state(root)
+    old_count = len(state.get("next_tasks", []))
+    state["next_tasks"] = []
+    save_state(root, state)
+
+    _output({"cleared": old_count})
+    _err(f"Cleared {old_count} tasks from queue")
+
+
 @cli.command("list-tasks")
 @click.option("--status", "status_filter", default="pending",
               type=click.Choice(["pending", "complete", "in_progress", "all"]),
