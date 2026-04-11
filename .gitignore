@@ -2,4 +2,5 @@
 .forge-checkpoint.json
 .forge-handoff.json
 .forge-hook.json
+.marshal-hook.json
 .forge-output.log

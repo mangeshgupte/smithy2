@@ -9,6 +9,7 @@ from .state import (
     find_project_root, load_state, save_state, validate_state,
     append_worklog, write_checkpoint, delete_checkpoint,
     write_hook, read_hook, delete_hook,
+    write_marshal_hook, read_marshal_hook, delete_marshal_hook,
     VALID_STAGES, VALID_SIGNALS, VALID_OUTCOMES,
 )
 
@@ -624,6 +625,89 @@ def unhook(ctx, reason):
     delete_hook(root)
     _output({"unhooked": True, "task_id": task_id, "reason": reason})
     _err(f"Unhooked: {task_id}" + (f" — {reason}" if reason else ""))
+
+
+@cli.command("hook-marshal")
+@click.argument("task_id")
+@click.option("--by", "hooked_by", default="anvil", type=click.Choice(["marshal", "anvil", "forge"]))
+@click.option("--context", default="", help="Why this task, what context")
+@click.option("--rationale", default="", help="Prioritization rationale")
+@click.option("--force", is_flag=True, help="Overwrite existing hook")
+@click.pass_context
+def hook_marshal(ctx, task_id, hooked_by, context, rationale, force):
+    """Hook a task for Marshal to process next."""
+    root = ctx.obj["root"]
+    state = load_state(root)
+
+    # Validate task exists and is pending
+    task = None
+    for t in state.get("queue", []):
+        if t["id"] == task_id:
+            task = t
+            break
+    if not task:
+        _output({"error": f"Task {task_id} not found in queue"})
+        sys.exit(1)
+    if task["status"] != "pending":
+        _output({"error": f"Task {task_id} is {task['status']}, not pending"})
+        sys.exit(1)
+
+    # Check for existing hook
+    existing = read_marshal_hook(root)
+    if existing and not force:
+        _output({"error": f"Marshal hook already exists for {existing['task_id']}. Use --force to overwrite."})
+        sys.exit(1)
+
+    write_marshal_hook(root, task_id, task["stage"], hooked_by, context, rationale)
+    hook = read_marshal_hook(root)
+    _output(hook)
+    _err(f"Marshal hooked: {task_id} [{task['stage']}] by {hooked_by}")
+
+
+@cli.command("check-marshal-hook")
+@click.pass_context
+def check_marshal_hook(ctx):
+    """Check if a Marshal hook exists. Returns hook + task details or {hooked: false}."""
+    root = ctx.obj["root"]
+    hook = read_marshal_hook(root)
+
+    if not hook:
+        _output({"hooked": False})
+        _err("No marshal hook set")
+        return
+
+    state = load_state(root)
+    task = None
+    for t in state.get("queue", []):
+        if t["id"] == hook["task_id"]:
+            task = t
+            break
+
+    _output({
+        "hooked": True,
+        **hook,
+        "task": task,
+    })
+    _err(f"Marshal hooked: {hook['task_id']} [{hook['stage']}] by {hook['hooked_by']}")
+
+
+@cli.command("unhook-marshal")
+@click.option("--reason", default="", help="Why the hook was removed")
+@click.pass_context
+def unhook_marshal(ctx, reason):
+    """Remove the current Marshal hook."""
+    root = ctx.obj["root"]
+    hook = read_marshal_hook(root)
+
+    if not hook:
+        _output({"unhooked": False, "message": "No marshal hook to remove"})
+        _err("No marshal hook to remove")
+        return
+
+    task_id = hook["task_id"]
+    delete_marshal_hook(root)
+    _output({"unhooked": True, "task_id": task_id, "reason": reason})
+    _err(f"Marshal unhooked: {task_id}" + (f" — {reason}" if reason else ""))
 
 
 @cli.command("process-feedback")
