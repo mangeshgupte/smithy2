@@ -70,18 +70,7 @@ git commit -m "[stage] description"
 smithy end-heat <value> <signal> "<notes>" [--outcome complete|partial|blocked]
 ```
 
-This atomically: increments budget.used, updates stage heats + value_ema + integral, appends worklog, marks task complete, updates overall_progress, deletes checkpoint.
-
-**Report to Marshal**: After end-heat, append to `dispatch/forge-to-marshal.md`:
-
-```
-## YYYY-MM-DD HH:MM — HOOK_DONE Heat N
-- **Task**: <task_id> — <description>
-- **Stage**: <stage>
-- **Outcome**: complete|partial|blocked
-- **Value**: <0.0-1.0>
-- **Notes**: <what happened>
-```
+This atomically: increments budget.used, updates stage heats + value_ema + integral, appends worklog, marks task complete, updates overall_progress, deletes checkpoint, and auto-nudges Marshal.
 
 **Self-assessment** (the `value` argument):
 - 0.9-1.0: Major breakthrough
