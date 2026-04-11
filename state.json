@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 843,
-    "used": 618,
+    "used": 622,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,15 +20,15 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 205,
+      "heats": 208,
       "progress": 0.98,
-      "value_ema": 0.873
+      "value_ema": 0.81
     },
     "testing": {
       "target": 0.183,
-      "heats": 113,
+      "heats": 114,
       "progress": 0.88,
-      "value_ema": 0.842
+      "value_ema": 0.829
     },
     "editing": {
       "target": 0.183,
@@ -48,7 +48,7 @@
       "research": 0.5,
       "planning": 0.5,
       "implementation": -0.5,
-      "testing": -0.032,
+      "testing": -0.028,
       "editing": -0.467,
       "marketing": 0.5
     }
@@ -1112,7 +1112,7 @@
       "id": "t-187",
       "stage": "testing",
       "desc": "UI A: Priority Poker \u2014 test. Start the app, verify: cards render for all approved/active initiatives, drag reorder works and persists to state.json, kill button rejects initiative, allocation weights display correctly, auto-refresh picks up state changes, empty state renders, dark theme consistent.",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-010"
@@ -1202,7 +1202,7 @@
       "id": "t-197",
       "stage": "implementation",
       "desc": "Tutor: add 5 more exercises to each of the 3 weakest subjects (English, Math, Logic)",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -1210,7 +1210,7 @@
       "id": "t-198",
       "stage": "implementation",
       "desc": "Tutor: progress bar on user page showing overall completion across all subjects",
-      "status": "pending",
+      "status": "complete",
       "priority": 3,
       "blocked_by": []
     },
@@ -1409,7 +1409,7 @@
       "id": "t-221",
       "stage": "implementation",
       "desc": "UI reactivity: manual refresh on all 4 UIs. For each of ui-priority-poker/, ui-constraint-board/, ui-timeline/, ui-intent-editor/: (1) Add GET /api/state endpoint in app.py that returns the current UI-relevant data as JSON (initiatives, themes, tasks, constraints \u2014 whatever that UI displays). (2) Add a visible 'Refresh' button in the page header (top-right, subtle but always visible). (3) Add JS function refreshState() that fetches /api/state and re-renders the DOM without full page reload \u2014 update card contents, progress bars, counts, violation status etc. (4) Wire the Refresh button to call refreshState(). (5) Show a brief 'Updated' flash indicator after successful refresh. Use the same dark theme button styling. Priority Poker already has some AJAX \u2014 extend its pattern to the other 3.",
-      "status": "pending",
+      "status": "complete",
       "priority": 0,
       "blocked_by": [],
       "initiative_id": "ini-014"
@@ -1422,6 +1422,22 @@
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-014"
+    },
+    {
+      "id": "t-223",
+      "stage": "implementation",
+      "desc": "Priority Poker: click to expand card \u2014 show full description, task list, heats progress",
+      "status": "pending",
+      "priority": 0,
+      "blocked_by": []
+    },
+    {
+      "id": "t-224",
+      "stage": "marketing",
+      "desc": "Sprint AAR + handoff",
+      "status": "in_progress",
+      "priority": 1,
+      "blocked_by": []
     }
   ],
   "ideas": [
@@ -1542,7 +1558,9 @@
       "status": "approved",
       "budget_cap": 10,
       "heats_used": 2,
-      "rank": 1
+      "rank": 1,
+      "planned_start": 619,
+      "planned_end": 629
     },
     {
       "id": "ini-010",
@@ -1551,8 +1569,10 @@
       "description": "A desktop web UI where the human steers by ranking, not approving. Shows all active initiatives as cards. Human drags to reorder \u2014 that IS the steering. No approve/reject buttons. Everything proposed is fair game unless explicitly killed. The ranking determines allocation weight. Top card gets 3x budget share, second gets 2x, rest get 1x. Real-time: as Forge works, cards show live progress and the stack rebalances. The human's only job: keep the stack in the right order. Inspired by planning poker + priority queues. Build as a standalone page in Bellows.",
       "status": "approved",
       "budget_cap": 15,
-      "heats_used": 2,
-      "rank": 2
+      "heats_used": 3,
+      "rank": 2,
+      "planned_start": 624,
+      "planned_end": 635
     },
     {
       "id": "ini-011",
@@ -1562,7 +1582,9 @@
       "status": "approved",
       "budget_cap": 15,
       "heats_used": 2,
-      "rank": 3
+      "rank": 3,
+      "planned_start": 623,
+      "planned_end": 638
     },
     {
       "id": "ini-012",
@@ -1572,7 +1594,9 @@
       "status": "approved",
       "budget_cap": 15,
       "heats_used": 2,
-      "rank": 5
+      "rank": 5,
+      "planned_start": 623,
+      "planned_end": 638
     },
     {
       "id": "ini-013",
@@ -1582,7 +1606,9 @@
       "status": "approved",
       "budget_cap": 20,
       "heats_used": 2,
-      "rank": 4
+      "rank": 4,
+      "planned_start": 631,
+      "planned_end": 649
     },
     {
       "id": "ini-014",
@@ -1591,7 +1617,10 @@
       "description": "All 4 steering UIs should reflect state.json changes without auto-polling. Options: (1) Manual refresh button visible on every UI \u2014 'Refresh' button in header that reloads data via AJAX (not full page reload). (2) File watcher via SSE \u2014 backend watches state.json with watchdog/inotify and pushes events to frontend via Server-Sent Events. Frontend updates DOM on event. (3) Hybrid \u2014 manual refresh button always visible, plus optional SSE for live updates. Start with manual refresh button on all 4 UIs (simplest, no dependencies). Then add SSE as an enhancement. Each UI needs: a GET /api/state endpoint returning current data as JSON, a JS function that fetches it and re-renders the relevant DOM elements, a visible Refresh button in the header that calls this function.",
       "status": "approved",
       "budget_cap": 10,
-      "heats_used": 0
+      "heats_used": 1,
+      "planned_start": 619,
+      "planned_end": 632,
+      "rank": 6
     }
   ],
   "feedback_cursor": 26,

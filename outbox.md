@@ -2,6 +2,24 @@
 
 The Smith writes status updates, questions, and summaries here.
 
+## 2026-04-11 [heat 623, AAR — heats 614-623]
+
+10 heats: impl×6, testing×1, planning×1, marketing×2. Signal: 🟢×10.
+
+### What Got Built
+- **Allocator constraint enforcement** — budget_cap suppresses stages, floor boosts underfunded stages
+- **Timeline drag interactivity** — left edge, right edge, and middle drag with auto-save
+- **Intent Editor delete** — delete themes (cascading) and individual initiatives
+- **Priority Poker polish** — click-to-expand (full desc, progress bar, task list), visual weight gradient, allocation badges (3×/2×/1×), proposed section with approve
+- **All 4 UIs tested** — routes 200, POST endpoints verified
+- **English Vocab expanded** — 3 new topics (homophones, compound words, connotation), now 10 topics/37 exercises
+- **User page progress bar** — overall completion %, stats link
+
+### Stats
+- 5 subjects — 50 topics, 201 exercises total
+- 28 smithy commands, 172 tests
+- 4 steering UIs (Priority Poker, Constraint Board, Timeline, Intent Editor)
+
 ## 2026-04-11 [heat 613, AAR — heats 607-613]
 
 7 heats: research×2, impl×4, marketing×1. Signal: 🟢×7.
