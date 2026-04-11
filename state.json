@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 622,
-    "used": 582,
+    "used": 583,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -26,9 +26,9 @@
     },
     "testing": {
       "target": 0.183,
-      "heats": 109,
+      "heats": 110,
       "progress": 0.88,
-      "value_ema": 0.852
+      "value_ema": 0.836
     },
     "editing": {
       "target": 0.183,
@@ -48,7 +48,7 @@
       "research": 0.5,
       "planning": 0.5,
       "implementation": -0.5,
-      "testing": -0.033,
+      "testing": -0.034,
       "editing": -0.489,
       "marketing": 0.5
     }
@@ -916,6 +916,14 @@
       "id": "t-163",
       "stage": "testing",
       "desc": "Full regression: all tests + routes after intent hierarchy",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "t-164",
+      "stage": "marketing",
+      "desc": "AAR + handoff for 15-heat sprint",
       "status": "in_progress",
       "priority": 1,
       "blocked_by": []

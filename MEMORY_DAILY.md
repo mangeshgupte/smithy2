@@ -29,3 +29,5 @@ start-heat, end-heat, validate, status, allocate, pick-task, process-feedback, p
 - [h536 planning] Heats 531-536: Visual design sprint complete. All 13 tasks done. Commissioner: decision cards (critical pulse, 5px borders), segmented budget bar, empty states. Tutor: review session polish (slide-in, celebration screen), README updated. Full regression: 152 tests pass, patrol clean. STRATEGY updated to h535.
 
 - [h552 implementation] Heats 544-552: Bellows rename complete (commissioner → bellows). 4th tutor subject: Logic & Critical Thinking (7 topics, 23 exercises, purple accent). Naming: project is 'the-smithy', dashboard is 'Bellows'. Bellows README comprehensive (6 screens). Direct tab: 6 quick-action buttons. 158 tests, patrol clean.
+
+- [h583 implementation] Heats 576-583: Intent hierarchy system built. Data model (themes + initiatives + task linking), Theme CLI (4 commands), Initiative CLI (5 commands), task gating (--initiative, pick-task filters, auto-activate, heats_used tracking). Bellows forge_reader exposes themes/initiatives/intent. Protocol updated. 168 tests (45 smithy), patrol clean.

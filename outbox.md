@@ -2,6 +2,16 @@
 
 The Smith writes status updates, questions, and summaries here.
 
+## 2026-04-10 [heat 584, AAR — heats 576-584]
+
+9 heats: impl×6, testing×2, editing×1. Signal: 🟢×9.
+Key: **Intent hierarchy system built.** Themes + initiatives in state.json with full validation. 9 CLI commands (4 theme + 5 initiative). Task gating (--initiative linking, pick-task filters by initiative status, auto-activate on first pick, heats_used tracking with budget cap warnings). Bellows forge_reader updated. Protocol loop.md updated. 168 tests (45 smithy). SW v2 (network-first on localhost).
+
+### Smithy CLI — Now 27 Commands
+add-theme, list-themes, pause-theme, activate-theme, propose, approve, reject, complete-initiative, list-initiatives + existing 18
+
+Next: Bellows board route + initiative UI, allocator initiative gating, more Bellows tests.
+
 ## 2026-04-10 [heat 570, AAR — heats 565-570]
 
 6 heats: testing×1, editing×2, marketing×2, impl×1. Signal: 🟢×6.
