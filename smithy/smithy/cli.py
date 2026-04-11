@@ -696,6 +696,121 @@ def next_task(ctx):
 # commands removed in t-262. Use queue-push/queue-pop/queue instead.
 
 
+VALID_PERSONAS = ["forge", "marshal"]
+
+
+@cli.command("nudge")
+@click.argument("persona", type=click.Choice(VALID_PERSONAS))
+@click.argument("message")
+@click.pass_context
+def nudge(ctx, persona, message):
+    """Send a message to a running smithy tmux session."""
+    import subprocess
+    session = f"smithy-{persona}"
+
+    # Check if session exists
+    result = subprocess.run(
+        ["tmux", "has-session", "-t", session],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        _output({"nudged": False, "reason": "session not found", "session": session})
+        _err(f"Warning: tmux session '{session}' not found")
+        return
+
+    # Send keys
+    result = subprocess.run(
+        ["tmux", "send-keys", "-t", session, message, "Enter"],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        _output({"nudged": False, "reason": f"send-keys failed: {result.stderr.strip()}", "session": session})
+        _err(f"Failed to nudge {session}: {result.stderr.strip()}")
+        return
+
+    _output({"nudged": True, "persona": persona, "session": session, "message": message})
+    _err(f"Nudged {session}: {message[:60]}")
+
+
+@cli.command("sessions")
+@click.pass_context
+def sessions(ctx):
+    """List running smithy tmux sessions."""
+    import subprocess
+
+    result = subprocess.run(
+        ["tmux", "list-sessions", "-F", "#{session_name}\t#{session_created}\t#{session_attached}"],
+        capture_output=True, text=True,
+    )
+
+    if result.returncode != 0:
+        # tmux not running or no sessions
+        _output({"sessions": [], "count": 0})
+        _err("No tmux sessions found")
+        return
+
+    from datetime import datetime
+    smithy_sessions = []
+    for line in result.stdout.strip().split("\n"):
+        if not line:
+            continue
+        parts = line.split("\t")
+        if len(parts) < 3:
+            continue
+        name, created_ts, attached = parts[0], parts[1], parts[2]
+        if not name.startswith("smithy-"):
+            continue
+        try:
+            created = datetime.fromtimestamp(int(created_ts)).isoformat()
+        except (ValueError, OSError):
+            created = created_ts
+        smithy_sessions.append({
+            "name": name,
+            "created": created,
+            "attached": attached == "1",
+        })
+
+    _output({"sessions": smithy_sessions, "count": len(smithy_sessions)})
+    _err(f"{len(smithy_sessions)} smithy session(s)")
+
+
+@cli.command("start")
+@click.argument("persona", type=click.Choice(VALID_PERSONAS))
+@click.pass_context
+def start_session(ctx, persona):
+    """Start a tmux session for a persona running claude."""
+    import subprocess
+    root = ctx.obj["root"]
+    session = f"smithy-{persona}"
+    persona_dir = root / "personas" / persona
+
+    if not persona_dir.exists():
+        _output({"error": f"Persona directory not found: {persona_dir}"})
+        sys.exit(1)
+
+    # Check if session already exists
+    result = subprocess.run(
+        ["tmux", "has-session", "-t", session],
+        capture_output=True, text=True,
+    )
+    if result.returncode == 0:
+        _output({"started": False, "reason": "session already exists", "session": session})
+        _err(f"Warning: tmux session '{session}' already exists")
+        return
+
+    # Create new detached session
+    result = subprocess.run(
+        ["tmux", "new-session", "-d", "-s", session, "-c", str(persona_dir), "claude"],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        _output({"error": f"Failed to create session: {result.stderr.strip()}"})
+        sys.exit(1)
+
+    _output({"started": True, "session": session, "persona": persona, "dir": str(persona_dir)})
+    _err(f"Started {session} in {persona_dir}")
+
+
 @cli.command("process-feedback")
 @click.pass_context
 def process_feedback(ctx):

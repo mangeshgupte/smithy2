@@ -1,22 +1,12 @@
 # Dispatch: Marshal -> Forge
 
-Marshal writes rationale and notes here. Documentation only — operational dispatch is via `.forge-hook.json`.
-
-## Format
-
-```
-## YYYY-MM-DD HH:MM — Hook Set
+## 2026-04-11 — Hook Set
 
 ### Task
-<task_id> [<stage>] — <description>
+t-259 [editing] — Marshal always-on loop + remaining t-262 cleanup
 
 ### Rationale
-<Why this task is next. What signals drove the decision.>
+t-262 was partial — queue commands exist but old hook removal and protocol updates are pending. t-259 should cover both: (1) update Marshal persona CLAUDE.md for always-on loop using new queue commands, (2) remove old hook functions from state.py/cli.py, (3) update protocol/loop.md and Forge persona for queue-pop model. Last task in ini-015, 18/25 heats used.
 
-### Queue (next 5)
-1. <task_id> — <why>
-2. <task_id> — <why>
-...
-```
-
-Forge: this is informational. Your work comes from `smithy check-hook`, not this file.
+### Queue
+This is the last pending task.

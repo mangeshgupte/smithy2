@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 843,
-    "used": 649,
+    "used": 679,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,27 +20,27 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 224,
+      "heats": 247,
       "progress": 0.98,
-      "value_ema": 0.799
+      "value_ema": 0.793
     },
     "testing": {
       "target": 0.183,
-      "heats": 118,
+      "heats": 120,
       "progress": 0.88,
-      "value_ema": 0.827
+      "value_ema": 0.864
     },
     "editing": {
       "target": 0.183,
-      "heats": 155,
+      "heats": 159,
       "progress": 0.88,
-      "value_ema": 0.721
+      "value_ema": 0.811
     },
     "marketing": {
       "target": 0.219,
-      "heats": 85,
+      "heats": 86,
       "progress": 0.84,
-      "value_ema": 0.706
+      "value_ema": 0.704
     }
   },
   "allocator": {
@@ -48,8 +48,8 @@
       "research": 0.5,
       "planning": 0.5,
       "implementation": -0.5,
-      "testing": -0.017,
-      "editing": -0.434,
+      "testing": 0.009,
+      "editing": -0.365,
       "marketing": 0.5
     }
   },
@@ -1356,7 +1356,7 @@
       "id": "t-215",
       "stage": "implementation",
       "desc": "Timeline improvements (batch 2). In ui-timeline/: (1) Add tooltip on hover \u2014 show initiative title, description, task count, heats_used/budget_cap, theme name. (2) Add auto-refresh \u2014 poll state.json every 5s, update bar fills to show Forge progress in real-time. (3) Add color coding \u2014 use theme colors or stage colors for bars. (4) Add summary row at bottom showing total allocated vs remaining heats. (5) Add new initiative creation \u2014 click empty space on timeline to create a bar, opens a form for title/description/theme.",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-012"
@@ -1365,7 +1365,7 @@
       "id": "t-216",
       "stage": "implementation",
       "desc": "Timeline improvements (batch 3). In ui-timeline/: (1) Add bar stacking \u2014 when bars overlap, stack them vertically with a subtle offset so both are visible. (2) Add dependency arrows \u2014 if one initiative blocks another (via task blocked_by), draw an arrow between them. (3) Add a compact 'plan' view that shows just bars without the y-axis labels. (4) Add undo for drag operations \u2014 store previous state client-side, show undo bar for 5s after any change. (5) Add keyboard navigation \u2014 left/right to select bars, shift+arrows to resize.",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-012"
@@ -1374,7 +1374,7 @@
       "id": "t-217",
       "stage": "implementation",
       "desc": "Intent Editor improvements (batch 1). In ui-intent-editor/: (1) Show current state.json themes/initiatives in the right panel on page load (not just after Apply). Read from GET /api/state endpoint. (2) Add Claude API integration for decomposition \u2014 when human submits intent, POST to /decompose endpoint that calls Claude (claude-sonnet-4-6 via anthropic SDK) with prompt: 'Given this intent and current project state, decompose into themes and initiatives. Return JSON matching state.json schema.' Show the proposed decomposition as a tree. (3) Add diff view \u2014 highlight what's new vs what already exists in state.json. Green = new, yellow = modified. (4) Selective apply \u2014 checkboxes on each node in the decomposition tree, Apply only creates checked items.",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-013"
@@ -1383,7 +1383,7 @@
       "id": "t-218",
       "stage": "implementation",
       "desc": "Intent Editor improvements (batch 2). In ui-intent-editor/: (1) Add intent history \u2014 store previous intents with timestamps in state.json or intents.json, show in a sidebar. Click to reload a previous intent. (2) Add 'current state' diff indicator \u2014 show how active state.json differs from what the last intent produced (initiatives added/removed outside the editor). (3) Add task preview \u2014 when hovering an initiative in the tree, show proposed tasks that would be generated. (4) Add natural language constraint extraction \u2014 if the intent says 'no more than 10 heats on research', auto-create a constraint card (integrate with constraint board data model).",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-013"
@@ -1392,7 +1392,7 @@
       "id": "t-219",
       "stage": "implementation",
       "desc": "Intent Editor improvements (batch 3). In ui-intent-editor/: (1) Add iterative refinement \u2014 human edits intent, resubmits, sees diff of what changed vs previous decomposition. Only changed items highlighted. (2) Add template intents \u2014 predefined buttons for common intents ('Focus on testing and polish', 'Build new feature: [name]', 'Research and prototype'). (3) Add split view \u2014 left panel shows raw intent text, right panel shows structured tree, both scrollable and linked. (4) Add export \u2014 button to copy the current decomposition as CLI commands (smithy add-theme, smithy propose) for use outside the editor.",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-013"
@@ -1418,7 +1418,7 @@
       "id": "t-222",
       "stage": "implementation",
       "desc": "UI reactivity: SSE enhancement. For each of the 4 UIs: (1) Add GET /events SSE endpoint in app.py that watches state.json for modification (use os.path.getmtime polling at 2s interval in an async generator \u2014 simpler than watchdog). Yield a 'state-changed' event when mtime changes. (2) Add JS EventSource connection to /events. On 'state-changed' event, call refreshState() automatically. (3) Show a subtle 'live' indicator dot in the header when SSE is connected (green = connected, gray = disconnected). (4) Fallback: if SSE disconnects, the manual Refresh button still works. No auto-polling \u2014 SSE is event-driven.",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-014"
@@ -1427,7 +1427,7 @@
       "id": "t-223",
       "stage": "implementation",
       "desc": "Priority Poker: click to expand card \u2014 show full description, task list, heats progress",
-      "status": "pending",
+      "status": "complete",
       "priority": 0,
       "blocked_by": []
     },
@@ -1459,7 +1459,7 @@
       "id": "t-227",
       "stage": "marketing",
       "desc": "Sprint AAR + handoff for heats 614-628",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": []
     },
@@ -1483,7 +1483,7 @@
       "id": "t-230",
       "stage": "implementation",
       "desc": "Priority Poker: clickable task count expands card. In ui-priority-poker/: The task count on each card (e.g. '3/7 tasks') should be a clickable element. Clicking it expands the card inline to show two sections: (1) UPCOMING \u2014 pending tasks for this initiative sorted by priority, showing task ID, stage badge, description. These are what Forge will work on next. (2) RECENTLY COMPLETED \u2014 last 5 completed tasks for this initiative, showing task ID, stage badge, description, dimmed styling. Click again to collapse. Add GET /api/tasks/{initiative_id} endpoint in app.py that returns {pending: [...], completed: [...]} filtered by initiative_id. Add Skip/Boost/Delete controls on pending tasks (POST /api/task/{id}/priority, POST /api/task/{id}/delete). Also add a 'Standalone tasks' section at the bottom of the poker stack showing tasks not linked to any initiative \u2014 these steal heats from initiative work. Same expand/collapse pattern.",
-      "status": "pending",
+      "status": "complete",
       "priority": 0,
       "blocked_by": [],
       "initiative_id": "ini-010"
@@ -1492,7 +1492,7 @@
       "id": "t-231",
       "stage": "implementation",
       "desc": "Timeline: replace zoom buttons with range control on the axis bar. In ui-timeline/: (1) Remove the 3 fixed zoom buttons (50h/100h/250h). (2) Add two draggable handles on the timeline axis itself \u2014 a left handle for timeline_start and a right handle for timeline_end. Dragging them adjusts the visible heat range. Like a scrollbar with resizable thumb. (3) Smart defaults in app.py: timeline_start = max(0, used - 20) (show some history), timeline_end = used + max(50, furthest planned_end + 10). Clamp so the window is never wider than 200h or narrower than 20h. If no initiatives have planned_end set, default to used + 50. (4) Pass start/end as query params (?start=X&end=Y) so the range survives page reload. The JS handles should POST or update query params on drag. (5) Add scroll \u2014 mouse wheel on the timeline area should pan left/right (shift the window by 10 heats). Pinch/ctrl+wheel to zoom in/out (resize the window).",
-      "status": "pending",
+      "status": "complete",
       "priority": 0,
       "blocked_by": [],
       "initiative_id": "ini-012"
@@ -1501,7 +1501,7 @@
       "id": "t-232",
       "stage": "editing",
       "desc": "STRATEGY update to heat 641",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": []
     },
@@ -1541,7 +1541,7 @@
       "id": "t-237",
       "stage": "implementation",
       "desc": "Tutor: daily goal \u2014 set a target (e.g., 5 exercises/day), track progress",
-      "status": "pending",
+      "status": "complete",
       "priority": 3,
       "blocked_by": []
     },
@@ -1573,7 +1573,7 @@
       "id": "t-241",
       "stage": "implementation",
       "desc": "Marshal: persona scaffold. Create personas/marshal/CLAUDE.md. The Marshal is a persistent AI agent session that reads all steering signals and produces an ordered task list. It runs as a long-lived Claude session (cd personas/marshal && claude), not spawned per heat. Forge communicates via dispatch/forge-to-marshal.md writing a prioritize request after each heat. Marshal reads all signals: (1) state.json \u2014 themes (ranked), initiatives (status, budget_cap, heats_used, planned_start/end), tasks (pending, priority, blocked_by, initiative_id), constraints (active rules). (2) worklog.tsv \u2014 last 10 heats for context. (3) identity.md \u2014 commander intent. Ordering rules in priority: (a) Constraints are hard \u2014 blocked stages/initiatives excluded, budget caps respected. (b) Priority poker ranking \u2014 higher-ranked initiative tasks first. (c) Timeline \u2014 defer tasks whose initiative planned_start is in the future. (d) Task priority within initiative \u2014 p0 > p1 > p2. (e) blocked_by \u2014 exclude tasks with incomplete deps. (f) Stage balance \u2014 light wavefront signal for variety. Output: write next_tasks (ordered list of max 10 task IDs) and prioritization_rationale to state.json. Then wait for next request.",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 0,
       "blocked_by": [],
       "initiative_id": "ini-015"
@@ -1582,7 +1582,7 @@
       "id": "t-242",
       "stage": "implementation",
       "desc": "Marshal: CLI + communication protocol. (1) Add smithy next-task command in cli.py that reads state.json next_tasks list and returns the first entry (popping it). This replaces smithy allocate + smithy pick-task in Forge workflow. (2) Create dispatch/forge-to-marshal.md \u2014 Forge writes a prioritize request here after completing each heat (heat number, what was done, outcome). Marshal reads this file and re-prioritizes. (3) Create dispatch/marshal-to-forge.md \u2014 Marshal writes its rationale and any notes here. (4) Add next_tasks and prioritization_rationale fields to state.json schema. Update validate_state() to accept them. (5) No spawning \u2014 Marshal is already running. The communication is file-based, same as Anvil\u2194Forge.",
-      "status": "pending",
+      "status": "complete",
       "priority": 0,
       "blocked_by": [],
       "initiative_id": "ini-015"
@@ -1591,7 +1591,7 @@
       "id": "t-243",
       "stage": "editing",
       "desc": "Marshal: update Forge protocol. In protocol/loop.md: (1) Replace Steps 3-4 (allocate + pick-task) with: check next_tasks in state.json. If empty or stale, write a prioritize request to dispatch/forge-to-marshal.md and wait briefly, then read next_tasks. Run smithy next-task to pop the top entry. (2) Remove allocator math from protocol \u2014 Forge no longer computes scores. (3) Add note: The Marshal agent is a separate session that orders your queue. You execute in order. (4) After each heat, write to dispatch/forge-to-marshal.md: heat N complete, task X done, outcome Y. (5) Update Step 0: on session start, check if Marshal session is running (next_tasks exists and is recent).",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-015"
@@ -1600,7 +1600,7 @@
       "id": "t-244",
       "stage": "implementation",
       "desc": "Marshal: Bellows + steering UI integration. (1) In bellows upcoming heats section: read from state.json next_tasks, show prioritization_rationale as subtitle. (2) Add Re-prioritize button in Bellows that writes a prioritize request to dispatch/forge-to-marshal.md (or directly updates state.json to trigger Marshal). (3) In all 4 steering UIs: after any state change (reorder, constraint add, timeline drag), show banner: Steering changed \u2014 Marshal will re-prioritize on next cycle with a manual trigger button. (4) Show Marshal status: is the session running? When was last prioritization? How many tasks in next_tasks?",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-015"
@@ -1609,7 +1609,7 @@
       "id": "t-245",
       "stage": "testing",
       "desc": "Prioritizer: end-to-end test. (1) Set up steering signals: add 2 themes, 3 initiatives with tasks, 2 constraints (one stage-block, one budget-cap), poker ranking. (2) Run smithy prioritize. (3) Verify next_tasks respects: constraints (blocked stage tasks excluded), poker ranking (higher-ranked initiative tasks first), blocked_by (dependent tasks deferred), budget caps (capped initiative tasks excluded). (4) Verify smithy next-task returns first entry and pops it. (5) Change a steering signal (reorder poker), re-prioritize, verify next_tasks changed. (6) Verify Bellows upcoming section shows the prioritized list.",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-015"
@@ -1618,9 +1618,189 @@
       "id": "t-246",
       "stage": "marketing",
       "desc": "Final AAR + handoff for 60-heat sprint",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": []
+    },
+    {
+      "id": "t-247",
+      "stage": "implementation",
+      "desc": "Hook file I/O in state.py. In smithy/smithy/state.py, add 3 functions following the existing write_checkpoint/delete_checkpoint pattern (lines 147-169): (1) write_hook(project_dir, task_id, stage, hooked_by, context, rationale) \u2014 writes .forge-hook.json with fields: task_id, stage, hooked_by, hooked_at (ISO timestamp), context, rationale. (2) read_hook(project_dir) \u2014 returns hook dict if .forge-hook.json exists, else None. (3) delete_hook(project_dir) \u2014 removes .forge-hook.json if exists.",
+      "status": "complete",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-015"
+    },
+    {
+      "id": "t-248",
+      "stage": "implementation",
+      "desc": "Hook CLI commands. In smithy/smithy/cli.py add 3 commands: (1) 'smithy hook <task_id>' with options --by (default 'marshal', choices marshal/anvil/forge), --context (str), --rationale (str), --force (flag). Validates task exists in queue and is pending. Refuses if .forge-hook.json already exists unless --force. Calls write_hook(). Output: JSON hook object. (2) 'smithy check-hook' \u2014 calls read_hook(). If hook exists, look up the full task object from state.json queue and return it merged with hook metadata. If no hook, return {hooked: false}. (3) 'smithy unhook' with optional --reason. Calls delete_hook(). Output: JSON confirmation.",
+      "status": "complete",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-015"
+    },
+    {
+      "id": "t-249",
+      "stage": "implementation",
+      "desc": "Wire hook into end-heat and patrol. In smithy/smithy/cli.py: (1) Modify end-heat command (~line 81): after existing logic, check if .forge-hook.json exists. If hook task_id matches the task being completed, call delete_hook(). Import read_hook/delete_hook from state.py. (2) Modify patrol command (~line 430): add 2 new checks. Check A: if hook exists but task status is 'complete' in state.json \u2192 stale hook, --fix removes it. Check B: if hook exists, no checkpoint, and hook is older than 30 minutes \u2192 warn possible GUPP violation.",
+      "status": "complete",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-015"
+    },
+    {
+      "id": "t-250",
+      "stage": "editing",
+      "desc": "Update Forge protocol and persona for hook model. (1) In protocol/loop.md: replace Steps 3-4 (allocate + pick-task) with hook-first check: 'smithy check-hook'. If hooked \u2192 skip allocator, go to execute with hooked task. If no hook and Marshal running \u2192 write HOOK_DONE to dispatch/forge-to-marshal.md, wait for next hook. If no hook and no Marshal \u2192 fallback smithy allocate + smithy pick-task. Modify Step 6: after end-heat, if hook was consumed, write HOOK_DONE to dispatch/forge-to-marshal.md with heat number, task, outcome, value, notes. (2) In personas/forge/CLAUDE.md: replace dispatch/allocator references with hook-first model. Document: 'Check your hook first. If hooked, execute. No deliberation.' Remove 'Execute direction dispatched by Anvil' \u2014 Anvil hooks directly now. Add file path for dispatch/forge-to-marshal.md.",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-015"
+    },
+    {
+      "id": "t-251",
+      "stage": "implementation",
+      "desc": "Create Marshal persona. (1) Create personas/marshal/ directory. (2) Write personas/marshal/CLAUDE.md: Marshal is a persistent AI agent session that reads all steering signals and writes hooks. Reads: state.json (themes ranked, initiatives with status/budget_cap/heats_used/planned_start/planned_end, tasks with priority/blocked_by/initiative_id, constraints), worklog.tsv (last 10 heats), identity.md (commander intent). Ordering rules in priority: constraints hard-block > poker ranking (initiative rank) > timeline (defer future planned_start) > task priority (p0>p1>p2) > blocked_by (exclude incomplete deps) > stage balance (light wavefront). Writes ONE hook at a time via smithy hook. Watches dispatch/forge-to-marshal.md for HOOK_DONE signals. On HOOK_DONE: re-read all signals (steering may have changed since last hook), compute new ordering, write next hook. Also writes next_tasks list (top 10) to state.json for Bellows upcoming heats display. Loop until no eligible tasks remain or budget exhausted.",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-015"
+    },
+    {
+      "id": "t-252",
+      "stage": "implementation",
+      "desc": "Create dispatch channels + .gitignore update. (1) Create dispatch/forge-to-marshal.md with header: '# Dispatch: Forge \u2192 Marshal. Forge writes HOOK_DONE here after completing hooked work. Marshal reads and writes the next hook.' (2) Create dispatch/marshal-to-forge.md with header: '# Dispatch: Marshal \u2192 Forge. Marshal writes rationale and notes here. Documentation only \u2014 operational dispatch is via .forge-hook.json.' (3) Add .forge-hook.json to .gitignore (ephemeral state, same as checkpoint).",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-015"
+    },
+    {
+      "id": "t-253",
+      "stage": "testing",
+      "desc": "Hook mechanism tests. Create smithy/smithy/tests/test_hooks.py. Tests using tmp_path with smithy init scaffold: (1) write_hook creates .forge-hook.json with correct fields including hooked_at timestamp. (2) read_hook returns dict when file exists, None when absent. (3) delete_hook removes file. (4) smithy hook command creates file, refuses when hook exists (exit code 1), succeeds with --force. (5) smithy check-hook returns full task object merged with hook metadata when hooked, {hooked: false} when not. (6) smithy unhook removes file. (7) end-heat auto-consumes hook when task_id matches completing task. (8) end-heat does NOT consume hook when task_id differs. (9) patrol detects stale hook (task already complete). (10) Fallback: no hook + no next_tasks \u2192 allocator runs (existing allocate behavior unchanged).",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-015"
+    },
+    {
+      "id": "t-254",
+      "stage": "implementation",
+      "desc": "smithy list-tasks command. In smithy/smithy/cli.py add 'smithy list-tasks' with options: --status (pending|complete|in_progress, default pending), --stage (filter by stage), --initiative (filter by initiative_id), --limit N (default 20). Reads state.json queue, filters, sorts by priority then ID. Output JSON array of task objects. Each task includes: id, stage, priority, status, desc (truncated to 120 chars), initiative_id, blocked_by. If initiative_id is set, resolve and include initiative_title from initiatives list. This is how Marshal reads the task queue without touching state.json directly.",
+      "status": "complete",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-015"
+    },
+    {
+      "id": "t-255",
+      "stage": "implementation",
+      "desc": "smithy set-priority command. In smithy/smithy/cli.py add 'smithy set-priority <task_id> <priority>'. Validates: task exists in queue, priority is 0-3. Updates the task's priority field in state.json via load_state/save_state. Output: JSON with updated task object. Error if task not found or priority invalid. This is how Marshal reorders individual tasks without editing state.json directly.",
+      "status": "complete",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-015"
+    },
+    {
+      "id": "t-256",
+      "stage": "implementation",
+      "desc": "smithy set-next-tasks command. In smithy/smithy/cli.py add 'smithy set-next-tasks <task_ids...>' accepting variable number of task ID arguments. Validates: each task ID exists in queue and is pending (not complete/in_progress). Writes the ordered list to state.json as 'next_tasks' field (list of strings). Output: JSON with the ordered list and count. Error if any task ID is invalid or not pending. This is how Marshal sets the upcoming queue for Bellows display and Forge fallback, without touching state.json directly.",
+      "status": "complete",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-015"
+    },
+    {
+      "id": "t-257",
+      "stage": "editing",
+      "desc": "Forge always-on loop. Rewrite protocol/loop.md and personas/forge/CLAUDE.md for an always-on model. Forge starts once and never exits. The loop becomes: (1) smithy check-hook. (2) If hooked: smithy start-heat, execute ~4min, smithy end-heat (auto-consumes hook), write HOOK_DONE to dispatch/forge-to-marshal.md, go to step 1. (3) If no hook: idle. Print 'Waiting for hook...' and wait 30 seconds, then go to step 1. (4) Budget is NOT a kill switch \u2014 Forge does not check or enforce budget. Budget is Marshal's concern: Marshal stops hooking when budget is exhausted. If Marshal stops hooking, Forge naturally idles at step 3. Remove: 'NEVER STOP. Loop until budget exhausted.' Replace with: 'NEVER STOP. Loop forever. Execute hooks. Idle when no hook.' Remove: all budget checks from the loop (the budget.used counter still gets incremented by end-heat for tracking, but Forge doesn't read it as a stop condition). Remove: 'When the human says Run N heats' \u2014 Forge doesn't need this anymore. Startup becomes: smithy resume, smithy patrol --fix, then enter the loop. The human starts Forge once: 'cd personas/forge && claude' and says 'Start'. Thats it.",
+      "status": "complete",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-015"
+    },
+    {
+      "id": "t-258",
+      "stage": "implementation",
+      "desc": "Marshal hook mechanism. Marshal needs its own hook file: .marshal-hook.json. Same pattern as .forge-hook.json but for Marshal. In smithy/smithy/state.py: add write_marshal_hook, read_marshal_hook, delete_marshal_hook (same pattern as forge hook functions, just different filename). In smithy/smithy/cli.py: add 'smithy hook-marshal <task_id>' with --by (anvil|forge|marshal), --context, --rationale, --force options. Add 'smithy check-marshal-hook' \u2014 returns hooked task or {hooked: false}. Add 'smithy unhook-marshal'. Anvil uses this to send tasks directly to Marshal: 'smithy hook-marshal t-254 --by anvil --context \"Build this next\"'. Marshal checks its hook on each loop iteration \u2014 if hooked, prioritize that task immediately (set priority 0, put at top of next_tasks, hook it to Forge).",
+      "status": "complete",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-015"
+    },
+    {
+      "id": "t-259",
+      "stage": "editing",
+      "desc": "Marshal always-on loop. Create/update personas/marshal/CLAUDE.md for always-on model. Marshal starts once and never exits. The loop: (1) smithy check-marshal-hook \u2014 if Anvil hooked a task, prioritize it immediately (smithy set-priority <id> 0, put at top of next_tasks, hook to Forge via smithy hook). (2) Check dispatch/forge-to-marshal.md for HOOK_DONE signals. If found: re-read all steering signals (smithy list-tasks, smithy list-themes, smithy list-initiatives, state.json constraints, worklog.tsv last 10 heats, identity.md). Apply ordering rules: constraints hard-block > poker ranking > timeline > task priority > blocked_by > stage balance. Evaluate ROI: if remaining tasks have low estimated value and budget is tight, skip them (leave pending, don't hook). Check budget: if budget exhausted, don't hook \u2014 Forge idles naturally. Write smithy set-next-tasks with top 10 for Bellows display. Hook top task to Forge via smithy hook. (3) If no HOOK_DONE and no marshal-hook: idle 30s, then go to step 1. Startup: read state.json, read all signals, compute initial ordering, hook first task to Forge. The human starts Marshal once: 'cd personas/marshal && claude' and says 'Start'.",
+      "status": "complete",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-015"
+    },
+    {
+      "id": "t-260",
+      "stage": "implementation",
+      "desc": "Generalize hook mechanism. Refactor hook I/O in state.py to be persona-generic. Instead of separate write_hook/write_marshal_hook functions, make it: write_hook(project_dir, persona, ...) where persona='forge'|'marshal' and the file becomes '.{persona}-hook.json'. Same for read_hook(project_dir, persona) and delete_hook(project_dir, persona). Update CLI: 'smithy hook <task_id> --to forge|marshal' (default forge). 'smithy check-hook --persona forge|marshal'. 'smithy unhook --persona forge|marshal'. This makes the hook mechanism reusable for any future persona without duplicating code. Update existing forge-specific hook commands to use the generic versions.",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-015"
+    },
+    {
+      "id": "t-261",
+      "stage": "implementation",
+      "desc": "Hook queue: allow multiple hooked tasks. Change .forge-hook.json from a single object to an array of hook objects. In smithy/smithy/state.py: (1) write_hook appends to the array (or creates it). (2) read_hook returns the first entry (top of queue). (3) delete_hook removes the first entry (pop). If array becomes empty, delete the file. In smithy/smithy/cli.py: (1) 'smithy hook <task_id>' appends to the hook queue (no --force needed for adding to a non-empty queue \u2014 that's the point). (2) 'smithy check-hook' returns the first entry. (3) 'smithy unhook' pops the first entry. Add 'smithy unhook --all' to clear the entire queue. (4) end-heat pops the matching entry. Apply same pattern to marshal hooks (.marshal-hook.json). This lets Anvil do: smithy hook t-258 --to forge && smithy hook t-259 --to forge && smithy hook t-260 --to forge \u2014 and Forge works through all three without intervention.",
+      "status": "complete",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-015"
+    },
+    {
+      "id": "t-262",
+      "stage": "implementation",
+      "desc": "Unified task queue: collapse hook + next_tasks into one mechanism. (1) Remove .forge-hook.json and .marshal-hook.json \u2014 delete write_hook/read_hook/delete_hook from state.py. Remove smithy hook/check-hook/unhook commands from cli.py. (2) next_tasks in state.json is the single ordered queue. Rename smithy commands for clarity: 'smithy queue' shows the current next_tasks list with full task details. 'smithy queue-push <task_id> [--top|--bottom]' appends a task to next_tasks (default --top, inserts at front). Validates task exists and is pending. 'smithy queue-pop' removes and returns the first entry. 'smithy queue-clear' empties the list. 'smithy set-next-tasks <id1> <id2> ...' replaces the entire list (Marshal uses this). (3) Forge loop becomes: smithy queue-pop \u2014 if returns a task, execute it. If empty, idle 30s. (4) Marshal loop becomes: read signals, compute ordering, smithy set-next-tasks. Anvil can insert urgent work: smithy queue-push t-999 --top. (5) end-heat: after completing a task, it's already popped \u2014 no cleanup needed. (6) Update protocol/loop.md and both persona CLAUDE.md files.",
+      "status": "pending",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-015"
+    },
+    {
+      "id": "t-263",
+      "stage": "implementation",
+      "desc": "smithy nudge command + tmux session convention. In smithy/smithy/cli.py: (1) Add 'smithy nudge <persona> <message>' command. Persona is 'forge' or 'marshal'. Looks up tmux session name using convention: 'smithy-forge', 'smithy-marshal'. Calls tmux send-keys -t smithy-<persona> '<message>' Enter via subprocess. If tmux session doesn't exist, print warning and exit (no crash). Output: JSON {nudged: true, persona, session, message} or {nudged: false, reason: 'session not found'}. (2) Add 'smithy sessions' command that lists running smithy tmux sessions \u2014 runs tmux list-sessions and filters for 'smithy-*' prefix. Shows session name, created time, and whether it's attached. (3) Add 'smithy start <persona>' command that starts a tmux session: tmux new-session -d -s smithy-<persona> -c <persona_dir> 'claude'. Persona dir is personas/forge/ or personas/marshal/. If session already exists, print warning.",
+      "status": "pending",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-015"
+    },
+    {
+      "id": "t-264",
+      "stage": "implementation",
+      "desc": "Wire nudge into queue-push. In smithy/smithy/cli.py: modify queue-push command (or add to t-262 spec) so that after pushing a task to next_tasks, it auto-nudges the target persona. Add --no-nudge flag to skip. Default behavior: smithy queue-push t-262 --top \u2192 pushes to next_tasks \u2192 calls nudge('forge', 'Task t-262 queued. Run smithy queue-pop to start.'). For marshal: smithy queue-push t-262 --to marshal \u2192 pushes + nudges marshal. This closes the loop: Anvil pushes a task, Forge gets nudged instantly, starts working. No polling.",
+      "status": "pending",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-015"
+    },
+    {
+      "id": "t-265",
+      "stage": "implementation",
+      "desc": "Wire nudge into Marshal\u2192Forge dispatch. Update Marshal always-on loop (t-259 spec) so that after Marshal writes next_tasks via smithy set-next-tasks, it nudges Forge: smithy nudge forge 'Marshal updated queue. N tasks ready. Top: t-XXX \u2014 description'. Forge sees the nudge, runs smithy queue-pop, starts working. Also: after Forge completes a task (end-heat), it nudges Marshal: smithy nudge marshal 'HEAT_DONE: t-XXX complete, outcome Y. Re-prioritize.' Marshal sees the nudge, re-reads signals, updates queue, nudges Forge with next task. The cycle is nudge-driven, not poll-driven.",
+      "status": "pending",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-015"
+    },
+    {
+      "id": "t-266",
+      "stage": "implementation",
+      "desc": "Nudge queue for busy sessions. In smithy/smithy/state.py: add nudge queue support. If a nudge target is mid-heat (checkpoint exists), queue the nudge to .smithy-nudge-queue/<persona>.jsonl (one JSON object per line: {message, timestamp, sender}). In the Forge protocol (loop.md), add a step after end-heat: check .smithy-nudge-queue/forge.jsonl, process any queued nudges. In smithy/smithy/cli.py: modify 'smithy nudge' to check if target has an active checkpoint \u2014 if so, write to nudge queue instead of tmux send-keys. Add 'smithy drain-nudges <persona>' command that reads and clears the queue file, returns the messages as JSON array.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-015"
     }
   ],
   "ideas": [
@@ -1776,7 +1956,7 @@
       "description": "A desktop web UI where the human steers by shaping a timeline. Horizontal axis is heats (or time). Initiatives are horizontal bars showing planned start/end. The human drags bar endpoints to allocate budget. Overlapping bars = parallel work. Gaps = cool-down. The visual makes tradeoffs obvious \u2014 stretching one initiative squeezes another. Forge reads the timeline and works accordingly. Inspired by Gantt charts but interactive and simple. Build as a standalone page in Bellows.",
       "status": "approved",
       "budget_cap": 15,
-      "heats_used": 4,
+      "heats_used": 7,
       "rank": 5,
       "planned_start": 645,
       "planned_end": 660
@@ -1788,7 +1968,7 @@
       "description": "A desktop web UI focused on natural-language steering. The human writes a short intent statement (2-3 sentences). The system decomposes it into themes, initiatives, and tasks automatically. Human reviews the decomposition and edits \u2014 delete a branch, promote a task, add a constraint. The intent is the source of truth, not the task list. When intent changes, the decomposition updates. Inspired by commander's intent in military doctrine. The human thinks in outcomes, the system thinks in tasks. Build as a standalone page in Bellows.",
       "status": "approved",
       "budget_cap": 20,
-      "heats_used": 3,
+      "heats_used": 6,
       "rank": 4,
       "planned_start": 645,
       "planned_end": 665
@@ -1800,7 +1980,7 @@
       "description": "All 4 steering UIs should reflect state.json changes without auto-polling. Options: (1) Manual refresh button visible on every UI \u2014 'Refresh' button in header that reloads data via AJAX (not full page reload). (2) File watcher via SSE \u2014 backend watches state.json with watchdog/inotify and pushes events to frontend via Server-Sent Events. Frontend updates DOM on event. (3) Hybrid \u2014 manual refresh button always visible, plus optional SSE for live updates. Start with manual refresh button on all 4 UIs (simplest, no dependencies). Then add SSE as an enhancement. Each UI needs: a GET /api/state endpoint returning current data as JSON, a JS function that fetches it and re-renders the relevant DOM elements, a visible Refresh button in the header that calls this function.",
       "status": "approved",
       "budget_cap": 10,
-      "heats_used": 1,
+      "heats_used": 2,
       "planned_start": 640,
       "planned_end": 655,
       "rank": 6
@@ -1810,13 +1990,13 @@
       "theme_id": "th-002",
       "title": "Marshal agent",
       "description": "New persona sitting between Anvil and Forge. An AI agent (Claude session) that runs before every heat and decides task ordering. Replaces the wavefront allocator. Reads all steering signals: theme rankings, initiative status/budget caps, constraint board rules, priority poker order, timeline allocations, task priorities, blocked_by deps, recent worklog history, human_priorities. Produces a single ordered list of next N tasks written to state.json. Forge becomes a pure executor \u2014 reads the list, pops the top task, does the work. The Marshal makes the steering UIs meaningful: they're all inputs that the Marshal synthesizes into one queue. Architecture: Anvil (strategy) \u2192 Marshal (ordering) \u2192 Forge (execution).",
-      "status": "approved",
+      "status": "active",
       "budget_cap": 25,
-      "heats_used": 0
+      "heats_used": 18
     }
   ],
   "feedback_cursor": 26,
-  "inbox_cursor": 131,
+  "inbox_cursor": 139,
   "human_priorities": [
     "visual design"
   ],
@@ -1840,5 +2020,16 @@
       "status": "active",
       "created": "2026-04-11T10:44:28.678810"
     }
+  ],
+  "next_tasks": [
+    "t-262",
+    "t-263",
+    "t-264",
+    "t-265",
+    "t-257",
+    "t-259",
+    "t-266",
+    "t-252",
+    "t-253"
   ]
 }

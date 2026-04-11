@@ -9,4 +9,5 @@ smithy.egg-info/dependency_links.txt
 smithy.egg-info/entry_points.txt
 smithy.egg-info/requires.txt
 smithy.egg-info/top_level.txt
+tests/test_hooks.py
 tests/test_smithy.py

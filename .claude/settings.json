@@ -1,4 +1,7 @@
 {
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
   "hooks": {
     "SessionEnd": [
       {
@@ -7,6 +10,30 @@
           {
             "type": "command",
             "command": "./hooks/session-end-forge.sh",
+            "timeout": 120000
+          }
+        ]
+      }
+    ],
+    "TeammateIdle": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./hooks/teammate-idle.sh",
+            "timeout": 120000
+          }
+        ]
+      }
+    ],
+    "TaskCompleted": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./hooks/task-completed.sh",
             "timeout": 120000
           }
         ]
