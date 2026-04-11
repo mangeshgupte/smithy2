@@ -29,6 +29,13 @@ def mock_project(tmp_path):
             {"id": "t-002", "stage": "testing", "desc": "Test feature X", "status": "pending", "priority": 2, "blocked_by": []},
             {"id": "t-003", "stage": "planning", "desc": "Plan v2", "status": "complete", "priority": 3, "blocked_by": []},
         ],
+        "themes": [
+            {"id": "th-001", "name": "Core Features", "rank": 1, "status": "active"},
+        ],
+        "initiatives": [
+            {"id": "ini-001", "theme_id": "th-001", "title": "Build Feature X", "description": "Implement X", "status": "proposed", "budget_cap": 10, "heats_used": 3},
+            {"id": "ini-002", "theme_id": "th-001", "title": "Test Suite", "description": "Full tests", "status": "active", "budget_cap": None, "heats_used": 5},
+        ],
         "overall_progress": 0.5,
     }
     (tmp_path / "state.json").write_text(json.dumps(state))
@@ -42,7 +49,7 @@ def mock_project(tmp_path):
     (tmp_path / "outbox.md").write_text("# Outbox\n")
     (tmp_path / "inbox.md").write_text("# Inbox\n")
     (tmp_path / "STRATEGY.md").write_text("# Strategy\n\n### What's Missing\n\n- Feature Y\n- Feature Z\n")
-    (tmp_path / "identity.md").write_text("# Identity\n")
+    (tmp_path / "identity.md").write_text("# Identity\n\n## Commander's Intent\n\n- Build a reliable system\n- Quality over speed\n")
 
     return tmp_path
 
@@ -139,3 +146,41 @@ class TestMorningBriefing:
         briefing = get_morning_briefing(projects)
         assert briefing["tier_counts"]["push"] == 1
         assert briefing["tier_counts"]["quiet"] == 1
+
+
+class TestIntentHierarchy:
+    def test_themes_exposed(self, mock_project):
+        project = read_project(str(mock_project))
+        assert len(project["themes"]) == 1
+        assert project["themes"][0]["name"] == "Core Features"
+
+    def test_initiatives_exposed(self, mock_project):
+        project = read_project(str(mock_project))
+        assert len(project["initiatives"]) == 2
+        assert project["initiatives"][0]["status"] == "proposed"
+        assert project["initiatives"][1]["status"] == "active"
+
+    def test_intent_extracted(self, mock_project):
+        project = read_project(str(mock_project))
+        assert "reliable" in project["intent"]
+
+    def test_empty_themes(self, tmp_path):
+        """Project without themes should return empty list."""
+        state = {
+            "project": "bare",
+            "budget": {"total_heats": 10, "used": 0, "started_at": None},
+            "stages": {s: {"target": 0.16, "heats": 0, "progress": 0, "value_ema": 0.5}
+                       for s in ["research","planning","implementation","testing","editing","marketing"]},
+            "queue": [],
+            "overall_progress": 0,
+        }
+        (tmp_path / "state.json").write_text(json.dumps(state))
+        (tmp_path / "worklog.tsv").write_text("timestamp\theat\tstage\ttask_id\toutcome\tvalue\tsignal\tnotes\n")
+        (tmp_path / "outbox.md").write_text("")
+        (tmp_path / "inbox.md").write_text("")
+        (tmp_path / "STRATEGY.md").write_text("")
+        (tmp_path / "identity.md").write_text("")
+        project = read_project(str(tmp_path))
+        assert project["themes"] == []
+        assert project["initiatives"] == []
+        assert project["intent"] == ""
