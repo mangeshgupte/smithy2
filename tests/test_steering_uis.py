@@ -204,28 +204,174 @@ class TestPriorityPoker:
         assert "ini-002" not in data  # ini-002 is proposed
 
 
+@pytest.fixture
+def constraint_client(state_with_initiatives, monkeypatch):
+    """Create a test client for the Constraint Board app."""
+    monkeypatch.setenv("FORGE_PROJECT_DIR", str(state_with_initiatives))
+    sys.path.insert(0, str(Path(__file__).parent.parent / "ui-constraint-board"))
+    import importlib
+    app_mod = importlib.import_module("app")
+    importlib.reload(app_mod)
+    from starlette.testclient import TestClient
+    return TestClient(app_mod.app), state_with_initiatives
+
+
 class TestConstraintBoard:
-    def test_renders(self, state_with_initiatives, monkeypatch):
-        monkeypatch.setenv("FORGE_PROJECT_DIR", str(state_with_initiatives))
-        sys.path.insert(0, str(Path(__file__).parent.parent / "ui-constraint-board"))
-        import importlib
-        app_mod = importlib.import_module("app")
-        importlib.reload(app_mod)
-        from starlette.testclient import TestClient
-        c = TestClient(app_mod.app)
+    def test_renders(self, constraint_client):
+        c, _ = constraint_client
         r = c.get("/")
         assert r.status_code == 200
+        assert "Constraint Board" in r.text
 
-    def test_add_constraint(self, state_with_initiatives, monkeypatch):
-        monkeypatch.setenv("FORGE_PROJECT_DIR", str(state_with_initiatives))
-        sys.path.insert(0, str(Path(__file__).parent.parent / "ui-constraint-board"))
-        import importlib
-        app_mod = importlib.import_module("app")
-        importlib.reload(app_mod)
-        from starlette.testclient import TestClient
-        c = TestClient(app_mod.app)
+    def test_renders_no_constraints(self, constraint_client):
+        """Empty constraints shows 'no constraints' message."""
+        c, tmp = constraint_client
+        state = json.loads((tmp / "state.json").read_text())
+        state["constraints"] = []
+        (tmp / "state.json").write_text(json.dumps(state, indent=2))
+        r = c.get("/")
+        assert "No constraints" in r.text
+
+    def test_add_budget_cap(self, constraint_client):
+        """Add a budget_cap constraint and verify it persists."""
+        c, tmp = constraint_client
         r = c.post("/add", data={"type": "budget_cap", "stage": "research", "value": "5", "description": ""})
         assert r.status_code == 200  # redirect
+        saved = json.loads((tmp / "state.json").read_text())
+        caps = [con for con in saved["constraints"] if con["type"] == "budget_cap" and con["stage"] == "research"]
+        assert len(caps) == 1
+        assert caps[0]["value"] == 5
+        assert caps[0]["status"] == "active"
+        assert caps[0]["id"].startswith("con-")
+
+    def test_add_floor(self, constraint_client):
+        """Add a floor constraint."""
+        c, tmp = constraint_client
+        c.post("/add", data={"type": "floor", "stage": "testing", "value": "15", "description": ""})
+        saved = json.loads((tmp / "state.json").read_text())
+        floors = [con for con in saved["constraints"] if con["type"] == "floor"]
+        assert len(floors) == 1
+        assert floors[0]["stage"] == "testing"
+        assert floors[0]["value"] == 15
+
+    def test_add_exclude(self, constraint_client):
+        """Add an exclude constraint with description."""
+        c, tmp = constraint_client
+        c.post("/add", data={"type": "exclude", "stage": "", "value": "0", "description": "Do not touch auth module"})
+        saved = json.loads((tmp / "state.json").read_text())
+        excludes = [con for con in saved["constraints"] if con["type"] == "exclude"]
+        assert len(excludes) == 1
+        assert excludes[0]["description"] == "Do not touch auth module"
+
+    def test_add_auto_increments_id(self, constraint_client):
+        """Multiple adds produce unique incrementing IDs."""
+        c, tmp = constraint_client
+        c.post("/add", data={"type": "budget_cap", "stage": "research", "value": "5", "description": ""})
+        c.post("/add", data={"type": "floor", "stage": "testing", "value": "10", "description": ""})
+        saved = json.loads((tmp / "state.json").read_text())
+        ids = [con["id"] for con in saved["constraints"]]
+        assert len(set(ids)) == len(ids)  # all unique
+
+    def test_remove_constraint(self, constraint_client):
+        """Remove deletes a constraint from state.json."""
+        c, tmp = constraint_client
+        # Add then remove
+        c.post("/add", data={"type": "budget_cap", "stage": "research", "value": "5", "description": ""})
+        saved = json.loads((tmp / "state.json").read_text())
+        con_id = saved["constraints"][0]["id"]
+        c.post(f"/remove/{con_id}")
+        saved = json.loads((tmp / "state.json").read_text())
+        assert all(con["id"] != con_id for con in saved["constraints"])
+
+    def test_remove_nonexistent_is_safe(self, constraint_client):
+        """Removing a non-existent constraint doesn't error."""
+        c, _ = constraint_client
+        r = c.post("/remove/con-999")
+        assert r.status_code == 200
+
+    def test_toggle_active_to_inactive(self, constraint_client):
+        """Toggle switches an active constraint to inactive."""
+        c, tmp = constraint_client
+        c.post("/add", data={"type": "budget_cap", "stage": "research", "value": "5", "description": ""})
+        saved = json.loads((tmp / "state.json").read_text())
+        con_id = saved["constraints"][0]["id"]
+        assert saved["constraints"][0]["status"] == "active"
+        c.post(f"/toggle/{con_id}")
+        saved = json.loads((tmp / "state.json").read_text())
+        con = next(con for con in saved["constraints"] if con["id"] == con_id)
+        assert con["status"] == "inactive"
+
+    def test_toggle_inactive_to_active(self, constraint_client):
+        """Toggle switches an inactive constraint back to active."""
+        c, tmp = constraint_client
+        c.post("/add", data={"type": "budget_cap", "stage": "research", "value": "5", "description": ""})
+        saved = json.loads((tmp / "state.json").read_text())
+        con_id = saved["constraints"][0]["id"]
+        # Toggle twice: active → inactive → active
+        c.post(f"/toggle/{con_id}")
+        c.post(f"/toggle/{con_id}")
+        saved = json.loads((tmp / "state.json").read_text())
+        con = next(con for con in saved["constraints"] if con["id"] == con_id)
+        assert con["status"] == "active"
+
+    def test_edit_value(self, constraint_client):
+        """Edit endpoint updates constraint value."""
+        c, tmp = constraint_client
+        c.post("/add", data={"type": "budget_cap", "stage": "research", "value": "5", "description": ""})
+        saved = json.loads((tmp / "state.json").read_text())
+        con_id = saved["constraints"][0]["id"]
+        r = c.post(f"/edit/{con_id}", json={"value": 20})
+        assert r.status_code == 200
+        saved = json.loads((tmp / "state.json").read_text())
+        con = next(con for con in saved["constraints"] if con["id"] == con_id)
+        assert con["value"] == 20
+
+    def test_edit_description(self, constraint_client):
+        """Edit endpoint updates constraint description."""
+        c, tmp = constraint_client
+        c.post("/add", data={"type": "exclude", "stage": "", "value": "0", "description": "old desc"})
+        saved = json.loads((tmp / "state.json").read_text())
+        con_id = saved["constraints"][0]["id"]
+        r = c.post(f"/edit/{con_id}", json={"description": "new desc"})
+        assert r.status_code == 200
+        saved = json.loads((tmp / "state.json").read_text())
+        con = next(con for con in saved["constraints"] if con["id"] == con_id)
+        assert con["description"] == "new desc"
+
+    def test_edit_preserves_other_fields(self, constraint_client):
+        """Editing value doesn't change type, stage, or status."""
+        c, tmp = constraint_client
+        c.post("/add", data={"type": "budget_cap", "stage": "research", "value": "5", "description": ""})
+        saved = json.loads((tmp / "state.json").read_text())
+        con_id = saved["constraints"][0]["id"]
+        c.post(f"/edit/{con_id}", json={"value": 99})
+        saved = json.loads((tmp / "state.json").read_text())
+        con = next(con for con in saved["constraints"] if con["id"] == con_id)
+        assert con["type"] == "budget_cap"
+        assert con["stage"] == "research"
+        assert con["status"] == "active"
+
+    def test_edit_nonexistent_returns_404(self, constraint_client):
+        """Editing a non-existent constraint returns 404."""
+        c, _ = constraint_client
+        r = c.post("/edit/con-999", json={"value": 10})
+        assert r.status_code == 404
+
+    def test_violation_detected(self, constraint_client):
+        """Budget cap violation shows in the UI when heats exceed cap."""
+        c, tmp = constraint_client
+        # research has 10 heats — add cap of 5
+        c.post("/add", data={"type": "budget_cap", "stage": "research", "value": "5", "description": ""})
+        r = c.get("/")
+        assert "violated" in r.text.lower() or "⚠" in r.text or "warning" in r.text.lower()
+
+    def test_no_violation_under_cap(self, constraint_client):
+        """No violation when heats are under the cap."""
+        c, tmp = constraint_client
+        # research has 10 heats — cap of 100 should be fine
+        c.post("/add", data={"type": "budget_cap", "stage": "research", "value": "100", "description": ""})
+        r = c.get("/")
+        assert "All constraints satisfied" in r.text
 
 
 class TestTimeline:
