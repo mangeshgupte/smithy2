@@ -155,8 +155,13 @@
         card.classList.toggle('expanded');
     }
 
-    // Auto-refresh: poll for live progress every 5s
-    setInterval(() => {
+    // Live indicator
+    const liveDot = document.createElement('span');
+    liveDot.className = 'live-dot disconnected';
+    liveDot.title = 'Live connection status';
+    document.querySelector('header h1').appendChild(liveDot);
+
+    function refreshState() {
         fetch('/api/state').then(r => r.json()).then(data => {
             document.querySelectorAll('.poker-card[data-id]').forEach(card => {
                 const id = card.dataset.id;
@@ -164,7 +169,6 @@
                     const meta = card.querySelector('.card-meta');
                     if (meta) {
                         const spans = meta.querySelectorAll('span');
-                        // Update heats and task count
                         if (spans.length >= 3) {
                             const d = data[id];
                             spans[2].textContent = d.heats_used + 'h' + (d.budget_cap ? '/' + d.budget_cap : '');
@@ -174,7 +178,26 @@
                 }
             });
         }).catch(() => {});
-    }, 5000);
+    }
+
+    // SSE: event-driven refresh (replaces polling)
+    function connectSSE() {
+        const es = new EventSource('/events');
+        es.onopen = () => {
+            liveDot.className = 'live-dot connected';
+            liveDot.title = 'Live — connected';
+        };
+        es.addEventListener('state-changed', () => refreshState());
+        es.onerror = () => {
+            liveDot.className = 'live-dot disconnected';
+            liveDot.title = 'Disconnected — retrying...';
+        };
+    }
+    connectSSE();
+
+    // Fallback: poll every 10s if SSE is available, no extra polling needed
+    // but keep a slow poll for resilience
+    setInterval(refreshState, 10000);
 
     function approveCard(id) {
         fetch('/approve/' + id, { method: 'POST' })

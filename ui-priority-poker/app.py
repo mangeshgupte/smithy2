@@ -1,5 +1,6 @@
 """Priority Poker — drag-to-rank initiative steering UI."""
 
+import asyncio
 import json
 import os
 from pathlib import Path
@@ -8,6 +9,7 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, JSONResponse
+from starlette.responses import StreamingResponse
 
 app = FastAPI(title="Priority Poker")
 
@@ -126,6 +128,30 @@ async def api_state():
                 "status": i["status"],
             }
     return JSONResponse(data)
+
+
+@app.get("/events")
+async def events():
+    """SSE endpoint — yields 'state-changed' when state.json is modified."""
+    state_path = Path(STATE_DIR) / "state.json"
+
+    async def event_stream():
+        last_mtime = state_path.stat().st_mtime if state_path.exists() else 0
+        while True:
+            await asyncio.sleep(2)
+            try:
+                current_mtime = state_path.stat().st_mtime
+                if current_mtime != last_mtime:
+                    last_mtime = current_mtime
+                    yield f"event: state-changed\ndata: {{}}\n\n"
+            except FileNotFoundError:
+                pass
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @app.post("/reject/{initiative_id}")

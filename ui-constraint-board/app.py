@@ -1,5 +1,6 @@
 """Constraint Board — steer through boundaries, not commands."""
 
+import asyncio
 import json
 import os
 from pathlib import Path
@@ -9,6 +10,7 @@ from fastapi import FastAPI, Request, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from starlette.responses import StreamingResponse
 
 app = FastAPI(title="Constraint Board")
 
@@ -165,3 +167,27 @@ async def toggle_constraint(constraint_id: str):
             break
     _save_state(state)
     return RedirectResponse(url="/", status_code=303)
+
+
+@app.get("/events")
+async def events():
+    """SSE endpoint — yields 'state-changed' when state.json is modified."""
+    state_path = Path(STATE_DIR) / "state.json"
+
+    async def event_stream():
+        last_mtime = state_path.stat().st_mtime if state_path.exists() else 0
+        while True:
+            await asyncio.sleep(2)
+            try:
+                current_mtime = state_path.stat().st_mtime
+                if current_mtime != last_mtime:
+                    last_mtime = current_mtime
+                    yield f"event: state-changed\ndata: {{}}\n\n"
+            except FileNotFoundError:
+                pass
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
