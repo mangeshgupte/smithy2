@@ -92,6 +92,18 @@ This atomically: increments budget.used, updates stage heats + value_ema + integ
 
 **Signal**: 🟢 (normal), 🟡 (value < 0.7 or stalled), 🔴 (rollback or blocked)
 
+**Nudge cycle**: `end-heat` auto-nudges Marshal (unless `--no-nudge`). Marshal sees the nudge, re-prioritizes, calls `set-next-tasks` which auto-nudges Forge. The cycle is nudge-driven, not poll-driven.
+
+## Step 4b: Drain Queued Nudges
+
+After end-heat, drain any nudges that arrived while you were mid-heat:
+
+```bash
+smithy drain-nudges forge   # Returns JSON array of queued messages
+```
+
+Process any queued nudges — they may contain task assignments or re-prioritization signals from Marshal. If a nudge contains a task assignment, it will be picked up naturally in Step 1 (queue-pop).
+
 ## Step 5: Memory (every 6th heat)
 
 When heat number % 6 == 0:

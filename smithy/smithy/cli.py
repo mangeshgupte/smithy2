@@ -174,7 +174,7 @@ def end_heat(ctx, value, signal, notes, outcome, progress, no_nudge):
     # Auto-nudge marshal so it can re-prioritize and assign next task
     if not no_nudge:
         nudge_msg = f"HEAT_DONE: {task_id} {outcome}, value={value}, signal={signal}. Re-prioritize."
-        nudge_result = _nudge_persona("marshal", nudge_msg)
+        nudge_result = _nudge_persona("marshal", nudge_msg, root=root)
         result["nudge"] = nudge_result
         if nudge_result["nudged"]:
             _err(f"Heat {heat} [{stage}] {signal} — {notes[:60]} — nudged marshal")
@@ -426,7 +426,7 @@ def set_next_tasks(ctx, task_ids, no_nudge):
         top_task = queue_map.get(ordered[0], {})
         top_desc = top_task.get("desc", "")[:60]
         nudge_msg = f"Queue updated. {len(ordered)} tasks ready. Top: {ordered[0]} — {top_desc}"
-        nudge_result = _nudge_persona("forge", nudge_msg)
+        nudge_result = _nudge_persona("forge", nudge_msg, root=root)
         result["nudge"] = nudge_result
         if nudge_result["nudged"]:
             _err(f"Set {len(ordered)} next tasks: {', '.join(ordered)} — nudged forge")
@@ -467,10 +467,54 @@ def queue_show(ctx):
     _err(f"Queue: {len(result)} tasks")
 
 
-def _nudge_persona(persona, message):
-    """Send a message to a persona's window in the smithy2 tmux session. Returns dict with result."""
+def _nudge_queue_path(root, persona):
+    """Return the path to a persona's nudge queue file."""
+    return root / ".smithy-nudge-queue" / f"{persona}.jsonl"
+
+
+def _queue_nudge(root, persona, message):
+    """Append a nudge to the persona's queue file (for when they're mid-heat)."""
+    from datetime import datetime
+    queue_dir = root / ".smithy-nudge-queue"
+    queue_dir.mkdir(exist_ok=True)
+    entry = json.dumps({
+        "message": message,
+        "timestamp": datetime.now().isoformat(),
+    })
+    queue_path = _nudge_queue_path(root, persona)
+    with open(queue_path, "a") as f:
+        f.write(entry + "\n")
+    return queue_path
+
+
+def _persona_is_busy(root, persona):
+    """Check if a persona has an active checkpoint (mid-heat)."""
+    # Forge uses .forge-checkpoint.json; extend for other personas if needed
+    cp_path = root / f".{persona}-checkpoint.json"
+    if cp_path.exists():
+        return True
+    # Fallback: forge's canonical checkpoint name
+    if persona == "forge":
+        alt = root / ".forge-checkpoint.json"
+        if alt.exists():
+            return True
+    return False
+
+
+def _nudge_persona(persona, message, root=None):
+    """Send a message to a persona's window in the smithy2 tmux session.
+
+    If the persona is mid-heat (checkpoint exists), queues the nudge to
+    .smithy-nudge-queue/<persona>.jsonl instead of sending via tmux.
+    """
     import subprocess
     target = f"smithy2:{persona}"
+
+    # If root provided, check if persona is busy — queue instead of interrupting
+    if root and _persona_is_busy(root, persona):
+        _queue_nudge(root, persona, message)
+        return {"nudged": False, "queued": True, "persona": persona, "target": target,
+                "reason": "persona mid-heat, nudge queued"}
 
     # Check smithy2 session exists
     result = subprocess.run(
@@ -478,7 +522,12 @@ def _nudge_persona(persona, message):
         capture_output=True, text=True,
     )
     if result.returncode != 0:
-        return {"nudged": False, "reason": "smithy2 session not found", "target": target}
+        # Session not found — queue as fallback if root available
+        if root:
+            _queue_nudge(root, persona, message)
+            return {"nudged": False, "queued": True, "persona": persona, "target": target,
+                    "reason": "smithy2 session not found, nudge queued"}
+        return {"nudged": False, "queued": False, "reason": "smithy2 session not found", "target": target}
 
     # Check window exists
     result = subprocess.run(
@@ -486,16 +535,20 @@ def _nudge_persona(persona, message):
         capture_output=True, text=True,
     )
     if result.returncode != 0 or persona not in result.stdout.strip().split("\n"):
-        return {"nudged": False, "reason": f"window '{persona}' not found in smithy2", "target": target}
+        if root:
+            _queue_nudge(root, persona, message)
+            return {"nudged": False, "queued": True, "persona": persona, "target": target,
+                    "reason": f"window '{persona}' not found, nudge queued"}
+        return {"nudged": False, "queued": False, "reason": f"window '{persona}' not found in smithy2", "target": target}
 
     result = subprocess.run(
         ["tmux", "send-keys", "-t", target, message, "Enter"],
         capture_output=True, text=True,
     )
     if result.returncode != 0:
-        return {"nudged": False, "reason": f"send-keys failed: {result.stderr.strip()}", "target": target}
+        return {"nudged": False, "queued": False, "reason": f"send-keys failed: {result.stderr.strip()}", "target": target}
 
-    return {"nudged": True, "persona": persona, "target": target, "message": message}
+    return {"nudged": True, "queued": False, "persona": persona, "target": target, "message": message}
 
 
 @cli.command("queue-push")
@@ -534,7 +587,7 @@ def queue_push(ctx, task_id, top, no_nudge, target_persona):
     # Auto-nudge unless --no-nudge
     if not no_nudge:
         nudge_msg = f"Task {task_id} queued. Run smithy queue-pop to start."
-        nudge_result = _nudge_persona(target_persona, nudge_msg)
+        nudge_result = _nudge_persona(target_persona, nudge_msg, root=root)
         result["nudge"] = nudge_result
         if nudge_result["nudged"]:
             _err(f"Pushed {task_id} to {position} of queue ({len(next_tasks)} total) — nudged {target_persona}")
@@ -783,13 +836,48 @@ def next_task(ctx):
 @click.argument("message")
 @click.pass_context
 def nudge(ctx, persona, message):
-    """Send a message to a persona's window in the smithy2 tmux session."""
-    result = _nudge_persona(persona, message)
+    """Send a message to a persona's window in the smithy2 tmux session.
+
+    If the persona is mid-heat (checkpoint exists), the nudge is queued
+    to .smithy-nudge-queue/<persona>.jsonl instead of sent via tmux.
+    """
+    root = ctx.obj["root"]
+    result = _nudge_persona(persona, message, root=root)
     _output(result)
     if result["nudged"]:
         _err(f"Nudged {result['target']}: {message[:60]}")
+    elif result.get("queued"):
+        _err(f"Queued nudge for {persona} (mid-heat): {message[:60]}")
     else:
         _err(f"Warning: {result['reason']} ({result['target']})")
+
+
+@cli.command("drain-nudges")
+@click.argument("persona", type=click.Choice(VALID_PERSONAS))
+@click.pass_context
+def drain_nudges(ctx, persona):
+    """Read and clear queued nudges for a persona. Returns JSON array of messages."""
+    root = ctx.obj["root"]
+    queue_path = _nudge_queue_path(root, persona)
+
+    if not queue_path.exists():
+        _output({"persona": persona, "nudges": [], "count": 0})
+        _err(f"No queued nudges for {persona}")
+        return
+
+    nudges = []
+    for line in queue_path.read_text().strip().split("\n"):
+        if line.strip():
+            try:
+                nudges.append(json.loads(line))
+            except json.JSONDecodeError:
+                nudges.append({"message": line, "parse_error": True})
+
+    # Clear the queue
+    queue_path.unlink()
+
+    _output({"persona": persona, "nudges": nudges, "count": len(nudges)})
+    _err(f"Drained {len(nudges)} nudge(s) for {persona}")
 
 
 @cli.command("sessions")
