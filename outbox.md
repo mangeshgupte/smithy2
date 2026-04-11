@@ -2,6 +2,36 @@
 
 The Smith writes status updates, questions, and summaries here.
 
+## 2026-04-11 [heat 613, AAR — heats 607-613]
+
+7 heats: research×2, impl×4, marketing×1. Signal: 🟢×7.
+**ini-009 through ini-013 complete.**
+
+### What Got Built
+
+**ini-009: Steering patterns research** (2 heats)
+- `research/steering-patterns.md` — 5 domains analyzed (RTS, military C2, product mgmt, ATC, AI tools)
+- `design/steering-ui-specs.md` — specs for all 4 UIs with layouts, tech, data flow
+- Taxonomy of 6 steering modes: ranking, constraints, timeline, intent, approve/reject, chat
+
+**ini-010: Priority Poker** (1 heat)
+- `ui-priority-poker/` — drag-to-rank initiative cards, kill zone (drag to reject), live reorder via fetch
+- Ranking = lowest-cognitive-load steering
+
+**ini-011: Constraint Board** (1 heat)
+- `ui-constraint-board/` — budget caps, floors, excludes with real-time violation detection
+- Constraints steer better than commands
+
+**ini-012: Timeline View** (1 heat)
+- `ui-timeline/` — Gantt-style horizontal bars, heat axis, progress overlay, status colors
+- Visual makes tradeoffs obvious
+
+**ini-013: Intent Editor** (1 heat)
+- `ui-intent-editor/` — write outcomes as bullets, auto-decompose into themes+initiatives, apply to state.json
+- Human thinks in outcomes, system thinks in tasks
+
+All 4 UIs: standalone FastAPI, dark theme, vanilla JS, read/write state.json. ~200 lines each.
+
 ## 2026-04-11 [heat 604, AAR — heats 591-604]
 
 14 heats: impl×8, research×2, editing×3, marketing×3, testing×1. Signal: 🟢×14.

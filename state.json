@@ -2,15 +2,15 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 843,
-    "used": 606,
+    "used": 612,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
     "research": {
       "target": 0.156,
-      "heats": 31,
+      "heats": 33,
       "progress": 0.9,
-      "value_ema": 0.806
+      "value_ema": 0.854
     },
     "planning": {
       "target": 0.21,
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 197,
+      "heats": 201,
       "progress": 0.98,
-      "value_ema": 0.801
+      "value_ema": 0.876
     },
     "testing": {
       "target": 0.183,
@@ -1076,7 +1076,7 @@
       "id": "t-183",
       "stage": "research",
       "desc": "Steering patterns research. Write research/steering-patterns.md. Study 5 domains: (1) RTS games \u2014 StarCraft's strategic/tactical/unit hierarchy, how pros issue ~300 APM but only ~30 are strategic decisions, (2) Military C2 \u2014 mission-type orders (Auftragstaktik), commander's intent, OODA loop, how NATO delegates, (3) Product management \u2014 OKRs, roadmap prioritization, sprint planning, how PMs steer without coding, (4) Air traffic control \u2014 constraints not waypoints, separation rules, how controllers manage 20+ aircraft, (5) Existing AI dev tools \u2014 Devin chat-to-steer, Cursor accept/reject, Claude Code hooks, aider /architect. For each: what decisions the human makes, frequency, info needed, feedback loop. End with taxonomy of steering modes and recommendation of which to prototype.",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-009"
@@ -1085,7 +1085,7 @@
       "id": "t-184",
       "stage": "research",
       "desc": "Design spec for each steering UI. After research, write design/steering-ui-specs.md. For each of the 4 UIs (priority poker, constraint board, timeline, intent editor): define the exact controls, data flow (what gets written to state.json), how Forge reads the steering input, mockup of the key screen, and what 'success' looks like in a 5-minute demo. This is the blueprint Forge uses to build each one.",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-009"
@@ -1094,7 +1094,7 @@
       "id": "t-185",
       "stage": "implementation",
       "desc": "UI A: Priority Poker \u2014 scaffold and core. Create ui-priority-poker/ as standalone FastAPI app. Structure: app.py, templates/index.html, static/css/style.css, static/js/drag.js, pyproject.toml. The app reads state.json from a configurable FORGE_PROJECT_DIR (same pattern as bellows/forge_reader.py). Single page showing all approved/active initiatives as draggable cards in a vertical stack. Each card shows: title, theme tag, task progress (done/total), heats_used/budget_cap. Drag to reorder. Order determines allocation weight: position 1 = 3x, position 2 = 2x, rest = 1x. Use HTML5 drag-and-drop API. On drop, POST new order to backend which writes ranking to state.json (add a 'priority_rank' field to initiatives or use a separate 'steering.json'). Dark theme matching Bellows.",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-010"
@@ -1121,7 +1121,7 @@
       "id": "t-188",
       "stage": "implementation",
       "desc": "UI B: Constraint Board \u2014 scaffold and core. Create ui-constraint-board/ as standalone FastAPI app. Structure: app.py, templates/index.html, static/css/style.css, static/js/constraints.js, pyproject.toml. Single page with a board of constraint cards. Each constraint has: type (budget-cap, progress-floor, stage-block, deadline, custom), value, active/inactive toggle. Predefined constraint types: (1) budget-cap: 'no more than N heats on [initiative/stage]', (2) progress-floor: '[stage] must stay above N%', (3) stage-block: 'don't work on [stage]', (4) deadline: 'ship [initiative] by heat N', (5) custom: free-text constraint. Add form to create new constraints. Store constraints in state.json under a new 'constraints' key (or steering.json). Backend reads/writes constraints. Dark theme.",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-011"
@@ -1148,7 +1148,7 @@
       "id": "t-191",
       "stage": "implementation",
       "desc": "UI C: Timeline View \u2014 scaffold and core. Create ui-timeline/ as standalone FastAPI app. Structure: app.py, templates/index.html, static/css/style.css, static/js/timeline.js, pyproject.toml. Single page with horizontal timeline. X-axis = heats (show used heats as past, remaining as future). Each approved/active initiative is a horizontal bar. Bar length = budget_cap (or estimated heats if no cap). Bar fill = heats_used. Bars can overlap (parallel work) or be sequential. Use HTML5 canvas or SVG for rendering. Bars are draggable: drag endpoints to resize budget, drag bar to reposition in time. On change, POST updated initiative budget_cap and planned_start_heat to backend. Show a 'now' marker at current heat count. Past heats shown as completed (dimmer). Dark theme.",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-012"
@@ -1175,7 +1175,7 @@
       "id": "t-194",
       "stage": "implementation",
       "desc": "UI D: Intent Editor \u2014 scaffold and core. Create ui-intent-editor/ as standalone FastAPI app. Structure: app.py, templates/index.html, static/css/style.css, static/js/editor.js, pyproject.toml. Two-panel layout: LEFT panel is a textarea where the human writes intent in natural language (2-5 sentences). RIGHT panel shows the decomposition: a tree of theme -> initiatives -> tasks generated from the intent. On submit, backend sends intent to Claude API (claude-sonnet-4-6 via anthropic SDK) with a prompt that decomposes it into themes/initiatives/tasks matching the state.json schema. Response renders as an editable tree on the right. Human can: delete nodes, edit descriptions, drag to reorder, toggle include/exclude. 'Apply' button writes the approved decomposition to state.json via smithy CLI commands. Dark theme.",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-013"
@@ -1252,6 +1252,14 @@
       "desc": "Update STRATEGY.md to heat 604 with all new features",
       "status": "complete",
       "priority": 2,
+      "blocked_by": []
+    },
+    {
+      "id": "t-204",
+      "stage": "marketing",
+      "desc": "AAR + handoff for ini-009 through ini-013",
+      "status": "in_progress",
+      "priority": 1,
       "blocked_by": []
     }
   ],
@@ -1371,7 +1379,7 @@
       "description": "Research how humans steer autonomous systems \u2014 not monitor, STEER. The core question: what controls does a human need to change direction without becoming a bottleneck? Study: (1) Real-time strategy games (StarCraft command hierarchy \u2014 strategic goals, tactical orders, unit autonomy), (2) Military C2 frameworks (mission-type orders, commander's intent, OODA), (3) Product management (OKRs, roadmap prioritization, sprint planning), (4) Air traffic control (constraints not commands), (5) Existing AI tools (Devin's chat-to-steer, Cursor's accept/reject, Claude Code hooks). For each, extract: what decisions the human makes, at what frequency, what information they need to decide, and what the feedback loop looks like. Deliverable: research/steering-patterns.md with a taxonomy of steering modes and which are worth prototyping as UIs.",
       "status": "approved",
       "budget_cap": 10,
-      "heats_used": 0
+      "heats_used": 2
     },
     {
       "id": "ini-010",
@@ -1380,7 +1388,7 @@
       "description": "A desktop web UI where the human steers by ranking, not approving. Shows all active initiatives as cards. Human drags to reorder \u2014 that IS the steering. No approve/reject buttons. Everything proposed is fair game unless explicitly killed. The ranking determines allocation weight. Top card gets 3x budget share, second gets 2x, rest get 1x. Real-time: as Forge works, cards show live progress and the stack rebalances. The human's only job: keep the stack in the right order. Inspired by planning poker + priority queues. Build as a standalone page in Bellows.",
       "status": "approved",
       "budget_cap": 15,
-      "heats_used": 0
+      "heats_used": 1
     },
     {
       "id": "ini-011",
@@ -1389,7 +1397,7 @@
       "description": "A desktop web UI where the human steers by setting constraints, not giving orders. Instead of telling Forge what to do, the human defines boundaries: 'no more than 5 heats on research', 'testing must stay above 80%', 'don't touch tutor', 'ship something deployable by Friday'. Constraints are cards on a board. Forge works freely within them. When a constraint would be violated, Forge stops and asks. The human's only job: add/remove/adjust constraints. Inspired by air traffic control \u2014 direct through boundaries, not waypoints. Build as a standalone page in Bellows.",
       "status": "approved",
       "budget_cap": 15,
-      "heats_used": 0
+      "heats_used": 1
     },
     {
       "id": "ini-012",
@@ -1398,7 +1406,7 @@
       "description": "A desktop web UI where the human steers by shaping a timeline. Horizontal axis is heats (or time). Initiatives are horizontal bars showing planned start/end. The human drags bar endpoints to allocate budget. Overlapping bars = parallel work. Gaps = cool-down. The visual makes tradeoffs obvious \u2014 stretching one initiative squeezes another. Forge reads the timeline and works accordingly. Inspired by Gantt charts but interactive and simple. Build as a standalone page in Bellows.",
       "status": "approved",
       "budget_cap": 15,
-      "heats_used": 0
+      "heats_used": 1
     },
     {
       "id": "ini-013",
@@ -1407,7 +1415,7 @@
       "description": "A desktop web UI focused on natural-language steering. The human writes a short intent statement (2-3 sentences). The system decomposes it into themes, initiatives, and tasks automatically. Human reviews the decomposition and edits \u2014 delete a branch, promote a task, add a constraint. The intent is the source of truth, not the task list. When intent changes, the decomposition updates. Inspired by commander's intent in military doctrine. The human thinks in outcomes, the system thinks in tasks. Build as a standalone page in Bellows.",
       "status": "approved",
       "budget_cap": 20,
-      "heats_used": 0
+      "heats_used": 1
     }
   ],
   "feedback_cursor": 26,
