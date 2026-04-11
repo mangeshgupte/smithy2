@@ -302,6 +302,7 @@ def allocate(ctx):
         state["allocator"]["integral"],
         state.get("human_priorities", []),
         state.get("queue", []),
+        state.get("initiatives", []),
     )
 
     heat = state["budget"]["used"] + 1

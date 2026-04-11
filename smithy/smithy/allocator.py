@@ -33,11 +33,25 @@ def compute_targets(benefits: dict) -> dict:
     return {s: round(v / t_total, 3) for s, v in targets.items()}
 
 
-def score_stages(stages: dict, integrals: dict, human_priorities: list, queue: list) -> dict:
+def score_stages(stages: dict, integrals: dict, human_priorities: list, queue: list, initiatives: list = None) -> dict:
     """Score each stage using PI controller + bonuses."""
     benefits = compute_benefits(stages)
     targets = compute_targets(benefits)
     total_heats = sum(s.get("heats", 0) for s in stages.values()) or 1
+
+    # Build set of active/approved initiative IDs for gating
+    active_ini_ids = set()
+    if initiatives:
+        active_ini_ids = {i["id"] for i in initiatives if i.get("status") in ("approved", "active")}
+
+    # Filter queue: exclude tasks linked to non-active initiatives
+    def _task_eligible(task):
+        ini_id = task.get("initiative_id")
+        if ini_id is None:
+            return True  # standalone task
+        return ini_id in active_ini_ids
+
+    eligible_queue = [t for t in queue if _task_eligible(t)]
 
     scores = {}
     new_integrals = {}
@@ -59,24 +73,17 @@ def score_stages(stages: dict, integrals: dict, human_priorities: list, queue: l
         score = (error + integral * 0.1 + value_bonus) * priority_boost
         scores[stage] = round(score, 4)
 
-    # Unblocking override
-    task_ids_by_stage = {}
-    for task in queue:
-        if task["status"] == "pending":
-            stage = task["stage"]
-            task_ids_by_stage.setdefault(stage, []).append(task["id"])
-
-    for task in queue:
+    # Unblocking override (uses eligible queue only)
+    for task in eligible_queue:
         if task["status"] == "pending":
             for blocked_id in task.get("blocked_by", []):
-                # Find which stage has the blocking task
-                for t2 in queue:
+                for t2 in eligible_queue:
                     if t2["id"] == blocked_id and t2["status"] == "pending":
                         scores[t2["stage"]] = scores.get(t2["stage"], 0) + 0.3
 
-    # Queued task bonus
+    # Queued task bonus (uses eligible queue only)
     for stage in VALID_STAGES:
-        pending_in_stage = sum(1 for t in queue if t["stage"] == stage and t["status"] == "pending")
+        pending_in_stage = sum(1 for t in eligible_queue if t["stage"] == stage and t["status"] == "pending")
         scores[stage] = scores.get(stage, 0) + pending_in_stage * 0.07
 
     return scores, targets, new_integrals
