@@ -32,6 +32,9 @@
             </div>
         </div>
 
+        <!-- Gridlines overlay -->
+        <div class="grid-overlay" id="grid-overlay"></div>
+
         <!-- Axis -->
         <div class="timeline-axis">
             <div class="axis-labels" id="axis-labels">
@@ -116,6 +119,8 @@
     <div class="legend">
         <span class="legend-item"><span class="dot approved"></span> Approved</span>
         <span class="legend-item"><span class="dot active"></span> Active</span>
+        <span class="legend-item"><span class="dot proposed"></span> Proposed</span>
+        <span class="legend-item"><span class="dot complete"></span> Complete</span>
         <span class="legend-item"><span class="dot progress"></span> Progress</span>
         <span class="legend-item muted">Drag bars to reallocate · Scroll to pan · Ctrl+scroll to zoom</span>
     </div>
@@ -162,6 +167,7 @@
         clampView();
         updateRangeControl();
         updateAxisLabels();
+        updateGridlines();
         updateBars();
         updateNowMarker();
         // Update URL without reload
@@ -182,6 +188,24 @@
             span.style.left = (i / 5 * 100) + '%';
             span.textContent = 'h' + heat;
             labels.appendChild(span);
+        }
+    }
+
+    function updateGridlines() {
+        const grid = document.getElementById('grid-overlay');
+        if (!grid) return;
+        grid.innerHTML = '';
+        const range = viewEnd - viewStart || 1;
+        // Major lines every 50 heats, minor every 10
+        const minorStep = 10;
+        const majorStep = 50;
+        const first = Math.ceil(viewStart / minorStep) * minorStep;
+        for (let h = first; h <= viewEnd; h += minorStep) {
+            const pct = (h - viewStart) / range * 100;
+            const line = document.createElement('div');
+            line.className = 'grid-line' + (h % majorStep === 0 ? ' major' : '');
+            line.style.left = pct + '%';
+            grid.appendChild(line);
         }
     }
 
@@ -294,11 +318,17 @@
         bar.addEventListener('mousedown', e => {
             e.preventDefault();
             dragging = true;
+            bar.classList.add('dragging');
             const track = bar.parentElement;
             const trackRect = track.getBoundingClientRect();
             startX = e.clientX;
             origLeft = parseFloat(bar.style.left);
             origWidth = parseFloat(bar.style.width);
+
+            // Drag indicator
+            const indicator = document.createElement('div');
+            indicator.className = 'drag-indicator';
+            bar.appendChild(indicator);
 
             const onMove = e2 => {
                 if (!dragging) return;
@@ -327,10 +357,13 @@
                 const newEnd = Math.round(viewStart + (left + width) / 100 * range);
                 bar.querySelector('.bar-text').textContent = (newEnd - newStart) + 'h';
                 bar.title = bar.dataset.id + ': h' + newStart + '-h' + newEnd;
+                indicator.textContent = 'h' + newStart + ' → h' + newEnd + ' (' + (newEnd - newStart) + 'h)';
             };
 
             const onUp = () => {
                 dragging = false;
+                bar.classList.remove('dragging');
+                if (indicator.parentNode) indicator.remove();
                 document.removeEventListener('mousemove', onMove);
                 document.removeEventListener('mouseup', onUp);
 
@@ -357,6 +390,7 @@
 
     // Init
     updateRangeControl();
+    updateGridlines();
 
     // --- Rich Tooltip ---
     const tooltip = document.createElement('div');
