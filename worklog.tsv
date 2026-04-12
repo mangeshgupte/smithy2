@@ -785,3 +785,5 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-12T13:00:49Z	784	implementation	t-370	complete	0.9	🟢	t-370 /api/task/{id} archived-task fallback — minimal stub keeps Poker drawer alive after queue prune, 3 tests, 448/448
 2026-04-12T13:02:09Z	785	implementation	t-371	complete	0.7	🟢	t-371 drawer click-through verified 4 statuses + archived-stub edit-gate, 4 parametrized tests, 452/452
 2026-04-12T13:03:55Z	786	testing	t-372	complete	0.8	🟢	t-372 regression + E2E for task-detail drawer, 4 new tests, 456/456
+2026-04-12T13:06:14Z	787	implementation	t-374	complete	0.9	🟢	t-374 TaskDetail class — single source of truth, both /api/task endpoints migrated, 8 unit tests, 464/464
+2026-04-12T13:08:17Z	788	research	t-375	complete	0.85	🟢	t-375 Queue Cockpit design — 9 framing Qs, scheduler-order invariant, hybrid gesture plan, 5 impl candidates

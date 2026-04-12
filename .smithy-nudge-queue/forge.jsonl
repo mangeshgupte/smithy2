@@ -18,3 +18,5 @@
 {"message": "Queue updated. 7 tasks ready. Top: t-370 \u2014 P0 BUG FIX: TaskDetail class as single source of truth for t", "timestamp": "2026-04-12T12:57:19.499493"}
 {"message": "Queue updated. 4 tasks ready. Top: t-368 \u2014 Audit Poker drawer shipped-section \u2014 t-314 implemented 'ship", "timestamp": "2026-04-12T13:03:16.363402"}
 {"message": "Queue updated. 4 tasks ready. Top: t-375 \u2014 Queue Cockpit design study (ini-016). Primary UI for per-tas", "timestamp": "2026-04-12T13:04:54.518842"}
+{"message": "Queue updated. 8 tasks ready. Top: t-376 \u2014 Queue Cockpit backend aggregator \u2014 TaskDetail.list(project_r", "timestamp": "2026-04-12T13:08:46.929127"}
+{"message": "Queue updated. 8 tasks ready. Top: t-377 \u2014 Queue Cockpit page + gestures (MVP live). Dense table, SSE v", "timestamp": "2026-04-12T13:09:27.395185"}

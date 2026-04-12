@@ -17,9 +17,10 @@ except ImportError:
     def read_activity(*args, **kwargs):
         return []
 try:
-    from smithy.task_detail import TaskDetail
+    from smithy.task_detail import TaskDetail, TaskSummary
 except ImportError:
     TaskDetail = None
+    TaskSummary = None
 
 
 def _actor_from_request(request, default: str) -> str:
@@ -330,6 +331,28 @@ async def events():
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+@app.get("/api/cockpit")
+async def api_cockpit(stage: str = None, status: str = None,
+                      initiative: str = None, q: str = None):
+    """Queue Cockpit aggregator (t-376). Returns TaskSummary rows in scheduler order
+    with optional filters. Client never re-sorts — research/queue-cockpit.md §Q5.
+    """
+    if TaskDetail is None:
+        return JSONResponse({"error": "TaskDetail unavailable"}, status_code=500)
+    rows = TaskDetail.list(STATE_DIR, stage=stage, status=status,
+                           initiative=initiative, q=q)
+    total = 0
+    try:
+        total = len(_load_state().get("queue", []))
+    except Exception:
+        pass
+    return {
+        "rows": [r.to_dict() for r in rows],
+        "filtered": len(rows),
+        "total": total,
+    }
 
 
 @app.get("/api/task/{task_id}")

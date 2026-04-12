@@ -36,6 +36,48 @@ from typing import Optional
 
 
 @dataclass
+class TaskSummary:
+    """Lightweight row shape for list-context callers (Queue Cockpit, deep-dive lists).
+
+    No history, no worklog attachment — just the columns a row needs. Use TaskDetail.resolve()
+    when opening a drawer; use TaskSummary + TaskDetail.list() when rendering many rows.
+    """
+    id: str
+    desc: str = ""
+    stage: str = ""
+    status: str = "unknown"
+    priority: Optional[int] = None
+    human_priority: Optional[int] = None
+    priority_reason: Optional[str] = None
+    initiative_id: Optional[str] = None
+    blocked_by: list = field(default_factory=list)
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id, "desc": self.desc, "stage": self.stage,
+            "status": self.status, "priority": self.priority,
+            "human_priority": self.human_priority,
+            "priority_reason": self.priority_reason,
+            "initiative_id": self.initiative_id,
+            "blocked_by": self.blocked_by,
+        }
+
+    @classmethod
+    def from_queue_row(cls, row: dict) -> "TaskSummary":
+        return cls(
+            id=row.get("id", ""),
+            desc=row.get("desc", ""),
+            stage=row.get("stage", ""),
+            status=row.get("status", "unknown"),
+            priority=row.get("priority"),
+            human_priority=row.get("human_priority"),
+            priority_reason=row.get("priority_reason"),
+            initiative_id=row.get("initiative_id"),
+            blocked_by=row.get("blocked_by", []) or [],
+        )
+
+
+@dataclass
 class TaskDetail:
     """Canonical task detail aggregated from state + worklog + steering.log."""
     id: str
@@ -128,6 +170,42 @@ class TaskDetail:
             })
         detail.history = history
         return detail
+
+    @classmethod
+    def list(cls, project_root, *, stage=None, status=None, initiative=None,
+             q=None, order="scheduler"):
+        """Return [TaskSummary] filtered and ordered per the Queue Cockpit contract.
+
+        Order: scheduler key `(human_priority ?? inf, priority, id)` matches Poker's
+        ranked-queue helper exactly. The cockpit MUST NOT reimplement sort semantics —
+        research/queue-cockpit.md §Q5.
+
+        Filters are applied server-side so scheduler order holds post-filter. Archived
+        (worklog-only) entries are NOT included — list view is queue-scoped. Drawer
+        expansion via resolve() is the path to archived entries.
+        """
+        project_root = Path(project_root)
+        state = _load_state(project_root)
+        rows = []
+        q_lower = (q or "").lower().strip() or None
+        for row in state.get("queue", []):
+            if stage and row.get("stage") != stage:
+                continue
+            if status and row.get("status") != status:
+                continue
+            if initiative and row.get("initiative_id") != initiative:
+                continue
+            if q_lower and q_lower not in (row.get("desc") or "").lower():
+                continue
+            rows.append(TaskSummary.from_queue_row(row))
+
+        if order == "scheduler":
+            def key(t: TaskSummary):
+                hp = t.human_priority
+                return (hp if hp is not None else float("inf"),
+                        t.priority if t.priority is not None else 2, t.id)
+            rows.sort(key=key)
+        return rows
 
     # ---- Serialization for HTTP consumers ----
     def to_api_dict(self) -> dict:
