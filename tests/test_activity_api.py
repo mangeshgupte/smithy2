@@ -82,6 +82,13 @@ class TestActivityApi:
         assert data["count"] == 1
         assert data["entries"][0]["origin"] == "forge"
 
+    def test_poker_renders_activity_panel(self, poker):
+        r = poker.get("/")
+        assert r.status_code == 200
+        assert 'id="activity-panel"' in r.text
+        assert 'renderActivity' in r.text
+        assert '/api/activity?limit=20' in r.text
+
     @pytest.mark.parametrize("fixture_name", ["poker", "timeline"])
     def test_empty_project(self, fixture_name, request, tmp_path, monkeypatch):
         # Reseed with no logs

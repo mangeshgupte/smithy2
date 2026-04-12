@@ -290,3 +290,60 @@ code {
 @media (max-width: 600px) {
     .task-detail { width: 100vw; }
 }
+
+/* Activity side-panel (t-354) */
+.activity-panel {
+    position: fixed;
+    top: 80px;
+    right: 16px;
+    width: 280px;
+    max-height: 70vh;
+    background: var(--surface, #1a1a1a);
+    border: 1px solid var(--border, #333);
+    border-radius: 6px;
+    font-size: 12px;
+    color: var(--text, #ddd);
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+.activity-panel.collapsed .activity-body { display: none; }
+.activity-header {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border, #333);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+}
+.activity-toggle {
+    background: transparent;
+    border: none;
+    color: var(--text, #ddd);
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    padding: 0 6px;
+}
+.activity-body { overflow-y: auto; padding: 6px 0; }
+.activity-list { list-style: none; margin: 0; padding: 0; }
+.activity-entry {
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--surface-hover, #222);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.activity-entry:last-child { border-bottom: none; }
+.activity-entry.origin-forge { opacity: 0.72; }
+.activity-heat { font-family: var(--font-mono, monospace); font-size: 10px; color: var(--text-muted, #888); }
+.activity-line { font-family: var(--font-mono, monospace); }
+.activity-actor { color: var(--text-muted, #aaa); }
+.activity-task { color: var(--yellow, #c89c2a); }
+.activity-empty { padding: 12px; text-align: center; color: var(--text-muted, #888); font-style: italic; list-style: none; }
+.activity-fulllog { display: block; padding: 8px 12px; text-align: center; font-size: 11px; color: var(--text-muted, #888); border-top: 1px solid var(--border, #333); text-decoration: none; }
+.activity-fulllog:hover { color: var(--text, #ddd); }
+@media (max-width: 900px) {
+    .activity-panel { display: none; }
+}

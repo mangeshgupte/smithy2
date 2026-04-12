@@ -134,6 +134,19 @@
         <span>🗑️ Drop here to reject</span>
     </div>
 
+    <aside id="activity-panel" class="activity-panel" aria-label="Recent activity">
+        <header class="activity-header">
+            <span>📜 Activity</span>
+            <button class="activity-toggle" onclick="toggleActivityPanel()" title="Collapse">−</button>
+        </header>
+        <div class="activity-body">
+            <ul id="activity-list" class="activity-list">
+                <li class="activity-empty">Loading…</li>
+            </ul>
+            <a class="activity-fulllog" href="/api/activity?limit=500" target="_blank" id="activity-fulllog-link">view full log →</a>
+        </div>
+    </aside>
+
     <!-- Task detail side drawer (t-325) -->
     <div id="task-detail-backdrop" class="task-detail-backdrop" onclick="closeTaskDetail()"></div>
     <aside id="task-detail" class="task-detail" aria-hidden="true" role="dialog" aria-labelledby="td-id">
@@ -510,6 +523,67 @@
             rejectCard(dragEl.dataset.id);
         }
     });
+
+    // Activity side-panel (t-354) — polls /api/activity every 5s
+    const VERB_ICONS = {
+        pinned: '📌', unpinned: '📍', 'priority-set': '↑',
+        deferred: '⏸', undeferred: '▶', deleted: '🗑',
+        reordered: '↕', completed: '🟢', 'status-set': '•',
+    };
+
+    function _relTime(whenStr) {
+        try {
+            const t = new Date(whenStr).getTime();
+            const diff = (Date.now() - t) / 1000;
+            if (diff < 60) return 'just now';
+            if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+            if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+            return Math.floor(diff / 86400) + 'd ago';
+        } catch (e) { return whenStr; }
+    }
+
+    function renderActivity() {
+        fetch('/api/activity?limit=20')
+            .then(r => r.json())
+            .then(data => {
+                const list = document.getElementById('activity-list');
+                if (!list) return;
+                list.innerHTML = '';
+                if (!data.entries || data.entries.length === 0) {
+                    const li = document.createElement('li');
+                    li.className = 'activity-empty';
+                    li.textContent = '— no activity yet —';
+                    list.appendChild(li);
+                    return;
+                }
+                data.entries.forEach(e => {
+                    const li = document.createElement('li');
+                    li.className = 'activity-entry origin-' + (e.origin || 'unknown');
+                    const icon = VERB_ICONS[e.verb] || '•';
+                    const tid = e.task_id || '—';
+                    const actor = (e.actor || '').split(':').pop();
+                    li.innerHTML =
+                        '<span class="activity-heat">h' + e.heat + ' · ' +
+                            _relTime(e.when) + '</span>' +
+                        '<span class="activity-line">' + icon + ' ' +
+                            '<span class="activity-actor">' + actor + '</span> ' +
+                            e.verb + ' ' +
+                            '<span class="activity-task">' + tid + '</span></span>';
+                    list.appendChild(li);
+                });
+            })
+            .catch(() => {});
+    }
+
+    function toggleActivityPanel() {
+        const panel = document.getElementById('activity-panel');
+        panel.classList.toggle('collapsed');
+        const btn = panel.querySelector('.activity-toggle');
+        btn.textContent = panel.classList.contains('collapsed') ? '+' : '−';
+    }
+
+    renderActivity();
+    setInterval(renderActivity, 5000);
 
     function refreshPage() {
         const btn = document.querySelector('.refresh-btn');
