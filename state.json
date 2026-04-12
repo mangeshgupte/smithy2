@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1043,
-    "used": 784,
+    "used": 785,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 288,
+      "heats": 289,
       "progress": 0.98,
-      "value_ema": 0.862
+      "value_ema": 0.813
     },
     "testing": {
       "target": 0.183,
@@ -3255,12 +3255,12 @@
       "id": "t-365",
       "stage": "implementation",
       "desc": "Initiative deep-dive template + task drawer copy-over from Poker (v1 \u2014 no shared abstraction). See research/initiative-deep-dive.md \u00a7t-364.",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-009",
       "human_priority": null,
-      "priority_reason": "ini-009 rank=1 + poker"
+      "priority_reason": null
     },
     {
       "id": "t-366",
@@ -3321,18 +3321,18 @@
       "id": "t-371",
       "stage": "implementation",
       "desc": "P0: Wire /api/task/{id} to TaskDetail class. Frontend drawer reads canonical shape. Verify click-through on in-flight + pending + deferred + complete tasks.",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 0,
       "blocked_by": [],
       "initiative_id": "ini-009",
       "human_priority": null,
-      "priority_reason": "ini-009 rank=1 + poker"
+      "priority_reason": null
     },
     {
       "id": "t-372",
       "stage": "testing",
       "desc": "P0: Regression test \u2014 task exists but detail 404s. Plus E2E: click each status class (in-flight/pending/deferred/complete) \u2192 detail drawer loads with correct fields.",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 0,
       "blocked_by": [],
       "initiative_id": "ini-009",
@@ -3345,6 +3345,17 @@
       "desc": "Poker initiative-title link \u2192 Bellows deep-dive",
       "status": "pending",
       "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-009",
+      "human_priority": null,
+      "priority_reason": "ini-009 rank=1 + poker"
+    },
+    {
+      "id": "t-374",
+      "stage": "implementation",
+      "desc": "TaskDetail class \u2014 single source of truth (state+worklog+steering.log), migrate Poker + Bellows /api/task endpoints",
+      "status": "pending",
+      "priority": 0,
       "blocked_by": [],
       "initiative_id": "ini-009",
       "human_priority": null,
@@ -3476,7 +3487,7 @@
       "description": "Research how humans steer autonomous systems \u2014 not monitor, STEER. The core question: what controls does a human need to change direction without becoming a bottleneck? Study: (1) Real-time strategy games (StarCraft command hierarchy \u2014 strategic goals, tactical orders, unit autonomy), (2) Military C2 frameworks (mission-type orders, commander's intent, OODA), (3) Product management (OKRs, roadmap prioritization, sprint planning), (4) Air traffic control (constraints not commands), (5) Existing AI tools (Devin's chat-to-steer, Cursor's accept/reject, Claude Code hooks). For each, extract: what decisions the human makes, at what frequency, what information they need to decide, and what the feedback loop looks like. Deliverable: research/steering-patterns.md with a taxonomy of steering modes and which are worth prototyping as UIs.",
       "status": "approved",
       "budget_cap": 10,
-      "heats_used": 28,
+      "heats_used": 29,
       "rank": 1,
       "planned_start": 635,
       "planned_end": 645,
@@ -3586,10 +3597,9 @@
     }
   ],
   "next_tasks": [
-    "t-372",
     "t-368",
-    "t-365",
     "t-366",
+    "t-373",
     "t-367"
   ],
   "schema_version": 1

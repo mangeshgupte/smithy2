@@ -1,7 +1,8 @@
-"""Tests for /api/task/{id} worklog fallback (t-370 bug fix).
+"""Regression + E2E for task-detail drawer (t-370/t-371/t-372).
 
-Regression: tasks referenced by archived/purged queue rows 404'd in the Poker drawer.
-Fix: reconstruct a stub task from worklog rows so the drawer still renders.
+- t-370 regression: archived-queue task (worklog-only) no longer 404s.
+- t-371 verify: /api/task returns canonical shape for all 4 status classes.
+- t-372 E2E: Poker homepage renders drawer markup; deep-link ?task= round-trips.
 """
 
 import importlib
@@ -120,3 +121,37 @@ class TestClickThroughAllStatuses:
         # Canonical fields the drawer reads — missing-optional is fine (JS uses ?? / ||).
         for field in ("desc", "stage", "priority", "blocked_by"):
             assert field in body["task"]
+
+
+class TestDrawerE2E:
+    """Poker home page must render the drawer + deep-link the ?task= param.
+
+    Regression guard: the drawer HTML being missing would mean openTaskDetail()
+    has nothing to populate, which is how the 'task not found' class of bugs
+    manifests at the UI layer.
+    """
+
+    def test_home_renders_drawer_markup(self, poker_multistatus):
+        html = poker_multistatus.get("/").text
+        assert 'id="task-detail"' in html
+        assert 'id="td-desc"' in html
+        assert 'id="td-priority"' in html
+        assert "openTaskDetail" in html
+
+    def test_home_deep_link_task_param_preserved(self, poker_multistatus):
+        # JS reads window.location.search on mount; server must not strip it.
+        r = poker_multistatus.get("/?task=t-p04")
+        assert r.status_code == 200
+        assert "task-detail" in r.text
+
+    def test_api_task_endpoint_wired_from_page(self, poker_multistatus):
+        # The drawer's fetch target — if the route name changes, this catches it.
+        html = poker_multistatus.get("/").text
+        assert "'/api/task/'" in html or '"/api/task/"' in html
+
+    def test_archived_fallback_still_served(self, poker):
+        # Full-circuit regression: mimic the 'task not found for existing task'
+        # bug — task in worklog only, drawer fetch must succeed.
+        r = poker.get("/api/task/t-999")
+        assert r.status_code == 200
+        assert r.json()["task"]["id"] == "t-999"

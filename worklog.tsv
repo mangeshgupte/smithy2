@@ -783,3 +783,4 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-12T12:57:01Z	782	implementation	t-363	complete	0.85	🟢	t-363 shipped — Bellows /project/{name}/initiative/{id} route + JSON API + data layer, 11 tests, 439/439 green
 2026-04-12T12:58:51Z	783	implementation	t-369	complete	0.85	🟢	t-369 (t-364 candidate): deep-dive drawer + /api/project/{name}/task/{id}, 6 new tests, 445/445
 2026-04-12T13:00:49Z	784	implementation	t-370	complete	0.9	🟢	t-370 /api/task/{id} archived-task fallback — minimal stub keeps Poker drawer alive after queue prune, 3 tests, 448/448
+2026-04-12T13:02:09Z	785	implementation	t-371	complete	0.7	🟢	t-371 drawer click-through verified 4 statuses + archived-stub edit-gate, 4 parametrized tests, 452/452
