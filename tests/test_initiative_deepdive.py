@@ -150,14 +150,15 @@ class TestInitiativeHTML:
     def test_page_shows_task_groups(self, bellows):
         client, _ = bellows
         html = client.get("/project/proj-a/initiative/ini-1").text
-        # One of each group label should appear
+        # t-382: 4-section reorder — Queued folded into Upcoming, Deferred is <details>.
         assert "In-flight" in html
         assert "Upcoming" in html
-        assert "Queued" in html
         assert "Deferred" in html
         assert "Shipped" in html
         assert "t-003" in html
         assert "t-002" in html
+        # Queued tasks still render, just without their own heading.
+        assert "t-001" in html
 
     def test_page_404_unknown_initiative(self, bellows):
         client, _ = bellows

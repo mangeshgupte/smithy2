@@ -2,6 +2,8 @@
 
 import os
 import sys
+import csv
+import subprocess
 from pathlib import Path
 
 import json
@@ -345,6 +347,59 @@ async def project_feedback_send(request: Request, project_name: str):
     return RedirectResponse(f"/project/{project_name}/direct", status_code=303)
 
 
+def _worklog_latest_per_task(project_dir: Path) -> dict:
+    """Map task_id -> {heat, signal, value, ts} from the latest worklog row per task."""
+    path = project_dir / "worklog.tsv"
+    out = {}
+    if not path.exists():
+        return out
+    try:
+        with open(path) as f:
+            for row in csv.DictReader(f, delimiter="\t"):
+                tid = row.get("task_id")
+                if not tid:
+                    continue
+                out[tid] = {
+                    "heat": row.get("heat", ""),
+                    "signal": row.get("signal", ""),
+                    "value": row.get("value", ""),
+                    "ts": row.get("timestamp", ""),
+                }
+    except OSError:
+        pass
+    return out
+
+
+def _commit_sha_per_task(project_dir: Path, task_ids) -> dict:
+    """Best-effort: map task_id -> 7-char commit sha by scanning git log subjects.
+    Silent on any failure (non-repo, git missing, etc.). task_ids: iterable to match.
+    """
+    wanted = set(task_ids)
+    if not wanted:
+        return {}
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(project_dir), "log", "--pretty=%h|%s", "-n", "500"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if result.returncode != 0:
+            return {}
+    except (OSError, subprocess.SubprocessError):
+        return {}
+    out = {}
+    for line in result.stdout.splitlines():
+        sha, _, subj = line.partition("|")
+        if not sha:
+            continue
+        for tid in list(wanted):
+            if tid in subj and tid not in out:
+                out[tid] = sha
+        wanted -= set(out.keys())
+        if not wanted:
+            break
+    return out
+
+
 def _build_initiative_detail(project: dict, initiative_id: str):
     """Load an initiative's intent + grouped tasks + pinned-for-this-ini list.
 
@@ -400,13 +455,28 @@ def _build_initiative_detail(project: dict, initiative_id: str):
         elif status == "pending":
             queued.append(task)
 
-    def _task_sort_key(t):
-        raw = (t.get("id") or "").split("-")[-1]
+    # Shipped-ledger enrichment (t-382): commit sha + latest heat + signal emoji.
+    worklog_map = _worklog_latest_per_task(project_dir)
+    sha_map = _commit_sha_per_task(project_dir, [t.get("id") for t in shipped])
+
+    def _ship_sort_key(t):
+        info = worklog_map.get(t.get("id"), {})
         try:
-            return -int(raw)
+            heat = int(info.get("heat"))
+        except (TypeError, ValueError):
+            heat = -1
+        try:
+            id_n = int((t.get("id") or "").split("-")[-1])
         except ValueError:
-            return 0
-    shipped.sort(key=_task_sort_key)
+            id_n = 0
+        return (-heat, -id_n)
+    shipped.sort(key=_ship_sort_key)
+    for t in shipped:
+        info = worklog_map.get(t.get("id"), {})
+        t["shipped_heat"] = info.get("heat") or None
+        t["shipped_signal"] = info.get("signal") or ""
+        t["shipped_value"] = info.get("value") or ""
+        t["commit_sha"] = sha_map.get(t.get("id"))
 
     return {
         "project": project_name,

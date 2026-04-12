@@ -42,16 +42,59 @@
     </tr>
     {% endmacro %}
 
-    {% for group_label, key in [("In-flight", "in_flight"), ("Upcoming", "upcoming"), ("Queued", "queued"), ("Deferred", "deferred"), ("Shipped", "shipped")] %}
-        {% if detail.groups[key] %}
-        <h3>{{ group_label }} ({{ detail.counts[key] }}){% if key == "upcoming" %} <span class="pill">⭐ pinned via Bellows Upcoming</span>{% endif %}</h3>
-        <table class="task-group task-group-{{ key }}">
-            <tbody>
-            {% for task in detail.groups[key] %}{{ task_row(task) }}{% endfor %}
-            </tbody>
-        </table>
-        {% endif %}
-    {% endfor %}
+    {# 4-section reorder (t-382): In-flight · Upcoming (pinned → queued, deferred folded) · Shipped #}
+    {% if detail.groups.in_flight %}
+    <h3>In-flight ({{ detail.counts.in_flight }})</h3>
+    <table class="task-group task-group-in_flight"><tbody>
+        {% for task in detail.groups.in_flight %}{{ task_row(task) }}{% endfor %}
+    </tbody></table>
+    {% endif %}
+
+    {% set upcoming_total = detail.counts.upcoming + detail.counts.queued %}
+    <h3>Upcoming ({{ upcoming_total }})</h3>
+    {% if detail.groups.upcoming %}
+    <table class="task-group task-group-upcoming">
+        <caption class="task-group-caption"><span class="pill">⭐ pinned via Bellows Upcoming</span></caption>
+        <tbody>{% for task in detail.groups.upcoming %}{{ task_row(task) }}{% endfor %}</tbody>
+    </table>
+    {% endif %}
+    {% if detail.groups.queued %}
+    <table class="task-group task-group-queued"><tbody>
+        {% for task in detail.groups.queued %}{{ task_row(task) }}{% endfor %}
+    </tbody></table>
+    {% endif %}
+    {% if not detail.groups.upcoming and not detail.groups.queued %}
+    <p class="empty">— no upcoming work —</p>
+    {% endif %}
+    {% if detail.groups.deferred %}
+    <details class="task-group-deferred">
+        <summary>Deferred ({{ detail.counts.deferred }})</summary>
+        <table class="task-group task-group-deferred-inner"><tbody>
+            {% for task in detail.groups.deferred %}{{ task_row(task) }}{% endfor %}
+        </tbody></table>
+    </details>
+    {% endif %}
+
+    {% if detail.groups.shipped %}
+    <h3>Shipped ({{ detail.counts.shipped }})</h3>
+    <table class="task-group task-group-shipped shipped-ledger">
+        <thead>
+            <tr><th>id</th><th>heat</th><th></th><th>stage</th><th>desc</th><th>commit</th></tr>
+        </thead>
+        <tbody>
+        {% for task in detail.groups.shipped %}
+        <tr data-task-id="{{ task.id }}">
+            <td class="task-id"><a href="?task={{ task.id }}">{{ task.id }}</a></td>
+            <td class="shipped-heat">{% if task.shipped_heat %}h{{ task.shipped_heat }}{% else %}—{% endif %}</td>
+            <td class="shipped-signal">{{ task.shipped_signal or "" }}</td>
+            <td class="task-stage">{{ task.stage }}</td>
+            <td class="task-desc">{{ task.desc }}</td>
+            <td class="shipped-commit">{% if task.commit_sha %}<code>{{ task.commit_sha }}</code>{% else %}—{% endif %}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
 
     {% if detail.counts.total == 0 %}
     <p class="empty">No tasks linked to this initiative yet.</p>
