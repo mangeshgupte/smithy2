@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title_suffix %} — {{ detail.initiative.title }}{% endblock %}
+{% block content %}
+<header class="page-header">
+    <a href="{{ poker_url }}" class="back-link">← Poker</a>
+    <div class="project-title-row">
+        <h1>{{ detail.initiative.id }} · {{ detail.initiative.title }}</h1>
+        {% if detail.initiative.rank %}<span class="progress-badge">rank #{{ detail.initiative.rank }}</span>{% endif %}
+        <span class="progress-badge">{{ detail.initiative.status }}</span>
+    </div>
+    <p class="subtitle">
+        project: <a href="/project/{{ project.name }}">{{ project.name }}</a>
+        {% if detail.theme %}· theme: {{ detail.theme.name }}{% endif %}
+        · <a href="{{ intent_url }}/?focus={{ detail.initiative.id }}">Intent Editor ↗</a>
+    </p>
+</header>
+
+<section class="initiative-intent">
+    <h2>Intent</h2>
+    <p>{{ detail.initiative.description or "(no description)" }}</p>
+</section>
+
+{% if detail.initiative.heats_used is not none and detail.initiative.budget_cap %}
+<section class="initiative-progress">
+    <h2>Progress</h2>
+    <p>{{ detail.initiative.heats_used }} / {{ detail.initiative.budget_cap }} heats</p>
+</section>
+{% endif %}
+
+<section class="initiative-tasks">
+    <h2>Tasks ({{ detail.counts.total }})</h2>
+
+    {% macro task_row(task) %}
+    <tr data-task-id="{{ task.id }}">
+        <td class="task-id"><a href="?task={{ task.id }}">{{ task.id }}</a></td>
+        <td class="task-stage">{{ task.stage }}</td>
+        <td class="task-desc">{{ task.desc }}</td>
+        <td class="task-priority">M:p{{ task.priority }}</td>
+        <td class="task-human">
+            {% if task.human_priority is not none %}you:p{{ task.human_priority }}{% else %}you:—{% endif %}
+        </td>
+    </tr>
+    {% endmacro %}
+
+    {% for group_label, key in [("In-flight", "in_flight"), ("Upcoming", "upcoming"), ("Queued", "queued"), ("Deferred", "deferred"), ("Shipped", "shipped")] %}
+        {% if detail.groups[key] %}
+        <h3>{{ group_label }} ({{ detail.counts[key] }}){% if key == "upcoming" %} <span class="pill">⭐ pinned via Bellows Upcoming</span>{% endif %}</h3>
+        <table class="task-group task-group-{{ key }}">
+            <tbody>
+            {% for task in detail.groups[key] %}{{ task_row(task) }}{% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    {% endfor %}
+
+    {% if detail.counts.total == 0 %}
+    <p class="empty">No tasks linked to this initiative yet.</p>
+    {% endif %}
+</section>
+{% endblock %}

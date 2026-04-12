@@ -2,15 +2,15 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1043,
-    "used": 760,
+    "used": 781,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
     "research": {
       "target": 0.156,
-      "heats": 40,
+      "heats": 43,
       "progress": 0.9,
-      "value_ema": 0.812
+      "value_ema": 0.83
     },
     "planning": {
       "target": 0.21,
@@ -20,27 +20,27 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 277,
+      "heats": 285,
       "progress": 0.98,
-      "value_ema": 0.817
+      "value_ema": 0.843
     },
     "testing": {
       "target": 0.183,
-      "heats": 136,
+      "heats": 139,
       "progress": 0.88,
-      "value_ema": 0.856
+      "value_ema": 0.842
     },
     "editing": {
       "target": 0.183,
-      "heats": 181,
+      "heats": 185,
       "progress": 0.88,
-      "value_ema": 0.813
+      "value_ema": 0.788
     },
     "marketing": {
       "target": 0.219,
-      "heats": 93,
+      "heats": 96,
       "progress": 0.84,
-      "value_ema": 0.828
+      "value_ema": 0.795
     }
   },
   "allocator": {
@@ -48,8 +48,8 @@
       "research": 0.5,
       "planning": 0.5,
       "implementation": -0.5,
-      "testing": 0.005,
-      "editing": -0.378,
+      "testing": 0.011,
+      "editing": -0.372,
       "marketing": 0.5
     }
   },
@@ -3012,11 +3012,11 @@
       "id": "t-341",
       "stage": "marketing",
       "desc": "smithy weekly-retro CLI \u2014 renders steering.log + worklog into a weekly markdown digest. See research/steering-attribution-audit.md \u00a7t-341-candidate.",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 3,
       "blocked_by": [],
       "human_priority": null,
-      "priority_reason": "p3 + stage-balance"
+      "priority_reason": null
     },
     {
       "id": "t-342",
@@ -3027,6 +3027,273 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null
+    },
+    {
+      "id": "t-343",
+      "stage": "editing",
+      "desc": "CHANGELOG v1.9 \u2014 attribution block (t-338..t-342): steering.log, /api/steering-log, Timeline markers, X-Actor header, smithy steering-retro CLI. Retro-format ending per STRATEGY.md 2026-04-12.",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-344",
+      "stage": "marketing",
+      "desc": "Dogfood smithy steering-retro \u2014 run on the just-shipped v1.9 block (t-322..t-342), save output to research/steering-retro-first-run.md, note any gaps or UX issues found. Validates the CLI on real data.",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-345",
+      "stage": "testing",
+      "desc": "E2E steering.log trace: pin via Bellows \u2192 entry in steering.log \u2192 /api/steering-log returns it \u2192 Timeline marker renders. One integration test spanning the full attribution pipeline.",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-346",
+      "stage": "implementation",
+      "desc": "Fix steering-retro gaps 1-3 (research/steering-retro-first-run.md): rename 'tasks shipped'\u2192'heats completed', de-dup by task_id for true task count, filter task-less allocator rows, add empty-log footer so empty windows don't render silently.",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-347",
+      "stage": "implementation",
+      "desc": "smithy init --template=<shape> \u2014 wire research/intent-template-library.md's 6 templates (lib, cli, web, data-pipe, mobile, research) into init. Each template seeds identity.md intent bullets + state.json themes/initiatives from the YAML map. Add --list-templates and default menu if no flag.",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-348",
+      "stage": "implementation",
+      "desc": "steering-retro: add '## By actor' breakdown section to markdown output (gap 4, research/steering-retro-first-run.md \u00a7t-347-candidate). Low urgency, land when multi-actor data exists.",
+      "status": "complete",
+      "priority": 3,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-349",
+      "stage": "research",
+      "desc": "Activity side-panel design \u2014 retro \u00a76 #1 revisited post-attribution. Cross-UI panel fed by steering.log + recent heats. Scope: which UIs host it (Poker/Timeline/Bellows?), layout, interaction model, what entries look like. Output: research/activity-side-panel-design.md ending in impl candidates with value-theses.",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-350",
+      "stage": "editing",
+      "desc": "README + STEERING.md: document smithy init --template=<shape> (6 templates) and the steering-retro CLI. Both v1.9 features are undocumented in user-facing docs.",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-351",
+      "stage": "testing",
+      "desc": "smithy init --template regression: one test per template (6) asserts identity.md seeded correctly + state.json themes/initiatives match YAML. Protects t-347 from drift.",
+      "status": "complete",
+      "priority": 3,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-352",
+      "stage": "implementation",
+      "desc": "Shared activity.py helper \u2014 compose steering.log + worklog rows into a unified activity stream with common schema (ts, actor, kind, ref, summary). See research/activity-side-panel-design.md \u00a7t-352-candidate.",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-353",
+      "stage": "implementation",
+      "desc": "/api/activity endpoint on Poker + Timeline \u2014 serves unified activity stream from activity.py helper. ?since=<ts> support. See research/activity-side-panel-design.md \u00a7t-353-candidate.",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-354",
+      "stage": "implementation",
+      "desc": "Poker activity side-panel \u2014 collapsible right-rail, consumes /api/activity, shows latest N entries, SSE live refresh. See research/activity-side-panel-design.md \u00a7t-354-candidate.",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-355",
+      "stage": "testing",
+      "desc": "E2E activity panel: trigger steering event \u2192 activity.py stream includes it \u2192 /api/activity returns it \u2192 Poker panel renders it. Spans the MVP pipeline (t-352..t-354).",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-356",
+      "stage": "editing",
+      "desc": "CHANGELOG v1.10 \u2014 activity side-panel MVP (t-352-355), steering-retro Gap 4 actor breakdown (t-348), intent template regression tests (t-351), README/STEERING doc updates (t-350). Retro format.",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-357",
+      "stage": "marketing",
+      "desc": "WALKTHROUGH update \u2014 add activity side-panel section showing Poker's new right-rail (verbatim entry schema, 5s refresh, hidden <900px). One paragraph + example entry rows.",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-358",
+      "stage": "research",
+      "desc": "Audit STRATEGY.md 'What's Missing' list \u2014 what's still relevant vs superseded after v1.8-v1.10 shipping? Propose revised list. Low stakes but high signal-to-noise for future planning. Output: inline STRATEGY.md edit proposal in research/strategy-whats-missing-audit.md.",
+      "status": "complete",
+      "priority": 3,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-359",
+      "stage": "editing",
+      "desc": "STRATEGY.md inline edit \u2014 apply audit verdict from research/strategy-whats-missing-audit.md. Remove shipped items (PWA, teach-it-back, t-044/045/046), mark superseded items, add 5 new gaps. Update version-roadmap table to reflect v1.8-v1.10 reality. See \u00a7t-361-candidate.",
+      "status": "complete",
+      "priority": 3,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-360",
+      "stage": "implementation",
+      "desc": "Idle-state banner \u2014 when Forge's queue is empty and no in-flight heat, UIs show a subtle 'Forge idle \u2014 awaiting direction' banner. Makes silent idleness self-diagnosing. See research/strategy-whats-missing-audit.md \u00a7t-363-candidate.",
+      "status": "complete",
+      "priority": 3,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-361",
+      "stage": "implementation",
+      "desc": "Full activity log browser \u2014 dedicated page (Bellows or standalone) showing full steering.log + worklog with filters (actor, verb, since). 'view full log' link in side-panel already exists \u2014 this is the target. See research/strategy-whats-missing-audit.md \u00a7t-362-candidate.",
+      "status": "complete",
+      "priority": 3,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-362",
+      "stage": "research",
+      "desc": "Initiative deep-dive page design. Dedicated per-initiative page showing intent + all tasks + upcoming tasks. Audit: (1) route location (lean Bellows /project/{name}/initiative/{ini-id}), (2) intent schema in state.json initiatives[].intent \u2014 actual shape + read-only render with 'Edit in Intent Editor' link, (3) upcoming-per-initiative source (.upcoming.json filter vs separate pin list \u2014 recommend), (4) tasks section grouped by status with priority/reason/human_priority columns, (5) Poker click affordance (lean: title only), (6) breadcrumb Poker\u2192deep-dive\u2192task-drawer with ?task= preserved. Output: research/initiative-deep-dive.md \u2014 wireframe + schema audit + 3-4 impl candidates (value-thesis format).",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-009",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-363",
+      "stage": "implementation",
+      "desc": "Bellows route /project/{name}/initiative/{id} + JSON API + data layer",
+      "status": "in_progress",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-009",
+      "human_priority": null,
+      "priority_reason": "ini-009 rank=1 + poker"
+    },
+    {
+      "id": "t-364",
+      "stage": "implementation",
+      "desc": "Bellows /project/{name}/initiative/{ini-id} route + JSON API + 8-10 tests. Schema: use description as Intent (no initiatives[].intent field). See research/initiative-deep-dive.md \u00a7t-363.",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-009",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-365",
+      "stage": "implementation",
+      "desc": "Initiative deep-dive template + task drawer copy-over from Poker (v1 \u2014 no shared abstraction). See research/initiative-deep-dive.md \u00a7t-364.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-009",
+      "human_priority": null,
+      "priority_reason": "ini-009 rank=1 + poker"
+    },
+    {
+      "id": "t-366",
+      "stage": "implementation",
+      "desc": "Poker initiative title \u2192 deep-dive link (title-only <a>, preserves drag/expand). See research/initiative-deep-dive.md \u00a7t-365.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-009",
+      "human_priority": null,
+      "priority_reason": "ini-009 rank=1 + poker"
+    },
+    {
+      "id": "t-367",
+      "stage": "implementation",
+      "desc": "Intent Editor ?focus=<ini-id> scroll hint \u2014 optional polish from deep-dive 'Edit in Intent Editor' link. See research/initiative-deep-dive.md \u00a7t-366.",
+      "status": "pending",
+      "priority": 3,
+      "blocked_by": [],
+      "initiative_id": "ini-009",
+      "human_priority": null,
+      "priority_reason": "ini-009 rank=1 + poker"
+    },
+    {
+      "id": "t-368",
+      "stage": "research",
+      "desc": "Audit Poker drawer shipped-section \u2014 t-314 implemented 'shipped-since-viewed' behavior. Is it still live? Regressed? Or removed intentionally? Check ui-priority-poker template + current state.json. Output: brief note in research/initiative-deep-dive.md \u00a7addendum, and if regressed, surface fix as follow-up task.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-009",
+      "human_priority": null,
+      "priority_reason": "ini-009 rank=1 + poker"
     }
   ],
   "ideas": [
@@ -3154,11 +3421,11 @@
       "description": "Research how humans steer autonomous systems \u2014 not monitor, STEER. The core question: what controls does a human need to change direction without becoming a bottleneck? Study: (1) Real-time strategy games (StarCraft command hierarchy \u2014 strategic goals, tactical orders, unit autonomy), (2) Military C2 frameworks (mission-type orders, commander's intent, OODA), (3) Product management (OKRs, roadmap prioritization, sprint planning), (4) Air traffic control (constraints not commands), (5) Existing AI tools (Devin's chat-to-steer, Cursor's accept/reject, Claude Code hooks). For each, extract: what decisions the human makes, at what frequency, what information they need to decide, and what the feedback loop looks like. Deliverable: research/steering-patterns.md with a taxonomy of steering modes and which are worth prototyping as UIs.",
       "status": "approved",
       "budget_cap": 10,
-      "heats_used": 24,
+      "heats_used": 25,
       "rank": 1,
       "planned_start": 635,
       "planned_end": 645,
-      "viewed_at": "2026-04-12T18:13:58Z"
+      "viewed_at": "2026-04-12T19:55:47Z"
     },
     {
       "id": "ini-010",
@@ -3171,7 +3438,7 @@
       "rank": 2,
       "planned_start": 645,
       "planned_end": 655,
-      "viewed_at": "2026-04-12T18:14:00Z"
+      "viewed_at": "2026-04-12T19:55:45Z"
     },
     {
       "id": "ini-011",
@@ -3181,10 +3448,10 @@
       "status": "approved",
       "budget_cap": 15,
       "heats_used": 10,
-      "rank": 5,
+      "rank": 7,
       "planned_start": 650,
       "planned_end": 665,
-      "viewed_at": null
+      "viewed_at": "2026-04-12T19:52:52Z"
     },
     {
       "id": "ini-012",
@@ -3194,7 +3461,7 @@
       "status": "approved",
       "budget_cap": 15,
       "heats_used": 8,
-      "rank": 4,
+      "rank": 5,
       "planned_start": 650,
       "planned_end": 665,
       "viewed_at": null
@@ -3222,7 +3489,7 @@
       "heats_used": 5,
       "planned_start": 640,
       "planned_end": 655,
-      "rank": 7,
+      "rank": 4,
       "viewed_at": null
     },
     {
@@ -3233,7 +3500,7 @@
       "status": "active",
       "budget_cap": 25,
       "heats_used": 24,
-      "viewed_at": "2026-04-12T18:14:02Z",
+      "viewed_at": "2026-04-12T19:51:22Z",
       "rank": 3
     }
   ],
@@ -3263,6 +3530,11 @@
       "created": "2026-04-11T10:44:28.678810"
     }
   ],
-  "next_tasks": [],
+  "next_tasks": [
+    "t-368",
+    "t-365",
+    "t-366",
+    "t-367"
+  ],
   "schema_version": 1
 }

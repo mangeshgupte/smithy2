@@ -739,3 +739,44 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-12T00:32:16Z	738	implementation	t-316	complete	0.85	🟢	t-316: mtime-checked writes across 3 UIs + Bellows; 12 POST handlers; 312 green
 2026-04-12T10:40:33Z	739	marketing	t-320	complete	0.85	🟢	CHANGELOG v1.8 — covers ranking philosophy, steerability feature arc (t-312→319), queue-pop fix, diff view, UI concurrency, 312 tests
 2026-04-12T10:41:17Z	740	editing	t-321	complete	0.8	🟢	WALKTHROUGH Act 5 extended with task-level ranking beat — drawer row layout, M:p{N} + priority_reason, downrank POST, Bellows diff verify, auto-clear on complete. No stale Constraints UI refs left (line 87 is state.json schema example). Ports verified.
+2026-04-12T11:34:10Z	741	editing	t-322	complete	0.85	🟢	Drawer row escape fix: min-width:0 on card-body/card-expanded/drawer-sections/drawer-section/drawer-row + drawer-task-desc flex:1 1 auto. overflow:hidden on card-expanded prevents any child from rendering outside. Tests pass (89/89 steering UI).
+2026-04-12T11:35:26Z	742	research	t-323	complete	0.8	🟢	research/task-detail-ui.md: side drawer (not modal/page), click target = id+desc cells (preserves ↓/you:pN affordances), 3 bands (identity/priority/history), GET /api/task/{id} shape proposed for t-324, history derived from worklog (no schema bump), URL ?task=<id> for linkable/back-button. Wireframe included.
+2026-04-12T11:36:53Z	743	implementation	t-324	complete	0.85	🟢	GET /api/task/{id} endpoint in Poker. Returns {task, initiative, history, worklog}. History is current-priority snapshot (no schema bump per t-323 design). Worklog filtered by task_id. 404 on unknown, initiative null when unassigned. 6 tests, all steering UI (95) green.
+2026-04-12T11:38:18Z	744	implementation	t-325	complete	0.8	🟢	Task detail drawer wired per t-323 design. Click targets on drawer-task-id + drawer-task-desc only (preserves ↓ and you:pN). Fetches /api/task/{id}, renders 3 bands (identity/priority/history/worklog). hp editable + clear inline. ESC + backdrop close. URL ?task=<id> for deep-link + back-button. 95/95 steering UI tests green (no frontend tests added here — t-326 covers e2e).
+2026-04-12T11:39:07Z	745	testing	t-326	complete	0.85	🟢	E2E task detail test added to test_e2e_smoke.py. Validates: Poker HTML has openTaskDetail click handlers + task-detail aside element + deep-link hydration script; GET /api/task/{id} returns task/initiative/history/worklog with filtered worklog rows; POST /human-priority flows into next GET's history snapshot; 404 unknown. 116/116 tests green across suite.
+2026-04-12T11:41:03Z	746	research	t-327	complete	0.85	🟢	research/upcoming-tasks-view.md. Answers: (1) Bellows enumerates read-only via discover_projects; (2) new .upcoming.json file > global_rank field > derived — keeps state.json clean; (3) tick poll (3-5s) not immediate, Poker shows pin badge only at page load; (4) remove = unpin only, never touches task state; (5) global pin is sequencing layer not scheduling override — no leak into per-project human_priority; (6) new Bellows /upcoming route, not fifth UI. 5 impl candidates with value theses: t-328 endpoint+GC, t-329 page, t-330 pin/unpin/reorder POSTs, t-331 Poker 📌 badge, t-332 E2E. Schema diff minimal.
+2026-04-12T11:45:28Z	747	implementation	t-328	complete	0.85	🟢	/api/upcoming endpoint in Bellows. Reads .upcoming.json, resolves compound keys against live project state, filters stale (complete/rejected/missing/project-missing/state-unreadable) with toast metadata, rewrites file only on drop. Up-next sorted by (human_priority or inf, priority, project, id). Response contract locked for t-329: {pinned, up_next, gc}. 7 unit tests, 148/148 passing full suite. Fixed sys.path re-seat (same bug pattern as t-315 e2e fix).
+2026-04-12T11:47:07Z	748	implementation	t-329	complete	0.8	🟢	Bellows /upcoming page shipped. Two sections (Pinned with drag-reorder + × unpin, Up Next with 📌 pin), 5s poll /api/upcoming, GC toast for dropped pins, deep-link to Poker ?task=<id> per t-325. Nav tab added to base.html. Responsive grid collapses to essentials at <800px. Frontend POSTs to /api/upcoming/{pin,unpin,reorder} — those endpoints are t-330 scope, page degrades gracefully (buttons 404 until t-330 ships). 148/148 tests green.
+2026-04-12T11:48:01Z	749	implementation	t-330	complete	0.85	🟢	Pin/unpin/reorder endpoints on Bellows. mtime-precondition writes mirror v1.8 UI pattern. Pin: duplicate = no-op (200). Unpin: unknown = no-op (200). Reorder: dedup + skip entries with missing fields. Concurrent write = 409. 8 new tests (156 full suite).
+2026-04-12T11:51:48Z	750	testing	t-332	complete	0.85	🟢	t-332 shipped — chained E2E asserts full pin/GC/unpin/reorder/409 flow
+2026-04-12T11:53:32Z	751	editing	t-331	complete	0.8	🟢	t-331 shipped — 📌 badge surfaces cross-project pins in Poker drawer
+2026-04-12T11:57:51Z	752	implementation	t-333	complete	0.85	🟢	t-333 shipped — 3 lifecycle actions on task-detail drawer, 168/168 tests
+2026-04-12T12:01:26Z	753	editing	t-334	complete	0.8	🟢	t-334 shipped — --status deferred filter, 169/169 tests
+2026-04-12T12:02:51Z	754	implementation	t-335	complete	0.85	🟢	t-335 shipped — Deferred drawer section, 172/172 tests
+2026-04-12T12:04:17Z	755	research	t-336	complete	0.8	🟢	t-336 shipped — 6 intent templates with value theses
+2026-04-12T12:06:01Z	756	research	t-337	complete	0.8	🟢	t-337 shipped — attribution audit + 5 retro-format impl candidates
+2026-04-12T12:09:36Z	757	implementation	t-338	complete	0.85	🟢	t-338 shipped — attribution foundation, 7 wire-ups, 9 tests
+2026-04-12T12:10:21Z	758	implementation	t-339	complete	0.85	🟢	t-339 shipped — attribution read endpoint, 186/186 tests
+2026-04-12T12:14:27Z	759	implementation	t-340	complete	0.85	🟢	t-340 shipped — Timeline attribution markers wired to /api/steering-log
+2026-04-12T12:16:27Z	760	implementation	t-342	complete	0.75	🟢	t-342 shipped — X-Actor header hook in Bellows + Poker
+2026-04-12T12:18:32Z	761	marketing	t-341	complete	0.8	🟢	t-341 shipped — smithy steering-retro weekly digest CLI
+2026-04-12T12:19:50Z	762	testing	t-345	complete	0.85	🟢	t-345 shipped — E2E attribution trace passes
+2026-04-12T12:20:46Z	763	marketing	t-344	complete	0.8	🟢	t-344 shipped — retro dogfood with 5 gaps documented
+2026-04-12T12:22:27Z	764	editing	t-343	complete	0.8	🟢	t-343 shipped — CHANGELOG v1.9 published
+2026-04-12T12:24:19Z	765	implementation	t-346	complete	0.85	🟢	t-346 shipped — retro gaps 1-3 fixed; dogfood now reads clean
+2026-04-12T12:26:56Z	766	implementation	t-347	complete	0.85	🟢	t-347 shipped — smithy init --template wired
+2026-04-12T12:27:34Z	767	implementation	t-348	complete	0.75	🟢	t-348 shipped — by-actor breakdown
+2026-04-12T12:28:58Z	768	testing	t-351	complete	0.8	🟢	t-351 shipped — 6-shape regression suite
+2026-04-12T12:30:21Z	769	editing	t-350	complete	0.8	🟢	t-350 shipped — docs for init --template and steering-retro
+2026-04-12T12:33:45Z	770	research	t-349	complete	0.8	🟢	t-349 shipped — activity side-panel design doc
+2026-04-12T12:35:47Z	771	implementation	t-352	complete	0.85	🟢	t-352 shipped — activity.py helper + 7 tests
+2026-04-12T12:37:33Z	772	implementation	t-353	complete	0.85	🟢	t-353 shipped — /api/activity on Poker+Timeline, 8 tests
+2026-04-12T12:38:49Z	773	implementation	t-354	complete	0.85	🟢	t-354 shipped — Poker activity side-panel, 5s poll
+2026-04-12T12:39:38Z	774	testing	t-355	complete	0.85	🟢	t-355 shipped — E2E activity panel trace
+2026-04-12T12:42:08Z	775	editing	t-356	complete	0.8	🟢	t-356 shipped — CHANGELOG v1.10
+2026-04-12T12:42:41Z	776	marketing	t-357	complete	0.75	🟢	t-357 shipped — WALKTHROUGH activity section
+2026-04-12T12:44:04Z	777	research	t-358	complete	0.85	🟢	t-358 shipped — whats-missing audit
+2026-04-12T12:45:21Z	778	editing	t-359	complete	0.75	🟢	t-359 shipped — STRATEGY gaps refreshed
+2026-04-12T12:46:49Z	779	implementation	t-360	complete	0.85	🟢	t-360 shipped — idle-state banner (5 kinds)
+2026-04-12T12:47:52Z	780	implementation	t-361	complete	0.85	🟢	t-361 shipped — /activity full-log browser
+2026-04-12T12:54:15Z	781	research	t-362	complete	0.85	🟢	t-362 shipped — initiative deep-dive design: Bellows route, no intent field (use description), filter upcoming via queue, drawer copy-over

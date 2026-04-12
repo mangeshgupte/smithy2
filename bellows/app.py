@@ -340,6 +340,135 @@ async def project_feedback_send(request: Request, project_name: str):
     return RedirectResponse(f"/project/{project_name}/direct", status_code=303)
 
 
+def _build_initiative_detail(project: dict, initiative_id: str):
+    """Load an initiative's intent + grouped tasks + pinned-for-this-ini list.
+
+    Returns None if the initiative is not found. Task grouping order:
+    in_flight, upcoming (pinned), queued, deferred, shipped (newest-first).
+    """
+    project_dir = Path(project["dir"])
+    state_path = project_dir / "state.json"
+    try:
+        state = json.loads(state_path.read_text())
+    except (OSError, json.JSONDecodeError):
+        return None
+
+    ini = next((i for i in state.get("initiatives", [])
+                if i.get("id") == initiative_id), None)
+    if not ini:
+        return None
+
+    theme = next((t for t in state.get("themes", [])
+                  if t.get("id") == ini.get("theme_id")), None)
+
+    # Which of our tasks are pinned? Filter global .upcoming.json by this project + ini.
+    upcoming_data = _load_upcoming()
+    pinned_refs = {(r.get("project"), r.get("task_id"))
+                   for r in upcoming_data.get("pinned", [])}
+    project_name = project["name"]
+
+    # Active heat detection via .forge-checkpoint.json
+    checkpoint_task = None
+    cp_path = project_dir / ".forge-checkpoint.json"
+    if cp_path.exists():
+        try:
+            cp = json.loads(cp_path.read_text())
+            checkpoint_task = cp.get("task_id")
+        except (OSError, json.JSONDecodeError):
+            pass
+
+    in_flight, upcoming_list, queued, deferred, shipped = [], [], [], [], []
+    for task in state.get("queue", []):
+        if task.get("initiative_id") != initiative_id:
+            continue
+        tid = task.get("id")
+        status = task.get("status", "pending")
+        pinned = (project_name, tid) in pinned_refs
+        if tid == checkpoint_task or status == "in_flight":
+            in_flight.append(task)
+        elif status == "complete":
+            shipped.append(task)
+        elif status == "deferred":
+            deferred.append(task)
+        elif status == "pending" and pinned:
+            upcoming_list.append(task)
+        elif status == "pending":
+            queued.append(task)
+
+    def _task_sort_key(t):
+        raw = (t.get("id") or "").split("-")[-1]
+        try:
+            return -int(raw)
+        except ValueError:
+            return 0
+    shipped.sort(key=_task_sort_key)
+
+    return {
+        "project": project_name,
+        "initiative": ini,
+        "theme": theme,
+        "groups": {
+            "in_flight": in_flight,
+            "upcoming": upcoming_list,
+            "queued": queued,
+            "deferred": deferred,
+            "shipped": shipped,
+        },
+        "pinned_task_ids": sorted({tid for (p, tid) in pinned_refs
+                                   if p == project_name}),
+        "counts": {
+            "in_flight": len(in_flight),
+            "upcoming": len(upcoming_list),
+            "queued": len(queued),
+            "deferred": len(deferred),
+            "shipped": len(shipped),
+            "total": len(in_flight) + len(upcoming_list) + len(queued)
+                     + len(deferred) + len(shipped),
+        },
+    }
+
+
+@app.get("/api/project/{project_name}/initiative/{initiative_id}")
+async def api_project_initiative(project_name: str, initiative_id: str):
+    """JSON mirror of the initiative deep-dive page (t-363)."""
+    projects = discover_projects(PROJECTS_DIR)
+    project = next((p for p in projects if p["name"] == project_name), None)
+    if not project:
+        return JSONResponse({"error": "project not found"}, status_code=404)
+    detail = _build_initiative_detail(project, initiative_id)
+    if not detail:
+        return JSONResponse({"error": "initiative not found"}, status_code=404)
+    return detail
+
+
+@app.get("/project/{project_name}/initiative/{initiative_id}",
+         response_class=HTMLResponse)
+async def project_initiative_detail(request: Request, project_name: str,
+                                    initiative_id: str):
+    """Deep-dive page for a single initiative (t-363 stub; t-364 fleshes template)."""
+    projects = discover_projects(PROJECTS_DIR)
+    project = next((p for p in projects if p["name"] == project_name), None)
+    if not project:
+        return HTMLResponse("<h1>Project not found</h1>", status_code=404)
+    detail = _build_initiative_detail(project, initiative_id)
+    if not detail:
+        return HTMLResponse("<h1>Initiative not found</h1>", status_code=404)
+    poker_url = os.environ.get("URL_POKER", "http://localhost:8001")
+    intent_url = os.environ.get("URL_INTENT", "http://localhost:8003")
+    return templates.TemplateResponse(
+        request=request, name="initiative.html",
+        context={
+            "project": project,
+            "detail": detail,
+            "tab": "initiative",
+            "total_decisions": count_all_decisions(projects),
+            "steering_links": STEERING_LINKS,
+            "poker_url": poker_url,
+            "intent_url": intent_url,
+        },
+    )
+
+
 @app.get("/project/{project_name}/diff", response_class=HTMLResponse)
 async def project_heat_diff(request: Request, project_name: str, n: int = 1):
     """Per-heat diff view — what changed in state.json HEAD vs HEAD~n."""

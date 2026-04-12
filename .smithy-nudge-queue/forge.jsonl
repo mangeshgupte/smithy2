@@ -1,3 +1,17 @@
 {"message": "Queue updated. 3 tasks ready. Top: t-319 \u2014 Poker drawer part 2: add POST /api/task/<id>/human-priority ", "timestamp": "2026-04-12T00:23:22.279778"}
 {"message": "Queue updated. 2 tasks ready. Top: t-320 \u2014 CHANGELOG v1.8 bump covering this session's arc: ranking>con", "timestamp": "2026-04-12T10:37:07.399679"}
 {"message": "Queue updated. 6 tasks ready. Top: t-322 \u2014 Poker UI polish: done-task rows currently escape the drawer ", "timestamp": "2026-04-12T11:32:53.558514"}
+{"message": "Queue updated. 6 tasks ready. Top: t-328 \u2014 Bellows /api/upcoming endpoint + GC on read. Reads .upcoming", "timestamp": "2026-04-12T11:43:07.143437"}
+{"message": "Task t-334 queued. Run smithy queue-pop to start.", "timestamp": "2026-04-12T12:00:31.130247"}
+{"message": "Task t-335 queued. Run smithy queue-pop to start.", "timestamp": "2026-04-12T12:00:31.175871"}
+{"message": "Queue updated. 4 tasks ready. Top: t-334 \u2014 CLI list-tasks: add 'deferred' to --status Choice so users c", "timestamp": "2026-04-12T12:00:34.147291"}
+{"message": "Queue updated. 5 tasks ready. Top: t-338 \u2014 steering.log append-only file + shared logger helper. Wire i", "timestamp": "2026-04-12T12:06:39.851248"}
+{"message": "Queue updated. 3 tasks ready. Top: t-345 \u2014 E2E steering.log trace: pin via Bellows \u2192 entry in steering.", "timestamp": "2026-04-12T12:19:06.181658"}
+{"message": "Queue updated. 3 tasks ready. Top: t-346 \u2014 Fix steering-retro gaps 1-3 (research/steering-retro-first-r", "timestamp": "2026-04-12T12:22:59.694451"}
+{"message": "Queue updated. 3 tasks ready. Top: t-351 \u2014 smithy init --template regression: one test per template (6)", "timestamp": "2026-04-12T12:28:19.681516"}
+{"message": "Queue updated. 4 tasks ready. Top: t-352 \u2014 Shared activity.py helper \u2014 compose steering.log + worklog r", "timestamp": "2026-04-12T12:34:21.145695"}
+{"message": "Queue updated. 3 tasks ready. Top: t-356 \u2014 CHANGELOG v1.10 \u2014 activity side-panel MVP (t-352-355), steer", "timestamp": "2026-04-12T12:40:28.206152"}
+{"message": "Queue updated. 3 tasks ready. Top: t-359 \u2014 STRATEGY.md inline edit \u2014 apply audit verdict from research/", "timestamp": "2026-04-12T12:44:48.303846"}
+{"message": "Task t-362 queued. Run smithy queue-pop to start.", "timestamp": "2026-04-12T12:50:21.556085"}
+{"message": "Queue updated. 3 tasks ready. Top: t-365 \u2014 Initiative deep-dive template + task drawer copy-over from P", "timestamp": "2026-04-12T12:54:53.304187"}
+{"message": "Queue updated. 4 tasks ready. Top: t-368 \u2014 Audit Poker drawer shipped-section \u2014 t-314 implemented 'ship", "timestamp": "2026-04-12T12:55:19.794834"}
