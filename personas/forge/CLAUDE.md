@@ -107,7 +107,7 @@ Notes: <anything Marshal should know — proposed tasks, blockers, surprises>
 """)
 ```
 
-`SendMessage` is the **only** coordination channel with teammates — plain text output is not visible to Marshal or Anvil. Do NOT write to `outbox.md` or any dispatch file; those are superseded by Agent Teams messaging.
+`SendMessage` is the **only** coordination channel with teammates — plain text output is not visible to Marshal or Anvil.
 
 After `drain-nudges forge`, loop back to Step 1.
 
@@ -160,5 +160,5 @@ All relative to this persona directory:
 - Memory: `../../MEMORY_DAILY.md`, `../../MEMORY_WEEKLY.md`
 - Identity/Strategy: `../../identity.md`, `../../STRATEGY.md`
 - Human-facing logs: `../../inbox.md` (human-submitted ideas for Marshal to triage), `../../feedback.md` (human feedback Forge acts on during idle)
-- Teammate messaging: `SendMessage` tool (NOT files — `outbox.md` and `dispatch/` are legacy and unused)
+- Teammate messaging: `SendMessage` tool (NOT files)
 - Research: `../../research/`

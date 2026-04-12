@@ -1,4 +1,4 @@
-"""Integration tests for Marshal→Forge dispatch cycle (t-275).
+"""Integration tests for Marshal→Forge nudge cycle (t-275).
 
 Tests the full queue-push → queue-pop → end-heat → set-next-tasks flow,
 verifying nudge integration at each step.

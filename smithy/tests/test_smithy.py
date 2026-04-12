@@ -236,7 +236,6 @@ class TestInit:
         assert data["personas"] is True
         assert (target / "personas" / "anvil").is_dir()
         assert (target / "personas" / "forge").is_dir()
-        assert (target / "dispatch" / "anvil-to-forge.md").exists()
 
     def test_protocol_dir_created(self, tmp_path, runner):
         target = tmp_path / "proto-project"

@@ -1717,9 +1717,6 @@ def init(ctx, project_name, target, with_personas):
     if with_personas:
         for persona in ["anvil", "forge"]:
             (target_path / "personas" / persona).mkdir(parents=True, exist_ok=True)
-        (target_path / "dispatch").mkdir(exist_ok=True)
-        (target_path / "dispatch" / "anvil-to-forge.md").write_text("# Dispatch: Anvil → Forge\n\n")
-        (target_path / "dispatch" / "forge-to-anvil.md").write_text("# Dispatch: Forge → Anvil\n\n")
 
     # Copy protocol files from forge root
     import shutil
