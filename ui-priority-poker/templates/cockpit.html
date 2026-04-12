@@ -65,6 +65,16 @@
         .c-inline-history { font-size: 11px; color: var(--text-muted, #aaa); }
         .c-inline-history ul { margin: 4px 0 0 16px; padding: 0; }
         .c-inline-history li { margin: 1px 0; }
+        /* t-390: section headers — dense, muted, click to collapse. */
+        tr.c-section-head td { padding: 10px 8px 4px; border-bottom: none;
+                               font-size: 10px; text-transform: uppercase;
+                               letter-spacing: 0.08em; color: var(--text-muted, #888);
+                               cursor: pointer; user-select: none; }
+        tr.c-section-head:hover td { color: var(--text, #ddd); }
+        .c-section-chip { display: inline-block; margin-left: 6px; padding: 0 5px;
+                          background: var(--surface-hover, #222); color: var(--text, #ddd);
+                          border-radius: 8px; font-size: 10px; }
+        .c-section-caret { display: inline-block; width: 10px; }
         /* t-389: DnD affordances. Pending rows are draggable. */
         .cockpit-table tr[draggable="true"] { cursor: grab; }
         .cockpit-table tr.c-dragging { opacity: 0.4; }
@@ -188,7 +198,41 @@
     // so SSE refreshes don't collapse the user's open panels.
     const expanded = new Set();
 
+    // t-390: collapsible section state. Pending is always open. Deferred and
+    // Complete default collapsed; persist across SSE refreshes in-page.
+    const sectionOpen = { pending: true, deferred: false, complete: false };
+
+    function splitSections(rows) {
+        const pending = [], deferred = [], complete = [];
+        rows.forEach(r => {
+            if (r.status === 'deferred') deferred.push(r);
+            else if (r.status === 'complete') complete.push(r);
+            else pending.push(r);   // pending + in_flight + in_progress
+        });
+        // Complete: reverse by last worklog timestamp (newest first). Server
+        // order is scheduler; we re-sort just this section.
+        complete.sort((a, b) => (b.last_worklog_ts || '').localeCompare(a.last_worklog_ts || ''));
+        return { pending, deferred, complete };
+    }
+
+    function renderSectionHead(body, key, label, count) {
+        const tr = document.createElement('tr');
+        tr.className = 'c-section-head';
+        tr.dataset.section = key;
+        const caret = sectionOpen[key] ? '▾' : '▸';
+        tr.innerHTML = `<td colspan="11"><span class="c-section-caret">${caret}</span>` +
+                       ` ${label} <span class="c-section-chip">${count}</span></td>`;
+        tr.addEventListener('click', () => {
+            sectionOpen[key] = !sectionOpen[key];
+            render(lastData);
+        });
+        body.appendChild(tr);
+    }
+
+    let lastData = { rows: [], filtered: 0, total: 0 };
+
     function render(data) {
+        lastData = data;
         document.getElementById('stats').textContent =
             data.filtered + ' / ' + data.total + ' tasks';
         const body = document.getElementById('rows');
@@ -200,7 +244,20 @@
             body.innerHTML = `<tr><td colspan="11" class="c-empty">${msg}</td></tr>`;
             return;
         }
-        data.rows.forEach(t => {
+        const sections = splitSections(data.rows);
+        const plan = [
+            ['pending', 'Pending', sections.pending],
+            ['deferred', 'Deferred', sections.deferred],
+            ['complete', 'Complete', sections.complete],
+        ];
+        plan.forEach(([key, label, rows]) => {
+            if (!rows.length) return;
+            renderSectionHead(body, key, label, rows.length);
+            if (sectionOpen[key]) rows.forEach(t => renderRow(body, t));
+        });
+    }
+
+    function renderRow(body, t) {
             const tr = document.createElement('tr');
             if (t.status === 'deferred') tr.classList.add('deferred-row');
             tr.dataset.taskId = t.id;
@@ -239,7 +296,6 @@
                 const panel = buildInlinePanel(t);
                 body.appendChild(panel);
             }
-        });
     }
 
     function buildInlinePanel(t) {

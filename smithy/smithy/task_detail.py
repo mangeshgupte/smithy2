@@ -88,6 +88,9 @@ class TaskSummary:
     blocked_by: list = field(default_factory=list)
     # t-379: heats since the task first appeared in worklog; None if never logged.
     age_heats: Optional[int] = None
+    # t-390: last worklog timestamp for this task — Cockpit Complete section
+    # sorts by this descending. None if the task has no worklog rows yet.
+    last_worklog_ts: Optional[str] = None
 
     def to_dict(self) -> dict:
         return {
@@ -98,6 +101,7 @@ class TaskSummary:
             "initiative_id": self.initiative_id,
             "blocked_by": self.blocked_by,
             "age_heats": self.age_heats,
+            "last_worklog_ts": self.last_worklog_ts,
         }
 
     @classmethod
@@ -237,15 +241,17 @@ class TaskDetail:
                 continue
             rows.append(TaskSummary.from_queue_row(row))
 
-        # t-379 age enrichment: heats since first worklog mention. Single pass
-        # over worklog.tsv so the N+1 trap flagged in research stays closed.
-        first_heat = _worklog_first_heats(project_root)
+        # t-379 age + t-390 last-ts enrichment: single worklog pass populates
+        # both first-heat (for age) and last-timestamp (for Complete sort).
+        first_heat, last_ts = _worklog_first_and_last(project_root)
         current_heat = (state.get("budget") or {}).get("used")
-        if isinstance(current_heat, int):
-            for r in rows:
-                fh = first_heat.get(r.id)
-                if isinstance(fh, int):
-                    r.age_heats = max(0, current_heat - fh)
+        for r in rows:
+            fh = first_heat.get(r.id)
+            if isinstance(current_heat, int) and isinstance(fh, int):
+                r.age_heats = max(0, current_heat - fh)
+            ts = last_ts.get(r.id)
+            if ts:
+                r.last_worklog_ts = ts
 
         if order == "scheduler":
             rows.sort(key=scheduler_key)
@@ -288,11 +294,25 @@ def _load_state(project_root: Path) -> dict:
 
 
 def _worklog_first_heats(project_root: Path) -> dict:
-    """Map task_id -> earliest heat number seen in worklog.tsv (t-379)."""
+    """Map task_id -> earliest heat number seen in worklog.tsv (t-379).
+
+    Retained as a thin wrapper over _worklog_first_and_last for callers that
+    don't need the last-timestamp map.
+    """
+    return _worklog_first_and_last(project_root)[0]
+
+
+def _worklog_first_and_last(project_root: Path) -> "tuple[dict, dict]":
+    """Single-pass worklog aggregation.
+
+    Returns ({task_id: min_heat}, {task_id: last_timestamp}). Last-timestamp is
+    the worklog row's timestamp field for the largest heat seen per task, which
+    matches completion order for terminal-stage rows (t-390).
+    """
     path = project_root / "worklog.tsv"
     if not path.exists():
-        return {}
-    out = {}
+        return {}, {}
+    firsts, lasts, last_heats = {}, {}, {}
     try:
         with open(path) as f:
             for row in csv.DictReader(f, delimiter="\t"):
@@ -303,11 +323,14 @@ def _worklog_first_heats(project_root: Path) -> dict:
                     heat = int(row.get("heat", ""))
                 except (TypeError, ValueError):
                     continue
-                if tid not in out or heat < out[tid]:
-                    out[tid] = heat
+                if tid not in firsts or heat < firsts[tid]:
+                    firsts[tid] = heat
+                if tid not in last_heats or heat >= last_heats[tid]:
+                    last_heats[tid] = heat
+                    lasts[tid] = row.get("timestamp", "") or lasts.get(tid, "")
     except OSError:
         pass
-    return out
+    return firsts, lasts
 
 
 def _read_worklog_for_task(project_root: Path, task_id: str) -> list:
