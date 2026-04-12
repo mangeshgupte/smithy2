@@ -616,3 +616,12 @@ All 6 stages now have at least 1 heat. 6 human ideas received, all implemented. 
 - **Research on /loop and /schedule**: Claude Code skills that could automate session cycling.
 - **Checkpoint files**: write .forge-checkpoint.json before risky work (researched, not yet implemented).
 - **Prune completed tasks**: queue has 4 "complete" entries taking up space.
+
+
+**⚠️ Initiative ini-009 (Steering patterns research) has reached its budget cap (10 heats).**
+
+
+**⚠️ Initiative ini-009 (Steering patterns research) has reached its budget cap (10 heats).**
+
+
+**⚠️ Initiative ini-009 (Steering patterns research) has reached its budget cap (10 heats).**

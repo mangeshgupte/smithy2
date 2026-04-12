@@ -96,6 +96,7 @@ header h1 { font-size: 24px; letter-spacing: -0.5px; }
 
 .card-body {
     flex: 1;
+    min-width: 0;
     padding: 14px 16px;
 }
 
@@ -116,7 +117,7 @@ header h1 { font-size: 24px; letter-spacing: -0.5px; }
 .card-body { cursor: pointer; }
 
 /* Expanded state */
-.card-expanded { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+.card-expanded { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); min-width: 0; overflow: hidden; }
 .poker-card.expanded .card-expanded { display: block; }
 .poker-card.expanded .card-summary { display: none; }
 
@@ -217,14 +218,14 @@ code {
 }
 
 /* t-314: Drawer sections (in-flight / queued / shipped since viewed) */
-.drawer-sections { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
-.drawer-section { border-top: 1px solid var(--surface); padding-top: 8px; }
+.drawer-sections { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.drawer-section { border-top: 1px solid var(--surface); padding-top: 8px; min-width: 0; }
 .drawer-section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 4px; }
-.drawer-row { display: flex; align-items: center; gap: 8px; padding: 3px 4px; font-size: 12px; font-family: var(--font-mono, monospace); border-radius: 3px; }
+.drawer-row { display: flex; align-items: center; gap: 8px; padding: 3px 4px; font-size: 12px; font-family: var(--font-mono, monospace); border-radius: 3px; min-width: 0; max-width: 100%; box-sizing: border-box; }
 .drawer-row:hover { background: var(--surface); }
 .drawer-row.status-complete { opacity: 0.55; }
 .drawer-task-id { color: var(--text-muted); flex-shrink: 0; min-width: 48px; }
-.drawer-task-desc { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.drawer-task-desc { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .drawer-task-mp { color: var(--text-muted); flex-shrink: 0; }
 .drawer-task-reason { color: var(--text-muted); opacity: 0.7; flex-shrink: 0; }
 .drawer-task-hp { color: var(--text-muted); flex-shrink: 0; }

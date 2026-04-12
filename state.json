@@ -2,15 +2,15 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 843,
-    "used": 680,
+    "used": 740,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
     "research": {
       "target": 0.156,
-      "heats": 34,
+      "heats": 36,
       "progress": 0.9,
-      "value_ema": 0.838
+      "value_ema": 0.819
     },
     "planning": {
       "target": 0.21,
@@ -20,27 +20,27 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 248,
+      "heats": 266,
       "progress": 0.98,
-      "value_ema": 0.855
+      "value_ema": 0.818
     },
     "testing": {
       "target": 0.183,
-      "heats": 120,
+      "heats": 134,
       "progress": 0.88,
-      "value_ema": 0.864
+      "value_ema": 0.861
     },
     "editing": {
       "target": 0.183,
-      "heats": 159,
+      "heats": 178,
       "progress": 0.88,
-      "value_ema": 0.811
+      "value_ema": 0.816
     },
     "marketing": {
       "target": 0.219,
-      "heats": 86,
+      "heats": 93,
       "progress": 0.84,
-      "value_ema": 0.704
+      "value_ema": 0.828
     }
   },
   "allocator": {
@@ -48,8 +48,8 @@
       "research": 0.5,
       "planning": 0.5,
       "implementation": -0.5,
-      "testing": 0.009,
-      "editing": -0.365,
+      "testing": 0.003,
+      "editing": -0.375,
       "marketing": 0.5
     }
   },
@@ -60,7 +60,9 @@
       "desc": "Repo map generation for non-dogfood projects",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-045",
@@ -68,7 +70,9 @@
       "desc": "Lint\u2192test\u2192fix loop for implementation stage",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-046",
@@ -76,7 +80,9 @@
       "desc": "Self-critique (Reflexion-style) per heat",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-051",
@@ -84,7 +90,9 @@
       "desc": "Commissioner: tap-to-decide on decision cards",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-055",
@@ -92,7 +100,9 @@
       "desc": "Commissioner: notification tier logic (push/quiet/in-app classification based on priority)",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-056",
@@ -100,7 +110,9 @@
       "desc": "Tutor: per-card review tracking for accurate Review Summary stats (strong/weak areas)",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-057",
@@ -108,7 +120,9 @@
       "desc": "Tutor: weekly progress chart on Review landing (bar chart of cards reviewed per day)",
       "status": "complete",
       "priority": 3,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-058",
@@ -116,7 +130,9 @@
       "desc": "Write tests for tutor/cards.py \u2014 card creation, SM-2 scheduling, drill generation, streak",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-059",
@@ -124,7 +140,9 @@
       "desc": "Tutor README update: document new 3-tab UI, card creation, review workflow, running instructions",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-060",
@@ -132,7 +150,9 @@
       "desc": "Tutor: Teach it back mode",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-061",
@@ -140,7 +160,9 @@
       "desc": "Tutor: card editing from deck view",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-062",
@@ -148,7 +170,9 @@
       "desc": "Tutor: 20 integration tests",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-063",
@@ -156,7 +180,9 @@
       "desc": "Commissioner: responsive phone CSS",
       "status": "complete",
       "priority": 3,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-064",
@@ -164,7 +190,9 @@
       "desc": "Tutor: session progress tracking",
       "status": "complete",
       "priority": 3,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-065",
@@ -172,7 +200,9 @@
       "desc": "CHANGELOG v0.8",
       "status": "complete",
       "priority": 3,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-066",
@@ -180,7 +210,9 @@
       "desc": "Tutor: progress bar on subject cards should use subject accent color (not green)",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-067",
@@ -188,7 +220,9 @@
       "desc": "Tutor: empty state improvements \u2014 better messaging when no cards, no reviews, no progress",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-068",
@@ -196,7 +230,9 @@
       "desc": "Commissioner: write tests for forge_reader.py \u2014 project discovery, decision extraction, tier classification",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-069",
@@ -204,7 +240,9 @@
       "desc": "Tutor: code syntax highlighting in exercise code blocks (basic keyword coloring via CSS)",
       "status": "complete",
       "priority": 3,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-070",
@@ -212,7 +250,9 @@
       "desc": "Commissioner: project card shows stage that's furthest behind (bottleneck indicator)",
       "status": "complete",
       "priority": 3,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-076",
@@ -220,7 +260,9 @@
       "desc": "Smithy: add-task and complete-task commands",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-077",
@@ -228,7 +270,9 @@
       "desc": "Smithy: commit command (git add + commit with [stage] prefix)",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-078",
@@ -238,7 +282,9 @@
       "priority": 2,
       "blocked_by": [
         "t-076"
-      ]
+      ],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-079",
@@ -246,7 +292,9 @@
       "desc": "Test the new smithy commands",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-080",
@@ -254,7 +302,9 @@
       "desc": "Fix Teach It Back CTA: success \u2192 'Continue to Next Topic' as primary, 'Try Again' secondary/removed",
       "status": "complete",
       "priority": 0,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-081",
@@ -262,7 +312,9 @@
       "desc": "Verify Teach It Back CTA fix renders correctly",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-082",
@@ -270,7 +322,9 @@
       "desc": "Smithy: init command (replace forge-init.sh)",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-083",
@@ -278,7 +332,9 @@
       "desc": "Update tutor feedback.md cursor + annotate processed entry",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-084",
@@ -286,7 +342,9 @@
       "desc": "Smithy: test init command (scaffold, validate, with-personas)",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-085",
@@ -294,7 +352,9 @@
       "desc": "Smithy: add memory-write command (append to MEMORY_DAILY.md)",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-086",
@@ -302,7 +362,9 @@
       "desc": "Tutor: fix code-input textarea to use monospace font matching syntax.js",
       "status": "complete",
       "priority": 3,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-087",
@@ -310,7 +372,9 @@
       "desc": "Update CHANGELOG with smithy CLI + recent fixes",
       "status": "complete",
       "priority": 3,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-088",
@@ -318,7 +382,9 @@
       "desc": "smithy sync-stages: recalculate stage heats from worklog.tsv to fix drift",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-089",
@@ -326,7 +392,9 @@
       "desc": "Full system test + patrol after sync-stages fix",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-090",
@@ -334,7 +402,9 @@
       "desc": "Final STRATEGY + CHANGELOG update for heat 500 milestone",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-091",
@@ -342,7 +412,9 @@
       "desc": "Plan 20-heat sprint: audit current state, generate task backlog focused on visual design + polish",
       "status": "complete",
       "priority": 0,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-092",
@@ -350,7 +422,9 @@
       "desc": "Tutor: redesign subject cards with stronger visual hierarchy \u2014 larger accent bars, clearer progress, topic count badges",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-093",
@@ -358,7 +432,9 @@
       "desc": "Tutor: polished empty states \u2014 illustrated messaging with guidance for no-cards, no-reviews, first-visit",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-094",
@@ -366,7 +442,9 @@
       "desc": "Tutor: consistent button styling \u2014 full-width primary CTA, secondary inline, standardized sizes",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-095",
@@ -374,7 +452,9 @@
       "desc": "Commissioner: richer activity feed \u2014 stage-colored left borders, signal dots, expandable heat details",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-096",
@@ -382,7 +462,9 @@
       "desc": "Commissioner: enhanced budget visualization \u2014 segmented bar with stage breakdown, forecast line",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-097",
@@ -390,7 +472,9 @@
       "desc": "Commissioner: decision card visual weight \u2014 priority badges, loading/success feedback on buttons",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-098",
@@ -398,7 +482,9 @@
       "desc": "Commissioner: delightful empty states \u2014 illustration + contextual messaging for all-clear/no-projects",
       "status": "complete",
       "priority": 3,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-099",
@@ -406,7 +492,9 @@
       "desc": "Tutor: exercise feedback animations \u2014 correct/wrong visual distinction with color flash + icon",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-100",
@@ -414,7 +502,9 @@
       "desc": "Visual regression check: verify both apps render correctly after design changes",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-101",
@@ -422,7 +512,9 @@
       "desc": "Update READMEs with visual design changes and current screenshots descriptions",
       "status": "complete",
       "priority": 3,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-102",
@@ -430,7 +522,9 @@
       "desc": "CHANGELOG v1.0: visual design sprint summary + all improvements",
       "status": "complete",
       "priority": 3,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-103",
@@ -438,7 +532,9 @@
       "desc": "Tutor: review session polish \u2014 card flip animation, confidence rating stars, session complete celebration",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-104",
@@ -446,7 +542,9 @@
       "desc": "Write AAR for heats 500-517 sprint + dispatch report to Anvil for new visual design sprint",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-105",
@@ -454,7 +552,9 @@
       "desc": "smithy update command: copy protocol files to existing project (replace forge-update.sh)",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-106",
@@ -462,7 +562,9 @@
       "desc": "smithy repomap command: generate research/repo-map.md with file stats, dir structure, key files (replace forge-repomap.sh)",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-107",
@@ -470,7 +572,9 @@
       "desc": "Test smithy update and repomap commands",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-108",
@@ -478,7 +582,9 @@
       "desc": "Delete forge-*.sh scripts after CLI replacements are tested",
       "status": "complete",
       "priority": 3,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-109",
@@ -486,7 +592,9 @@
       "desc": "Mid-sprint review: assess visual design progress, reprioritize remaining tasks, identify testing needs",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-110",
@@ -494,7 +602,9 @@
       "desc": "Tutor: update welcome card copy and first-visit experience messaging",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-111",
@@ -502,7 +612,9 @@
       "desc": "Rename commissioner app to Bellows: directory, FastAPI title, pyproject.toml, templates, CSS, README, all references",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-112",
@@ -510,7 +622,9 @@
       "desc": "Rename ai-coworker to Bellows in state.json, identity.md, README.md, STRATEGY.md, hooks, research docs, and all other references",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-113",
@@ -518,7 +632,9 @@
       "desc": "Verify Bellows rename: app starts, grep -ri commissioner and ai-coworker return no hits outside git history/worklog",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-114",
@@ -526,7 +642,9 @@
       "desc": "Full regression suite: all 152 tests + route rendering + patrol after visual design sprint",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-115",
@@ -534,7 +652,9 @@
       "desc": "Plan remaining heats: update STRATEGY.md with visual design sprint results, reprioritize remaining tasks",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-116",
@@ -542,7 +662,9 @@
       "desc": "Update CHANGELOG v1.1 with smithy CLI additions (update, repomap, shell script removal)",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-117",
@@ -550,7 +672,9 @@
       "desc": "Final AAR for heats 518-547: visual design sprint + CLI completion",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-118",
@@ -558,7 +682,9 @@
       "desc": "Final test + patrol before handoff",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-119",
@@ -566,7 +692,9 @@
       "desc": "Plan 20-heat sprint: Bellows rename + new tutor content + system polish",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-120",
@@ -574,7 +702,9 @@
       "desc": "Research: what makes a good 4th tutor subject? Evaluate options: logic/puzzles, typing, basic science, geography",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-121",
@@ -582,7 +712,9 @@
       "desc": "Tutor: add a 4th subject (logic/critical thinking puzzles \u2014 no external dependencies)",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-122",
@@ -590,7 +722,9 @@
       "desc": "Commissioner: add a Direct tab quick-action for 'Run N heats' that writes to inbox.md",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-123",
@@ -598,7 +732,9 @@
       "desc": "Test Bellows rename: verify all apps still work after rename",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-124",
@@ -606,7 +742,9 @@
       "desc": "Tutor: add topic review mode \u2014 replay completed topic exercises for retention",
       "status": "complete",
       "priority": 3,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-125",
@@ -614,7 +752,9 @@
       "desc": "Commissioner README: document all 6 screens, setup, FORGE_PROJECTS_DIR",
       "status": "complete",
       "priority": 3,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-126",
@@ -622,7 +762,9 @@
       "desc": "Write a concise project overview (1-page) for sharing externally",
       "status": "complete",
       "priority": 3,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-127",
@@ -630,7 +772,9 @@
       "desc": "Final AAR + dispatch report for heats 544-563",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-128",
@@ -638,7 +782,9 @@
       "desc": "Update STRATEGY.md to heat 555: new subject, Bellows rename, current stats",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-129",
@@ -646,7 +792,9 @@
       "desc": "Plan 20-heat sprint: PWA service worker for tutor offline + more tutor content",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-130",
@@ -654,7 +802,9 @@
       "desc": "Research PWA service worker patterns for FastAPI + Jinja2 apps \u2014 cache strategies for offline-first",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-131",
@@ -662,7 +812,9 @@
       "desc": "Tutor: PWA manifest.json + service worker registration",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-132",
@@ -670,7 +822,9 @@
       "desc": "Tutor: service worker with cache-first strategy for static assets + app shell",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-133",
@@ -678,7 +832,9 @@
       "desc": "Tutor: offline fallback page when network unavailable",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-134",
@@ -686,7 +842,9 @@
       "desc": "Test PWA: service worker registers, assets cached, offline fallback works",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-135",
@@ -694,7 +852,9 @@
       "desc": "Tutor: expand Logic subject \u2014 add 3 more topics (truth tables, counterexamples, real-world arguments)",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-136",
@@ -702,7 +862,9 @@
       "desc": "Tutor: add exercise difficulty indicators (stars or color) visible during practice",
       "status": "complete",
       "priority": 3,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-137",
@@ -710,7 +872,9 @@
       "desc": "Bellows: add project creation from UI (form that calls smithy init)",
       "status": "complete",
       "priority": 3,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-138",
@@ -718,7 +882,9 @@
       "desc": "Full regression after PWA + content additions",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-139",
@@ -726,7 +892,9 @@
       "desc": "Update tutor README with PWA support + logic subject expansion",
       "status": "complete",
       "priority": 3,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-140",
@@ -734,7 +902,9 @@
       "desc": "CHANGELOG v1.2: PWA + content sprint",
       "status": "complete",
       "priority": 3,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-141",
@@ -742,7 +912,9 @@
       "desc": "Final AAR + handoff for heats 557-563",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-142",
@@ -750,7 +922,9 @@
       "desc": "Add --context option to smithy add-task: optional string field stored on task objects in state.json",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-143",
@@ -758,7 +932,9 @@
       "desc": "Update protocol/loop.md Step 1: remove dispatch/anvil-to-forge.md from Forge's read list \u2014 Forge reads task context instead",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-144",
@@ -766,7 +942,9 @@
       "desc": "Test context field: add-task with --context, pick-task returns context, context survives round-trip through state.json",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-145",
@@ -774,7 +952,9 @@
       "desc": "Tutor responsive: nav sidebar + body shift. All CSS in tutor/static/css/style.css behind @media (min-width: 1024px). .tab-bar: position fixed, top/left/bottom 0, right auto, width 72px, flex-direction column, justify-content flex-start, padding 24px 0 0 0, border-top none, border-right 1px solid var(--border), gap 8px. .tab: padding 12px 0. Remove .tab.active::after (display none). .tab.active: border-left 3px solid var(--indigo), background rgba(0,188,212,0.06). body: padding-bottom 0, margin-left 72px. .tab-badge repositions relative to vertical layout. Mobile below 1024px stays untouched.",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-146",
@@ -782,7 +962,9 @@
       "desc": "Tutor responsive: grids + container. All CSS in tutor/static/css/style.css behind @media (min-width: 1024px). .container: max-width 960px, padding 32px. .subject-list: display grid, grid-template-columns repeat(2, 1fr), gap 20px. .welcome-features: flex-direction row, gap 24px. .welcome-feature: flex 1, text-align center. Cards fill width naturally, no other changes needed.",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-147",
@@ -790,7 +972,9 @@
       "desc": "Tutor responsive: lesson 2-panel layout. ONE template change allowed: in tutor/templates/base.html add page_class block to <main>: <main class=\"container {% block page_class %}{% endblock %}\">. In tutor/templates/lesson.html add: {% block page_class %}lesson-page{% endblock %}. Then CSS in style.css behind @media (min-width: 1024px): .lesson-page: display grid, grid-template-columns 2fr 3fr, gap 0 32px, align-items start. .lesson-page .page-header: grid-column 1/-1. .lesson-page .lesson-section:last-child (practice): grid-column 2, grid-row 2/span 10. .lesson-page .lesson-section:not(:last-child): grid-column 1. Left=concepts/example/socratic (40%), right=exercises (60%). Both columns scroll naturally.",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-148",
@@ -798,7 +982,9 @@
       "desc": "Tutor responsive: remaining pages. All CSS in tutor/static/css/style.css behind @media (min-width: 1024px). .review-card and .review-complete: max-width 640px, margin 0 auto. .deck-list: display grid, grid-template-columns repeat(2, 1fr), gap 20px. .browse-topics: display grid, grid-template-columns repeat(2, 1fr), gap 8px. .code-input: min-height 120px, font-size 14px. .example-block: font-size 14px, padding 16px. Result page stays centered single column, just wider.",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-149",
@@ -806,7 +992,9 @@
       "desc": "Tutor responsive testing checklist. Start tutor app, verify at 1024px+: (1) subject cards 2x2 grid, (2) sidebar nav left on desktop / bottom tabs on mobile, (3) lesson 2-panel layout, (4) review card centered max-width 640px, (5) create deck cards 2-col, (6) smooth transition at 1024px resize, (7) all animations work, (8) code input good width, (9) tab badge visible in sidebar, (10) active tab left accent bar desktop / dot mobile, (11) no horizontal scrollbar, (12) welcome features horizontal, (13) mobile layout completely unchanged below 1024px.",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-150",
@@ -814,7 +1002,9 @@
       "desc": "STRATEGY.md update to heat 568",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-151",
@@ -822,7 +1012,9 @@
       "desc": "Final AAR + handoff for 10-heat sprint (heats 565-574)",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-152",
@@ -830,7 +1022,9 @@
       "desc": "Intent Hierarchy data model. Add 'themes' list to state.json: [{id: 'th-NNN', name: str, rank: int, status: 'active'|'paused'}]. Add 'initiatives' list: [{id: 'ini-NNN', theme_id: str, title: str, description: str, status: 'proposed'|'approved'|'active'|'done'|'rejected', budget_cap: null|int, heats_used: 0}]. Add optional 'initiative_id' field on task objects (null = standalone). Update validate_state() in smithy/smithy/state.py to validate: theme IDs unique, initiative IDs unique, initiative.theme_id references valid theme, task.initiative_id references valid initiative or is null, theme ranks are contiguous 1..N, initiative status in valid set. Initialize empty themes/initiatives lists in smithy init command (cli.py).",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-153",
@@ -838,7 +1032,9 @@
       "desc": "Theme CLI commands. In smithy/smithy/cli.py add: (1) 'smithy add-theme <name>' \u2014 auto-generate th-NNN id, set rank to max+1, status='active'. (2) 'smithy list-themes' \u2014 print themes sorted by rank with status. (3) 'smithy reorder-themes <id> <new_rank>' \u2014 move theme to new_rank, shift others up/down to keep ranks contiguous. (4) 'smithy pause-theme <id>' \u2014 set status='paused'. (5) 'smithy activate-theme <id>' \u2014 set status='active'. All commands load/save state.json via existing load_state/save_state.",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-154",
@@ -846,7 +1042,9 @@
       "desc": "Initiative CLI commands. In smithy/smithy/cli.py add: (1) 'smithy propose <theme_id> <title> <description>' \u2014 auto-generate ini-NNN id, status='proposed', optional --budget-cap N (default null). Validate theme_id exists. (2) 'smithy approve <initiative_id>' \u2014 set status='approved'. Error if not 'proposed'. (3) 'smithy reject <initiative_id>' \u2014 set status='rejected'. (4) 'smithy complete-initiative <initiative_id>' \u2014 set status='done'. (5) 'smithy list-initiatives' \u2014 print all grouped by status (proposed first, then approved, active, done, rejected), optional --theme <id> filter. Show title, theme name, task count, heats_used/budget_cap.",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-155",
@@ -854,7 +1052,9 @@
       "desc": "Task CLI updates for initiative gating. In smithy/smithy/cli.py: (1) Add --initiative <id> option to add-task command. If provided, validate initiative exists and status is approved or active. Store as 'initiative_id' field on task dict. If not provided, omit field (not null). (2) Update pick-task: filter out tasks where initiative_id is set AND the linked initiative status is not approved/active. When first task from an approved initiative is picked, set initiative status to 'active'. (3) Update end-heat: if completing a task with initiative_id, increment initiative.heats_used. If initiative.budget_cap is set and heats_used >= budget_cap, append warning to outbox.md.",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-156",
@@ -862,7 +1062,9 @@
       "desc": "Allocator initiative gating. In smithy/smithy/allocator.py score_stages(): (1) Accept initiatives list as parameter. (2) Queued-task bonus (+0.07/task) only counts tasks where initiative_id is null OR linked initiative status is approved/active. Tasks from proposed/rejected initiatives generate zero backlog pressure. (3) Theme rank bonus: build a map of initiative_id -> theme_rank. For eligible tasks from rank-1 theme, multiply their stage's queued-task bonus by 1.5. Update cli.py allocate command to pass initiatives to score_stages().",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-157",
@@ -870,7 +1072,9 @@
       "desc": "Protocol updates for intent hierarchy. (1) In protocol/loop.md Step 1: remove 'dispatch/anvil-to-forge.md' from the Also-read list. (2) In Step 4: add note that pick-task now gates by initiative status. Add: 'If no ready tasks and proposed initiatives exist, write to outbox.md: Proposed initiatives awaiting approval: [list titles]'. (3) In personas/anvil/CLAUDE.md: replace dispatch workflow section with initiative workflow \u2014 Anvil proposes initiatives via smithy propose, human approves in Bellows or CLI. Keep dispatch file reference as decision journal only.",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-158",
@@ -878,7 +1082,9 @@
       "desc": "Bellows forge_reader: initiative support. In bellows/forge_reader.py read_project(): (1) Extract 'themes' and 'initiatives' from state.json. (2) Group tasks by initiative_id \u2014 build initiative_tasks dict mapping ini-NNN to list of tasks. (3) Compute initiative progress: tasks_done/tasks_total for each initiative. (4) Add 'proposed_count' to project dict \u2014 count of initiatives with status='proposed' (for badge on home.html). (5) Add 'initiatives' list to project dict with computed fields: title, theme_name, status, tasks_done, tasks_total, heats_used, budget_cap.",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-159",
@@ -886,7 +1092,9 @@
       "desc": "Bellows board route + template. (1) In bellows/app.py add GET /project/{name}/board route that reads project data and renders board.html. Add 'Board' sub-tab to the nav in base template (alongside Activity, Decide, Direct). (2) Create bellows/templates/board.html: 4 kanban columns (Proposed, Approved, Active, Done). Each initiative renders as a card showing: title, theme name as colored tag, task progress (e.g. '3/7 tasks'), heats_used/budget_cap bar (if cap set), description truncated to 2 lines. Proposed column cards have Approve/Reject buttons (POST forms). Use existing CSS patterns from decide.html for card styling. Columns use CSS grid or flexbox, cards stack vertically within columns.",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-160",
@@ -894,7 +1102,9 @@
       "desc": "Bellows initiative endpoints + home badge. (1) In bellows/app.py add POST /project/{name}/initiative/{id}/approve \u2014 loads state.json, finds initiative by id, sets status='approved', saves state. Redirect back to board. (2) Add POST /project/{name}/initiative/{id}/reject \u2014 same but status='rejected'. (3) In bellows/templates/home.html: add proposed-initiative badge next to existing decision badge on project cards. Show count of initiatives with status='proposed'. Use same badge styling as decision-badge.",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-161",
@@ -902,7 +1112,9 @@
       "desc": "Intent hierarchy CLI tests. In smithy/smithy/tests/ add test file test_hierarchy.py: (1) Theme tests: add-theme creates with auto-id and rank, list-themes returns sorted, reorder-themes shifts correctly, pause/activate toggles status. (2) Initiative tests: propose creates with proposed status, approve sets approved, reject sets rejected, complete sets done, approve on non-proposed errors, propose with invalid theme_id errors. (3) Task gating tests: add-task with --initiative stores initiative_id, add-task with invalid initiative errors, pick-task skips tasks from proposed/rejected initiatives, pick-task returns standalone tasks always, first pick from approved initiative sets it to active. (4) Allocator tests: queued-task bonus excludes ineligible tasks, theme rank bonus applies 1.5x for rank-1. (5) End-to-end: create theme -> propose initiative -> approve -> add tasks -> pick-task returns them. All tests use tmp_path fixture with smithy init scaffold.",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-162",
@@ -910,7 +1122,9 @@
       "desc": "Bellows intent hierarchy tests. In bellows/tests/ add or extend test file: (1) Board route returns 200, renders initiative cards. (2) Approve endpoint changes initiative status in state.json. (3) Reject endpoint changes initiative status. (4) forge_reader extracts initiatives, computes task counts, groups by initiative_id. (5) Home page shows proposed-initiative badge when proposed initiatives exist. Use existing test patterns from test_forge_reader.py.",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-163",
@@ -918,7 +1132,9 @@
       "desc": "Full regression: all tests + routes after intent hierarchy",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-164",
@@ -926,7 +1142,9 @@
       "desc": "AAR + handoff for 15-heat sprint",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-165",
@@ -934,7 +1152,9 @@
       "desc": "Final AAR + handoff",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-166",
@@ -942,7 +1162,9 @@
       "desc": "Plan 50-heat sprint: end-to-end validation, 5th subject, tutor auth, CHANGELOG v1.3",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-167",
@@ -950,7 +1172,9 @@
       "desc": "Research end-to-end: what gaps exist when running smithy init + 20 heats on a fresh project?",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-168",
@@ -958,7 +1182,9 @@
       "desc": "End-to-end test: smithy init a fresh project, run 5 heats autonomously, verify state",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-169",
@@ -966,7 +1192,9 @@
       "desc": "Tutor: 5th subject \u2014 Creative Writing (prompts, feedback, revision exercises)",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-170",
@@ -974,7 +1202,9 @@
       "desc": "Research creative writing pedagogy: what makes a good writing tutor?",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-171",
@@ -982,7 +1212,9 @@
       "desc": "Tutor: basic user sessions \u2014 cookie-based user ID for progress isolation",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-172",
@@ -990,7 +1222,9 @@
       "desc": "Tutor: user switcher \u2014 simple name input on first visit, stored in cookie",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-173",
@@ -998,7 +1232,9 @@
       "desc": "Tutor: per-user progress files (progress/<user_id>/)",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-174",
@@ -1006,7 +1242,9 @@
       "desc": "Test user sessions: two users see different progress",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-175",
@@ -1014,7 +1252,9 @@
       "desc": "Tutor: stats page \u2014 lifetime stats across all subjects (total exercises, accuracy, streak, time)",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-176",
@@ -1022,7 +1262,9 @@
       "desc": "Bellows: live activity indicator \u2014 show 'running' badge when checkpoint exists",
       "status": "complete",
       "priority": 3,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-177",
@@ -1030,7 +1272,9 @@
       "desc": "Smithy: smithy stats command \u2014 show heat rate, stage distribution, value trends",
       "status": "complete",
       "priority": 3,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-178",
@@ -1038,7 +1282,9 @@
       "desc": "Full regression after all new features",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-179",
@@ -1046,7 +1292,9 @@
       "desc": "CHANGELOG v1.3: 5th subject, user auth, end-to-end validation",
       "status": "complete",
       "priority": 3,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-180",
@@ -1054,7 +1302,9 @@
       "desc": "Update all READMEs with new features",
       "status": "complete",
       "priority": 3,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-181",
@@ -1062,7 +1312,9 @@
       "desc": "Write end-to-end walkthrough: init \u2192 run \u2192 review \u2192 iterate",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-182",
@@ -1070,7 +1322,9 @@
       "desc": "AAR for 50-heat sprint",
       "status": "complete",
       "priority": 3,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-183",
@@ -1079,7 +1333,9 @@
       "status": "complete",
       "priority": 1,
       "blocked_by": [],
-      "initiative_id": "ini-009"
+      "initiative_id": "ini-009",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-184",
@@ -1088,7 +1344,9 @@
       "status": "complete",
       "priority": 2,
       "blocked_by": [],
-      "initiative_id": "ini-009"
+      "initiative_id": "ini-009",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-185",
@@ -1097,7 +1355,9 @@
       "status": "complete",
       "priority": 1,
       "blocked_by": [],
-      "initiative_id": "ini-010"
+      "initiative_id": "ini-010",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-186",
@@ -1106,7 +1366,9 @@
       "status": "complete",
       "priority": 2,
       "blocked_by": [],
-      "initiative_id": "ini-010"
+      "initiative_id": "ini-010",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-187",
@@ -1115,7 +1377,9 @@
       "status": "complete",
       "priority": 2,
       "blocked_by": [],
-      "initiative_id": "ini-010"
+      "initiative_id": "ini-010",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-188",
@@ -1124,7 +1388,9 @@
       "status": "complete",
       "priority": 1,
       "blocked_by": [],
-      "initiative_id": "ini-011"
+      "initiative_id": "ini-011",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-189",
@@ -1133,7 +1399,9 @@
       "status": "complete",
       "priority": 2,
       "blocked_by": [],
-      "initiative_id": "ini-011"
+      "initiative_id": "ini-011",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-190",
@@ -1142,7 +1410,9 @@
       "status": "complete",
       "priority": 2,
       "blocked_by": [],
-      "initiative_id": "ini-011"
+      "initiative_id": "ini-011",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-191",
@@ -1151,7 +1421,9 @@
       "status": "complete",
       "priority": 1,
       "blocked_by": [],
-      "initiative_id": "ini-012"
+      "initiative_id": "ini-012",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-192",
@@ -1160,7 +1432,9 @@
       "status": "complete",
       "priority": 2,
       "blocked_by": [],
-      "initiative_id": "ini-012"
+      "initiative_id": "ini-012",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-193",
@@ -1169,7 +1443,9 @@
       "status": "complete",
       "priority": 2,
       "blocked_by": [],
-      "initiative_id": "ini-012"
+      "initiative_id": "ini-012",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-194",
@@ -1178,7 +1454,9 @@
       "status": "complete",
       "priority": 1,
       "blocked_by": [],
-      "initiative_id": "ini-013"
+      "initiative_id": "ini-013",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-195",
@@ -1187,7 +1465,9 @@
       "status": "complete",
       "priority": 2,
       "blocked_by": [],
-      "initiative_id": "ini-013"
+      "initiative_id": "ini-013",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-196",
@@ -1196,7 +1476,9 @@
       "status": "complete",
       "priority": 2,
       "blocked_by": [],
-      "initiative_id": "ini-013"
+      "initiative_id": "ini-013",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-197",
@@ -1204,7 +1486,9 @@
       "desc": "Tutor: add 5 more exercises to each of the 3 weakest subjects (English, Math, Logic)",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-198",
@@ -1212,7 +1496,9 @@
       "desc": "Tutor: progress bar on user page showing overall completion across all subjects",
       "status": "complete",
       "priority": 3,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-199",
@@ -1220,7 +1506,9 @@
       "desc": "Bellows: STRATEGY.md viewer on Direct tab (read-only rendered markdown)",
       "status": "complete",
       "priority": 3,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-200",
@@ -1228,7 +1516,9 @@
       "desc": "Test smithy init end-to-end: init + validate + patrol on fresh project",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-201",
@@ -1236,7 +1526,9 @@
       "desc": "Tutor: exercise timer \u2014 show elapsed time per exercise, total session time",
       "status": "complete",
       "priority": 3,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-202",
@@ -1244,7 +1536,9 @@
       "desc": "Tutor: subject page header actions \u2014 Start Session + Stats + Due badge in a clean row",
       "status": "complete",
       "priority": 3,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-203",
@@ -1252,7 +1546,9 @@
       "desc": "Update STRATEGY.md to heat 604 with all new features",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-204",
@@ -1260,7 +1556,9 @@
       "desc": "AAR + handoff for ini-009 through ini-013",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-205",
@@ -1269,7 +1567,9 @@
       "status": "complete",
       "priority": 0,
       "blocked_by": [],
-      "initiative_id": "ini-012"
+      "initiative_id": "ini-012",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-206",
@@ -1278,7 +1578,9 @@
       "status": "complete",
       "priority": 0,
       "blocked_by": [],
-      "initiative_id": "ini-011"
+      "initiative_id": "ini-011",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-207",
@@ -1287,7 +1589,9 @@
       "status": "complete",
       "priority": 0,
       "blocked_by": [],
-      "initiative_id": "ini-013"
+      "initiative_id": "ini-013",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-208",
@@ -1296,7 +1600,9 @@
       "status": "complete",
       "priority": 1,
       "blocked_by": [],
-      "initiative_id": "ini-010"
+      "initiative_id": "ini-010",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-209",
@@ -1305,7 +1611,9 @@
       "status": "complete",
       "priority": 2,
       "blocked_by": [],
-      "initiative_id": "ini-010"
+      "initiative_id": "ini-010",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-210",
@@ -1314,7 +1622,9 @@
       "status": "complete",
       "priority": 2,
       "blocked_by": [],
-      "initiative_id": "ini-010"
+      "initiative_id": "ini-010",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-211",
@@ -1323,7 +1633,9 @@
       "status": "complete",
       "priority": 1,
       "blocked_by": [],
-      "initiative_id": "ini-011"
+      "initiative_id": "ini-011",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-212",
@@ -1332,7 +1644,9 @@
       "status": "complete",
       "priority": 2,
       "blocked_by": [],
-      "initiative_id": "ini-011"
+      "initiative_id": "ini-011",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-213",
@@ -1341,7 +1655,9 @@
       "status": "complete",
       "priority": 2,
       "blocked_by": [],
-      "initiative_id": "ini-011"
+      "initiative_id": "ini-011",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-214",
@@ -1350,7 +1666,9 @@
       "status": "complete",
       "priority": 1,
       "blocked_by": [],
-      "initiative_id": "ini-012"
+      "initiative_id": "ini-012",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-215",
@@ -1359,7 +1677,9 @@
       "status": "complete",
       "priority": 2,
       "blocked_by": [],
-      "initiative_id": "ini-012"
+      "initiative_id": "ini-012",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-216",
@@ -1368,7 +1688,9 @@
       "status": "complete",
       "priority": 2,
       "blocked_by": [],
-      "initiative_id": "ini-012"
+      "initiative_id": "ini-012",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-217",
@@ -1377,7 +1699,9 @@
       "status": "complete",
       "priority": 1,
       "blocked_by": [],
-      "initiative_id": "ini-013"
+      "initiative_id": "ini-013",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-218",
@@ -1386,7 +1710,9 @@
       "status": "complete",
       "priority": 2,
       "blocked_by": [],
-      "initiative_id": "ini-013"
+      "initiative_id": "ini-013",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-219",
@@ -1395,7 +1721,9 @@
       "status": "complete",
       "priority": 2,
       "blocked_by": [],
-      "initiative_id": "ini-013"
+      "initiative_id": "ini-013",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-220",
@@ -1403,7 +1731,9 @@
       "desc": "Plan 60-heat sprint: UI polish + constraint enforcement + tutor content + testing",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-221",
@@ -1412,7 +1742,9 @@
       "status": "complete",
       "priority": 0,
       "blocked_by": [],
-      "initiative_id": "ini-014"
+      "initiative_id": "ini-014",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-222",
@@ -1421,7 +1753,9 @@
       "status": "complete",
       "priority": 2,
       "blocked_by": [],
-      "initiative_id": "ini-014"
+      "initiative_id": "ini-014",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-223",
@@ -1429,7 +1763,9 @@
       "desc": "Priority Poker: click to expand card \u2014 show full description, task list, heats progress",
       "status": "complete",
       "priority": 0,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-224",
@@ -1437,7 +1773,9 @@
       "desc": "Sprint AAR + handoff",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-225",
@@ -1445,7 +1783,9 @@
       "desc": "Full regression: all tests + all UI routes + patrol",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-226",
@@ -1453,7 +1793,9 @@
       "desc": "Bellows: upcoming heats on activity page. In bellows/templates/project.html, add an 'Upcoming' section above the activity feed. Show the next 5-10 heats that the allocator would pick, in order. For each: task ID, stage (with stage color), initiative name (if linked), task description (truncated). To generate this: in bellows/app.py, simulate the allocator \u2014 call smithy allocate + smithy pick-task for each stage repeatedly to build the queue order. Or simpler: read pending tasks, sort by priority, group by what the allocator would pick based on current scores. Add a 'Reorder' button next to each upcoming heat that lets the human drag to reprioritize \u2014 POST the new order back to state.json (update task priorities or add a 'forced_order' list). Also add 'Skip' button to defer a task (set priority to 3). This gives direct control: the human sees exactly what Forge will do next and can intervene before it happens.",
       "status": "complete",
       "priority": 0,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-227",
@@ -1461,7 +1803,9 @@
       "desc": "Sprint AAR + handoff for heats 614-628",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-228",
@@ -1469,7 +1813,9 @@
       "desc": "CHANGELOG v1.4: UI polish sprint",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-229",
@@ -1477,7 +1823,9 @@
       "desc": "Bellows: tasks view. Add a 'Tasks' sub-tab to bellows project pages (alongside Activity, Decide, Direct, Board). In bellows/templates/tasks.html: show all pending tasks grouped by initiative (standalone tasks in their own group). Each task shows: ID, stage (colored badge), priority, description (truncated, expandable on click), blocked_by status. Controls per task: (1) drag to reorder priority within group, (2) 'Skip' button sets priority to 3, (3) 'Boost' button sets priority to 0, (4) 'Delete' button removes from queue. Add filter bar at top: filter by stage, by initiative, by priority. Add GET /project/{name}/tasks route in app.py, add POST /project/{name}/task/{id}/priority endpoint for reorder/boost/skip, add POST /project/{name}/task/{id}/delete endpoint. In forge_reader.py: expose pending tasks grouped by initiative_id with initiative title.",
       "status": "complete",
       "priority": 0,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-230",
@@ -1486,7 +1834,9 @@
       "status": "complete",
       "priority": 0,
       "blocked_by": [],
-      "initiative_id": "ini-010"
+      "initiative_id": "ini-010",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-231",
@@ -1495,7 +1845,9 @@
       "status": "complete",
       "priority": 0,
       "blocked_by": [],
-      "initiative_id": "ini-012"
+      "initiative_id": "ini-012",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-232",
@@ -1503,7 +1855,9 @@
       "desc": "STRATEGY update to heat 641",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-233",
@@ -1511,7 +1865,9 @@
       "desc": "30-heat AAR + handoff",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-234",
@@ -1519,7 +1875,9 @@
       "desc": "Research Dolt for multi-agent state: can it replace flat-file state.json?",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-235",
@@ -1527,7 +1885,9 @@
       "desc": "Smithy: smithy export \u2014 export project as a self-contained tar.gz for sharing",
       "status": "complete",
       "priority": 3,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-236",
@@ -1535,7 +1895,9 @@
       "desc": "Tutor: achievement badges \u2014 first lesson, first card, 5-day streak, all topics in a subject",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-237",
@@ -1543,7 +1905,9 @@
       "desc": "Tutor: daily goal \u2014 set a target (e.g., 5 exercises/day), track progress",
       "status": "complete",
       "priority": 3,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-238",
@@ -1551,7 +1915,9 @@
       "desc": "Bellows: activity sparkline on home project cards (tiny chart of last 20 heats)",
       "status": "complete",
       "priority": 3,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-239",
@@ -1559,7 +1925,9 @@
       "desc": "Write tests for all 4 steering UIs (route verification + POST endpoints)",
       "status": "complete",
       "priority": 2,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-240",
@@ -1567,7 +1935,9 @@
       "desc": "Update README with steering UIs documentation",
       "status": "complete",
       "priority": 3,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-241",
@@ -1576,7 +1946,9 @@
       "status": "complete",
       "priority": 0,
       "blocked_by": [],
-      "initiative_id": "ini-015"
+      "initiative_id": "ini-015",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-242",
@@ -1585,7 +1957,9 @@
       "status": "complete",
       "priority": 0,
       "blocked_by": [],
-      "initiative_id": "ini-015"
+      "initiative_id": "ini-015",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-243",
@@ -1594,7 +1968,9 @@
       "status": "complete",
       "priority": 1,
       "blocked_by": [],
-      "initiative_id": "ini-015"
+      "initiative_id": "ini-015",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-244",
@@ -1603,7 +1979,9 @@
       "status": "complete",
       "priority": 1,
       "blocked_by": [],
-      "initiative_id": "ini-015"
+      "initiative_id": "ini-015",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-245",
@@ -1612,7 +1990,9 @@
       "status": "complete",
       "priority": 2,
       "blocked_by": [],
-      "initiative_id": "ini-015"
+      "initiative_id": "ini-015",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-246",
@@ -1620,7 +2000,9 @@
       "desc": "Final AAR + handoff for 60-heat sprint",
       "status": "complete",
       "priority": 1,
-      "blocked_by": []
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-247",
@@ -1629,7 +2011,9 @@
       "status": "complete",
       "priority": 0,
       "blocked_by": [],
-      "initiative_id": "ini-015"
+      "initiative_id": "ini-015",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-248",
@@ -1638,7 +2022,9 @@
       "status": "complete",
       "priority": 0,
       "blocked_by": [],
-      "initiative_id": "ini-015"
+      "initiative_id": "ini-015",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-249",
@@ -1647,7 +2033,9 @@
       "status": "complete",
       "priority": 0,
       "blocked_by": [],
-      "initiative_id": "ini-015"
+      "initiative_id": "ini-015",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-250",
@@ -1656,7 +2044,9 @@
       "status": "complete",
       "priority": 1,
       "blocked_by": [],
-      "initiative_id": "ini-015"
+      "initiative_id": "ini-015",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-251",
@@ -1665,7 +2055,9 @@
       "status": "complete",
       "priority": 1,
       "blocked_by": [],
-      "initiative_id": "ini-015"
+      "initiative_id": "ini-015",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-252",
@@ -1674,7 +2066,9 @@
       "status": "complete",
       "priority": 1,
       "blocked_by": [],
-      "initiative_id": "ini-015"
+      "initiative_id": "ini-015",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-253",
@@ -1683,7 +2077,9 @@
       "status": "complete",
       "priority": 2,
       "blocked_by": [],
-      "initiative_id": "ini-015"
+      "initiative_id": "ini-015",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-254",
@@ -1692,7 +2088,9 @@
       "status": "complete",
       "priority": 0,
       "blocked_by": [],
-      "initiative_id": "ini-015"
+      "initiative_id": "ini-015",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-255",
@@ -1701,7 +2099,9 @@
       "status": "complete",
       "priority": 0,
       "blocked_by": [],
-      "initiative_id": "ini-015"
+      "initiative_id": "ini-015",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-256",
@@ -1710,7 +2110,9 @@
       "status": "complete",
       "priority": 0,
       "blocked_by": [],
-      "initiative_id": "ini-015"
+      "initiative_id": "ini-015",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-257",
@@ -1719,7 +2121,9 @@
       "status": "complete",
       "priority": 0,
       "blocked_by": [],
-      "initiative_id": "ini-015"
+      "initiative_id": "ini-015",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-258",
@@ -1728,7 +2132,9 @@
       "status": "complete",
       "priority": 0,
       "blocked_by": [],
-      "initiative_id": "ini-015"
+      "initiative_id": "ini-015",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-259",
@@ -1737,7 +2143,9 @@
       "status": "complete",
       "priority": 0,
       "blocked_by": [],
-      "initiative_id": "ini-015"
+      "initiative_id": "ini-015",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-260",
@@ -1746,7 +2154,9 @@
       "status": "complete",
       "priority": 1,
       "blocked_by": [],
-      "initiative_id": "ini-015"
+      "initiative_id": "ini-015",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-261",
@@ -1755,52 +2165,711 @@
       "status": "complete",
       "priority": 0,
       "blocked_by": [],
-      "initiative_id": "ini-015"
+      "initiative_id": "ini-015",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-262",
       "stage": "implementation",
       "desc": "Unified task queue: collapse hook + next_tasks into one mechanism. (1) Remove .forge-hook.json and .marshal-hook.json \u2014 delete write_hook/read_hook/delete_hook from state.py. Remove smithy hook/check-hook/unhook commands from cli.py. (2) next_tasks in state.json is the single ordered queue. Rename smithy commands for clarity: 'smithy queue' shows the current next_tasks list with full task details. 'smithy queue-push <task_id> [--top|--bottom]' appends a task to next_tasks (default --top, inserts at front). Validates task exists and is pending. 'smithy queue-pop' removes and returns the first entry. 'smithy queue-clear' empties the list. 'smithy set-next-tasks <id1> <id2> ...' replaces the entire list (Marshal uses this). (3) Forge loop becomes: smithy queue-pop \u2014 if returns a task, execute it. If empty, idle 30s. (4) Marshal loop becomes: read signals, compute ordering, smithy set-next-tasks. Anvil can insert urgent work: smithy queue-push t-999 --top. (5) end-heat: after completing a task, it's already popped \u2014 no cleanup needed. (6) Update protocol/loop.md and both persona CLAUDE.md files.",
-      "status": "pending",
+      "status": "complete",
       "priority": 0,
       "blocked_by": [],
-      "initiative_id": "ini-015"
+      "initiative_id": "ini-015",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-263",
       "stage": "implementation",
       "desc": "smithy nudge command + tmux session convention. In smithy/smithy/cli.py: (1) Add 'smithy nudge <persona> <message>' command. Persona is 'forge' or 'marshal'. Looks up tmux session name using convention: 'smithy-forge', 'smithy-marshal'. Calls tmux send-keys -t smithy-<persona> '<message>' Enter via subprocess. If tmux session doesn't exist, print warning and exit (no crash). Output: JSON {nudged: true, persona, session, message} or {nudged: false, reason: 'session not found'}. (2) Add 'smithy sessions' command that lists running smithy tmux sessions \u2014 runs tmux list-sessions and filters for 'smithy-*' prefix. Shows session name, created time, and whether it's attached. (3) Add 'smithy start <persona>' command that starts a tmux session: tmux new-session -d -s smithy-<persona> -c <persona_dir> 'claude'. Persona dir is personas/forge/ or personas/marshal/. If session already exists, print warning.",
-      "status": "pending",
+      "status": "complete",
       "priority": 0,
       "blocked_by": [],
-      "initiative_id": "ini-015"
+      "initiative_id": "ini-015",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-264",
       "stage": "implementation",
       "desc": "Wire nudge into queue-push. In smithy/smithy/cli.py: modify queue-push command (or add to t-262 spec) so that after pushing a task to next_tasks, it auto-nudges the target persona. Add --no-nudge flag to skip. Default behavior: smithy queue-push t-262 --top \u2192 pushes to next_tasks \u2192 calls nudge('forge', 'Task t-262 queued. Run smithy queue-pop to start.'). For marshal: smithy queue-push t-262 --to marshal \u2192 pushes + nudges marshal. This closes the loop: Anvil pushes a task, Forge gets nudged instantly, starts working. No polling.",
-      "status": "pending",
+      "status": "complete",
       "priority": 0,
       "blocked_by": [],
-      "initiative_id": "ini-015"
+      "initiative_id": "ini-015",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-265",
       "stage": "implementation",
       "desc": "Wire nudge into Marshal\u2192Forge dispatch. Update Marshal always-on loop (t-259 spec) so that after Marshal writes next_tasks via smithy set-next-tasks, it nudges Forge: smithy nudge forge 'Marshal updated queue. N tasks ready. Top: t-XXX \u2014 description'. Forge sees the nudge, runs smithy queue-pop, starts working. Also: after Forge completes a task (end-heat), it nudges Marshal: smithy nudge marshal 'HEAT_DONE: t-XXX complete, outcome Y. Re-prioritize.' Marshal sees the nudge, re-reads signals, updates queue, nudges Forge with next task. The cycle is nudge-driven, not poll-driven.",
-      "status": "pending",
+      "status": "complete",
       "priority": 0,
       "blocked_by": [],
-      "initiative_id": "ini-015"
+      "initiative_id": "ini-015",
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-266",
       "stage": "implementation",
       "desc": "Nudge queue for busy sessions. In smithy/smithy/state.py: add nudge queue support. If a nudge target is mid-heat (checkpoint exists), queue the nudge to .smithy-nudge-queue/<persona>.jsonl (one JSON object per line: {message, timestamp, sender}). In the Forge protocol (loop.md), add a step after end-heat: check .smithy-nudge-queue/forge.jsonl, process any queued nudges. In smithy/smithy/cli.py: modify 'smithy nudge' to check if target has an active checkpoint \u2014 if so, write to nudge queue instead of tmux send-keys. Add 'smithy drain-nudges <persona>' command that reads and clears the queue file, returns the messages as JSON array.",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-015",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-267",
+      "stage": "testing",
+      "desc": "Tests for nudge system: nudge and drain-nudges commands \u2014 mock tmux, test queue file I/O, test busy-session queueing",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-268",
+      "stage": "testing",
+      "desc": "Tests for session management: sessions, start, start-all, stop, stop-all commands \u2014 mock tmux subprocess calls",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-269",
+      "stage": "testing",
+      "desc": "Tests for queue shortcuts: set-priority, set-next-tasks, list-tasks commands",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-270",
+      "stage": "testing",
+      "desc": "Tests for remaining untested commands: sync-stages, memory-write, process-inbox, stats, commit, export, reject, complete-initiative",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-271",
+      "stage": "editing",
+      "desc": "README.md update: replace old dispatch model references with Agent Teams + queue/nudge system. Document smithy start-all workflow.",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-272",
+      "stage": "editing",
+      "desc": "CHANGELOG v1.5: document queue unification + nudge integration cycle (heats 634-682). Cover unified queue, nudge command, session mgmt, always-on loops.",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-273",
+      "stage": "editing",
+      "desc": "protocol/loop.md cleanup: remove stale HOOK_DONE dispatch references at line 75, consolidate nudge-driven flow. Update dispatch file headers for queue model.",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-274",
+      "stage": "marketing",
+      "desc": "Updated WALKTHROUGH or quick-start section showing new smithy start-all \u2192 queue-push \u2192 nudge workflow end-to-end.",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-275",
+      "stage": "testing",
+      "desc": "Integration test Marshal+Forge flow end-to-end \u2014 queue-push triggers nudge, Forge pops and executes, end-heat nudges Marshal",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-015",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-276",
+      "stage": "editing",
+      "desc": "Marshal persona CLAUDE.md final pass \u2014 ensure startup, message-driven loop, and priority rules match implemented CLI commands",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-015",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-277",
+      "stage": "editing",
+      "desc": "Anvil persona CLAUDE.md \u2014 update for Agent Teams spawn protocol, remove dispatch references, add SendMessage patterns",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-015",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-278",
+      "stage": "implementation",
+      "desc": "Priority poker drag-and-drop reordering \u2014 update initiative ranks in state.json on drop, persist immediately",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-010",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-279",
+      "stage": "testing",
+      "desc": "Priority poker tests \u2014 rank persistence, drag reorder, budget weight calculation (3x/2x/1x)",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-010",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-280",
+      "stage": "editing",
+      "desc": "Priority poker visual polish \u2014 card styling, animations, responsive layout, visual design focus",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-010",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-281",
+      "stage": "implementation",
+      "desc": "Constraint board CRUD \u2014 add/edit/remove constraints via UI, persist to state.json constraints array",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-011",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-282",
+      "stage": "testing",
+      "desc": "Constraint board tests \u2014 constraint types (budget_cap, floor, stage-block), validation, persistence",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-011",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-283",
+      "stage": "implementation",
+      "desc": "Intent editor \u2014 natural language input, decomposition display, edit/delete branches",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-013",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-284",
+      "stage": "implementation",
+      "desc": "UI reactivity \u2014 manual refresh button on all steering UIs, GET /api/state endpoint, JS re-render on click",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-014",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-285",
+      "stage": "testing",
+      "desc": "Intent editor tests \u2014 decomposition tree rendering, edit-theme/edit-initiative persistence, delete branch cascading, intent text save, template application, history",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-013",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-286",
+      "stage": "testing",
+      "desc": "Timeline view tests \u2014 drag endpoint adjustment, overlap detection, gap visualization, heat allocation persistence",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-012",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-287",
+      "stage": "implementation",
+      "desc": "Cross-UI navigation \u2014 shared header/nav bar linking all 4 steering UIs (poker, constraints, intent, timeline) + Bellows. Consistent across all apps.",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-014",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-288",
+      "stage": "marketing",
+      "desc": "Steering UIs documentation \u2014 README section documenting all 4 UIs (poker, constraints, intent, timeline), how to run them, screenshots/descriptions, how they connect to state.json",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-289",
+      "stage": "editing",
+      "desc": "Constraint board visual polish \u2014 align styling with poker (shadows, card hierarchy, animations, responsive breakpoints). Visual design focus.",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-011",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-290",
+      "stage": "editing",
+      "desc": "Intent editor visual polish \u2014 tree hierarchy styling, collapsible branches, status color-coding, responsive layout. Visual design focus.",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-013",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-291",
+      "stage": "marketing",
+      "desc": "CHANGELOG v1.6 \u2014 steering UIs (poker, constraints, intent, timeline), UI reactivity, Marshal agent completion, Agent Teams integration",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-292",
+      "stage": "testing",
+      "desc": "UI reactivity tests \u2014 refresh button triggers /api/state fetch and DOM re-render across all 4 UIs, loading indicator, stale data detection",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-014",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-293",
+      "stage": "implementation",
+      "desc": "Fix _decompose_intent() in ui-intent-editor/app.py:93 \u2014 .strip() removes leading whitespace needed to distinguish sub-bullets from top-level bullets. Sub-initiatives never parse correctly.",
+      "status": "complete",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-013",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-294",
+      "stage": "editing",
+      "desc": "Timeline view visual polish \u2014 align with poker/constraint/intent design system: shadow variables, bar hover/drag feedback, status color-coding on bars, responsive breakpoints, dark theme",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-012",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-295",
+      "stage": "editing",
+      "desc": "Forge persona CLAUDE.md update \u2014 align with Agent Teams architecture, SendMessage patterns to Marshal, queue-pop mechanics, nudge cycle",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-015",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-296",
+      "stage": "marketing",
+      "desc": "End-to-end walkthrough document \u2014 step-by-step scenario showing a human starting The Forge, steering via Priority Poker, watching Marshal+Forge execute, reviewing results. Screenshots or detailed descriptions.",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-297",
+      "stage": "marketing",
+      "desc": "Quick-start recipe card \u2014 60-second version of forge-init through first useful output. For README top section to hook new users.",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-298",
+      "stage": "implementation",
+      "desc": "Timeline view \u2014 current-heat indicator line showing where we are on the timeline (e.g., vertical line at heat 711)",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-012",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-299",
+      "stage": "testing",
+      "desc": "End-to-end smoke test \u2014 verify all 4 steering UIs start, serve their landing pages, respond to /api/state, and show nav bar. Catches deployment regressions.",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-300",
+      "stage": "editing",
+      "desc": "Fix STEERING.md Quick Start ports (8081-8084 \u2192 8001-8004) to match nav config",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-301",
+      "stage": "editing",
+      "desc": "Audit and fix UI port mismatches: (1) STEERING.md Quick Start 8081-8084 \u2192 8001-8004; (2) ui-priority-poker/app.py:27 URL_BELLOWS default 8000 \u2192 8080; (3) grep all ui-*/app.py defaults for stale ports, align with nav config",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-302",
+      "stage": "research",
+      "desc": "Steering patterns retrospective \u2014 synthesize patterns emerging from 4 steering UIs (Poker=ranking, Constraint=boundaries, Timeline=budget allocation, Intent=natural-language decomposition). Document affordances, failure modes, when each works best. Feeds ini-009.",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-009",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-303",
+      "stage": "marketing",
+      "desc": "Marshal retrospective \u2014 Agent Teams experiment from the prioritizer seat: what worked (nudge cycle, queue-push), what friction (persona-dir bug, message cross-talk), recommendations for next persona spawned as teammate",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-304",
+      "stage": "editing",
+      "desc": "CHANGELOG v1.6 \u2014 session wrap: heats 688-720 delivered WALKTHROUGH, QUICKSTART, now-indicator, e2e smoke tests (114/114), port-mismatch sweep",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-305",
+      "stage": "testing",
+      "desc": "Round-trip test for _decompose_intent: parse\u2192render\u2192parse equivalence to catch silent markdown parser regressions (per retro \u00a76 #3, t-293 class of bug)",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-009",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-306",
+      "stage": "implementation",
+      "desc": "Per-heat diff view on Bellows: show what state.json fields changed since previous heat (steering\u2192outcome visibility, retro \u00a76 #4)",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-009",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-307",
+      "stage": "implementation",
+      "desc": "Schema version + mtime precondition on state.json writes (optimistic concurrency, fail loudly on lost writes, retro \u00a76 #2)",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-009",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-308",
+      "stage": "editing",
+      "desc": "Delete legacy dispatch/ directory (5 files: anvil-to-forge.md etc.) + remove any CLI code reading/writing it; grep callers first. Superseded by Agent Teams SendMessage per t-295/a9744df.",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-015",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-309",
+      "stage": "research",
+      "desc": "Marshal steerability UI design study: audit Poker for human-rank vs agent-priority distinction; sketch UI showing queue with both signals + completed tasks + one-gesture downrank; recommend extend Poker vs new 'Marshal's desk' surface. Output: research/marshal-steerability-ui.md",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-009",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-310",
+      "stage": "editing",
+      "desc": "Remove Constraints UI: delete ui-constraint/, drop nav link from all 4 UIs, remove constraint refs from STEERING.md/README/WALKTHROUGH. Deletion not rewrite \u2014 keep git history. Ranking>constraints philosophy shift (STRATEGY.md 2026-04-12).",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-311",
+      "stage": "editing",
+      "desc": "Update research/steering-patterns-retrospective.md with \u00a77 epilogue: note Constraints UI retirement + rationale (ranking > hard constraints; constraints brittle/over-specify/hide preference signal).",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-312",
+      "stage": "implementation",
+      "desc": "Schema: add queue[].human_priority (nullable int, sticky until cleared or task complete), initiatives[].viewed_at (iso timestamp), queue[].priority_reason (\u226440 char string). Unit tests for schema load/save.",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-009",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-313",
+      "stage": "implementation",
+      "desc": "Marshal scheduler sort change: unblocked tasks sort by (human_priority or inf, priority); blocked_by gating preserved (cannot override dependency). Populate priority_reason on add-task/queue-push (format 'ini-XXX rank=N + <signal>', \u226440 chars). Unit tests for sort order and blocked-gating.",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-009",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-314",
+      "stage": "implementation",
+      "desc": "Poker drawer UI: expandable per-initiative drawers with in-flight/queued/shipped-since-viewed sections. Co-display 'M:p1 \u00b7 you:\u2014' + priority_reason inline. One-click [\u2193downrank] POSTs human_priority. Update viewed_at on drawer open. Drawer collapsed by default.",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-009",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-315",
+      "stage": "testing",
+      "desc": "E2E steerability test: human POSTs human_priority via Poker \u2192 scheduler reorders unblocked queue \u2192 next queue-pop reflects override; blocked tasks remain gated regardless.",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-009",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-316",
+      "stage": "implementation",
+      "desc": "Wire 4 steering UIs + Bellows to use save_state_checked/load_state_with_mtime from smithy.state: migrate ui-priority-poker, ui-timeline, ui-intent-editor _save_state (ui-constraint deleted in t-310), Bellows project writes. Raises ConcurrentWriteError on mtime mismatch, 409 response. ~2 heats.",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-009",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-317",
+      "stage": "implementation",
+      "desc": "Bug: smithy queue-pop returns just-completed task on first call after end-heat (observed after t-309: pop returned t-309 status=complete, second pop returned t-307). Filter by status==pending in queue-pop.",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-318",
+      "stage": "editing",
+      "desc": "Deep Constraints cleanup: (1) remove 'add-constraint' from smithy/cli.py, (2) strip 5 constraint refs from smithy/allocator.py, (3) delete Constraint Board section from design/steering-ui-specs.md, (4) stop emitting constraints:[] from state.json save path. Follow-up to t-310's ruthless-delete scope.",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-319",
+      "stage": "implementation",
+      "desc": "Poker drawer part 2: add POST /api/task/<id>/human-priority endpoint (body {value: int|null}, null clears); unit tests for both /api/initiative/<id>/view and /api/task/<id>/human-priority (round-trip, clear, auto-clear on complete verify); tests for shipped-since-viewed worklog filter. Follow-up to t-314 part 1 (commit b02ce33).",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-009",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-320",
+      "stage": "marketing",
+      "desc": "CHANGELOG v1.8 bump covering this session's arc: ranking>constraints philosophy (STRATEGY.md), Constraints UI retirement (t-310/t-311/t-318), dispatch/ retirement (t-308), full steerability feature (human_priority sticky, scheduler sort, Poker drawer with M:p{N} + reason + downrank, auto-clear on complete, t-312-t-319), queue-pop bug fix (t-317), per-heat diff view (t-306), UI concurrency (t-316), 312 tests green. 14 heats.",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-321",
+      "stage": "editing",
+      "desc": "WALKTHROUGH.md: rewrite any act that still assumes Constraints UI; add a new beat showing ranking flow end-to-end \u2014 open Poker \u2192 see M:p1 + reason \u2192 click downrank \u2192 observe queue reorder in Bellows diff view. Verify consistency against QUICKSTART.md.",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-322",
+      "stage": "editing",
+      "desc": "Poker UI polish: done-task rows currently escape the drawer box (alignment bug). Fix CSS/layout so shipped-since-viewed section stays contained within the drawer. Visual only, no schema changes.",
+      "status": "in_progress",
+      "priority": 1,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": "p1 + stage-balance"
+    },
+    {
+      "id": "t-323",
+      "stage": "research",
+      "desc": "Task detail UI design sketch. Modal vs dedicated page? What fields matter (desc/stage/priority/human_priority/priority_reason/initiative/blocked_by/history of priority changes/worklog mentions)? Click target = full row or dedicated affordance? Output: research/task-detail-ui.md with recommendation.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-009",
+      "human_priority": null,
+      "priority_reason": "ini-009 rank=1 + poker"
+    },
+    {
+      "id": "t-324",
+      "stage": "implementation",
+      "desc": "Backend: GET /api/task/{id} endpoint returning full task object + relevant history (priority-change events, worklog rows matching task_id). Add to Poker (and Bellows?). Unit tests for happy path, 404, history assembly.",
       "status": "pending",
       "priority": 1,
       "blocked_by": [],
-      "initiative_id": "ini-015"
+      "initiative_id": "ini-009",
+      "human_priority": null,
+      "priority_reason": "ini-009 rank=1 + poker"
+    },
+    {
+      "id": "t-325",
+      "stage": "implementation",
+      "desc": "Frontend: wire click handler on Poker task rows to open task detail per t-323's recommendation (modal or route). Render all fields + history. Close returns to drawer state.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-009",
+      "human_priority": null,
+      "priority_reason": "ini-009 rank=1 + poker"
+    },
+    {
+      "id": "t-326",
+      "stage": "testing",
+      "desc": "E2E task detail: click task row \u2192 detail loads with full history; close returns to drawer open state; priority-change event visible after /human-priority POST.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-009",
+      "human_priority": null,
+      "priority_reason": "ini-009 rank=1 + poker"
+    },
+    {
+      "id": "t-327",
+      "stage": "research",
+      "desc": "Cross-project upcoming tasks view \u2014 design study. Answer: (1) does Bellows enumerate multi-project today? (2) global ordering schema (global_rank vs derived)? (3) Poker coupling semantics \u2014 immediate re-score vs tick? (4) 'remove' semantics \u2014 deprioritize/defer/delete? (5) drag-to-top: human_priority=0 vs new global_override field? interaction with per-project human_priority? (6) new Bellows page vs new UI? Output: research/upcoming-tasks-view.md with wireframe + schema diff + 3-5 impl task candidates (retro format: value thesis per).",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-009",
+      "human_priority": null,
+      "priority_reason": "ini-009 rank=1 + poker"
     }
   ],
   "ideas": [
@@ -1848,7 +2917,8 @@
       "status": "rejected",
       "budget_cap": null,
       "heats_used": 0,
-      "rank": 6
+      "rank": 6,
+      "viewed_at": null
     },
     {
       "id": "ini-002",
@@ -1857,7 +2927,8 @@
       "description": "Research how humans and AI agents collaborate effectively. Survey existing frameworks: OODA loops, PDCA, delegation matrices, trust calibration, oversight gradients (from full autonomy to pair programming). Study real systems: Devin, Cursor, Codex, aider, Claude Code, GPT-Pilot. Identify patterns that Smithy doesn't use yet. Deliverable: research/collaboration-patterns.md with a taxonomy of collaboration modes and recommendations for which to prototype.",
       "status": "rejected",
       "budget_cap": 8,
-      "heats_used": 0
+      "heats_used": 0,
+      "viewed_at": null
     },
     {
       "id": "ini-003",
@@ -1866,7 +2937,8 @@
       "description": "Research and design better async handoff between human and AI. Current model: inbox.md/outbox.md + dispatch files. Problems: context loss between sessions, no structured status requests, human has to read raw files. Explore: structured status requests (human asks a question, gets an answer next heat), decision queues with deadlines, progress summaries that compress intelligently, proactive alerts (not just outbox dumps). Deliverable: research doc + design for improved async protocol.",
       "status": "rejected",
       "budget_cap": 8,
-      "heats_used": 0
+      "heats_used": 0,
+      "viewed_at": null
     },
     {
       "id": "ini-004",
@@ -1875,7 +2947,8 @@
       "description": "Research how to dynamically adjust AI autonomy based on track record. Currently Forge has fixed autonomy (full within budget). Explore: earned autonomy (start supervised, earn independence), risk-based gating (low-risk tasks auto-approved, high-risk need human), confidence signals (AI reports its own uncertainty, human decides when to intervene), learning from corrections (human corrects, AI adjusts future behavior). Deliverable: research doc + design for adaptive autonomy.",
       "status": "rejected",
       "budget_cap": 8,
-      "heats_used": 0
+      "heats_used": 0,
+      "viewed_at": null
     },
     {
       "id": "ini-005",
@@ -1884,7 +2957,8 @@
       "description": "Build a terminal-based dashboard using Python Rich library. Real-time view of Forge state without leaving the terminal. Shows: budget bar, stage progress (colored bars), current heat, last 5 worklog entries, pending tasks, initiative board (compact). Single command: 'smithy dashboard' that refreshes on file changes (watchdog or polling). Complements Bellows \u2014 Bellows for steering, terminal for monitoring while Forge runs.",
       "status": "rejected",
       "budget_cap": 10,
-      "heats_used": 0
+      "heats_used": 0,
+      "viewed_at": null
     },
     {
       "id": "ini-006",
@@ -1893,7 +2967,8 @@
       "description": "Build a bot that bridges Forge to a messaging platform. Human sends messages in Slack/Discord, they appear in inbox.md. Forge outbox updates post to a channel. Decision cards become interactive messages with approve/defer/reject buttons. Status requests return formatted summaries. Start with one platform (likely Discord \u2014 free, good bot API). Lightweight: just a bridge, not a replacement for Bellows.",
       "status": "rejected",
       "budget_cap": 15,
-      "heats_used": 0
+      "heats_used": 0,
+      "viewed_at": null
     },
     {
       "id": "ini-007",
@@ -1902,7 +2977,8 @@
       "description": "Build an email digest that summarizes Forge activity. Daily or per-run summary sent via email (or written to a file for manual sending). Contains: heats completed, stage progress deltas, decisions needing attention, notable events (yellows/reds), link to Bellows. Template-based (Jinja2). Could also serve as the foundation for a webhook/notification system.",
       "status": "rejected",
       "budget_cap": 8,
-      "heats_used": 0
+      "heats_used": 0,
+      "viewed_at": null
     },
     {
       "id": "ini-008",
@@ -1911,7 +2987,8 @@
       "description": "Redesign Bellows for phone-first use. Current Bellows is desktop-oriented. The human checks status from their phone more than laptop. Key screens: (1) project list with signal dots \u2014 one glance, (2) initiative approval \u2014 swipe to approve/reject, (3) status summary \u2014 compact, no scrolling needed. CSS-only responsive or a separate mobile template. PWA with push notifications for decisions.",
       "status": "rejected",
       "budget_cap": 12,
-      "heats_used": 0
+      "heats_used": 0,
+      "viewed_at": null
     },
     {
       "id": "ini-009",
@@ -1920,10 +2997,11 @@
       "description": "Research how humans steer autonomous systems \u2014 not monitor, STEER. The core question: what controls does a human need to change direction without becoming a bottleneck? Study: (1) Real-time strategy games (StarCraft command hierarchy \u2014 strategic goals, tactical orders, unit autonomy), (2) Military C2 frameworks (mission-type orders, commander's intent, OODA), (3) Product management (OKRs, roadmap prioritization, sprint planning), (4) Air traffic control (constraints not commands), (5) Existing AI tools (Devin's chat-to-steer, Cursor's accept/reject, Claude Code hooks). For each, extract: what decisions the human makes, at what frequency, what information they need to decide, and what the feedback loop looks like. Deliverable: research/steering-patterns.md with a taxonomy of steering modes and which are worth prototyping as UIs.",
       "status": "approved",
       "budget_cap": 10,
-      "heats_used": 2,
+      "heats_used": 12,
       "rank": 1,
       "planned_start": 635,
-      "planned_end": 645
+      "planned_end": 645,
+      "viewed_at": "2026-04-12T18:13:58Z"
     },
     {
       "id": "ini-010",
@@ -1932,10 +3010,11 @@
       "description": "A desktop web UI where the human steers by ranking, not approving. Shows all active initiatives as cards. Human drags to reorder \u2014 that IS the steering. No approve/reject buttons. Everything proposed is fair game unless explicitly killed. The ranking determines allocation weight. Top card gets 3x budget share, second gets 2x, rest get 1x. Real-time: as Forge works, cards show live progress and the stack rebalances. The human's only job: keep the stack in the right order. Inspired by planning poker + priority queues. Build as a standalone page in Bellows.",
       "status": "approved",
       "budget_cap": 15,
-      "heats_used": 6,
+      "heats_used": 9,
       "rank": 2,
       "planned_start": 645,
-      "planned_end": 655
+      "planned_end": 655,
+      "viewed_at": "2026-04-12T18:14:00Z"
     },
     {
       "id": "ini-011",
@@ -1944,10 +3023,11 @@
       "description": "A desktop web UI where the human steers by setting constraints, not giving orders. Instead of telling Forge what to do, the human defines boundaries: 'no more than 5 heats on research', 'testing must stay above 80%', 'don't touch tutor', 'ship something deployable by Friday'. Constraints are cards on a board. Forge works freely within them. When a constraint would be violated, Forge stops and asks. The human's only job: add/remove/adjust constraints. Inspired by air traffic control \u2014 direct through boundaries, not waypoints. Build as a standalone page in Bellows.",
       "status": "approved",
       "budget_cap": 15,
-      "heats_used": 7,
-      "rank": 3,
+      "heats_used": 10,
+      "rank": 5,
       "planned_start": 650,
-      "planned_end": 665
+      "planned_end": 665,
+      "viewed_at": null
     },
     {
       "id": "ini-012",
@@ -1956,10 +3036,11 @@
       "description": "A desktop web UI where the human steers by shaping a timeline. Horizontal axis is heats (or time). Initiatives are horizontal bars showing planned start/end. The human drags bar endpoints to allocate budget. Overlapping bars = parallel work. Gaps = cool-down. The visual makes tradeoffs obvious \u2014 stretching one initiative squeezes another. Forge reads the timeline and works accordingly. Inspired by Gantt charts but interactive and simple. Build as a standalone page in Bellows.",
       "status": "approved",
       "budget_cap": 15,
-      "heats_used": 7,
-      "rank": 5,
-      "planned_start": 645,
-      "planned_end": 660
+      "heats_used": 8,
+      "rank": 4,
+      "planned_start": 650,
+      "planned_end": 665,
+      "viewed_at": null
     },
     {
       "id": "ini-013",
@@ -1968,10 +3049,11 @@
       "description": "A desktop web UI focused on natural-language steering. The human writes a short intent statement (2-3 sentences). The system decomposes it into themes, initiatives, and tasks automatically. Human reviews the decomposition and edits \u2014 delete a branch, promote a task, add a constraint. The intent is the source of truth, not the task list. When intent changes, the decomposition updates. Inspired by commander's intent in military doctrine. The human thinks in outcomes, the system thinks in tasks. Build as a standalone page in Bellows.",
       "status": "approved",
       "budget_cap": 20,
-      "heats_used": 6,
-      "rank": 4,
+      "heats_used": 10,
+      "rank": 6,
       "planned_start": 645,
-      "planned_end": 665
+      "planned_end": 665,
+      "viewed_at": null
     },
     {
       "id": "ini-014",
@@ -1980,10 +3062,11 @@
       "description": "All 4 steering UIs should reflect state.json changes without auto-polling. Options: (1) Manual refresh button visible on every UI \u2014 'Refresh' button in header that reloads data via AJAX (not full page reload). (2) File watcher via SSE \u2014 backend watches state.json with watchdog/inotify and pushes events to frontend via Server-Sent Events. Frontend updates DOM on event. (3) Hybrid \u2014 manual refresh button always visible, plus optional SSE for live updates. Start with manual refresh button on all 4 UIs (simplest, no dependencies). Then add SSE as an enhancement. Each UI needs: a GET /api/state endpoint returning current data as JSON, a JS function that fetches it and re-renders the relevant DOM elements, a visible Refresh button in the header that calls this function.",
       "status": "approved",
       "budget_cap": 10,
-      "heats_used": 2,
+      "heats_used": 5,
       "planned_start": 640,
       "planned_end": 655,
-      "rank": 6
+      "rank": 7,
+      "viewed_at": null
     },
     {
       "id": "ini-015",
@@ -1992,7 +3075,9 @@
       "description": "New persona sitting between Anvil and Forge. An AI agent (Claude session) that runs before every heat and decides task ordering. Replaces the wavefront allocator. Reads all steering signals: theme rankings, initiative status/budget caps, constraint board rules, priority poker order, timeline allocations, task priorities, blocked_by deps, recent worklog history, human_priorities. Produces a single ordered list of next N tasks written to state.json. Forge becomes a pure executor \u2014 reads the list, pops the top task, does the work. The Marshal makes the steering UIs meaningful: they're all inputs that the Marshal synthesizes into one queue. Architecture: Anvil (strategy) \u2192 Marshal (ordering) \u2192 Forge (execution).",
       "status": "active",
       "budget_cap": 25,
-      "heats_used": 18
+      "heats_used": 24,
+      "viewed_at": "2026-04-12T18:14:02Z",
+      "rank": 3
     }
   ],
   "feedback_cursor": 26,
@@ -2022,14 +3107,11 @@
     }
   ],
   "next_tasks": [
-    "t-264",
-    "t-262",
-    "t-263",
-    "t-265",
-    "t-257",
-    "t-259",
-    "t-266",
-    "t-252",
-    "t-253"
-  ]
+    "t-323",
+    "t-324",
+    "t-325",
+    "t-326",
+    "t-327"
+  ],
+  "schema_version": 1
 }
