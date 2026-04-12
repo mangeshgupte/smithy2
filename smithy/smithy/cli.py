@@ -1746,13 +1746,43 @@ def list_initiatives(ctx, theme_filter):
 
 
 @cli.command("init")
-@click.argument("project_name")
+@click.argument("project_name", required=False)
 @click.option("--target", default=".", help="Target directory")
 @click.option("--with-personas", is_flag=True, help="Scaffold persona directories")
+@click.option("--template", "template_name", default=None,
+              help="Seed shape: lib|cli|web|data-pipe|mobile|research")
+@click.option("--list-templates", is_flag=True, help="List available templates and exit")
 @click.pass_context
-def init(ctx, project_name, target, with_personas):
-    """Scaffold a new Forge project."""
+def init(ctx, project_name, target, with_personas, template_name, list_templates):
+    """Scaffold a new Forge project.
+
+    --template=<shape> seeds identity.md intent bullets and state.json
+    themes/initiatives from `research/intent-template-library.md`. Without a
+    template, init falls back to the blank scaffold for backwards compatibility.
+    """
     from datetime import date
+    from .intent_templates import TEMPLATES, list_template_names, get_template, render_identity_bullets
+
+    if list_templates:
+        _output({"templates": [
+            {"name": n, "label": TEMPLATES[n]["label"],
+             "themes": len(TEMPLATES[n]["themes"]),
+             "initiatives": len(TEMPLATES[n]["initiatives"])}
+            for n in list_template_names()
+        ]})
+        return
+
+    if not project_name:
+        _err("Error: project_name required (or pass --list-templates)")
+        sys.exit(1)
+
+    template = None
+    if template_name:
+        template = get_template(template_name)
+        if template is None:
+            _err(f"Unknown template '{template_name}'. Available: {', '.join(list_template_names())}")
+            sys.exit(1)
+
     target_path = Path(target).resolve()
     target_path.mkdir(parents=True, exist_ok=True)
 
@@ -1768,8 +1798,8 @@ def init(ctx, project_name, target, with_personas):
         "allocator": {"integral": {s: 0 for s in VALID_STAGES}},
         "queue": [],
         "ideas": [],
-        "themes": [],
-        "initiatives": [],
+        "themes": list(template["themes"]) if template else [],
+        "initiatives": list(template["initiatives"]) if template else [],
         "feedback_cursor": 0,
         "inbox_cursor": 0,
         "human_priorities": [],
@@ -1784,7 +1814,9 @@ def init(ctx, project_name, target, with_personas):
     today = date.today().isoformat()
     templates = {
         "CLAUDE.md": f"# The Smith Protocol\n\nYou are the Smith. You work The Forge — an autonomous AI worker.\n\nRead `identity.md` for the current project context. Read `STRATEGY.md` for the strategic plan.\n\n## Starting a Run\n\nWhen the human says \"Run N heats\":\n1. Read `state.json` and set budget.\n2. Read `protocol/loop.md` and begin the heat loop.\n\n## Protocol Files\n\n| File | Contains |\n|------|----------|\n| `protocol/loop.md` | The heat loop — steps 1-8 |\n| `protocol/allocator.md` | How to pick which stage to work on |\n| `protocol/logging.md` | How to log heats |\n\n## Rules\n\n1. **NEVER STOP.** Loop until budget exhausted.\n2. **One task per heat.** Scope tightly.\n3. **Commit every heat.** Format: `[stage] description`\n4. **The record is sacred.** Never edit worklog.tsv retroactively.\n5. **NEVER directly edit state.json or worklog.tsv.** Use smithy CLI commands.\n",
-        "identity.md": f"# {project_name}\n\n## What This Is\n\nDescribe your project here.\n\n## Commander's Intent\n\n- **Intent**: What are you building and why?\n- **Success looks like**: What does done look like?\n- **Tone**: Quality over speed? Move fast? Careful and tested?\n- **Boundaries**: What should the Smith NOT do?\n- **Not this**: What to avoid?\n\n## Created\n\n{today}\n",
+        "identity.md": (render_identity_bullets(template, project_name) + f"\n## Created\n\n{today}\n"
+                        if template else
+                        f"# {project_name}\n\n## What This Is\n\nDescribe your project here.\n\n## Commander's Intent\n\n- **Intent**: What are you building and why?\n- **Success looks like**: What does done look like?\n- **Tone**: Quality over speed? Move fast? Careful and tested?\n- **Boundaries**: What should the Smith NOT do?\n- **Not this**: What to avoid?\n\n## Created\n\n{today}\n"),
         "STRATEGY.md": f"# Strategic Plan — {project_name}\n\n*Updated after heat 0 | {today}*\n\n## Vision\n\n## Current State\n\n### What Exists\n\nNothing yet.\n\n## Roadmap\n\n",
         "inbox.md": "# Inbox\n\nWrite messages below.\n",
         "outbox.md": "# Outbox\n\nThe Smith writes status updates here.\n",
@@ -1819,6 +1851,9 @@ def init(ctx, project_name, target, with_personas):
         "project": project_name,
         "dir": str(target_path),
         "personas": with_personas,
+        "template": template_name,
+        "themes_seeded": len(state["themes"]),
+        "initiatives_seeded": len(state["initiatives"]),
         "files": all_files,
     })
     _err(f"Initialized {project_name} at {target_path}")
