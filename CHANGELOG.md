@@ -1,5 +1,54 @@
 # Changelog
 
+## v1.6 — Steering UIs Production + Visual Design System (heats 688-709)
+
+### Marshal Agent Completion (ini-015)
+- **25 integration tests** for Marshal→Forge dispatch cycle: queue-push nudge, FIFO pop, end-heat nudge, set-next-tasks nudge, busy-session queueing, full e2e
+- **Marshal CLAUDE.md** aligned with CLI: startup sequence (drain-nudges, add-task, queue-push), message-driven loop, priority rules
+- **Anvil CLAUDE.md** updated: SendMessage coordination patterns (steering change, urgent injection, status check), nudge cycle documentation
+
+### Priority Poker Polish (ini-010)
+- **Drag-drop visual feedback**: rotation on drag (-1deg), scale(0.96), shadow elevation, opacity shift
+- **Live weight badges**: update on reorder without page reload
+- **CSS design system**: `--shadow-sm/md/lg`, `--surface-hover`, weight badge glow (green box-shadow)
+- **Responsive**: mobile breakpoint at 480px, touch support
+- **15 tests**: render, weight badges, filtering, reorder persistence, approve/reject, /api/state
+
+### Constraint Board CRUD + Polish (ini-011)
+- **POST /edit/{id}** endpoint: inline editing of value, stage, description
+- **Visual polish**: type-specific left borders (blue=cap, green=floor, yellow=exclude), type badges, progress bars (ok/warn/over), violation glow + shake animation, inactive dimming (45% opacity)
+- **Save flash**: "✓ saved" feedback on inline edit
+- **Focus rings** on inputs with blue box-shadow
+- **16 tests**: add (3 types), edit (value, description, preserve fields, 404), remove, toggle, violation detection
+
+### Intent Editor Enhancements (ini-013)
+- **POST /edit-theme/{id}** and **POST /edit-initiative/{id}** endpoints
+- **Bug fix**: `_decompose_intent()` `.strip()` → `.rstrip()` — sub-bullets now parse correctly as initiatives
+- **Visual polish**: tree connector lines (border-left + border-bottom), collapsible branches with rotating chevron, color-coded status badges (green=active, blue=approved, yellow=proposed)
+- **Save flash** and focus rings matching constraint board
+- **16 tests**: render, decomposition, apply (themes, initiatives, skip unchecked, history), edit, delete (cascade), /api/state
+
+### Timeline View Tests (ini-012)
+- **19 tests** with dedicated fixture (4 initiatives, 2 tasks, planned overlap): rendering, approved/active filtering, rejected/proposed exclusion, update persistence (start/end/multiple/preserve fields), overlap detection, /api/state, range params, clamping
+
+### UI Reactivity (ini-014)
+- **Refresh button** on all 4 UIs: ↻ with spin animation
+- **GET /api/state** endpoints on Constraint Board and Intent Editor (poker and timeline already had them)
+- **Cross-UI navigation bar**: links to all 4 steering UIs + Bellows, active page highlighted, env var config (`URL_POKER`, `URL_CONSTRAINTS`, `URL_INTENT`, `URL_TIMELINE`, `URL_BELLOWS`)
+- **Bellows integration**: steering links in project sub-tabs (project, board, decide, direct pages)
+
+### Documentation
+- **STEERING.md** (263 lines): philosophy, ASCII architecture diagram, per-UI feature/route/state.json tables, env var config, test commands
+- **README** expanded: steering UI section with setup, architecture, cross-nav, test reference
+
+### Stats
+- **66 steering UI tests** (15 poker + 16 constraint + 19 timeline + 16 intent editor)
+- **25 marshal integration tests**
+- **~230 total tests** (145 smithy CLI + 66 steering UI + 16 bellows)
+- **709 heats**
+
+---
+
 ## v1.5 — Queue Unification + Nudge Integration (heats 634-687)
 
 ### Unified Task Queue
