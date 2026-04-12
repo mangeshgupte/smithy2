@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1043,
-    "used": 783,
+    "used": 784,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 287,
+      "heats": 288,
       "progress": 0.98,
-      "value_ema": 0.846
+      "value_ema": 0.862
     },
     "testing": {
       "target": 0.183,
@@ -3310,18 +3310,18 @@
       "id": "t-370",
       "stage": "implementation",
       "desc": "P0 BUG FIX: TaskDetail class as single source of truth for task detail view. Symptom: /api/task/{id} returns 404 for tasks that exist (regression in t-324/325/333). Unified lookup across state.json+worklog+steering.log + field resolution + history aggregation + sync method populating UI state. Unit tests with fixture project. Debug root cause (likely lookup: case/stale queue/deferred excluded).",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 0,
       "blocked_by": [],
       "initiative_id": "ini-009",
       "human_priority": null,
-      "priority_reason": "ini-009 rank=1 + poker"
+      "priority_reason": null
     },
     {
       "id": "t-371",
       "stage": "implementation",
       "desc": "P0: Wire /api/task/{id} to TaskDetail class. Frontend drawer reads canonical shape. Verify click-through on in-flight + pending + deferred + complete tasks.",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 0,
       "blocked_by": [],
       "initiative_id": "ini-009",
@@ -3476,7 +3476,7 @@
       "description": "Research how humans steer autonomous systems \u2014 not monitor, STEER. The core question: what controls does a human need to change direction without becoming a bottleneck? Study: (1) Real-time strategy games (StarCraft command hierarchy \u2014 strategic goals, tactical orders, unit autonomy), (2) Military C2 frameworks (mission-type orders, commander's intent, OODA), (3) Product management (OKRs, roadmap prioritization, sprint planning), (4) Air traffic control (constraints not commands), (5) Existing AI tools (Devin's chat-to-steer, Cursor's accept/reject, Claude Code hooks). For each, extract: what decisions the human makes, at what frequency, what information they need to decide, and what the feedback loop looks like. Deliverable: research/steering-patterns.md with a taxonomy of steering modes and which are worth prototyping as UIs.",
       "status": "approved",
       "budget_cap": 10,
-      "heats_used": 27,
+      "heats_used": 28,
       "rank": 1,
       "planned_start": 635,
       "planned_end": 645,
@@ -3586,7 +3586,6 @@
     }
   ],
   "next_tasks": [
-    "t-371",
     "t-372",
     "t-368",
     "t-365",

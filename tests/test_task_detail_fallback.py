@@ -70,3 +70,53 @@ class TestTaskDetailFallback:
     def test_unknown_task_still_404s(self, poker):
         r = poker.get("/api/task/t-never-existed")
         assert r.status_code == 404
+
+
+@pytest.fixture
+def poker_multistatus(tmp_path, monkeypatch):
+    (tmp_path / "state.json").write_text(json.dumps({
+        "project": "testproj",
+        "budget": {"total_heats": 100, "used": 10,
+                   "started_at": "2026-04-12T00:00:00Z"},
+        "queue": [
+            {"id": "t-p01", "stage": "implementation", "desc": "pending", "status": "pending",
+             "priority": 1, "blocked_by": [], "human_priority": None, "initiative_id": None},
+            {"id": "t-p02", "stage": "implementation", "desc": "in-flight", "status": "in_flight",
+             "priority": 0, "blocked_by": [], "human_priority": None, "initiative_id": None},
+            {"id": "t-p03", "stage": "editing", "desc": "deferred", "status": "deferred",
+             "priority": 3, "blocked_by": [], "human_priority": None, "initiative_id": None},
+            {"id": "t-p04", "stage": "research", "desc": "done", "status": "complete",
+             "priority": 2, "blocked_by": [], "human_priority": None, "initiative_id": None},
+        ],
+        "themes": [], "initiatives": [], "constraints": [],
+        "ideas": [], "feedback_cursor": 0, "inbox_cursor": 0,
+        "overall_progress": 0.1,
+        "stages": {s: {"target": 0.16, "heats": 0, "progress": 0, "value_ema": 0.7}
+                   for s in ["research", "planning", "implementation",
+                             "testing", "editing", "marketing"]},
+        "allocator": {"integral": {s: 0 for s in ["research", "planning",
+                                                   "implementation", "testing",
+                                                   "editing", "marketing"]}},
+    }))
+    monkeypatch.setenv("FORGE_PROJECT_DIR", str(tmp_path))
+    sys.path.insert(0, str(Path(__file__).parent.parent / "ui-priority-poker"))
+    app_mod = importlib.reload(importlib.import_module("app"))
+    return TestClient(app_mod.app)
+
+
+class TestClickThroughAllStatuses:
+    @pytest.mark.parametrize("task_id,status", [
+        ("t-p01", "pending"),
+        ("t-p02", "in_flight"),
+        ("t-p03", "deferred"),
+        ("t-p04", "complete"),
+    ])
+    def test_each_status_returns_200(self, poker_multistatus, task_id, status):
+        r = poker_multistatus.get(f"/api/task/{task_id}")
+        assert r.status_code == 200
+        body = r.json()
+        assert body["task"]["id"] == task_id
+        assert body["task"]["status"] == status
+        # Canonical fields the drawer reads — missing-optional is fine (JS uses ?? / ||).
+        for field in ("desc", "stage", "priority", "blocked_by"):
+            assert field in body["task"]

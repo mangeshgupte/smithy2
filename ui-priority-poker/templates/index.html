@@ -349,6 +349,18 @@
 
         const deferBtn = document.getElementById('td-defer-btn');
         const statusTag = document.getElementById('td-status-tag');
+        // Archived (reconstructed) tasks — no mutations possible, hint to user.
+        if (t._reconstructed) {
+            statusTag.textContent = 'archived — reconstructed from worklog; edits disabled';
+            statusTag.className = 'td-status-tag deferred';
+            deferBtn.disabled = true;
+            document.getElementById('td-hp-set').disabled = true;
+            document.getElementById('td-hp-clear').disabled = true;
+            return;
+        }
+        deferBtn.disabled = false;
+        document.getElementById('td-hp-set').disabled = false;
+        document.getElementById('td-hp-clear').disabled = false;
         if (t.status === 'deferred') {
             deferBtn.textContent = '▶ Un-defer';
             deferBtn.dataset.deferred = 'true';
