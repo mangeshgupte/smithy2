@@ -385,3 +385,122 @@ async def api_projects():
 async def api_briefing():
     projects = discover_projects(PROJECTS_DIR)
     return get_morning_briefing(projects)
+
+
+# ---- Upcoming (cross-project) ----
+
+def _upcoming_path() -> Path:
+    return Path(PROJECTS_DIR) / ".upcoming.json"
+
+
+def _load_upcoming() -> dict:
+    """Read .upcoming.json. Missing file = empty pinned list."""
+    path = _upcoming_path()
+    if not path.exists():
+        return {"version": 1, "pinned": [], "updated_at": ""}
+    try:
+        data = json.loads(path.read_text())
+    except json.JSONDecodeError:
+        return {"version": 1, "pinned": [], "updated_at": ""}
+    data.setdefault("version", 1)
+    data.setdefault("pinned", [])
+    return data
+
+
+def _save_upcoming(data: dict) -> None:
+    data["updated_at"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    _upcoming_path().write_text(json.dumps(data, indent=2) + "\n")
+
+
+def _resolve_upcoming(projects: list[dict]) -> tuple[list[dict], list[dict], list[dict]]:
+    """Walk .upcoming.json.pinned, resolve each compound key against live state.
+
+    Returns (pinned_live, up_next, gc_dropped). Re-writes .upcoming.json if stale
+    entries were filtered. `gc_dropped` is the one-line toast metadata per Q1
+    recommendation in research/upcoming-tasks-view.md.
+    """
+    upcoming = _load_upcoming()
+    projects_by_name = {p["name"]: p for p in projects}
+
+    pinned_live = []
+    kept_refs = []
+    gc_dropped = []
+
+    for rank, ref in enumerate(upcoming.get("pinned", []), 1):
+        project_name = ref.get("project")
+        task_id = ref.get("task_id")
+        project = projects_by_name.get(project_name)
+        if not project:
+            gc_dropped.append({"project": project_name, "task_id": task_id, "reason": "project missing"})
+            continue
+        state_path = Path(project["dir"]) / "state.json"
+        try:
+            state = json.loads(state_path.read_text())
+        except (OSError, json.JSONDecodeError):
+            gc_dropped.append({"project": project_name, "task_id": task_id, "reason": "state unreadable"})
+            continue
+        task = next((t for t in state.get("queue", []) if t.get("id") == task_id), None)
+        if not task:
+            gc_dropped.append({"project": project_name, "task_id": task_id, "reason": "task missing"})
+            continue
+        if task.get("status") == "complete":
+            gc_dropped.append({"project": project_name, "task_id": task_id, "reason": "complete"})
+            continue
+        if task.get("status") == "rejected":
+            gc_dropped.append({"project": project_name, "task_id": task_id, "reason": "rejected"})
+            continue
+        enriched = dict(task)
+        enriched["project"] = project_name
+        enriched["globally_pinned_rank"] = rank
+        pinned_live.append(enriched)
+        kept_refs.append({"project": project_name, "task_id": task_id})
+
+    # GC write-back if anything was dropped
+    original_refs = [{"project": r.get("project"), "task_id": r.get("task_id")}
+                     for r in upcoming.get("pinned", [])]
+    if kept_refs != original_refs:
+        _save_upcoming({"version": upcoming.get("version", 1), "pinned": kept_refs})
+
+    pinned_ids = {(r["project"], r["task_id"]) for r in kept_refs}
+
+    # Up-next: every non-pinned pending task across all projects, sorted per spec.
+    up_next = []
+    for p in projects:
+        state_path = Path(p["dir"]) / "state.json"
+        try:
+            state = json.loads(state_path.read_text())
+        except (OSError, json.JSONDecodeError):
+            continue
+        for task in state.get("queue", []):
+            if task.get("status") != "pending":
+                continue
+            if (p["name"], task.get("id")) in pinned_ids:
+                continue
+            enriched = dict(task)
+            enriched["project"] = p["name"]
+            up_next.append(enriched)
+
+    up_next.sort(key=lambda t: (
+        t.get("human_priority") if t.get("human_priority") is not None else float("inf"),
+        t.get("priority", 2),
+        t.get("project", ""),
+        t.get("id", ""),
+    ))
+
+    return pinned_live, up_next, gc_dropped
+
+
+@app.get("/api/upcoming")
+async def api_upcoming():
+    """Cross-project upcoming task view. Reads .upcoming.json + merges with live state.
+
+    Response shape (contract — locked for t-329 frontend):
+      {
+        "pinned":   [<task + project + globally_pinned_rank>, ...],
+        "up_next":  [<task + project>, ...],
+        "gc":       [{"project", "task_id", "reason"}, ...]  # entries dropped on this read
+      }
+    """
+    projects = discover_projects(PROJECTS_DIR)
+    pinned, up_next, gc = _resolve_upcoming(projects)
+    return JSONResponse({"pinned": pinned, "up_next": up_next, "gc": gc})
