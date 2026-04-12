@@ -19,9 +19,13 @@ except ImportError:
     def read_steering_log(*args, **kwargs):
         return []
 try:
-    from smithy.task_detail import TaskDetail
+    from smithy.task_detail import TaskDetail, scheduler_key
 except ImportError:
     TaskDetail = None
+    def scheduler_key(task):
+        hp = task.get("human_priority")
+        return (hp if hp is not None else float("inf"),
+                task.get("priority", 2), task.get("id", ""))
 
 from fastapi import FastAPI, Request, Form
 from fastapi.staticfiles import StaticFiles
@@ -768,12 +772,13 @@ def _resolve_upcoming(projects: list[dict]) -> tuple[list[dict], list[dict], lis
             enriched["project"] = p["name"]
             up_next.append(enriched)
 
-    up_next.sort(key=lambda t: (
-        t.get("human_priority") if t.get("human_priority") is not None else float("inf"),
-        t.get("priority", 2),
-        t.get("project", ""),
-        t.get("id", ""),
-    ))
+    def _up_next_key(t):
+        # scheduler_key returns (bucket, hp_val, priority, id). We re-tier
+        # the same bucket/hp primary but insert project before id for the
+        # cross-project up_next tiebreak.
+        bucket, hp_val, priority, _id = scheduler_key(t)
+        return (bucket, hp_val, priority, t.get("project", ""), t.get("id", ""))
+    up_next.sort(key=_up_next_key)
 
     return pinned_live, up_next, gc_dropped
 

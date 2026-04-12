@@ -17,7 +17,7 @@ except ImportError:
     def read_activity(*args, **kwargs):
         return []
 try:
-    from smithy.task_detail import TaskDetail, TaskSummary
+    from smithy.task_detail import TaskDetail, TaskSummary, scheduler_key
 except ImportError:
     TaskDetail = None
     TaskSummary = None
@@ -153,9 +153,7 @@ async def index(request: Request):
     # completed_at, so we derive it from the most recent worklog row per task_id.
     worklog_ts = _worklog_task_timestamps()
 
-    def _sort_key(t):
-        hp = t.get("human_priority")
-        return (hp if hp is not None else float("inf"), t.get("priority", 2), t.get("id", ""))
+    _sort_key = scheduler_key
 
     for ini in initiatives:
         ini["theme_name"] = themes.get(ini["theme_id"], "?")

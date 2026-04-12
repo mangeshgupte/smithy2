@@ -35,6 +35,41 @@ from pathlib import Path
 from typing import Optional
 
 
+# t-383: hp values >= DEPRIO_THRESHOLD are treated as sticky-bottom
+# "deprioritize" sentinels (Poker's downrank uses 9999). Below this, the hp
+# field is a first-class promoted rank.
+DEPRIO_THRESHOLD = 1000
+
+
+def scheduler_key(task):
+    """Canonical scheduler sort key — three-tier over human_priority.
+
+    Order: promoted (hp set, hp < THRESHOLD) < un-pinned (hp None)
+           < deprioritized (hp >= THRESHOLD). Ties break by priority then id.
+
+    All five legacy sort sites (Poker _sort_key, Bellows upcoming, cli
+    queue-pop, cli set-next-tasks, TaskDetail.list) must go through this
+    helper — duplicated tuple-literal keys are how t-333's semantics
+    silently drifted. Takes either a dict (state.json queue row) or a
+    TaskSummary.
+    """
+    if hasattr(task, "human_priority"):
+        hp = task.human_priority
+        priority = task.priority
+        task_id = task.id
+    else:
+        hp = task.get("human_priority")
+        priority = task.get("priority")
+        task_id = task.get("id", "")
+    if hp is None:
+        bucket, hp_val = 1, 0
+    elif hp >= DEPRIO_THRESHOLD:
+        bucket, hp_val = 2, hp
+    else:
+        bucket, hp_val = 0, hp
+    return (bucket, hp_val, priority if priority is not None else 2, task_id or "")
+
+
 @dataclass
 class TaskSummary:
     """Lightweight row shape for list-context callers (Queue Cockpit, deep-dive lists).
@@ -200,11 +235,7 @@ class TaskDetail:
             rows.append(TaskSummary.from_queue_row(row))
 
         if order == "scheduler":
-            def key(t: TaskSummary):
-                hp = t.human_priority
-                return (hp if hp is not None else float("inf"),
-                        t.priority if t.priority is not None else 2, t.id)
-            rows.sort(key=key)
+            rows.sort(key=scheduler_key)
         return rows
 
     # ---- Serialization for HTTP consumers ----

@@ -10,6 +10,7 @@ from .state import (
     append_worklog, write_checkpoint, delete_checkpoint,
     VALID_STAGES, VALID_SIGNALS, VALID_OUTCOMES,
 )
+from .task_detail import scheduler_key
 
 VALID_PERSONAS = ["forge", "marshal", "anvil", "chisel"]
 
@@ -759,13 +760,8 @@ def list_tasks(ctx, status_filter, stage_filter, initiative_filter, limit):
     if initiative_filter:
         tasks = [t for t in tasks if t.get("initiative_id") == initiative_filter]
 
-    # Sort: human_priority (or +inf) asc, then base priority asc, then ID.
-    # A non-null human_priority sticky-overrides the default priority order.
-    tasks.sort(key=lambda t: (
-        t.get("human_priority") if t.get("human_priority") is not None else float("inf"),
-        t.get("priority", 2),
-        t.get("id", ""),
-    ))
+    # Canonical scheduler order (t-383): promoted < un-pinned < deprioritized.
+    tasks.sort(key=scheduler_key)
     total_matching = len(tasks)
 
     # Apply limit
@@ -857,11 +853,7 @@ def pick_task(ctx, stage):
                 continue
         ready.append(task)
 
-    # Sort: human_priority (or +inf) asc, then base priority asc.
-    ready.sort(key=lambda t: (
-        t.get("human_priority") if t.get("human_priority") is not None else float("inf"),
-        t.get("priority", 3),
-    ))
+    ready.sort(key=scheduler_key)
 
     if ready:
         picked = ready[0]
