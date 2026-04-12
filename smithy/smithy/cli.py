@@ -323,6 +323,24 @@ def shutdown_status_cmd(ctx):
     })
 
 
+@cli.command("assembly-heartbeat")
+@click.pass_context
+def assembly_heartbeat_cmd(ctx):
+    """t-398 I3: Stamp state.parallel.assembly.last_heartbeat = now.
+
+    Called by the Assembly teammate each cycle so Witness / patrol can
+    detect a stuck Assembly (heartbeat older than threshold).
+    """
+    root = ctx.obj["root"]
+    state = load_state(root)
+    parallel = state.setdefault("parallel", {})
+    assembly = parallel.setdefault("assembly", {})
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    assembly["last_heartbeat"] = now
+    save_state(root, state)
+    _output({"last_heartbeat": now})
+
+
 @cli.command("forge-spawn")
 @click.argument("forge_id")
 @click.option("--base", default="main", help="Base branch for the worktree.")

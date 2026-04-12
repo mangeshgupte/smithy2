@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1043,
-    "used": 811,
+    "used": 812,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 307,
+      "heats": 308,
       "progress": 0.98,
-      "value_ema": 0.756
+      "value_ema": 0.754
     },
     "testing": {
       "target": 0.183,
@@ -3948,19 +3948,19 @@
       "id": "t-397",
       "stage": "implementation",
       "desc": "I2: forge-spawn / forge-reset CLI. Create/teardown worktrees at .worktrees/forge-NN/ with branch naming forge-NN/h<N>-<task>. Blocked_by: I1.",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-018",
       "human_priority": null,
-      "priority_reason": "ini-018 rank=1 + poker",
+      "priority_reason": null,
       "assigned_forge": null
     },
     {
       "id": "t-398",
       "stage": "implementation",
       "desc": "I3: Assembly teammate scaffold (~0.5h). Persona dir personas/assembly/ with CLAUDE.md, spawn path in Anvil. No merge-loop yet. Blocked_by: I2.",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-018",
@@ -4061,7 +4061,7 @@
       "description": "Run multiple Forge workers concurrently via per-Forge git worktrees. Dedicated Assembly teammate handles merge queue integration (conflicts, test-on-integrate, merge ordering). Unlocks parallelism (Marshal dispatches N heats simultaneously) and enforces branch hygiene. Incremental: N=2 proof before N=3+.",
       "status": "approved",
       "budget_cap": null,
-      "heats_used": 4,
+      "heats_used": 5,
       "viewed_at": null,
       "rank": 1
     },
@@ -4287,7 +4287,6 @@
     }
   ],
   "next_tasks": [
-    "t-398",
     "t-399",
     "t-400",
     "t-401",

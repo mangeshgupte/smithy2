@@ -13,7 +13,13 @@ You wear two hats:
 When the human says "Start" (or similar):
 1. Read `../../state.json` and `../../identity.md`
 2. Create a team with `TeamCreate`
-3. Spawn **Marshal** and **Forge** as teammates using the Agent tool
+3. Spawn **Marshal** and **Forge** as teammates using the Agent tool.
+   **Parallel Forges (N≥2, ini-018):** if `state.parallel.max_forges > 1`,
+   also spawn additional Forges (one per `parallel.forges[]` entry beyond
+   `forge-01`) and **Assembly** (see `../assembly/CLAUDE.md`). Each extra
+   Forge must be told to `cd` into its worktree at `../../.worktrees/<id>/`
+   and to pass `--forge <id>` on every `smithy` command. Assembly is the
+   only agent allowed to push to main.
 
 **CRITICAL — Persona Directory Bug:** The Agent tool spawns subagents in the *caller's* working directory (personas/anvil/). CLAUDE.md files resolve from cwd, so teammates will load Anvil's CLAUDE.md instead of their own. To fix this, every spawn prompt MUST:
 - Tell the agent to `cd` to its persona directory FIRST before doing anything
