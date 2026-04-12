@@ -99,7 +99,7 @@
                 </div>
                 {% for ini in existing_initiatives %}
                 {% if ini.theme_id == th.id %}
-                <div class="existing-sub">
+                <div class="existing-sub" id="ini-{{ ini.id }}" data-ini-id="{{ ini.id }}">
                     <span class="editable-name" onclick="startEditName(this, 'initiative', '{{ ini.id }}')">📋 {{ ini.title }}</span>
                     <span class="existing-status status-{{ ini.status }}">{{ ini.status }}</span>
                     <form method="post" action="/delete-initiative/{{ ini.id }}" style="display:inline">
@@ -217,6 +217,20 @@
         btn.classList.add('spinning');
         fetch('/api/state').then(() => location.reload()).catch(() => location.reload());
     }
+
+    // t-367: ?focus=<ini-id> — scroll to + briefly highlight the target row.
+    // Best-effort: silently no-op if the id isn't present (initiative may have
+    // been deleted since the deep-link was formed).
+    (function() {
+        const params = new URLSearchParams(window.location.search);
+        const target = params.get('focus');
+        if (!target) return;
+        const el = document.getElementById('ini-' + target);
+        if (!el) return;
+        el.scrollIntoView({behavior: 'smooth', block: 'center'});
+        el.classList.add('focus-flash');
+        setTimeout(() => el.classList.remove('focus-flash'), 2000);
+    })();
     </script>
 </body>
 </html>

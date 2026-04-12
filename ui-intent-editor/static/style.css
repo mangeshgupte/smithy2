@@ -269,3 +269,13 @@ textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px
     .history-item { flex-direction: column; gap: 4px; }
     .history-time { min-width: auto; }
 }
+
+/* t-367: flash highlight when deep-linked via ?focus=<ini-id> */
+.focus-flash {
+    animation: focus-flash-anim 2s ease-out;
+    border-radius: 4px;
+}
+@keyframes focus-flash-anim {
+    0%, 40% { background: rgba(200, 156, 42, 0.35); }
+    100% { background: transparent; }
+}
