@@ -450,18 +450,22 @@ class TestIntentEditor:
         theme_names = [t["name"] for t in saved["themes"]]
         assert "NewTheme" in theme_names
 
-    def test_apply_creates_multiple_themes(self, intent_client):
-        """Applying decomposition with multiple bold bullets creates themes."""
+    def test_apply_creates_initiatives(self, intent_client):
+        """Applying decomposition creates initiatives under their theme."""
         c, tmp = intent_client
-        intent = "- **Alpha**\n- **Beta**"
+        intent = "- **NewTheme**\n  - Build widget\n  - Test widget"
         c.post("/apply", data={
             "intent": intent,
-            "themes": ["Alpha", "Beta"],
+            "themes": "NewTheme",
+            "initiatives": ["NewTheme::Build widget", "NewTheme::Test widget"],
         })
         saved = json.loads((tmp / "state.json").read_text())
-        theme_names = [t["name"] for t in saved["themes"]]
-        assert "Alpha" in theme_names
-        assert "Beta" in theme_names
+        ini_titles = [i["title"] for i in saved["initiatives"]]
+        assert "Build widget" in ini_titles
+        assert "Test widget" in ini_titles
+        # Should be proposed status
+        ini = next(i for i in saved["initiatives"] if i["title"] == "Build widget")
+        assert ini["status"] == "proposed"
 
     def test_apply_skips_unchecked(self, intent_client):
         """Only checked items are created — unchecked themes/initiatives skipped."""

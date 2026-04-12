@@ -90,7 +90,7 @@ def _decompose_intent(intent_text):
     current_theme = None
 
     for line in intent_text.strip().split("\n"):
-        line = line.strip()
+        line = line.rstrip()
         if not line or line.startswith("#"):
             continue
 
