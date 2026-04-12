@@ -2,6 +2,7 @@
 :root {
     --bg: #0d1117;
     --surface: #161b22;
+    --surface-hover: #1c2129;
     --border: #30363d;
     --text: #e6edf3;
     --text-muted: #8b949e;
@@ -10,6 +11,9 @@
     --yellow: #d29922;
     --red: #f85149;
     --radius: 12px;
+    --shadow-sm: 0 2px 6px rgba(0,0,0,0.2);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.3);
+    --shadow-lg: 0 8px 24px rgba(0,0,0,0.4);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -24,10 +28,10 @@ body {
 }
 
 header { text-align: center; padding: 20px 0; }
-header h1 { font-size: 24px; }
+header h1 { font-size: 24px; letter-spacing: -0.5px; }
 .subtitle { color: var(--text-muted); font-size: 14px; margin-top: 4px; }
 
-.card-list { display: flex; flex-direction: column; gap: 12px; margin: 20px 0; }
+.card-list { display: flex; flex-direction: column; gap: 10px; margin: 20px 0; }
 
 .poker-card {
     display: flex;
@@ -37,20 +41,32 @@ header h1 { font-size: 24px; }
     border-left: 4px solid var(--blue);
     border-radius: var(--radius);
     cursor: grab;
-    transition: transform 0.15s, box-shadow 0.15s;
     user-select: none;
+    transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease, background 0.15s ease;
 }
 
-.poker-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
-.poker-card.dragging { opacity: 0.4; transform: scale(0.98); }
+.poker-card:hover { background: var(--surface-hover); box-shadow: var(--shadow-md); }
+.poker-card:active { cursor: grabbing; }
+.poker-card.dragging { opacity: 0.3; transform: scale(0.96) rotate(-1deg); box-shadow: var(--shadow-lg); z-index: 10; }
 .poker-card.expanded { border-left-width: 6px; }
 
-/* Smooth reorder animation */
-.poker-card { transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease; }
+/* Drag placeholder gap — other cards shift smoothly */
+.card-list.dragging-active .poker-card:not(.dragging) { transition: transform 0.15s ease; }
 
 /* Touch support */
 @media (pointer: coarse) {
     .poker-card { -webkit-touch-callout: none; touch-action: none; }
+    .poker-card { padding: 2px 0; }  /* slightly larger touch target */
+}
+
+/* Mobile responsive */
+@media (max-width: 480px) {
+    body { padding: 12px; }
+    header h1 { font-size: 20px; }
+    .card-meta { flex-wrap: wrap; gap: 6px; }
+    .card-rank { width: 36px; font-size: 14px; }
+    .card-body { padding: 10px 12px; }
+    .kill-btn { width: 32px; }
 }
 
 .poker-card.status-proposed { border-left-color: var(--yellow); }
@@ -128,10 +144,11 @@ header h1 { font-size: 24px; }
 .approve-btn:hover { color: #4ade80; }
 
 .weight-badge {
-    font-size: 11px; font-weight: 700; padding: 1px 6px;
-    border-radius: 4px; margin-left: 8px;
+    font-size: 10px; font-weight: 700; padding: 2px 7px;
+    border-radius: 6px; margin-left: 8px; letter-spacing: 0.5px;
+    text-transform: uppercase;
 }
-.weight-badge.weight-1 { background: var(--green); color: #000; }
+.weight-badge.weight-1 { background: var(--green); color: #000; box-shadow: 0 0 8px rgba(63,185,80,0.3); }
 .weight-badge.weight-2 { background: var(--blue); color: #000; }
 .weight-badge:not(.weight-1):not(.weight-2) { background: var(--border); color: var(--text-muted); }
 
@@ -148,22 +165,27 @@ header h1 { font-size: 24px; }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
 
 .proposed-section { margin-top: 32px; border-top: 1px solid var(--border); padding-top: 20px; }
-.proposed-section h2 { font-size: 16px; color: var(--text-muted); margin-bottom: 12px; }
+.proposed-section h2 { font-size: 14px; color: var(--text-muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
 
 .kill-zone {
     text-align: center;
-    padding: 24px;
+    padding: 20px;
     border: 2px dashed var(--border);
     border-radius: var(--radius);
     color: var(--text-muted);
     margin-top: 16px;
-    transition: all 0.2s;
+    font-size: 13px;
+    transition: all 0.2s ease;
+    opacity: 0.5;
 }
+
+.card-list.dragging-active ~ .kill-zone { opacity: 1; }
 
 .kill-zone.active {
     border-color: var(--red);
     color: var(--red);
-    background: rgba(248, 81, 73, 0.08);
+    background: rgba(248, 81, 73, 0.12);
+    transform: scale(1.02);
 }
 
 .empty {

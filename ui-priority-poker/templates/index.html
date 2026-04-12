@@ -103,11 +103,13 @@
         if (!e.target.classList.contains('poker-card')) return;
         dragEl = e.target;
         e.target.classList.add('dragging');
+        list.classList.add('dragging-active');
         e.dataTransfer.effectAllowed = 'move';
     });
 
     list.addEventListener('dragend', e => {
         e.target.classList.remove('dragging');
+        list.classList.remove('dragging-active');
         saveOrder();
     });
 
