@@ -68,7 +68,7 @@
                         <div class="drawer-section">
                             <div class="drawer-section-title">In-flight</div>
                             {% for task in ini.in_flight_tasks %}
-                            {% include '_task_row.html' %}
+                            {% include '_partials/_task_row.html' %}
                             {% endfor %}
                         </div>
                         {% endif %}
@@ -76,7 +76,7 @@
                         <div class="drawer-section">
                             <div class="drawer-section-title">Queued ({{ ini.queued_tasks|length }})</div>
                             {% for task in ini.queued_tasks[:12] %}
-                            {% include '_task_row.html' %}
+                            {% include '_partials/_task_row.html' %}
                             {% endfor %}
                             {% if ini.queued_tasks|length > 12 %}
                             <div class="drawer-row muted">+{{ ini.queued_tasks|length - 12 }} more</div>
@@ -104,7 +104,7 @@
                         <div class="drawer-section">
                             <div class="drawer-section-title">Shipped{% if ini.viewed_at %} since viewed{% endif %} ({{ ini.shipped_tasks|length }})</div>
                             {% for task in ini.shipped_tasks[:8] %}
-                            {% include '_task_row.html' %}
+                            {% include '_partials/_task_row.html' %}
                             {% endfor %}
                             {% if ini.shipped_tasks|length > 8 %}
                             <div class="drawer-row muted">+{{ ini.shipped_tasks|length - 8 }} more</div>
