@@ -1,8 +1,10 @@
 """Priority Poker — drag-to-rank initiative steering UI."""
 
 import asyncio
+import csv
 import json
 import os
+from datetime import datetime
 from pathlib import Path
 
 from fastapi import FastAPI, Request
@@ -32,6 +34,22 @@ def _load_state():
     if not path.exists():
         return {"initiatives": [], "themes": []}
     return json.loads(path.read_text())
+
+
+def _worklog_task_timestamps():
+    """Map task_id → latest worklog timestamp. Used to approximate completed_at."""
+    path = Path(STATE_DIR) / "worklog.tsv"
+    if not path.exists():
+        return {}
+    latest = {}
+    with open(path) as f:
+        reader = csv.DictReader(f, delimiter="\t")
+        for row in reader:
+            tid = row.get("task_id", "")
+            ts = row.get("timestamp", "")
+            if tid and ts and ts > latest.get(tid, ""):
+                latest[tid] = ts
+    return latest
 
 
 def _save_state(state):
@@ -64,10 +82,29 @@ async def index(request: Request):
         if ini_id:
             task_lists.setdefault(ini_id, []).append(t)
 
+    # Worklog timestamps for "shipped since viewed" section. Tasks don't store
+    # completed_at, so we derive it from the most recent worklog row per task_id.
+    worklog_ts = _worklog_task_timestamps()
+
+    def _sort_key(t):
+        hp = t.get("human_priority")
+        return (hp if hp is not None else float("inf"), t.get("priority", 2), t.get("id", ""))
+
     for ini in initiatives:
         ini["theme_name"] = themes.get(ini["theme_id"], "?")
         ini["task_count"] = task_counts.get(ini["id"], 0)
-        ini["tasks"] = task_lists.get(ini["id"], [])
+        all_tasks = task_lists.get(ini["id"], [])
+        in_flight = [t for t in all_tasks if t.get("status") == "in_progress"]
+        queued = sorted([t for t in all_tasks if t.get("status") == "pending"], key=_sort_key)
+        shipped = [t for t in all_tasks if t.get("status") == "complete"]
+        viewed_at = ini.get("viewed_at")
+        if viewed_at:
+            shipped = [t for t in shipped if worklog_ts.get(t["id"], "") > viewed_at]
+        shipped.sort(key=lambda t: worklog_ts.get(t["id"], ""), reverse=True)
+        ini["in_flight_tasks"] = in_flight
+        ini["queued_tasks"] = queued
+        ini["shipped_tasks"] = shipped
+        ini["tasks"] = all_tasks
 
     ranked = [i for i in initiatives if i["status"] in ("approved", "active")]
     proposed = [i for i in initiatives if i["status"] == "proposed"]
@@ -160,6 +197,18 @@ async def events():
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+@app.post("/api/initiative/{initiative_id}/view")
+async def mark_viewed(initiative_id: str):
+    """Stamp viewed_at = now() on drawer open. Enables 'shipped since viewed'."""
+    state = _load_state()
+    for ini in state.get("initiatives", []):
+        if ini["id"] == initiative_id:
+            ini["viewed_at"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+            _save_state(state)
+            return JSONResponse({"ok": True, "viewed_at": ini["viewed_at"]})
+    return JSONResponse({"ok": False, "error": "not found"}, status_code=404)
 
 
 @app.post("/reject/{initiative_id}")

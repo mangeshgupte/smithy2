@@ -1,0 +1,12 @@
+<div class="drawer-row status-{{ task.status }}" data-task-id="{{ task.id }}">
+    <span class="drawer-task-id">{{ task.id }}</span>
+    <span class="drawer-task-desc">{{ task.desc[:60] }}{% if task.desc|length > 60 %}…{% endif %}</span>
+    <span class="drawer-task-mp">M:p{{ task.priority if task.priority is defined else 2 }}</span>
+    {% if task.priority_reason %}
+    <span class="drawer-task-reason">· {{ task.priority_reason }}</span>
+    {% endif %}
+    <span class="drawer-task-hp {% if task.human_priority is not none %}set{% endif %}">you:{% if task.human_priority is not none %}p{{ task.human_priority }}{% else %}—{% endif %}</span>
+    {% if task.status == 'pending' %}
+    <button class="drawer-downrank" onclick="downrank(event, '{{ task.id }}', {{ task.human_priority if task.human_priority is not none else 'null' }})" title="Downrank">↓</button>
+    {% endif %}
+</div>

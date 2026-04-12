@@ -50,21 +50,41 @@
                     </div>
                     <div class="card-progress-label">{{ ini.heats_used }}/{{ ini.budget_cap }} heats used</div>
                     {% endif %}
-                    {% if ini.tasks %}
-                    <div class="card-tasks">
-                        <div class="card-tasks-title">Tasks ({{ ini.tasks|length }})</div>
-                        {% for task in ini.tasks[:8] %}
-                        <div class="card-task {{ task.status }}">
-                            <span class="task-status-dot">{% if task.status == 'complete' %}✓{% elif task.status == 'in_progress' %}▸{% else %}○{% endif %}</span>
-                            <span class="task-stage">{{ task.stage[:4] }}</span>
-                            <span class="task-desc">{{ task.desc[:60] }}{% if task.desc|length > 60 %}...{% endif %}</span>
+                    <div class="drawer-sections">
+                        {% if ini.in_flight_tasks %}
+                        <div class="drawer-section">
+                            <div class="drawer-section-title">In-flight</div>
+                            {% for task in ini.in_flight_tasks %}
+                            {% include '_task_row.html' %}
+                            {% endfor %}
                         </div>
-                        {% endfor %}
-                        {% if ini.tasks|length > 8 %}
-                        <div class="card-task muted">+{{ ini.tasks|length - 8 }} more</div>
+                        {% endif %}
+
+                        <div class="drawer-section">
+                            <div class="drawer-section-title">Queued ({{ ini.queued_tasks|length }})</div>
+                            {% for task in ini.queued_tasks[:12] %}
+                            {% include '_task_row.html' %}
+                            {% endfor %}
+                            {% if ini.queued_tasks|length > 12 %}
+                            <div class="drawer-row muted">+{{ ini.queued_tasks|length - 12 }} more</div>
+                            {% endif %}
+                            {% if not ini.queued_tasks %}
+                            <div class="drawer-row muted">— empty —</div>
+                            {% endif %}
+                        </div>
+
+                        {% if ini.shipped_tasks %}
+                        <div class="drawer-section">
+                            <div class="drawer-section-title">Shipped{% if ini.viewed_at %} since viewed{% endif %} ({{ ini.shipped_tasks|length }})</div>
+                            {% for task in ini.shipped_tasks[:8] %}
+                            {% include '_task_row.html' %}
+                            {% endfor %}
+                            {% if ini.shipped_tasks|length > 8 %}
+                            <div class="drawer-row muted">+{{ ini.shipped_tasks|length - 8 }} more</div>
+                            {% endif %}
+                        </div>
                         {% endif %}
                     </div>
-                    {% endif %}
                 </div>
             </div>
             <button class="kill-btn" onclick="rejectCard('{{ ini.id }}')" title="Reject">✕</button>
@@ -191,7 +211,24 @@
     function toggleExpand(card) {
         // Don't expand while dragging
         if (card.classList.contains('dragging')) return;
+        const wasExpanded = card.classList.contains('expanded');
         card.classList.toggle('expanded');
+        if (!wasExpanded) {
+            fetch('/api/initiative/' + card.dataset.id + '/view', { method: 'POST' })
+                .catch(() => {});
+        }
+    }
+
+    function downrank(evt, taskId, currentHp) {
+        evt.stopPropagation();
+        const newHp = (currentHp === null ? 10 : currentHp + 10);
+        fetch('/api/task/' + taskId + '/human-priority', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ value: newHp }),
+        }).then(r => {
+            if (r.ok) refreshState();
+        }).catch(() => {});
     }
 
     // Live indicator

@@ -215,3 +215,20 @@ code {
     border-radius: 4px;
     font-size: 13px;
 }
+
+/* t-314: Drawer sections (in-flight / queued / shipped since viewed) */
+.drawer-sections { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+.drawer-section { border-top: 1px solid var(--surface); padding-top: 8px; }
+.drawer-section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 4px; }
+.drawer-row { display: flex; align-items: center; gap: 8px; padding: 3px 4px; font-size: 12px; font-family: var(--font-mono, monospace); border-radius: 3px; }
+.drawer-row:hover { background: var(--surface); }
+.drawer-row.status-complete { opacity: 0.55; }
+.drawer-task-id { color: var(--text-muted); flex-shrink: 0; min-width: 48px; }
+.drawer-task-desc { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.drawer-task-mp { color: var(--text-muted); flex-shrink: 0; }
+.drawer-task-reason { color: var(--text-muted); opacity: 0.7; flex-shrink: 0; }
+.drawer-task-hp { color: var(--text-muted); flex-shrink: 0; }
+.drawer-task-hp.set { color: var(--yellow, #c89c2a); font-weight: 600; }
+.drawer-downrank { background: transparent; border: 1px solid var(--surface); color: var(--text-muted); cursor: pointer; border-radius: 3px; padding: 1px 6px; font-size: 11px; }
+.drawer-downrank:hover { background: var(--surface); color: var(--text); }
+.drawer-row.muted { color: var(--text-muted); opacity: 0.6; font-style: italic; }
