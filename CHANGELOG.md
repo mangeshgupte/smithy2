@@ -1,5 +1,59 @@
 # Changelog
 
+## v1.9 — Steering Attribution Pipeline (heats 756-764)
+
+### Philosophy
+- **Every human steering event becomes a traceable attribution row.** Before v1.9, "why did this task get reordered?" required git-archaeology across state.json diffs and commit messages. Now there's a single append-only `steering.log` per project with timestamp, heat, actor, task_id, field, before→after, source — wired into every UI mutation endpoint. The Timeline visualizes it; the CLI summarizes it weekly.
+
+### Foundation — `steering.log` + shared logger (t-338)
+- **New module `steering_log.py`** at repo root — `log_steering(project_root, actor, task_id, field, before, after, source)` + `read_steering_log(project_root, task_id=, actor=, since=)`. Per-project append-only TSV, 8-column schema, silent on missing state (heat=0 fallback), TSV-escape on embedded tabs/newlines.
+- **Poker wire-ups** — `/api/task/<id>/{human-priority, defer, undefer}` and `DELETE /api/task/<id>` now emit attribution rows with `actor=bellows-poker` and fine-grained `source` values (`poker-drawer`, `poker-drawer-defer`, etc.)
+
+### Read Endpoint — Bellows (t-339)
+- **`GET /api/project/<name>/steering-log?task_id=&actor=&since=&limit=500`** — newest-first rows for one project. 404 on unknown project, empty list on missing log. 5 tests.
+- **Upcoming mutations wire-ups** — `/api/upcoming/{pin, unpin, reorder}` log to the affected project's `steering.log` with `actor=bellows-upcoming`; reorder emits one `upcoming_rank` row per position.
+
+### Timeline Markers (t-340)
+- **`GET /api/steering-log`** on Timeline (project-scoped). **`<div class="steering-lane" id="steering-lane">`** rendered inside `.grid-overlay`; JS fetches rows every 7s, positions `.steering-marker` spans by heat-to-pixel mapping. Hover tooltip shows `h{heat} · {actor} · {task_id}` and the `field: before → after` delta. Markers outside `[tl_start, tl_end]` are skipped. CSS in `ui-timeline/static/style.css`.
+
+### Actor Identity Hook — X-Actor (t-342)
+- **Optional `X-Actor` request header** on Bellows (`upcoming/{pin,unpin,reorder}`) and Poker (`human-priority, defer, undefer, delete`). Overrides the UI-default actor; empty/whitespace or >64-char values ignored. Enables future multi-agent / scripted steering without code changes.
+
+### Weekly Retro CLI (t-341)
+- **`smithy steering-retro [--since=7d|24h|ISO] [--format=markdown|json]`** — renders steering.log + worklog.tsv into a weekly digest: pin events count, unique tasks pinned, tasks shipped, shipped-post-pin table with pin→ship heat lag, average lag, pure-allocator heats (no prior steering). Markdown by default for human reading; JSON for tooling. 5 tests via `click.testing.CliRunner`.
+
+### Dogfood + Follow-ups (t-344)
+- **First-run retro on smithy2 itself** exposed 5 gaps captured in `research/steering-retro-first-run.md`:
+  - Gap 1 (biggest): "Tasks shipped" counter includes every heat because Forge logs `outcome=complete` per-heat, not per-task — rename + de-dup by task_id (t-346-candidate)
+  - Gap 2: pure-allocator denominator mixes task-less rows (research, `generated`)
+  - Gap 3: empty `steering.log` produces no hint to the reader (one-line footer fix)
+  - Gap 4: no by-actor breakdown (t-347-candidate, waits on multi-actor data)
+  - Gap 5: no commit/PR link surface (defer)
+
+### E2E Pipeline Validation (t-345)
+- **`tests/test_attribution_e2e.py::test_full_trace_pin_to_timeline_marker`** — single integration test: Bellows pin (with custom `X-Actor`) → `steering.log` file written → Bellows read endpoint surfaces row → Timeline `/api/steering-log` returns it → Timeline HTML contains lane element + marker JS. Validates all 5 components ship together.
+
+### Documentation
+- **`research/steering-attribution-audit.md`** — feasibility verdict (partial-yes today via git-log, full-yes with steering.log), 8-column schema proposal, and the 5 impl candidates (t-338→t-342) that landed this block. Value-thesis per candidate.
+- **`research/steering-retro-first-run.md`** — dogfood findings above.
+
+### Hypotheses
+| # | Hypothesis | Status | Evidence |
+|---|------------|--------|----------|
+| H11 | A single per-project append-only log is enough for attribution | ✓ validated | Pipeline works end-to-end; zero schema migrations across 5 wire-ups |
+| H12 | Attribution has real weekly value (retro as habit-forming artifact) | ⏳ inconclusive | First-run dogfood exposed 5 gaps before any pin data existed — need 1-2 weeks of UI-driven steering to test the thesis |
+| H13 | `X-Actor` header cost is low enough to land while logging is fresh | ✓ validated | 4 Poker + 3 Bellows endpoints updated in one heat, 4 new tests |
+
+### Operational Note
+- **State.json trailing-garbage incident at heat 761** — `state.json` grew a stray `_version": 1\n}\n` suffix past a valid JSON close, unparseable by the CLI. Cause unknown (possibly a long-running UI writer racing the mtime check). Fixed via `json.JSONDecoder().raw_decode()` truncation. If it recurs, treat as a signal that mtime-check alone is insufficient and add a post-write JSON parse-back verification.
+
+### Stats
+- **Heats**: 756-764 (9 heats — 5 impl + 1 research + 2 marketing/editing + 1 testing)
+- **Tests**: +21 across the block (12 steering_log helper/wire-ups, 5 bellows upcoming/steering-log, 3 timeline, 5 steering-retro CLI, 1 E2E — some overlap via shared fixtures)
+- **Files touched**: new `steering_log.py`, `tests/test_steering_log.py`, `tests/test_steering_retro.py`, `tests/test_attribution_e2e.py`, `research/steering-attribution-audit.md`, `research/steering-retro-first-run.md`; modified `smithy/cli.py`, `bellows/app.py`, `bellows/tests/test_upcoming.py`, `ui-priority-poker/app.py`, `ui-timeline/app.py`, `ui-timeline/templates/index.html`, `ui-timeline/static/style.css`, `tests/test_steering_uis.py`, `CHANGELOG.md`
+
+---
+
 ## v1.8 — Steerability: Ranking > Constraints (heats 725-739)
 
 ### Philosophy Shift
