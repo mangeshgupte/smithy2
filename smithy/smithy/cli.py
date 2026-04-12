@@ -14,24 +14,50 @@ from .state import (
 VALID_PERSONAS = ["forge", "marshal", "anvil", "chisel"]
 
 
-def _stage_signal(stage_stats: dict) -> str:
-    """Derive 🟢/🟡/🔴 from a stage's value_ema."""
-    ema = stage_stats.get("value_ema", 0) if stage_stats else 0
-    if ema >= 0.7:
-        return "🟢"
-    if ema >= 0.5:
-        return "🟡"
-    return "🔴"
+def _pick_priority_signal(state: dict, task: dict) -> str:
+    """Pick one terse signal explaining why this task earned its rank.
+
+    Vocabulary (per t-313 spec): recency | poker | stage-balance | blocked-deps-clear.
+    One signal per reason string. Order of precedence:
+    - blocked-deps-clear: dependencies just cleared (all blocked_by are complete)
+    - poker: initiative ranked in the top 3
+    - recency: initiative viewed_at set (human looked at it recently)
+    - stage-balance: task's stage is underweight vs target (heats-per-target ratio)
+    """
+    queue = state.get("queue", [])
+    complete_ids = {t["id"] for t in queue if t.get("status") == "complete"}
+    blocked = task.get("blocked_by") or []
+    if blocked and all(b in complete_ids for b in blocked):
+        return "blocked-deps-clear"
+
+    ini_id = task.get("initiative_id")
+    if ini_id:
+        ini = next((i for i in state.get("initiatives", []) if i["id"] == ini_id), None)
+        if ini:
+            if isinstance(ini.get("rank"), int) and ini["rank"] <= 3:
+                return "poker"
+            if ini.get("viewed_at"):
+                return "recency"
+
+    stages = state.get("stages", {})
+    stage_name = task.get("stage", "")
+    s = stages.get(stage_name, {})
+    target = s.get("target", 0)
+    heats = s.get("heats", 0)
+    used = state.get("budget", {}).get("used", 0) or 1
+    actual = heats / used if used else 0
+    if target > 0 and actual < target * 0.9:
+        return "stage-balance"
+
+    return "stage-balance"
 
 
 def _build_priority_reason(state: dict, task: dict) -> str:
-    """Format an auto-reason string ≤40 chars: 'ini-XXX rank=N + 🟢' or 'p{N}'."""
+    """Format an auto-reason string ≤40 chars: 'ini-XXX rank=N + <signal>' or 'p{N} + <signal>'."""
+    signal = _pick_priority_signal(state, task)
     ini_id = task.get("initiative_id")
-    stage = task.get("stage", "")
-    signal = _stage_signal(state.get("stages", {}).get(stage, {}))
     if ini_id:
-        ini_map = {i["id"]: i for i in state.get("initiatives", [])}
-        ini = ini_map.get(ini_id)
+        ini = next((i for i in state.get("initiatives", []) if i["id"] == ini_id), None)
         rank = ini.get("rank", "?") if ini else "?"
         reason = f"{ini_id} rank={rank} + {signal}"
     else:
@@ -417,6 +443,8 @@ def set_priority(ctx, task_id, priority):
         if task["id"] == task_id:
             old_priority = task.get("priority", 2)
             task["priority"] = priority
+            if task.get("human_priority") is None:
+                task["priority_reason"] = _build_priority_reason(state, task)
             save_state(root, state)
             _output({"task": task, "old_priority": old_priority})
             _err(f"Set {task_id} priority: {old_priority} → {priority}")
@@ -450,6 +478,13 @@ def set_next_tasks(ctx, task_ids, no_nudge):
 
     ordered = list(task_ids)
     state["next_tasks"] = ordered
+
+    # Refresh priority_reason for agent-ordered tasks; preserve human-set reasons.
+    for tid in ordered:
+        t = queue_map[tid]
+        if t.get("human_priority") is None:
+            t["priority_reason"] = _build_priority_reason(state, t)
+
     save_state(root, state)
 
     result = {"next_tasks": ordered, "count": len(ordered)}

@@ -1237,13 +1237,38 @@ class TestSchedulerSort:
         result = runner.invoke(cli, ["--dir", str(project), "add-task", "testing", "new one", "--priority", "1"])
         assert result.exit_code == 0
         task = json.loads(result.output)["task"]
-        assert task["priority_reason"] is not None
-        assert len(task["priority_reason"]) <= 40
-        assert "p1" in task["priority_reason"]
+        reason = task["priority_reason"]
+        assert reason is not None and len(reason) <= 40
+        assert "p1" in reason
+        # Must end with one of the spec'd signals.
+        assert any(sig in reason for sig in
+                   ("recency", "poker", "stage-balance", "blocked-deps-clear"))
         assert task["human_priority"] is None
 
+    def test_set_priority_repopulates_reason(self, project, runner):
+        """set-priority refreshes priority_reason for agent-ordered tasks."""
+        runner.invoke(cli, ["--dir", str(project), "set-priority", "t-001", "0"])
+        state = json.loads((project / "state.json").read_text())
+        task = next(t for t in state["queue"] if t["id"] == "t-001")
+        assert task["priority_reason"] is not None
+        assert len(task["priority_reason"]) <= 40
+
+    def test_set_next_tasks_repopulates_reason(self, project, runner):
+        """set-next-tasks refreshes reason for each agent-ordered task."""
+        state = json.loads((project / "state.json").read_text())
+        state["queue"].append({"id": "t-002", "stage": "implementation", "desc": "b",
+                               "status": "pending", "priority": 2, "blocked_by": [],
+                               "human_priority": None, "priority_reason": None})
+        (project / "state.json").write_text(json.dumps(state))
+        runner.invoke(cli, ["--dir", str(project), "set-next-tasks", "t-001", "t-002", "--no-nudge"])
+        reloaded = json.loads((project / "state.json").read_text())
+        for tid in ("t-001", "t-002"):
+            t = next(x for x in reloaded["queue"] if x["id"] == tid)
+            assert t["priority_reason"] is not None
+            assert len(t["priority_reason"]) <= 40
+
     def test_add_task_with_initiative_reason_format(self, project, runner):
-        """add-task with --initiative produces 'ini-XXX rank=N + <signal>'."""
+        """add-task with --initiative produces 'ini-XXX rank=N + <signal>'; top-3 rank → 'poker'."""
         state = json.loads((project / "state.json").read_text())
         state["initiatives"] = [
             {"id": "ini-009", "theme_id": "", "title": "x", "status": "active",
@@ -1256,6 +1281,7 @@ class TestSchedulerSort:
         task = json.loads(result.output)["task"]
         reason = task["priority_reason"]
         assert "ini-009" in reason and "rank=2" in reason
+        assert "poker" in reason
         assert len(reason) <= 40
 
     def test_queue_push_auto_populates_reason(self, project, runner):
