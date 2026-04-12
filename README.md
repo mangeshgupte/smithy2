@@ -61,18 +61,18 @@ Four standalone FastAPI apps for directing Forge — each a different steering m
 
 ```bash
 # Start all 4 (each in its own terminal or tmux pane):
-cd ui-priority-poker   && uvicorn app:app --port 8081
-cd ui-constraint-board && uvicorn app:app --port 8082
-cd ui-timeline         && uvicorn app:app --port 8083
-cd ui-intent-editor    && uvicorn app:app --port 8084
+cd ui-priority-poker   && uvicorn app:app --port 8001
+cd ui-constraint-board && uvicorn app:app --port 8002
+cd ui-intent-editor    && uvicorn app:app --port 8003
+cd ui-timeline         && uvicorn app:app --port 8004
 ```
 
 | UI | Port | What it does |
 |----|------|-------------|
-| **Priority Poker** | 8081 | Drag-to-reorder initiative cards. Rank determines what Forge works on next. Weight badges show budget allocation. Proposed initiatives appear in a separate section for approval/rejection. |
-| **Constraint Board** | 8082 | Set boundaries instead of commands. Add budget caps, stage floors, exclusion rules. Violations flagged in real time. Click-to-edit constraint values. ATC-style guardrails. |
-| **Timeline View** | 8083 | Gantt-style bars for each initiative. Drag endpoints to allocate budget across heats. Overlap detection shows parallel work. Range slider for viewport control. |
-| **Intent Editor** | 8084 | Write natural-language outcomes. The system decomposes them into themes and initiatives. Select which to create, apply to state. History of past intents preserved. |
+| **Priority Poker** | 8001 | Drag-to-reorder initiative cards. Rank determines what Forge works on next. Weight badges show budget allocation. Proposed initiatives appear in a separate section for approval/rejection. |
+| **Constraint Board** | 8002 | Set boundaries instead of commands. Add budget caps, stage floors, exclusion rules. Violations flagged in real time. Click-to-edit constraint values. ATC-style guardrails. |
+| **Intent Editor** | 8003 | Write natural-language outcomes. The system decomposes them into themes and initiatives. Select which to create, apply to state. History of past intents preserved. |
+| **Timeline View** | 8004 | Gantt-style bars for each initiative. Drag endpoints to allocate budget across heats. Overlap detection shows parallel work. Range slider for viewport control. |
 
 ### How they connect
 
@@ -95,10 +95,10 @@ All UIs include:
 The nav bar uses environment variables for URLs (useful when running on non-default ports):
 
 ```bash
-export URL_POKER=http://localhost:8081
-export URL_CONSTRAINTS=http://localhost:8082
-export URL_INTENT=http://localhost:8083
-export URL_TIMELINE=http://localhost:8084
+export URL_POKER=http://localhost:8001
+export URL_CONSTRAINTS=http://localhost:8002
+export URL_INTENT=http://localhost:8003
+export URL_TIMELINE=http://localhost:8004
 export URL_BELLOWS=http://localhost:8080
 ```
 

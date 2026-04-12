@@ -25,7 +25,7 @@ NAV_LINKS = [
     ("🛡️ Constraints", os.environ.get("URL_CONSTRAINTS", "http://localhost:8002"), True),
     ("🎯 Intent", os.environ.get("URL_INTENT", "http://localhost:8003"), False),
     ("📅 Timeline", os.environ.get("URL_TIMELINE", "http://localhost:8004"), False),
-    ("🔔 Bellows", os.environ.get("URL_BELLOWS", "http://localhost:8000"), False),
+    ("🔔 Bellows", os.environ.get("URL_BELLOWS", "http://localhost:8080"), False),
 ]
 
 

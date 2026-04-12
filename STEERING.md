@@ -22,7 +22,7 @@ Use one. Use all four. They write to the same `state.json` — changes from any 
 ```
 ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
 │   Poker     │  │ Constraints │  │   Intent    │  │  Timeline   │
-│  :8081      │  │   :8082     │  │   :8083     │  │   :8084     │
+│  :8001      │  │   :8002     │  │   :8003     │  │   :8004     │
 └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘
        │                │                │                │
        └────────────────┴────────────────┴────────────────┘
@@ -49,10 +49,10 @@ Each UI is a standalone FastAPI app. No shared database, no message queue — ju
 pip install fastapi uvicorn jinja2
 
 # Start all 4 UIs (each in a separate terminal):
-cd ui-priority-poker   && uvicorn app:app --port 8081 &
-cd ui-constraint-board && uvicorn app:app --port 8082 &
-cd ui-timeline         && uvicorn app:app --port 8083 &
-cd ui-intent-editor    && uvicorn app:app --port 8084 &
+cd ui-priority-poker   && uvicorn app:app --port 8001 &
+cd ui-constraint-board && uvicorn app:app --port 8002 &
+cd ui-intent-editor    && uvicorn app:app --port 8003 &
+cd ui-timeline         && uvicorn app:app --port 8004 &
 
 # Or use smithy start-all to launch everything in tmux
 smithy start-all
@@ -68,7 +68,7 @@ export FORGE_PROJECT_DIR=~/projects/my-project
 
 ## Priority Poker
 
-**Port:** 8081 | **Metaphor:** Drag cards to rank. Rank IS steering.
+**Port:** 8001 | **Metaphor:** Drag cards to rank. Rank IS steering.
 
 The simplest steering interface. Initiatives appear as draggable cards. Drag them up to increase priority, down to decrease it. Forge works top-down through the ranked list.
 
@@ -105,7 +105,7 @@ The simplest steering interface. Initiatives appear as draggable cards. Drag the
 
 ## Constraint Board
 
-**Port:** 8082 | **Metaphor:** Set boundaries, not commands. ATC-style guardrails.
+**Port:** 8002 | **Metaphor:** Set boundaries, not commands. ATC-style guardrails.
 
 Instead of telling Forge what to do, tell it what NOT to do. Set budget caps, stage floors, and exclusion rules. The board flags violations in real time — red banners when a constraint is breached, green when all are satisfied.
 
@@ -141,7 +141,7 @@ Instead of telling Forge what to do, tell it what NOT to do. Set budget caps, st
 
 ## Intent Editor
 
-**Port:** 8084 | **Metaphor:** Write outcomes, system creates tasks.
+**Port:** 8003 | **Metaphor:** Write outcomes, system creates tasks.
 
 The most high-level steering interface. Write what you want in natural language — the system decomposes it into themes and initiatives, then creates them in `state.json`. Think of it as "commit message for the future."
 
@@ -193,7 +193,7 @@ Bold bullets become themes. Indented sub-bullets become initiatives (status: pro
 
 ## Timeline View
 
-**Port:** 8083 | **Metaphor:** Drag bar endpoints to allocate budget across time.
+**Port:** 8004 | **Metaphor:** Drag bar endpoints to allocate budget across time.
 
 A Gantt-style view where each initiative is a horizontal bar. Drag the start or end to schedule when work happens. See overlaps (parallel work) and gaps (cool-down periods) at a glance.
 
@@ -241,7 +241,7 @@ URLs are configurable via environment variables:
 | `URL_CONSTRAINTS` | `http://localhost:8002` | Constraint Board |
 | `URL_INTENT` | `http://localhost:8003` | Intent Editor |
 | `URL_TIMELINE` | `http://localhost:8004` | Timeline View |
-| `URL_BELLOWS` | `http://localhost:8000` | Bellows dashboard |
+| `URL_BELLOWS` | `http://localhost:8080` | Bellows dashboard |
 
 Bellows project pages also include steering links in their tab navigation.
 
