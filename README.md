@@ -55,7 +55,7 @@ cd bellows && uv run uvicorn app:app --port 8080
 
 ## Steering UIs
 
-Four standalone FastAPI apps for directing Forge — each a different steering metaphor. All read/write `state.json` directly; Forge picks up changes on the next heat.
+Four standalone FastAPI apps for directing Forge — each a different steering metaphor. All read/write `state.json` directly; Forge picks up changes on the next heat. See [STEERING.md](STEERING.md) for full documentation.
 
 ```bash
 # Start all 4 (each in its own terminal or tmux pane):
