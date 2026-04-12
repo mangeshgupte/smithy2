@@ -1,168 +1,484 @@
-# Getting Started with The Smithy
+# The Forge — End-to-End Walkthrough
 
-A complete walkthrough: from zero to autonomous AI worker in 5 minutes.
+A narrative tour of The Smithy, following one human from install to shipped feature. Read this if you want to see how the pieces — CLI, personas, steering UIs, nudge cycle — fit together in practice.
 
-## 1. Install
+---
+
+## Meet Alex
+
+Alex maintains `tasq`, a small Python CLI for task tracking. They want to add a proper testing feature — unit tests, integration tests, coverage reports — but every time they open the repo, the work feels diffuse. Not hard, just scattered: parser edge cases, mock stores, CLI integration tests, a CI hook. Two evenings of flow, minimum. Alex has about forty-five minutes tonight.
+
+They've heard about The Smithy — an autonomous AI worker that runs in bounded 5-minute "heats," self-prioritizes, commits every heat, and lets you steer without micromanaging. They decide to try it.
+
+---
+
+## Act 1 — Initialize
+
+Alex installs the CLI first:
 
 ```bash
-cd smithy/
-pip install -e smithy/    # Install the CLI
-smithy --help             # Verify: should show 28 commands
+$ cd ~/src/smithy2
+$ pip install -e smithy/
+$ smithy --help
+Usage: smithy [OPTIONS] COMMAND [ARGS]...
+
+  The Smith protocol — autonomous AI worker orchestration.
+
+Commands:
+  init, start-all, stop-all, sessions, resume, patrol, sync-stages,
+  status, stats, start-heat, end-heat, queue-push, queue-pop, ...
+  (28 commands)
 ```
 
-## 2. Create a Project
+Then scaffolds a project:
 
 ```bash
-smithy init my-app --target ~/projects/my-app
+$ smithy init tasq --target ~/projects/tasq
+✓ Created ~/projects/tasq/CLAUDE.md
+✓ Created ~/projects/tasq/protocol/loop.md
+✓ Created ~/projects/tasq/protocol/allocator.md
+✓ Created ~/projects/tasq/protocol/logging.md
+✓ Created ~/projects/tasq/protocol/reporting.md
+✓ Created ~/projects/tasq/state.json    (budget: 100 heats)
+✓ Created ~/projects/tasq/identity.md   (template)
+✓ Created ~/projects/tasq/worklog.tsv
+✓ Created ~/projects/tasq/inbox.md
+✓ Created ~/projects/tasq/outbox.md
+✓ Created ~/projects/tasq/feedback.md
+✓ Created ~/projects/tasq/personas/{anvil,marshal,forge}/CLAUDE.md
+
+Next: edit identity.md, then `smithy start-all`
 ```
 
-This creates:
-- `CLAUDE.md` — protocol hub (tells Claude Code how to work)
-- `protocol/` — loop.md, allocator.md, logging.md, reporting.md
-- `state.json` — budget, stages, queue, themes, initiatives
-- `identity.md` — describe your project + commander's intent
-- `worklog.tsv` — append-only heat log
-- `inbox.md` / `outbox.md` / `feedback.md` — async communication
-
-## 3. Describe Your Project
-
-Edit `identity.md`:
+Alex opens `~/projects/tasq/identity.md` and fills it in:
 
 ```markdown
-# my-app
+# tasq
 
 ## What This Is
-A todo app with natural language input.
+A minimal Python CLI for personal task tracking.
+Flat-file storage (~/.tasq/tasks.json). Three commands: add, list, done.
 
 ## Commander's Intent
-- Intent: Build a clean, functional CLI todo app
-- Success looks like: User can add, list, complete, and delete tasks
-- Tone: Simple and well-tested
-- Boundaries: No database — flat file storage
-- Not this: No web UI, no cloud sync
+- Intent: Reach production-quality test coverage (90%+) with meaningful tests
+- Success looks like: CI green, edge cases covered, no mocked-out integrations
+- Tone: Pragmatic. Tests should catch real bugs, not pad coverage.
+- Boundaries: Only the testing layer — don't refactor core logic
+- Not this: No new features. Testing & quality only.
 ```
 
-## 4. Start All Personas
+They peek at `state.json`:
 
-The Smithy runs three personas in a tmux session — Anvil (your interface), Marshal (allocator), and Forge (worker):
+```json
+{
+  "project": "tasq",
+  "budget": { "total_heats": 100, "used": 0 },
+  "stages": {
+    "research":       { "heats": 0, "progress": 0 },
+    "planning":       { "heats": 0, "progress": 0 },
+    "implementation": { "heats": 0, "progress": 0 },
+    "testing":        { "heats": 0, "progress": 0 },
+    "editing":        { "heats": 0, "progress": 0 },
+    "marketing":      { "heats": 0, "progress": 0 }
+  },
+  "queue": [],
+  "themes": [],
+  "initiatives": [],
+  "constraints": []
+}
+```
+
+Six stages, 100 heats (~8 hours of bounded work), empty queue. Everything visible in a flat file. Alex likes this — no hidden state.
+
+---
+
+## Act 2 — Start the Team
+
+Alex runs one command:
 
 ```bash
-cd ~/projects/my-app
+$ cd ~/projects/tasq
+$ smithy start-all
+✓ Created tmux session 'smithy2'
+✓ Window 'anvil'   — Claude Code launched in personas/anvil/
+✓ Window 'marshal' — Claude Code launched in personas/marshal/
+✓ Window 'forge'   — Claude Code launched in personas/forge/
 
-# Option A: One command (creates tmux session with all three)
-smithy start-all
+Attach: tmux attach -t smithy2
+Or just message anvil: smithy tell anvil "Start"
+```
 
-# Option B: Manual (start Anvil, it spawns the others)
-cd personas/anvil && claude
+Three Claude Code windows, each in a different persona directory, each loading its own CLAUDE.md. Alex attaches to the `anvil` window and types:
+
+```
 > Start
 ```
 
-`smithy start-all` creates a `smithy2` tmux session with three windows. Each runs Claude Code. Tell Anvil "Start" and it spawns Marshal and Forge as Agent Teams teammates.
+**Anvil boots up.** It reads `state.json`, `identity.md`, sees the intent ("Reach production-quality test coverage"), and spawns its two teammates using `TeamCreate` + the Agent tool. Each spawn prompt includes the `cd` trick — Anvil knows that without it, the spawned agent would inherit Anvil's working directory and load Anvil's CLAUDE.md instead of its own.
 
-## 5. Queue Tasks and Watch Them Execute
+```
+Anvil: Team created. Spawning Marshal and Forge.
+Anvil: Marshal online — reading state, initiatives, protocol/allocator.md.
+Anvil: Forge online — waiting for first task assignment.
 
-The workflow is queue-driven:
-
-```bash
-# Add tasks to the queue
-smithy add-task implementation "Build the CLI parser"
-smithy add-task testing "Write tests for CLI parser"
-
-# Marshal prioritizes and pushes to Forge
-smithy set-next-tasks t-001 t-002       # Marshal does this automatically
-
-# Forge pops and executes
-smithy queue-pop                        # Forge does this in its loop
+Anvil: No themes or initiatives exist yet. What do you want to steer toward?
+       You can:
+       1. Tell me your priorities (I'll decompose into themes + initiatives)
+       2. Open the Intent Editor at http://localhost:8004 and write bullets
+       3. Drop into Priority Poker if you already have ideas drafted
 ```
 
-When Forge finishes a heat, `end-heat` auto-nudges Marshal. Marshal re-prioritizes, calls `set-next-tasks` which auto-nudges Forge. The cycle is nudge-driven, not poll-driven.
+**Marshal's first moments.** In the background, Marshal reads the protocol files, runs `smithy patrol --fix` to verify state integrity, then sits idle. Its job is to prioritize — but there's nothing to prioritize yet.
 
-If a persona is mid-heat when nudged, the nudge queues to `.smithy-nudge-queue/<persona>.jsonl` and drains on the next idle:
+**Forge's first moments.** Forge runs `smithy resume`, `smithy patrol --fix`, `smithy sync-stages`, then calls `smithy queue-pop`. The queue returns `{task: null}`. Forge prints "Waiting for task…" and idles. It will wake when Marshal queues one.
 
-```bash
-smithy nudge forge "New priority task available"   # Queues if busy
-smithy drain-nudges forge                          # Read + clear queued nudges
+Alex now has a running team. No heat has been spent yet — the budget is still 100/100.
+
+---
+
+## Act 3 — The Human Steers
+
+Alex opens the Intent Editor in a browser tab: `http://localhost:8004`.
+
+The UI is dark, clean, one textarea. Alex types:
+
+```
+- **Testing**
+  - Build a full unit test suite for the core parser
+  - Integration tests covering add/list/done round-trip
+  - Edge case tests — malformed dates, unicode, empty args
+  - Coverage report wiring (pytest-cov)
+- **CI**
+  - GitHub Actions workflow to run tests on push
+  - Lint pass (ruff)
 ```
 
-## 6. Review the Work
+They hit **Decompose**. The UI decomposes the bullets into a tree: two themes (*Testing*, *CI*), six initiatives under them. All are marked `+ new` in green. Alex unchecks "Lint pass (ruff)" — out of scope tonight — and clicks **Apply Selected**.
 
-While the Forge runs (or after):
+Behind the scenes, the Intent Editor POSTs to `/apply`, which writes to `state.json`:
 
-```bash
-# Quick status
-smithy status
-
-# Detailed stats
-smithy stats
-
-# See what happened
-git log --oneline -20
-
-# List active windows
-smithy sessions
-
-# Read the AAR
-cat outbox.md
+```json
+"themes": [
+  { "id": "th-001", "name": "Testing", "status": "active" },
+  { "id": "th-002", "name": "CI",      "status": "active" }
+],
+"initiatives": [
+  { "id": "ini-001", "theme_id": "th-001", "title": "Unit tests — parser",      "status": "proposed" },
+  { "id": "ini-002", "theme_id": "th-001", "title": "Integration tests",        "status": "proposed" },
+  { "id": "ini-003", "theme_id": "th-001", "title": "Edge case coverage",       "status": "proposed" },
+  { "id": "ini-004", "theme_id": "th-001", "title": "Coverage reporting",       "status": "proposed" },
+  { "id": "ini-005", "theme_id": "th-002", "title": "GitHub Actions workflow",  "status": "proposed" }
+]
 ```
 
-## 7. Use Bellows (Dashboard)
+Nothing is `approved` yet — proposed initiatives are visible but don't gate work.
 
-```bash
-cd bellows
-FORGE_PROJECTS_DIR=~/projects uv run uvicorn app:app --port 8080
-# Open http://localhost:8080
+Alex switches to the Priority Poker tab: `http://localhost:8001`. The five proposed initiatives appear as cards stacked by theme. Alex drags them into the order they want the Forge to tackle them:
+
+```
+1. Unit tests — parser            ← highest priority
+2. Edge case coverage
+3. Integration tests
+4. Coverage reporting
+5. GitHub Actions workflow
 ```
 
-Bellows shows: project cards, activity feeds, decision queues, initiative board, morning briefings.
+They click **Approve** on the top three. The poker UI sends `POST /reorder` and `POST /approve/ini-001` (etc.), which write back to `state.json`. Approved initiatives now have `status: "approved"` and a `rank` field.
 
-## 8. Give Feedback
+**The nudge cycle fires.** Writing `state.json` triggers a file-watch in Marshal. Marshal wakes up:
 
-Write to `feedback.md`:
-```markdown
-## 2026-04-11
-- The tests need more edge cases
-- CLI output should be colorized
+```
+Marshal: State changed. Recomputing priorities.
+Marshal: 3 approved initiatives, 0 tasks queued. Generating tasks for rank-1 initiative.
+Marshal: smithy add-task testing "Unit test parser: tokenize()" --initiative ini-001
+Marshal: smithy add-task testing "Unit test parser: parse_date()" --initiative ini-001
+Marshal: smithy add-task testing "Unit test parser: parse_flags()" --initiative ini-001
+Marshal: smithy queue-push t-001 t-002 t-003
+Marshal: → nudge sent to forge
 ```
 
-The Forge reads feedback at the start of each run and creates fix tasks.
+**Forge wakes.** It was idling; the nudge arrives and it returns to Step 1 of the loop.
 
-## 9. Steer with Themes + Initiatives
+---
 
-```bash
-# Create a strategic theme
-smithy add-theme "Core Features"
+## Act 4 — Forge Executes a Heat
 
-# Propose an initiative under it
-smithy propose th-001 "User Auth" "Add login/logout with session tokens"
-
-# Approve it (Forge won't work on it until approved)
-smithy approve ini-001
-
-# Tasks linked to initiatives are gated by approval
-smithy add-task implementation "Login route" --initiative ini-001
+```
+Forge: smithy queue-pop
+       → { "task_id": "t-001", "stage": "testing",
+           "description": "Unit test parser: tokenize()" }
+Forge: smithy start-heat testing
+       → heat 1 [testing] started
 ```
 
-## 10. Stop and Resume
+Forge reads `src/tasq/parser.py`, studies the `tokenize()` function, and writes `tests/test_parser_tokenize.py`. It picks out edge cases the code already handles — trailing whitespace, quoted args, empty input — plus two it suspects are under-tested. Runs `pytest tests/test_parser_tokenize.py -v`:
+
+```
+tests/test_parser_tokenize.py::test_basic PASSED
+tests/test_parser_tokenize.py::test_quoted_args PASSED
+tests/test_parser_tokenize.py::test_empty_input PASSED
+tests/test_parser_tokenize.py::test_unicode FAILED
+tests/test_parser_tokenize.py::test_trailing_semicolon FAILED
+```
+
+Two real bugs found. Forge fixes them in `parser.py` in the same heat — that's in-scope for a testing heat, per the protocol. Re-runs: all pass. Commits:
+
+```
+Forge: git add tests/test_parser_tokenize.py src/tasq/parser.py
+Forge: git commit -m "[testing] t-001: tokenize() unit tests — 5 cases, fixed unicode + semicolon bugs"
+[main 3a2f19c] [testing] t-001: tokenize() unit tests — 5 cases, fixed unicode + semicolon bugs
+ 2 files changed, 68 insertions(+), 3 deletions(-)
+```
+
+Then closes the heat:
+
+```
+Forge: smithy end-heat 0.9 🟢 "5 tests added, 2 pre-existing bugs surfaced and fixed. Coverage on tokenize() now 100%."
+       → heat 1 [testing] complete
+       → budget.used = 1 / 100
+       → value_ema[testing] = 0.9
+       → worklog.tsv appended
+       → task t-001 marked complete
+       → nudge sent to marshal
+```
+
+**The worklog entry:**
+
+```
+heat  stage    task_id  value  signal  notes
+1     testing  t-001    0.9    🟢      5 tests added, 2 pre-existing bugs surfaced and fixed. Coverage on tokenize() now 100%.
+```
+
+**Forge's report to Marshal** (via `SendMessage`):
+
+```
+TASK_COMPLETE: t-001
+Commit: 3a2f19c
+Value: 🟢 (0.9)
+Summary: 5 tokenize() tests + fixed 2 bugs (unicode, trailing semicolon).
+Notes: parse_date() next — looks like it has more edge cases than tokenize did.
+```
+
+Forge loops back to Step 1, calls `queue-pop`, gets `t-002`. The whole cycle — pop, start, execute, commit, end, report — took 4 minutes 12 seconds.
+
+---
+
+## Act 5 — Cycle Continues, Alex Adds a Constraint
+
+By heat 6, Alex glances at the tmux pane and sees steady progress. Commits scrolling in `git log`:
+
+```
+$ git log --oneline -8
+c1e7a44 [testing] t-006: parse_flags() — 4 tests, edge case on --done=false
+9b3d501 [testing] t-005: integration test add→list round-trip
+7fa1b1d [testing] t-004: parse_date() — 8 tests, fixed ISO format bug
+4b82c3e [testing] t-003: parse_flags() — 6 tests
+e5c9202 [testing] t-002: parse_date() — 5 tests
+3a2f19c [testing] t-001: tokenize() unit tests — 5 cases, fixed unicode + semicolon bugs
+```
+
+Six heats, all testing. But Alex is starting to worry — the budget is 100 heats total, and they also want coverage reporting and CI to happen. They open the Constraint Board: `http://localhost:8002`.
+
+They add a constraint:
+
+```
+Type:       Budget cap
+Stage:      testing
+Value:      40
+Description: Don't spend more than 40 heats on testing
+```
+
+The Constraint Board writes to `state.json`:
+
+```json
+"constraints": [
+  { "id": "con-001", "type": "budget_cap", "stage": "testing",
+    "value": 40, "status": "active", "description": "...", "created": "2026-04-11T19:42:11" }
+]
+```
+
+Marshal wakes (file watch), reads the new constraint, and updates its task-generation strategy:
+
+```
+Marshal: New constraint — testing cap at 40 heats.
+Marshal: Currently 6 heats used in testing. Headroom: 34.
+Marshal: Re-planning. Will interleave coverage (ini-004) and CI (ini-005)
+         starting at heat 25 to leave room before cap.
+```
+
+Alex doesn't need to redo the poker ranking — Marshal absorbs the constraint and re-plans on its own. The board shows a green progress bar (6/40, 15% used). If it turns yellow (80%) or red (100%), Alex will see it immediately.
+
+---
+
+## Act 6 — Review
+
+After about 20 heats, Alex wants a status check. They type into the anvil pane:
+
+```
+> what's the status?
+```
+
+Anvil reads the worklog, state, and git log, then responds:
+
+```
+THE FORGE — STATUS (heats 1-20)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+20 heats, 16 green, 3 yellow, 1 red | 42% intent progress (+42%) | 80 heats remaining
+
+CURRENT INTENT: "Reach production-quality test coverage (90%+) with meaningful tests"
+
+WHAT WE'RE LEARNING:
+
+  VALIDATED
+  - parse_date() had the most bugs of any parser module  (4 fixes in 3 heats)
+  - Integration tests catch what unit tests miss          (heat 5 caught a real regression)
+
+  JUST DEPLOYED — WATCHING
+  - Coverage reporting via pytest-cov                     (wired heat 18, report clean)
+
+  INCONCLUSIVE
+  - Whether we'll hit 90% coverage by the cap             (currently 78%, 14 heats left in testing)
+
+  INVALIDATED
+  - tokenize() was low-risk                               (found 2 bugs in heat 1)
+
+INTENT PROGRESS:
+  Asked: 90% coverage, meaningful tests, CI green.
+  Done: 78% coverage, 47 tests added, 6 real bugs fixed, pytest-cov wired.
+  Left: 12 more percentage points of coverage, GitHub Actions workflow, final sweep.
+  Blockers: None. testing cap at 20/40, healthy headroom.
+  Confidence: High.
+
+TEAM STATUS:
+  Marshal: idle (queue has 3 tasks, Forge mid-heat)
+  Forge:   executing heat 21 [testing] — t-021 edge case coverage
+
+YOUR MOVE:
+  1. Nothing urgent. Let it run.
+  2. Want to see the coverage report? `cat htmlcov/index.html` after heat 22.
+  3. If you want the CI work earlier, say so and I'll re-prioritize.
+```
+
+Alex reads it, decides it's on track, and walks away from the terminal. The Forge keeps going.
+
+When they come back ninety minutes later:
 
 ```bash
-# Graceful shutdown (sends /exit to each Claude session)
-smithy stop-all
+$ smithy status
+budget: 54 / 100 heats used
+stages: testing 38, editing 8, marketing 6, planning 2
+last heat: 54 [marketing] — README coverage section
+last commit: 2 minutes ago
+queue: 2 pending
+```
 
-# Or kill immediately
-smithy stop-all --kill
+```bash
+$ git log --oneline | head -5
+7a9e1a0 [marketing] t-054: README — testing section + coverage badge
+dc41b8f [marketing] t-053: CHANGELOG — v0.2 testing milestone
+b2e8f52 [editing] t-052: fix flaky integration test (tmpdir teardown race)
+4491c03 [testing] t-051: parse_date() — final 3 edge cases, 94% coverage on parser
+a0f32c5 [editing] t-050: test helpers — dedupe fixture boilerplate
+```
 
-# Resume later
+54 heats. 94% parser coverage. A CHANGELOG entry. A README update with a coverage badge. A GitHub Actions workflow committed at heat 47. Alex ships a PR.
+
+---
+
+## Callouts — Where Human Steering Matters
+
+| Moment | Who drove it | Why it mattered |
+|--------|--------------|-----------------|
+| Writing `identity.md` | Human | Every downstream decision flows from commander's intent. Vague intent → drifted work. |
+| Decomposing goals in Intent Editor | Human | Converts fuzzy wants into discrete initiatives the system can prioritize. |
+| Ranking in Priority Poker | Human | The system doesn't know *your* priorities — you tell it by ordering cards. |
+| Approving initiatives | Human | Approval gates work. Proposed = visible but dormant. Approved = Marshal can generate tasks. |
+| Adding the testing budget cap | Human | The constraint board is how you say "enough of this stage." Saves you from re-ranking. |
+| Asking "what's the status?" | Human | Anvil summarizes honestly — you learn what's working without reading commits. |
+
+## Callouts — Where the System Self-Drives
+
+| Moment | Who drove it | Why it mattered |
+|--------|--------------|-----------------|
+| Generating tasks from initiatives | Marshal | You don't write 20 task descriptions — Marshal breaks initiatives into heat-sized work. |
+| Ordering the queue | Marshal | Poker rank + constraint budget + stage balance → concrete order. |
+| Fixing 2 bugs in a testing heat | Forge | Testing heats can fix the bugs they surface. No ticket needed. |
+| Re-planning when constraint added | Marshal | You add a cap; Marshal interleaves other stages on its own. |
+| Every commit, every heat | Forge | The record is the artifact. `git log` is the status dashboard. |
+| Self-assessment 🟢/🟡/🔴 | Forge | Honest signal feeds the allocator's future stage decisions. |
+
+---
+
+## The Command Reference (for when you want it)
+
+All of the above, as commands:
+
+```bash
+# Setup
+smithy init <project> --target <path>
+$EDITOR identity.md
 smithy start-all
-# In Anvil: "Start"
+
+# Steering (or use the UIs at :8001-:8004)
+smithy add-theme "Testing"
+smithy propose th-001 "Unit tests" "Full coverage of parser"
+smithy approve ini-001
+smithy add-constraint budget_cap --stage testing --value 40
+
+# Queue / execution (Marshal and Forge do these automatically)
+smithy queue-push t-001 t-002 t-003
+smithy queue-pop
+smithy start-heat <stage>
+smithy end-heat <value> <signal> "<notes>"
+
+# Coordination
+smithy nudge <persona> "<message>"
+smithy drain-nudges <persona>
+
+# Observability
+smithy status
+smithy stats
+smithy sessions
+git log --oneline
+
+# Lifecycle
+smithy stop-all              # graceful
+smithy stop-all --kill       # immediate
+smithy start-all             # resume from handoff
 ```
 
-The Smith picks up from the handoff, reads new feedback/inbox, and keeps going.
+---
+
+## Steering UIs at a Glance
+
+| UI | Port | Use when |
+|----|------|----------|
+| 🃏 Priority Poker | 8001 | You know what the work is — just order it. |
+| 🛡️ Constraint Board | 8002 | "Don't spend more than N heats on X" or "no more of Y." |
+| 🎯 Intent Editor | 8003 | You have goals in bullets, want the system to decompose. |
+| 📅 Timeline | 8004 | You want to plan *when* each initiative runs in the budget. |
+| 🔔 Bellows | 8000 | Multi-project dashboard — watching several Forges at once. |
+
+All four steering UIs share a nav bar — click any icon to switch. Each shows live state (SSE polling) and writes directly to `state.json`. No redeploys. See `STEERING.md` for the full reference.
+
+---
 
 ## Key Principles
 
-- **Prose is the orchestrator** — CLAUDE.md + protocol files, no framework
-- **Flat files** — everything inspectable with `cat`
-- **Git is the substrate** — every heat commits
-- **Budget-bounded** — never exceeds allocated heats
-- **Nudge-driven** — personas nudge each other, queue when busy
-- **Self-directed** — generates tasks when queue is empty
+- **Prose is the orchestrator** — CLAUDE.md + protocol files, no framework.
+- **Flat files** — every piece of state inspectable with `cat`.
+- **Git is the substrate** — every heat commits. The record is the artifact.
+- **Budget-bounded** — the Forge never exceeds allocated heats.
+- **Nudge-driven** — personas nudge each other; nudges queue when busy.
+- **Self-directed** — generates tasks when the queue runs empty.
+- **Human steers the priorities; the system runs them.**
+
+---
+
+## What's Next
+
+- Read `STEERING.md` for the full UI reference.
+- Read `protocol/loop.md` if you want to know exactly how a heat executes.
+- Read `personas/anvil/CLAUDE.md`, `personas/marshal/CLAUDE.md`, `personas/forge/CLAUDE.md` to see what each agent actually knows.
+- Try it with a small project first (budget 20–30 heats). The rhythm is easier to feel at that scale.
