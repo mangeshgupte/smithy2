@@ -49,7 +49,7 @@ class TestSteeringRetro:
         assert r.exit_code == 0
         data = json.loads(r.output)
         assert data["pins_made"] == 0
-        assert data["tasks_shipped"] == 0
+        assert data["heats_completed"] == 0
         assert data["avg_lag_heats"] is None
 
     def test_pin_then_ship_computes_lag(self, tmp_path):
@@ -68,7 +68,7 @@ class TestSteeringRetro:
         data = json.loads(r.output)
         assert data["pins_made"] == 1
         assert data["unique_tasks_pinned"] == 1
-        assert data["tasks_shipped"] == 1
+        assert data["heats_completed"] == 1
         assert len(data["shipped_post_pin"]) == 1
         assert data["shipped_post_pin"][0]["lag"] == 5
         assert data["avg_lag_heats"] == 5
@@ -114,3 +114,43 @@ class TestSteeringRetro:
         data = json.loads(r.output)
         # t-001 was steered, t-002 was pure-allocator
         assert data["pure_allocator_heats"] == 1
+
+    def test_gap2_task_less_rows_excluded_from_pure_allocator(self, tmp_path):
+        """Research/generated rows (no t- prefix) don't count as pure-allocator."""
+        _seed(tmp_path)
+        _write_worklog(tmp_path, [
+            ("2099-04-11T10:00:00Z", 10, "research", "generated",
+             "complete", 0.7, "🟢", "research heat"),
+            ("2099-04-11T11:00:00Z", 11, "implementation", "t-001",
+             "complete", 0.8, "🟢", "real task"),
+        ])
+        runner = CliRunner()
+        r = runner.invoke(cli, ["--dir", str(tmp_path), "steering-retro",
+                                "--format", "json", "--since", "30d"])
+        data = json.loads(r.output)
+        # Only t-001 is a real-task heat; `generated` is excluded from denominator
+        assert data["task_heats_total"] == 1
+        assert data["pure_allocator_heats"] == 1
+
+    def test_gap1_heat_completions_dedup_by_task(self, tmp_path):
+        """Multiple heats on same task count as 1 unique task touched."""
+        _seed(tmp_path)
+        _write_worklog(tmp_path, [
+            ("2099-04-11T10:00:00Z", 10, "implementation", "t-001",
+             "complete", 0.8, "🟢", "heat 1"),
+            ("2099-04-11T11:00:00Z", 11, "implementation", "t-001",
+             "complete", 0.8, "🟢", "heat 2"),
+        ])
+        runner = CliRunner()
+        r = runner.invoke(cli, ["--dir", str(tmp_path), "steering-retro",
+                                "--format", "json", "--since", "30d"])
+        data = json.loads(r.output)
+        assert data["heats_completed"] == 2
+        assert data["unique_tasks_touched"] == 1
+
+    def test_gap3_empty_log_footer(self, tmp_path):
+        """Markdown includes a footer hint when steering.log is missing."""
+        _seed(tmp_path)
+        runner = CliRunner()
+        r = runner.invoke(cli, ["--dir", str(tmp_path), "steering-retro"])
+        assert "steering.log not present" in r.output

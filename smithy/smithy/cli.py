@@ -2144,40 +2144,61 @@ def steering_retro(ctx, since, fmt):
         if tid not in earliest_pin or h < earliest_pin[tid]:
             earliest_pin[tid] = h
 
-    # Tasks shipped (outcome == complete) in window
-    ships = [r for r in worklog_rows if r.get("outcome") == "complete"]
-    shipped_task_ids = {r.get("task_id") for r in ships}
+    # Heats completed (outcome == complete) in window — each worklog row is one heat.
+    # Note: Forge logs outcome=complete per-heat, not per-task. A single task may
+    # span many heats, so we track both the heat count and unique task_ids touched.
+    heat_completions = [r for r in worklog_rows if r.get("outcome") == "complete"]
 
-    # Shipped-post-pin: pin_heat < ship_heat
+    def _is_real_task(tid):
+        return bool(tid) and tid.startswith("t-")
+
+    tasks_touched = {r.get("task_id") for r in heat_completions
+                     if _is_real_task(r.get("task_id"))}
+
+    # Shipped-post-pin: earliest-pinned tasks where at least one heat completed after pin
     post_pin = []
-    for r in ships:
+    for r in heat_completions:
         tid = r.get("task_id")
-        if tid in earliest_pin:
-            try:
-                ship_h = int(r.get("heat", "0"))
-            except ValueError:
-                continue
-            pin_h = earliest_pin[tid]
-            if ship_h > pin_h:
-                post_pin.append({"task_id": tid, "pin_heat": pin_h, "ship_heat": ship_h,
-                                 "lag": ship_h - pin_h, "value": r.get("value"),
-                                 "signal": r.get("signal")})
+        if tid not in earliest_pin:
+            continue
+        try:
+            ship_h = int(r.get("heat", "0"))
+        except ValueError:
+            continue
+        pin_h = earliest_pin[tid]
+        if ship_h > pin_h:
+            post_pin.append({"task_id": tid, "pin_heat": pin_h, "ship_heat": ship_h,
+                             "lag": ship_h - pin_h, "value": r.get("value"),
+                             "signal": r.get("signal")})
+
+    # Dedup post_pin to earliest ship per task
+    dedup = {}
+    for p in post_pin:
+        cur = dedup.get(p["task_id"])
+        if cur is None or p["ship_heat"] < cur["ship_heat"]:
+            dedup[p["task_id"]] = p
+    post_pin = list(dedup.values())
 
     avg_lag = (sum(p["lag"] for p in post_pin) / len(post_pin)) if post_pin else None
 
-    # Pure-allocator heats: worklog rows whose task_id has no prior steering event
-    steered_task_ids = {r.get("task_id") for r in steering_rows if r.get("task_id") != "-"}
-    pure_allocator = [r for r in worklog_rows
-                      if r.get("task_id") and r.get("task_id") not in steered_task_ids]
+    # Pure-allocator heats: real-task worklog rows whose task_id has no prior steering.
+    # Filter task-less rows (research/generated) out of the denominator per Gap 2 fix.
+    steered_task_ids = {r.get("task_id") for r in steering_rows if _is_real_task(r.get("task_id"))}
+    task_heats = [r for r in worklog_rows if _is_real_task(r.get("task_id"))]
+    pure_allocator = [r for r in task_heats
+                      if r.get("task_id") not in steered_task_ids]
 
     digest = {
         "since": cutoff,
         "pins_made": len(pin_events),
         "unique_tasks_pinned": len(earliest_pin),
-        "tasks_shipped": len(ships),
+        "heats_completed": len(heat_completions),
+        "unique_tasks_touched": len(tasks_touched),
         "shipped_post_pin": post_pin,
         "avg_lag_heats": avg_lag,
         "pure_allocator_heats": len(pure_allocator),
+        "task_heats_total": len(task_heats),
+        "steering_log_present": steering_path.exists(),
     }
 
     if fmt == "json":
@@ -2185,15 +2206,17 @@ def steering_retro(ctx, since, fmt):
         return
 
     # Markdown
+    empty_log = not steering_path.exists() or not steering_rows
+    pure_frac = (f"{len(pure_allocator)}/{len(task_heats)}" if task_heats else "0/0")
     lines = [
         f"# Steering retro — since {cutoff}",
         "",
         f"- **Pin events:** {len(pin_events)} across {len(earliest_pin)} unique task(s)",
-        f"- **Tasks shipped:** {len(ships)}",
+        f"- **Heats completed:** {len(heat_completions)} (across {len(tasks_touched)} unique task(s))",
         f"- **Shipped post-pin:** {len(post_pin)}" +
             (f" (avg lag {avg_lag:.1f}h)" if avg_lag is not None else ""),
         f"- **Pure-allocator heats:** {len(pure_allocator)} "
-        f"({len(pure_allocator)}/{len(worklog_rows)} heats had no prior steering)",
+        f"({pure_frac} task-heats had no prior steering)",
         "",
     ]
     if post_pin:
@@ -2207,6 +2230,14 @@ def steering_retro(ctx, since, fmt):
         lines.append("")
     if pin_events and not post_pin:
         lines.append("_No pinned tasks shipped in window yet._")
+        lines.append("")
+    if empty_log:
+        footer = ("_Note: steering.log not present — no attribution data yet. "
+                  "Pin/defer/reorder via Bellows or Poker to populate this log._"
+                  if not steering_path.exists()
+                  else "_Note: steering.log is empty for this window — no pins or "
+                       "steering events recorded in the selected range._")
+        lines.append(footer)
         lines.append("")
 
     click.echo("\n".join(lines))
