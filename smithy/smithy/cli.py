@@ -130,6 +130,9 @@ def end_heat(ctx, value, signal, notes, outcome, progress, no_nudge):
         for task in state.get("queue", []):
             if task["id"] == task_id:
                 task["status"] = "complete"
+                # Auto-clear sticky human priority on complete (t-312).
+                task["human_priority"] = None
+                task["priority_reason"] = None
                 completed_task = task
                 break
 
@@ -358,6 +361,8 @@ def complete_task(ctx, task_id):
     for task in state.get("queue", []):
         if task["id"] == task_id:
             task["status"] = "complete"
+            task["human_priority"] = None
+            task["priority_reason"] = None
             save_state(root, state)
             _output({"task": task})
             _err(f"Completed {task_id}")

@@ -1053,6 +1053,125 @@ class TestQueuePopStaleSkip:
         assert data["skipped_stale"] == []
 
 
+class TestSteerabilitySchema:
+    """t-312: human_priority, priority_reason, viewed_at fields."""
+
+    def test_load_backfills_defaults_on_legacy_state(self, project):
+        """A state.json written before t-312 gets null defaults at load time."""
+        from smithy.state import load_state
+        state = json.loads((project / "state.json").read_text())
+        # Ensure fresh legacy shape (no new fields present)
+        for t in state["queue"]:
+            t.pop("human_priority", None)
+            t.pop("priority_reason", None)
+        for i in state.get("initiatives", []):
+            i.pop("viewed_at", None)
+        (project / "state.json").write_text(json.dumps(state))
+
+        loaded = load_state(project)
+        for t in loaded["queue"]:
+            assert "human_priority" in t and t["human_priority"] is None
+            assert "priority_reason" in t and t["priority_reason"] is None
+        for i in loaded.get("initiatives", []):
+            assert "viewed_at" in i and i["viewed_at"] is None
+
+    def test_save_emits_nulls_for_forward_compat(self, project):
+        """Saved state.json includes new fields even when null."""
+        from smithy.state import load_state, save_state
+        state = load_state(project)
+        save_state(project, state)
+        raw = json.loads((project / "state.json").read_text())
+        for t in raw["queue"]:
+            assert "human_priority" in t
+            assert "priority_reason" in t
+
+    def test_round_trip_preserves_values(self, project):
+        """Non-null human_priority + reason survive save→load."""
+        from smithy.state import load_state, save_state
+        state = load_state(project)
+        state["queue"][0]["human_priority"] = 0
+        state["queue"][0]["priority_reason"] = "ini-009 rank=1"
+        save_state(project, state)
+        reloaded = load_state(project)
+        assert reloaded["queue"][0]["human_priority"] == 0
+        assert reloaded["queue"][0]["priority_reason"] == "ini-009 rank=1"
+
+    def test_priority_reason_length_cap(self, project):
+        """priority_reason > 40 chars fails validation."""
+        from smithy.state import load_state, save_state
+        state = load_state(project)
+        state["queue"][0]["priority_reason"] = "x" * 41
+        errors = [e for e in __import__("smithy.state", fromlist=["validate_state"]).validate_state(state) if "priority_reason" in e]
+        assert any("40 chars" in e for e in errors)
+
+    def test_human_priority_type_validation(self, project):
+        """human_priority must be int or null."""
+        from smithy.state import load_state, validate_state
+        state = load_state(project)
+        state["queue"][0]["human_priority"] = "high"
+        errors = [e for e in validate_state(state) if "human_priority" in e]
+        assert errors
+
+    def test_viewed_at_type_validation(self, project):
+        """viewed_at must be ISO str or null."""
+        from smithy.state import load_state, validate_state
+        state = load_state(project)
+        state.setdefault("initiatives", []).append({
+            "id": "ini-001", "theme_id": "", "title": "x", "status": "proposed",
+            "viewed_at": 12345,
+        })
+        errors = [e for e in validate_state(state) if "viewed_at" in e]
+        assert errors
+
+    def test_clear_human_priority_helper(self, project):
+        """clear_human_priority nulls both fields, returns True on change."""
+        from smithy.state import load_state, clear_human_priority
+        state = load_state(project)
+        state["queue"][0]["human_priority"] = 1
+        state["queue"][0]["priority_reason"] = "r"
+        assert clear_human_priority(state, state["queue"][0]["id"]) is True
+        assert state["queue"][0]["human_priority"] is None
+        assert state["queue"][0]["priority_reason"] is None
+        # Idempotent: no-op on second call
+        assert clear_human_priority(state, state["queue"][0]["id"]) is False
+
+    def test_clear_human_priority_unknown_task(self, project):
+        """Clearing an unknown task id returns False, no mutation."""
+        from smithy.state import load_state, clear_human_priority
+        state = load_state(project)
+        assert clear_human_priority(state, "t-ghost") is False
+
+    def test_end_heat_auto_clears_on_complete(self, project, runner):
+        """end-heat with outcome=complete nulls human_priority + priority_reason."""
+        state = json.loads((project / "state.json").read_text())
+        state["queue"][0]["human_priority"] = 0
+        state["queue"][0]["priority_reason"] = "sticky"
+        state["budget"]["used"] = 1
+        (project / "state.json").write_text(json.dumps(state))
+        # start then end the heat on t-001
+        runner.invoke(cli, ["--dir", str(project), "start-heat", "implementation", "--task", "t-001"])
+        result = runner.invoke(cli, ["--dir", str(project), "end-heat", "0.7", "🟢", "done"])
+        assert result.exit_code == 0
+        reloaded = json.loads((project / "state.json").read_text())
+        task = next(t for t in reloaded["queue"] if t["id"] == "t-001")
+        assert task["status"] == "complete"
+        assert task["human_priority"] is None
+        assert task["priority_reason"] is None
+
+    def test_complete_command_auto_clears(self, project, runner):
+        """smithy complete also auto-clears sticky priority."""
+        state = json.loads((project / "state.json").read_text())
+        state["queue"][0]["human_priority"] = 1
+        state["queue"][0]["priority_reason"] = "pinned"
+        (project / "state.json").write_text(json.dumps(state))
+        result = runner.invoke(cli, ["--dir", str(project), "complete-task", "t-001"])
+        assert result.exit_code == 0
+        reloaded = json.loads((project / "state.json").read_text())
+        task = reloaded["queue"][0]
+        assert task["human_priority"] is None
+        assert task["priority_reason"] is None
+
+
 class TestSyncStages:
     """Tests for sync-stages command."""
 

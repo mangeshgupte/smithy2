@@ -35,12 +35,45 @@ def find_project_root(start: str = ".") -> Path:
     raise FileNotFoundError("No state.json found in parent directories")
 
 
+def _apply_steerability_defaults(state: dict) -> dict:
+    """Ensure steerability fields exist with null defaults on every task/initiative.
+
+    Backfills `queue[].human_priority`, `queue[].priority_reason`, and
+    `initiatives[].viewed_at` on load, so downstream code can read them
+    without defensive `.get(...)` scattered everywhere. Existing state.json
+    files written before t-312 lack these fields; adding them here makes
+    the upgrade invisible to callers.
+    """
+    for task in state.get("queue", []) or []:
+        task.setdefault("human_priority", None)
+        task.setdefault("priority_reason", None)
+    for ini in state.get("initiatives", []) or []:
+        ini.setdefault("viewed_at", None)
+    return state
+
+
 def load_state(project_dir: Path) -> dict:
     """Load and return state.json."""
     path = project_dir / "state.json"
     if not path.exists():
         raise FileNotFoundError(f"state.json not found at {path}")
-    return json.loads(path.read_text())
+    return _apply_steerability_defaults(json.loads(path.read_text()))
+
+
+def clear_human_priority(state: dict, task_id: str) -> bool:
+    """Null out human_priority + priority_reason on a task. Returns True if changed.
+
+    Called when the human drops a sticky priority, and auto-called when a
+    task flips to `complete` so stale priorities don't linger on finished
+    work and bias re-runs.
+    """
+    for task in state.get("queue", []) or []:
+        if task["id"] == task_id:
+            changed = task.get("human_priority") is not None or task.get("priority_reason") is not None
+            task["human_priority"] = None
+            task["priority_reason"] = None
+            return changed
+    return False
 
 
 def load_state_with_mtime(project_dir: Path) -> tuple[dict, float]:
@@ -53,12 +86,13 @@ def load_state_with_mtime(project_dir: Path) -> tuple[dict, float]:
     if not path.exists():
         raise FileNotFoundError(f"state.json not found at {path}")
     mtime = path.stat().st_mtime
-    return json.loads(path.read_text()), mtime
+    return _apply_steerability_defaults(json.loads(path.read_text())), mtime
 
 
 def save_state(project_dir: Path, state: dict):
     """Save state.json with validation. Stamps schema_version if absent."""
     state.setdefault("schema_version", SCHEMA_VERSION)
+    _apply_steerability_defaults(state)
     validate_state(state)
     path = project_dir / "state.json"
     path.write_text(json.dumps(state, indent=2) + "\n")
@@ -183,6 +217,23 @@ def validate_state(state: dict) -> list[str]:
     rationale = state.get("prioritization_rationale")
     if rationale is not None and not isinstance(rationale, str):
         errors.append("prioritization_rationale must be a string")
+
+    # Steerability fields (t-312): human_priority nullable int, priority_reason
+    # nullable string ≤ 40 chars, viewed_at nullable ISO string.
+    for task in queue:
+        hp = task.get("human_priority")
+        if hp is not None and not isinstance(hp, int):
+            errors.append(f"task {task['id']} human_priority must be int or null")
+        pr = task.get("priority_reason")
+        if pr is not None:
+            if not isinstance(pr, str):
+                errors.append(f"task {task['id']} priority_reason must be str or null")
+            elif len(pr) > 40:
+                errors.append(f"task {task['id']} priority_reason > 40 chars ({len(pr)})")
+    for ini in initiatives:
+        va = ini.get("viewed_at")
+        if va is not None and not isinstance(va, str):
+            errors.append(f"initiative {ini['id']} viewed_at must be ISO str or null")
 
     return errors
 
