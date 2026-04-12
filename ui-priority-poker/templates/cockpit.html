@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Queue Cockpit — {{ project }}</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .cockpit-page { max-width: 1400px; margin: 0 auto; padding: 16px; }
+        .cockpit-filters { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap;
+                           padding: 12px; background: var(--surface, #1a1a1a);
+                           border: 1px solid var(--border, #333); border-radius: 6px;
+                           margin-bottom: 12px; }
+        .cockpit-filters label { display: flex; flex-direction: column; gap: 2px;
+                                 font-size: 11px; color: var(--text-muted, #aaa); }
+        .cockpit-filters select, .cockpit-filters input {
+            padding: 4px 6px; background: var(--surface-hover, #222);
+            border: 1px solid var(--border, #333); color: var(--text, #ddd);
+            border-radius: 3px; font: inherit; min-width: 120px;
+        }
+        .cockpit-stats { font-size: 12px; color: var(--text-muted, #888); margin: 4px 0 8px 0; }
+        .cockpit-table { width: 100%; border-collapse: collapse; font-size: 12px;
+                         font-family: var(--font-mono, monospace); }
+        .cockpit-table th { text-align: left; padding: 6px 8px;
+                            border-bottom: 1px solid var(--border, #333);
+                            color: var(--text-muted, #888); font-weight: normal; }
+        .cockpit-table td { padding: 5px 8px; border-bottom: 1px solid var(--surface-hover, #222);
+                            vertical-align: top; }
+        .cockpit-table tr.deferred-row { opacity: 0.6; }
+        .cockpit-table tr:hover { background: var(--surface, #1a1a1a); }
+        .c-expand { cursor: pointer; color: var(--text-muted, #888); width: 16px; }
+        .c-id a { color: var(--yellow, #c89c2a); text-decoration: none; }
+        .c-stage { font-size: 10px; text-transform: uppercase; padding: 1px 5px;
+                   border-radius: 2px; background: var(--surface-hover, #222); }
+        .c-hp { white-space: nowrap; }
+        .c-hp button { font: inherit; background: transparent; border: 1px solid transparent;
+                       color: var(--text-muted, #888); cursor: pointer; padding: 0 3px;
+                       border-radius: 2px; }
+        .c-hp button:hover { border-color: var(--border, #333); color: var(--text, #ddd); }
+        .c-desc { max-width: 360px; overflow: hidden; text-overflow: ellipsis;
+                  white-space: nowrap; }
+        .c-reason { max-width: 140px; overflow: hidden; text-overflow: ellipsis;
+                    white-space: nowrap; color: var(--text-muted, #aaa); font-size: 11px; }
+        .c-kebab { cursor: pointer; color: var(--text-muted, #888); padding: 0 4px; }
+        .c-empty { padding: 32px; text-align: center; color: var(--text-muted, #888); }
+    </style>
+</head>
+<body>
+    <nav class="steering-nav">
+        {% for label, url, active in nav_links %}
+        <a href="{{ url }}" class="nav-link">{{ label }}</a>
+        {% endfor %}
+    </nav>
+    <div class="cockpit-page">
+        <header>
+            <h1>🎛 Queue Cockpit</h1>
+            <p class="subtitle">{{ project }} — per-task steering. Scheduler order is authoritative; no client resort.</p>
+        </header>
+
+        <div class="cockpit-filters">
+            <label>stage
+                <select id="f-stage">
+                    <option value="">any</option>
+                    {% for s in ['research', 'planning', 'implementation', 'testing', 'editing', 'marketing'] %}
+                    <option value="{{ s }}" {% if filter_stage == s %}selected{% endif %}>{{ s }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>status
+                <select id="f-status">
+                    <option value="">any</option>
+                    {% for s in ['pending', 'in_flight', 'deferred', 'complete'] %}
+                    <option value="{{ s }}" {% if filter_status == s %}selected{% endif %}>{{ s }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>initiative
+                <select id="f-ini">
+                    <option value="">any</option>
+                    {% for ini in initiatives %}
+                    <option value="{{ ini.id }}" {% if filter_initiative == ini.id %}selected{% endif %}>{{ ini.id }} · {{ ini.title }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>search
+                <input type="text" id="f-q" value="{{ filter_q }}" placeholder="desc substring">
+            </label>
+            <button onclick="applyFilters()">apply</button>
+            <button onclick="clearFilters()">clear</button>
+        </div>
+
+        <div class="cockpit-stats" id="stats">Loading…</div>
+
+        <table class="cockpit-table">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>id</th>
+                    <th>stage</th>
+                    <th>status</th>
+                    <th>M</th>
+                    <th>you</th>
+                    <th>reason</th>
+                    <th>initiative</th>
+                    <th>desc</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+        </table>
+    </div>
+
+    <script>
+    function buildUrl() {
+        const p = new URLSearchParams();
+        const stage = document.getElementById('f-stage').value;
+        const status = document.getElementById('f-status').value;
+        const ini = document.getElementById('f-ini').value;
+        const q = document.getElementById('f-q').value.trim();
+        if (stage) p.set('stage', stage);
+        if (status) p.set('status', status);
+        if (ini) p.set('initiative', ini);
+        if (q) p.set('q', q);
+        return p;
+    }
+
+    function applyFilters() {
+        const p = buildUrl();
+        const url = '/cockpit' + (p.toString() ? ('?' + p.toString()) : '');
+        window.location.href = url;
+    }
+
+    function clearFilters() {
+        window.location.href = '/cockpit';
+    }
+
+    function loadRows() {
+        const p = buildUrl();
+        fetch('/api/cockpit' + (p.toString() ? ('?' + p.toString()) : ''))
+            .then(r => r.json()).then(render)
+            .catch(() => { document.getElementById('stats').textContent = 'Failed to load.'; });
+    }
+
+    function render(data) {
+        document.getElementById('stats').textContent =
+            data.filtered + ' / ' + data.total + ' tasks';
+        const body = document.getElementById('rows');
+        body.innerHTML = '';
+        if (!data.rows.length) {
+            body.innerHTML = '<tr><td colspan="10" class="c-empty">No tasks match.</td></tr>';
+            return;
+        }
+        data.rows.forEach(t => {
+            const tr = document.createElement('tr');
+            if (t.status === 'deferred') tr.classList.add('deferred-row');
+            tr.dataset.taskId = t.id;
+            const hp = (t.human_priority == null) ? '—' : ('p' + t.human_priority);
+            tr.innerHTML =
+                `<td class="c-expand" onclick="openDrawer('${t.id}')">▸</td>` +
+                `<td class="c-id"><a href="#" onclick="openDrawer('${t.id}');return false;">${t.id}</a></td>` +
+                `<td><span class="c-stage stage-${t.stage}">${t.stage}</span></td>` +
+                `<td>${t.status}</td>` +
+                `<td>p${t.priority == null ? '?' : t.priority}</td>` +
+                `<td class="c-hp">` +
+                  `<button title="priority up" onclick="bumpHP('${t.id}', -1)">↑</button>` +
+                  `<span>${hp}</span>` +
+                  `<button title="priority down" onclick="bumpHP('${t.id}', 1)">↓</button>` +
+                  `<button title="clear" onclick="clearHP('${t.id}')">✕</button>` +
+                `</td>` +
+                `<td class="c-reason" title="${(t.priority_reason || '').replace(/"/g, '&quot;')}">${t.priority_reason || '—'}</td>` +
+                `<td>${t.initiative_id || '—'}</td>` +
+                `<td class="c-desc" title="${(t.desc || '').replace(/"/g, '&quot;')}">${t.desc || ''}</td>` +
+                `<td><span class="c-kebab" onclick="toggleDefer('${t.id}', '${t.status}')" title="defer/undefer">${t.status === 'deferred' ? '▶' : '⏸'}</span></td>`;
+            body.appendChild(tr);
+        });
+    }
+
+    function openDrawer(taskId) {
+        // Deep-link via ?task= — Poker home handles the drawer.
+        window.location.href = '/?task=' + encodeURIComponent(taskId);
+    }
+
+    function bumpHP(taskId, delta) {
+        // Read current, offset by delta. A null hp becomes delta directly (signed).
+        fetch('/api/task/' + taskId).then(r => r.json()).then(data => {
+            const cur = (data.task && data.task.human_priority);
+            const next = (cur == null ? 0 : cur) + delta;
+            return fetch('/api/task/' + taskId + '/human-priority', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({value: next})
+            });
+        }).then(loadRows);
+    }
+
+    function clearHP(taskId) {
+        fetch('/api/task/' + taskId + '/human-priority', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({value: null})
+        }).then(loadRows);
+    }
+
+    function toggleDefer(taskId, status) {
+        const path = (status === 'deferred') ? '/undefer' : '/defer';
+        fetch('/api/task/' + taskId + path, {method: 'POST'}).then(loadRows);
+    }
+
+    // Live refresh via Poker's SSE stream.
+    try {
+        const es = new EventSource('/events');
+        es.onmessage = () => loadRows();
+    } catch (e) { /* SSE unavailable — polling fallback below */ }
+    setInterval(loadRows, 15000);
+    loadRows();
+    </script>
+</body>
+</html>

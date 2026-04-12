@@ -272,6 +272,26 @@ async def api_state():
     return JSONResponse(data)
 
 
+@app.get("/cockpit", response_class=HTMLResponse)
+async def cockpit(request: Request, stage: str = None, status: str = None,
+                  initiative: str = None, q: str = None):
+    """Queue Cockpit — per-task steering UI. Rendered table consumes /api/cockpit,
+    subscribes to /events SSE for live refresh. See research/queue-cockpit.md.
+    """
+    state = _load_state()
+    initiatives = [{"id": i["id"], "title": i.get("title", "")}
+                   for i in state.get("initiatives", [])]
+    return templates.TemplateResponse(request=request, name="cockpit.html", context={
+        "project": state.get("project", "unknown"),
+        "initiatives": initiatives,
+        "filter_stage": stage or "",
+        "filter_status": status or "",
+        "filter_initiative": initiative or "",
+        "filter_q": q or "",
+        "nav_links": NAV_LINKS,
+    })
+
+
 @app.get("/activity", response_class=HTMLResponse)
 async def activity_browser(request: Request):
     """Full activity log browser — rendered view of /api/activity with filters."""
