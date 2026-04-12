@@ -170,3 +170,31 @@ Non-goals:
 - **No write endpoints.** The page is read-only; edits stay in Intent Editor + Poker + Bellows Upcoming.
 - **No per-initiative side-panel** in v1 — reuse Poker's general activity panel via its existing link.
 - **No Intent-Editor deep-link API** — hash anchor + best-effort scroll is enough.
+
+---
+
+## Addendum (t-368, heat 791): Poker "shipped since viewed" status
+
+**Verdict: LIVE, not regressed.**
+
+Audit of the t-314 implementation as of heat 791:
+
+- **Backend**: `ui-priority-poker/app.py:166-174` computes `ini["shipped_tasks"]` as
+  completed tasks whose worklog timestamp is newer than `ini["viewed_at"]`. Sort
+  newest-first, cap rendered at 8 with "+N more" spill.
+- **Template**: `ui-priority-poker/templates/index.html:99-107` renders the
+  Shipped section with title switching between `"Shipped (N)"` and
+  `"Shipped since viewed (N)"` depending on whether `viewed_at` is set.
+- **Stamp endpoint**: `app.py:495-504` (`POST /api/initiative/{id}/view`) writes
+  `viewed_at = now()` on drawer expand. `templates/index.html:297` fires the POST
+  in `toggleExpand()` when transitioning to expanded.
+
+All three wires are intact; behavior matches the t-314 design. No regression, no
+follow-up task required.
+
+Minor observation (not worth a fix task): Poker's in-flight filter matches
+`status == "in_progress"` (app.py:163) while the Bellows deep-dive and Cockpit
+use `"in_flight"`. Current state.json has 1 `in_progress` and 0 `in_flight`, so
+neither view is wrong today, but the two conventions will drift if the stage
+vocabulary is ever formalized. Flagging for the existing deep-dive-tail work
+rather than a new task.
