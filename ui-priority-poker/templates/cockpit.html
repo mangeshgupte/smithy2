@@ -83,6 +83,17 @@
         .c-ship-sha { font-size: 11px; }
         .c-ship-sha code { background: var(--surface-hover, #222); padding: 1px 4px;
                            border-radius: 2px; color: var(--yellow, #c89c2a); }
+        /* t-392: undo toast. Fixed bottom-right, auto-dismisses in 6s. */
+        .c-toast { position: fixed; right: 16px; bottom: 16px;
+                   background: var(--surface, #1a1a1a); border: 1px solid var(--border, #333);
+                   padding: 8px 12px; border-radius: 4px; font-size: 12px;
+                   display: flex; align-items: center; gap: 10px; z-index: 1000;
+                   box-shadow: 0 4px 14px rgba(0,0,0,0.4); }
+        .c-toast[hidden] { display: none; }
+        .c-toast button { background: transparent; border: 1px solid var(--yellow, #c89c2a);
+                          color: var(--yellow, #c89c2a); padding: 2px 8px; border-radius: 2px;
+                          cursor: pointer; font: inherit; }
+        .c-toast button:hover { background: var(--yellow, #c89c2a); color: #000; }
         /* t-389: DnD affordances. Pending rows are draggable. */
         .cockpit-table tr[draggable="true"] { cursor: grab; }
         .cockpit-table tr.c-dragging { opacity: 0.4; }
@@ -157,6 +168,11 @@
             </thead>
             <tbody id="rows"></tbody>
         </table>
+
+        <div id="c-toast" class="c-toast" hidden>
+            <span id="c-toast-msg"></span>
+            <button id="c-toast-undo" type="button">undo</button>
+        </div>
     </div>
 
     <script>
@@ -497,17 +513,80 @@
             return;
         }
 
+        const prevOrder = current.slice();  // snapshot for undo
+        submitReorder(newOrder, prevOrder, draggedId, target);
+    }
+
+    function submitReorder(newOrder, prevOrder, draggedId, rejectTarget) {
         fetch('/api/reorder-tasks', {
             method: 'POST', headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({order: newOrder})
         }).then(r => r.json()).then(resp => {
             if (!resp.ok) {
-                // Server rejected (concurrent blocker change). Flash + refetch.
-                target.classList.add('c-drop-reject');
-                setTimeout(() => target.classList.remove('c-drop-reject'), 500);
+                const tgt = rejectTarget ||
+                    document.querySelector(`#rows tr[data-task-id="${draggedId}"]`);
+                if (tgt) {
+                    tgt.classList.add('c-drop-reject');
+                    setTimeout(() => tgt.classList.remove('c-drop-reject'), 500);
+                }
+            } else if (prevOrder && prevOrder.length) {
+                showUndoToast(`Moved ${draggedId}`, prevOrder);
             }
             loadRows();
         });
+    }
+
+    // t-392: undo toast. Snapshots the prior order; Undo re-POSTs it.
+    let toastTimer = null;
+    function showUndoToast(msg, prevOrder) {
+        const toast = document.getElementById('c-toast');
+        const txt = document.getElementById('c-toast-msg');
+        const btn = document.getElementById('c-toast-undo');
+        if (!toast || !txt || !btn) return;
+        txt.textContent = msg;
+        toast.hidden = false;
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => { toast.hidden = true; }, 6000);
+        btn.onclick = () => {
+            toast.hidden = true;
+            clearTimeout(toastTimer);
+            // Undo is itself a reorder — no toast on success (would loop).
+            fetch('/api/reorder-tasks', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({order: prevOrder})
+            }).then(loadRows);
+        };
+    }
+
+    // t-392: Alt-arrow a11y reorder. Operates on pending rows only; falls back
+    // silently if the focused row is deferred/complete.
+    function altMoveFocused(delta) {
+        const pending = pendingRows();
+        if (!pending.length) return;
+        const rows = document.querySelectorAll('#rows tr[data-task-id]');
+        if (focusedIndex < 0 || focusedIndex >= rows.length) return;
+        const focused = rows[focusedIndex];
+        const id = focused.dataset.taskId;
+        const pendingIds = pending.map(r => r.dataset.taskId);
+        const idx = pendingIds.indexOf(id);
+        if (idx < 0) return;   // focused row isn't pending; ignore.
+        const newIdx = idx + delta;
+        if (newIdx < 0 || newIdx >= pendingIds.length) return;
+        const newOrder = pendingIds.slice();
+        [newOrder[idx], newOrder[newIdx]] = [newOrder[newIdx], newOrder[idx]];
+        // Client-side blocker pre-check (mirrors drop handler).
+        const blockedBy = (focused.dataset.blockedBy || '').split(',').filter(Boolean);
+        const myIdx = newOrder.indexOf(id);
+        const violation = blockedBy.find(b => {
+            const bi = newOrder.indexOf(b);
+            return bi !== -1 && bi >= myIdx;
+        });
+        if (violation) {
+            focused.classList.add('c-drop-reject');
+            setTimeout(() => focused.classList.remove('c-drop-reject'), 500);
+            return;
+        }
+        submitReorder(newOrder, pendingIds.slice(), id, focused);
     }
 
     // Keyboard nav (t-379): j/k move row focus, Enter opens drawer, x toggles defer.
@@ -524,6 +603,12 @@
         // Skip when typing in filter inputs.
         const tag = (e.target.tagName || '').toLowerCase();
         if (tag === 'input' || tag === 'select' || tag === 'textarea') return;
+        // t-392: Alt-↑/↓ a11y reorder for the focused pending row.
+        if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+            e.preventDefault();
+            altMoveFocused(e.key === 'ArrowUp' ? -1 : 1);
+            return;
+        }
         if (e.key === 'j') { e.preventDefault(); focusRow(focusedIndex + 1); }
         else if (e.key === 'k') { e.preventDefault(); focusRow(focusedIndex - 1); }
         else if (e.key === 'Enter' && focusedIndex >= 0) {

@@ -101,3 +101,25 @@ def test_reorder_allows_blocker_outside_order(poker, tmp_project):
 def test_reorder_bad_payload(poker):
     r = poker.post("/api/reorder-tasks", json={"order": [1, 2]})
     assert r.status_code == 400
+
+
+def test_reorder_undo_roundtrip_is_idempotent(poker, tmp_project):
+    # t-392: the undo toast re-POSTs the prior order. Applying forward then
+    # reverse must leave human_priority exactly where forward put it for the
+    # original-order IDs (0, 10) — confirming the round-trip has no drift.
+    poker.post("/api/reorder-tasks", json={"order": ["t-b", "t-a"]})
+    q1 = {t["id"]: t for t in _load(tmp_project)["queue"]}
+    assert q1["t-b"]["human_priority"] == 0
+    assert q1["t-a"]["human_priority"] == 10
+    poker.post("/api/reorder-tasks", json={"order": ["t-a", "t-b"]})
+    q2 = {t["id"]: t for t in _load(tmp_project)["queue"]}
+    assert q2["t-a"]["human_priority"] == 0
+    assert q2["t-b"]["human_priority"] == 10
+
+
+def test_reorder_same_order_reports_zero_changed(poker, tmp_project):
+    # Applying the same order twice: second call must return changed=0 since
+    # the hp values already match — toast logic can skip duplicate steering log.
+    poker.post("/api/reorder-tasks", json={"order": ["t-b", "t-a"]})
+    r = poker.post("/api/reorder-tasks", json={"order": ["t-b", "t-a"]})
+    assert r.json()["changed"] == 0
