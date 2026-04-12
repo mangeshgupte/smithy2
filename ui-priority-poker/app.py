@@ -36,6 +36,24 @@ def _load_state():
     return json.loads(path.read_text())
 
 
+def _globally_pinned_ids(project_name: str) -> set:
+    """Read .upcoming.json once; return task_ids pinned for this project.
+
+    Lives at FORGE_PROJECTS_DIR or parent-of-STATE_DIR. Silent on any read error —
+    badge is a courtesy, not critical.
+    """
+    projects_dir = os.environ.get("FORGE_PROJECTS_DIR") or str(Path(STATE_DIR).parent)
+    path = Path(projects_dir) / ".upcoming.json"
+    if not path.exists():
+        return set()
+    try:
+        data = json.loads(path.read_text())
+    except (json.JSONDecodeError, OSError):
+        return set()
+    return {p.get("task_id") for p in data.get("pinned", [])
+            if p.get("project") == project_name and p.get("task_id")}
+
+
 def _worklog_task_timestamps():
     """Map task_id → latest worklog timestamp. Used to approximate completed_at."""
     path = Path(STATE_DIR) / "worklog.tsv"
@@ -141,12 +159,14 @@ async def index(request: Request):
         cp = json.loads(checkpoint_path.read_text())
         forge_activity = f"Heat {cp.get('heat', '?')} [{cp.get('stage', '?')}] — {cp.get('task_id', '?')}"
 
+    project_name = state.get("project", "unknown")
     return templates.TemplateResponse(request=request, name="index.html", context={
         "initiatives": ranked,
         "proposed": proposed,
-        "project": state.get("project", "unknown"),
+        "project": project_name,
         "forge_activity": forge_activity,
         "nav_links": NAV_LINKS,
+        "globally_pinned_ids": _globally_pinned_ids(project_name),
     })
 
 

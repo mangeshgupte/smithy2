@@ -6,6 +6,9 @@
     <span class="drawer-task-reason">· {{ task.priority_reason }}</span>
     {% endif %}
     <span class="drawer-task-hp {% if task.human_priority is not none %}set{% endif %}">you:{% if task.human_priority is not none %}p{{ task.human_priority }}{% else %}—{% endif %}</span>
+    {% if globally_pinned_ids and task.id in globally_pinned_ids %}
+    <span class="drawer-task-pin" title="Pinned in cross-project Upcoming">📌</span>
+    {% endif %}
     {% if task.status == 'pending' %}
     <button class="drawer-downrank" onclick="downrank(event, '{{ task.id }}', {{ task.human_priority if task.human_priority is not none else 'null' }})" title="Downrank">↓</button>
     {% endif %}

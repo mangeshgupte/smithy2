@@ -1104,3 +1104,42 @@ class TestTaskDetailAPI:
         r = c.get("/api/task/t-001")
         assert r.status_code == 200
         assert r.json()["worklog"] == []
+
+
+class TestGloballyPinnedBadge:
+    """t-331 — 📌 badge rendered on drawer rows for tasks in .upcoming.json."""
+
+    def test_no_upcoming_file_no_badge(self, poker_client):
+        c, _ = poker_client
+        r = c.get("/")
+        assert r.status_code == 200
+        assert "drawer-task-pin" not in r.text
+
+    def test_badge_rendered_for_pinned_task(self, poker_client, monkeypatch):
+        c, tmp = poker_client
+        monkeypatch.setenv("FORGE_PROJECTS_DIR", str(tmp))
+        (tmp / ".upcoming.json").write_text(json.dumps({
+            "version": 1,
+            "pinned": [{"project": "test", "task_id": "t-001"}],
+        }))
+        r = c.get("/")
+        assert "drawer-task-pin" in r.text
+        assert "Pinned in cross-project Upcoming" in r.text
+
+    def test_badge_skipped_for_other_project(self, poker_client, monkeypatch):
+        c, tmp = poker_client
+        monkeypatch.setenv("FORGE_PROJECTS_DIR", str(tmp))
+        (tmp / ".upcoming.json").write_text(json.dumps({
+            "version": 1,
+            "pinned": [{"project": "other-proj", "task_id": "t-001"}],
+        }))
+        r = c.get("/")
+        assert "drawer-task-pin" not in r.text
+
+    def test_malformed_upcoming_file_silent(self, poker_client, monkeypatch):
+        c, tmp = poker_client
+        monkeypatch.setenv("FORGE_PROJECTS_DIR", str(tmp))
+        (tmp / ".upcoming.json").write_text("{ not valid")
+        r = c.get("/")
+        assert r.status_code == 200
+        assert "drawer-task-pin" not in r.text
