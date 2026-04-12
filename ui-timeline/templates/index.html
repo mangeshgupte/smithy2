@@ -41,6 +41,7 @@
                 <div class="now-label">now · h{{ used }}</div>
                 <div class="now-line"></div>
             </div>
+            <div class="steering-lane" id="steering-lane" data-tl-start="{{ timeline_start }}" data-tl-end="{{ timeline_end }}"></div>
             {% endif %}
         </div>
 
@@ -470,6 +471,33 @@
             }
         }).catch(() => {});
     }, 5000);
+
+    // --- Steering markers: populate lane from /api/steering-log ---
+    function renderSteeringMarkers() {
+        const lane = document.getElementById('steering-lane');
+        if (!lane) return;
+        const tlStart = parseFloat(lane.dataset.tlStart);
+        const tlEnd = parseFloat(lane.dataset.tlEnd);
+        const span = tlEnd - tlStart;
+        if (span <= 0) return;
+        fetch('/api/steering-log?limit=500').then(r => r.json()).then(data => {
+            lane.innerHTML = '';
+            (data.rows || []).forEach(row => {
+                const h = parseFloat(row.heat);
+                if (!Number.isFinite(h) || h < tlStart || h > tlEnd) return;
+                const pct = ((h - tlStart) / span) * 100;
+                const m = document.createElement('span');
+                m.className = 'steering-marker';
+                m.style.left = pct + '%';
+                const before = row.before === 'null' ? '∅' : row.before;
+                const after = row.after === 'null' ? '∅' : row.after;
+                m.title = `h${row.heat} · ${row.actor} · ${row.task_id}\n${row.field}: ${before} → ${after}` + (row.source && row.source !== '-' ? `\n(${row.source})` : '');
+                lane.appendChild(m);
+            });
+        }).catch(() => {});
+    }
+    renderSteeringMarkers();
+    setInterval(renderSteeringMarkers, 7000);
 
     function refreshPage() {
         const btn = document.querySelector('.refresh-btn');

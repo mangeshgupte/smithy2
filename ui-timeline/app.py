@@ -3,7 +3,15 @@
 import asyncio
 import json
 import os
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+try:
+    from steering_log import read_steering_log
+except ImportError:
+    def read_steering_log(*args, **kwargs):
+        return []
 
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
@@ -175,6 +183,19 @@ async def api_state():
                 "status": ini["status"],
             }
     return JSONResponse(data)
+
+
+@app.get("/api/steering-log")
+async def api_steering_log(task_id: str = None, actor: str = None,
+                           since: str = None, limit: int = 200):
+    """Steering-log rows for this project, for Timeline's attribution lane.
+
+    Newest-first. Each row carries a `heat` field — the Timeline renders a marker
+    on the corresponding heat bar. Missing file = empty list (not an error).
+    """
+    rows = read_steering_log(STATE_DIR, task_id=task_id, actor=actor, since=since)
+    rows.reverse()
+    return JSONResponse({"count": len(rows), "rows": rows[:max(1, limit)]})
 
 
 @app.get("/api/current-heat")

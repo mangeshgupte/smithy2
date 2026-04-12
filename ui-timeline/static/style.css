@@ -134,6 +134,28 @@ header h1 { font-size: 24px; letter-spacing: -0.5px; }
     box-shadow: var(--shadow-sm);
 }
 
+/* Steering-trigger markers — attribution lane (t-340) */
+.steering-lane {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 10px;
+    pointer-events: none;
+    z-index: 4;
+}
+.steering-marker {
+    position: absolute;
+    bottom: 0;
+    width: 3px;
+    height: 10px;
+    background: #c89c2a;
+    border-radius: 1px;
+    pointer-events: auto;
+    cursor: help;
+    opacity: 0.75;
+    transform: translateX(-50%);
+}
+.steering-marker:hover { opacity: 1; background: #e0b340; }
+
 /* Gridlines across the bar region */
 .grid-overlay {
     position: absolute;

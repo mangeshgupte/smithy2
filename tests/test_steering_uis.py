@@ -601,6 +601,35 @@ class TestTimeline:
         assert 'data-heat="50"' in r.text
         assert "now · h50" in r.text
 
+    def test_steering_lane_rendered(self, timeline_client):
+        """Timeline renders the steering-lane element for attribution markers."""
+        c, _ = timeline_client
+        r = c.get("/")
+        assert 'id="steering-lane"' in r.text
+        assert 'data-tl-start=' in r.text
+
+    def test_steering_log_api_empty(self, timeline_client):
+        """/api/steering-log returns empty rows when no log exists."""
+        c, _ = timeline_client
+        r = c.get("/api/steering-log")
+        assert r.status_code == 200
+        data = r.json()
+        assert data["count"] == 0
+        assert data["rows"] == []
+
+    def test_steering_log_api_returns_rows(self, timeline_client):
+        """/api/steering-log surfaces rows from steering.log, newest-first."""
+        c, tmp = timeline_client
+        sys.path.insert(0, str(Path(__file__).parent.parent))
+        from steering_log import log_steering
+        log_steering(tmp, actor="a", task_id="t-001", field="f", before=0, after=1)
+        log_steering(tmp, actor="a", task_id="t-002", field="f", before=0, after=1)
+        r = c.get("/api/steering-log")
+        rows = r.json()["rows"]
+        assert rows[0]["task_id"] == "t-002"
+        assert rows[1]["task_id"] == "t-001"
+        assert "heat" in rows[0]
+
     def test_now_indicator_hidden_when_empty(self, tmp_path, monkeypatch):
         """No initiatives → no now-indicator (avoids rendering on blank timeline)."""
         (tmp_path / "state.json").write_text(json.dumps({
