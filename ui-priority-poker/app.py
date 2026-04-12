@@ -331,6 +331,59 @@ async def set_human_priority(task_id: str, request: Request):
     return JSONResponse({"ok": False, "error": "not found"}, status_code=404)
 
 
+@app.post("/api/task/{task_id}/defer")
+async def defer_task(task_id: str):
+    """Set status='deferred'. Scheduler skips (filters pending only). Reversible via /undefer."""
+    state, mtime = _load_state_with_mtime()
+    for t in state.get("queue", []):
+        if t["id"] == task_id:
+            if t.get("status") not in ("pending", "deferred"):
+                return JSONResponse({"ok": False, "error": f"cannot defer {t['status']} task"}, status_code=400)
+            t["status"] = "deferred"
+            _save_state_checked(state, mtime)
+            return JSONResponse({"ok": True, "task": t})
+    return JSONResponse({"ok": False, "error": "not found"}, status_code=404)
+
+
+@app.post("/api/task/{task_id}/undefer")
+async def undefer_task(task_id: str):
+    state, mtime = _load_state_with_mtime()
+    for t in state.get("queue", []):
+        if t["id"] == task_id:
+            if t.get("status") != "deferred":
+                return JSONResponse({"ok": False, "error": f"task is {t['status']}, not deferred"}, status_code=400)
+            t["status"] = "pending"
+            _save_state_checked(state, mtime)
+            return JSONResponse({"ok": True, "task": t})
+    return JSONResponse({"ok": False, "error": "not found"}, status_code=404)
+
+
+@app.delete("/api/task/{task_id}")
+async def delete_task(task_id: str):
+    """Remove task from queue + append worklog audit entry for recoverability.
+
+    Audit row carries stage='-' signal='🗑' notes='deleted via poker drawer: <desc>'.
+    The worklog is append-only — delete is not silent.
+    """
+    state, mtime = _load_state_with_mtime()
+    target = next((t for t in state.get("queue", []) if t["id"] == task_id), None)
+    if not target:
+        return JSONResponse({"ok": False, "error": "not found"}, status_code=404)
+    desc = target.get("desc", "")
+    state["queue"] = [t for t in state["queue"] if t["id"] != task_id]
+    _save_state_checked(state, mtime)
+
+    worklog_path = Path(STATE_DIR) / "worklog.tsv"
+    if worklog_path.exists():
+        ts = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+        heat = state.get("budget", {}).get("used", 0)
+        notes = f"deleted via poker drawer: {desc}".replace("\t", " ").replace("\n", " ")
+        with open(worklog_path, "a") as f:
+            # Columns: timestamp, heat, stage, task_id, outcome, value, signal, notes
+            f.write(f"{ts}\t{heat}\t-\t{task_id}\tdeleted\t0\t🗑\t{notes}\n")
+    return JSONResponse({"ok": True, "deleted": task_id})
+
+
 @app.post("/api/initiative/{initiative_id}/view")
 async def mark_viewed(initiative_id: str):
     """Stamp viewed_at = now() on drawer open. Enables 'shipped since viewed'."""

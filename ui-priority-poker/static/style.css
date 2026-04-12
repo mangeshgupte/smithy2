@@ -267,6 +267,13 @@ code {
 .td-dl { display: grid; grid-template-columns: 110px 1fr; gap: 4px 12px; margin: 0; font-size: 13px; }
 .td-dl dt { color: var(--text-muted); }
 .td-dl dd { margin: 0; font-family: var(--font-mono, monospace); }
+.td-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.td-action { background: var(--surface); border: 1px solid var(--border); color: var(--text); cursor: pointer; padding: 4px 10px; border-radius: 4px; font-size: 12px; }
+.td-action:hover { background: var(--border); }
+.td-delete { color: var(--red, #c04040); }
+.td-delete:hover { background: var(--red, #c04040); color: #fff; }
+.td-status-tag { margin-top: 8px; font-size: 12px; color: var(--text-muted); }
+.td-status-tag.deferred { color: var(--yellow, #c89c2a); font-style: italic; }
 #td-hp-input { width: 64px; padding: 2px 6px; border: 1px solid var(--border); border-radius: 3px; font: inherit; }
 #td-hp-set, #td-hp-clear { margin-left: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 3px; padding: 2px 8px; font-size: 11px; cursor: pointer; }
 #td-hp-set:hover, #td-hp-clear:hover { background: var(--surface-hover); }

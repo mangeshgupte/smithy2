@@ -146,6 +146,12 @@
                     <dt>Initiative</dt><dd id="td-initiative">—</dd>
                     <dt>Blocked by</dt><dd id="td-blocked">—</dd>
                 </dl>
+                <div class="td-actions">
+                    <button class="td-action td-deprioritize" onclick="deprioritizeFromDrawer()" title="Set human_priority=9999 (sticky bottom)">↓↓ Deprioritize</button>
+                    <button class="td-action td-defer" id="td-defer-btn" onclick="deferFromDrawer()" title="Skip until un-deferred">⏸ Defer</button>
+                    <button class="td-action td-delete" onclick="deleteFromDrawer()" title="Remove from queue (worklog-audited)">🗑 Delete</button>
+                </div>
+                <div id="td-status-tag" class="td-status-tag"></div>
             </section>
             <section class="td-section">
                 <h3>History</h3>
@@ -305,6 +311,20 @@
         const bb = t.blocked_by || [];
         document.getElementById('td-blocked').textContent = bb.length ? bb.join(', ') : 'none';
 
+        const deferBtn = document.getElementById('td-defer-btn');
+        const statusTag = document.getElementById('td-status-tag');
+        if (t.status === 'deferred') {
+            deferBtn.textContent = '▶ Un-defer';
+            deferBtn.dataset.deferred = 'true';
+            statusTag.textContent = 'deferred — scheduler will skip this task';
+            statusTag.className = 'td-status-tag deferred';
+        } else {
+            deferBtn.textContent = '⏸ Defer';
+            deferBtn.dataset.deferred = 'false';
+            statusTag.textContent = '';
+            statusTag.className = 'td-status-tag';
+        }
+
         // History
         const histUl = document.getElementById('td-history');
         histUl.innerHTML = '';
@@ -346,6 +366,34 @@
     function clearHumanPriorityFromDrawer() {
         document.getElementById('td-hp-input').value = '';
         setHumanPriorityFromDrawer();
+    }
+
+    function deprioritizeFromDrawer() {
+        if (!currentDetailTaskId) return;
+        fetch('/api/task/' + currentDetailTaskId + '/human-priority', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ value: 9999 }),
+        }).then(r => { if (r.ok) { refreshState(); openTaskDetail(null, currentDetailTaskId); } });
+    }
+
+    function deferFromDrawer() {
+        if (!currentDetailTaskId) return;
+        const btn = document.getElementById('td-defer-btn');
+        const isDeferred = btn && btn.dataset.deferred === 'true';
+        const path = isDeferred ? 'undefer' : 'defer';
+        fetch('/api/task/' + currentDetailTaskId + '/' + path, { method: 'POST' })
+            .then(r => { if (r.ok) { refreshState(); openTaskDetail(null, currentDetailTaskId); } });
+    }
+
+    function deleteFromDrawer() {
+        if (!currentDetailTaskId) return;
+        const typed = window.prompt(
+            'Type the task id (' + currentDetailTaskId + ') to confirm delete.\n' +
+            'A worklog audit entry will be written for recoverability.');
+        if (typed !== currentDetailTaskId) return;
+        fetch('/api/task/' + currentDetailTaskId, { method: 'DELETE' })
+            .then(r => { if (r.ok) { refreshState(); closeTaskDetail(); } });
     }
 
     document.addEventListener('keydown', e => {

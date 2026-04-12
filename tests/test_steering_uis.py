@@ -1106,6 +1106,69 @@ class TestTaskDetailAPI:
         assert r.json()["worklog"] == []
 
 
+class TestTaskLifecycleActions:
+    """t-333 — defer / undefer / delete / deprioritize round-trips."""
+
+    def test_deprioritize_sets_sentinel(self, poker_client):
+        c, tmp = poker_client
+        r = c.post("/api/task/t-001/human-priority", json={"value": 9999})
+        assert r.status_code == 200
+        state = json.loads((tmp / "state.json").read_text())
+        task = next(t for t in state["queue"] if t["id"] == "t-001")
+        assert task["human_priority"] == 9999
+
+    def test_defer_and_undefer_round_trip(self, poker_client):
+        c, tmp = poker_client
+        r = c.post("/api/task/t-001/defer")
+        assert r.status_code == 200
+        state = json.loads((tmp / "state.json").read_text())
+        assert next(t for t in state["queue"] if t["id"] == "t-001")["status"] == "deferred"
+        r = c.post("/api/task/t-001/undefer")
+        assert r.status_code == 200
+        state = json.loads((tmp / "state.json").read_text())
+        assert next(t for t in state["queue"] if t["id"] == "t-001")["status"] == "pending"
+
+    def test_defer_rejects_non_pending(self, poker_client, tmp_path):
+        c, tmp = poker_client
+        state = json.loads((tmp / "state.json").read_text())
+        state["queue"][0]["status"] = "complete"
+        (tmp / "state.json").write_text(json.dumps(state))
+        r = c.post("/api/task/t-001/defer")
+        assert r.status_code == 400
+
+    def test_undefer_rejects_non_deferred(self, poker_client):
+        c, _ = poker_client
+        r = c.post("/api/task/t-001/undefer")  # still pending
+        assert r.status_code == 400
+
+    def test_delete_removes_and_audits_worklog(self, poker_client):
+        c, tmp = poker_client
+        # Seed a worklog file so the audit append has somewhere to land.
+        (tmp / "worklog.tsv").write_text(
+            "timestamp\theat\tstage\ttask_id\toutcome\tvalue\tsignal\tnotes\n")
+        r = c.delete("/api/task/t-001")
+        assert r.status_code == 200
+        state = json.loads((tmp / "state.json").read_text())
+        assert not any(t["id"] == "t-001" for t in state["queue"])
+        wl = (tmp / "worklog.tsv").read_text()
+        assert "deleted via poker drawer" in wl
+        assert "t-001" in wl
+
+    def test_delete_404_for_unknown(self, poker_client):
+        c, _ = poker_client
+        r = c.delete("/api/task/t-ghost")
+        assert r.status_code == 404
+
+    def test_deferred_task_skipped_by_cli_queue_pop(self, poker_client):
+        """Scheduler filters status=='pending', so deferred tasks never surface."""
+        c, tmp = poker_client
+        # Defer the only task
+        c.post("/api/task/t-001/defer")
+        state = json.loads((tmp / "state.json").read_text())
+        pending = [t for t in state["queue"] if t["status"] == "pending"]
+        assert pending == []
+
+
 class TestGloballyPinnedBadge:
     """t-331 — 📌 badge rendered on drawer rows for tasks in .upcoming.json."""
 
