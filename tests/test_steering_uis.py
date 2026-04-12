@@ -204,6 +204,126 @@ class TestPriorityPoker:
         assert "ini-002" not in data  # ini-002 is proposed
 
 
+class TestPokerDrawer:
+    """t-314/t-319: drawer sections, /view, /human-priority endpoints."""
+
+    def test_view_stamps_viewed_at(self, poker_client):
+        """POST /api/initiative/<id>/view sets viewed_at on the initiative."""
+        c, tmp = poker_client
+        r = c.post("/api/initiative/ini-001/view")
+        assert r.status_code == 200
+        body = r.json()
+        assert body["ok"] is True
+        assert body["viewed_at"]
+        state = json.loads((tmp / "state.json").read_text())
+        ini = next(i for i in state["initiatives"] if i["id"] == "ini-001")
+        assert ini["viewed_at"] == body["viewed_at"]
+
+    def test_view_unknown_initiative_404(self, poker_client):
+        c, _ = poker_client
+        r = c.post("/api/initiative/ini-ghost/view")
+        assert r.status_code == 404
+
+    def test_human_priority_set(self, poker_client):
+        """POST /api/task/<id>/human-priority with int sets the sticky priority."""
+        c, tmp = poker_client
+        r = c.post("/api/task/t-001/human-priority", json={"value": 5})
+        assert r.status_code == 200
+        state = json.loads((tmp / "state.json").read_text())
+        t = next(x for x in state["queue"] if x["id"] == "t-001")
+        assert t["human_priority"] == 5
+        assert t["priority_reason"] is not None
+
+    def test_human_priority_null_clears(self, poker_client):
+        """Body {value: null} clears both human_priority and priority_reason."""
+        c, tmp = poker_client
+        # Prime with a sticky value first.
+        state = json.loads((tmp / "state.json").read_text())
+        state["queue"][0]["human_priority"] = 3
+        state["queue"][0]["priority_reason"] = "pinned"
+        (tmp / "state.json").write_text(json.dumps(state))
+        r = c.post("/api/task/t-001/human-priority", json={"value": None})
+        assert r.status_code == 200
+        reloaded = json.loads((tmp / "state.json").read_text())
+        t = reloaded["queue"][0]
+        assert t["human_priority"] is None
+        assert t["priority_reason"] is None
+
+    def test_human_priority_rejects_non_int(self, poker_client):
+        c, _ = poker_client
+        r = c.post("/api/task/t-001/human-priority", json={"value": "high"})
+        assert r.status_code == 400
+
+    def test_human_priority_unknown_task_404(self, poker_client):
+        c, _ = poker_client
+        r = c.post("/api/task/t-ghost/human-priority", json={"value": 1})
+        assert r.status_code == 404
+
+    def test_drawer_renders_three_sections(self, poker_client):
+        """Index renders In-flight / Queued / Shipped section titles when applicable."""
+        c, tmp = poker_client
+        state = json.loads((tmp / "state.json").read_text())
+        # Add an in_flight and a complete task alongside existing pending t-001.
+        state["queue"].extend([
+            {"id": "t-002", "stage": "implementation", "desc": "in flight", "status": "in_progress",
+             "priority": 1, "blocked_by": [], "initiative_id": "ini-001"},
+            {"id": "t-003", "stage": "implementation", "desc": "shipped", "status": "complete",
+             "priority": 1, "blocked_by": [], "initiative_id": "ini-001"},
+        ])
+        (tmp / "state.json").write_text(json.dumps(state))
+        # Give t-003 a worklog timestamp so shipped-since-viewed includes it.
+        (tmp / "worklog.tsv").write_text(
+            "timestamp\theat\tstage\ttask_id\toutcome\tvalue\tsignal\tnotes\n"
+            "2026-04-12T10:00:00Z\t1\timplementation\tt-003\tcomplete\t0.8\t🟢\tdone\n"
+        )
+        r = c.get("/")
+        assert r.status_code == 200
+        assert "In-flight" in r.text
+        assert "Queued" in r.text
+        assert "Shipped" in r.text
+
+    def test_shipped_since_viewed_filters_by_worklog_ts(self, poker_client):
+        """After stamping viewed_at, only tasks with later worklog ts appear in 'shipped since viewed'."""
+        c, tmp = poker_client
+        state = json.loads((tmp / "state.json").read_text())
+        # Two complete tasks, one before viewed_at, one after.
+        state["queue"].extend([
+            {"id": "t-old", "stage": "implementation", "desc": "old shipped", "status": "complete",
+             "priority": 2, "blocked_by": [], "initiative_id": "ini-001"},
+            {"id": "t-new", "stage": "implementation", "desc": "new shipped", "status": "complete",
+             "priority": 2, "blocked_by": [], "initiative_id": "ini-001"},
+        ])
+        state["initiatives"][0]["viewed_at"] = "2026-04-12T12:00:00Z"
+        (tmp / "state.json").write_text(json.dumps(state))
+        (tmp / "worklog.tsv").write_text(
+            "timestamp\theat\tstage\ttask_id\toutcome\tvalue\tsignal\tnotes\n"
+            "2026-04-12T10:00:00Z\t1\timplementation\tt-old\tcomplete\t0.8\t🟢\told\n"
+            "2026-04-12T14:00:00Z\t2\timplementation\tt-new\tcomplete\t0.8\t🟢\tnew\n"
+        )
+        r = c.get("/")
+        assert r.status_code == 200
+        assert "t-new" in r.text
+        assert "t-old" not in r.text
+
+    def test_queued_sort_honors_human_priority(self, poker_client):
+        """Queued section orders pending tasks by (human_priority or +inf, priority)."""
+        c, tmp = poker_client
+        state = json.loads((tmp / "state.json").read_text())
+        state["queue"] = [
+            {"id": "t-100", "stage": "implementation", "desc": "agent-p0", "status": "pending",
+             "priority": 0, "blocked_by": [], "initiative_id": "ini-001",
+             "human_priority": None, "priority_reason": None},
+            {"id": "t-200", "stage": "implementation", "desc": "sticky-p0", "status": "pending",
+             "priority": 3, "blocked_by": [], "initiative_id": "ini-001",
+             "human_priority": 0, "priority_reason": "pinned"},
+        ]
+        (tmp / "state.json").write_text(json.dumps(state))
+        r = c.get("/")
+        assert r.status_code == 200
+        # Sticky should render above agent-p0 in the queued list.
+        assert r.text.index("t-200") < r.text.index("t-100")
+
+
 @pytest.fixture
 def timeline_client(tmp_path, monkeypatch):
     """Create a test client for the Timeline app with overlapping initiatives."""

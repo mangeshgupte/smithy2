@@ -199,6 +199,33 @@ async def events():
     )
 
 
+@app.post("/api/task/{task_id}/human-priority")
+async def set_human_priority(task_id: str, request: Request):
+    """Set or clear a task's sticky human_priority.
+
+    Body: {"value": int | null}. null clears human_priority + priority_reason.
+    """
+    body = await request.json()
+    value = body.get("value")
+    if value is not None and not isinstance(value, int):
+        return JSONResponse({"ok": False, "error": "value must be int or null"}, status_code=400)
+
+    state = _load_state()
+    for t in state.get("queue", []):
+        if t["id"] == task_id:
+            if value is None:
+                t["human_priority"] = None
+                t["priority_reason"] = None
+            else:
+                t["human_priority"] = value
+                # Preserve reason if already human-set; otherwise stamp a short one.
+                if not t.get("priority_reason") or t.get("priority_reason", "").startswith(("ini-", "p")):
+                    t["priority_reason"] = f"you:p{value}"[:40]
+            _save_state(state)
+            return JSONResponse({"ok": True, "task": t})
+    return JSONResponse({"ok": False, "error": "not found"}, status_code=404)
+
+
 @app.post("/api/initiative/{initiative_id}/view")
 async def mark_viewed(initiative_id: str):
     """Stamp viewed_at = now() on drawer open. Enables 'shipped since viewed'."""
