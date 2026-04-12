@@ -107,6 +107,8 @@ class TestCockpitTemplatePolish:
         assert "'j'" in html and "'k'" in html and "'x'" in html
         assert "'Enter'" in html
 
-    def test_colspan_bumped_to_11(self, poker):
+    def test_colspan_bumped_to_12(self, poker):
+        # t-380 added a bulk-select column, bumping header/skeleton/empty
+        # colspan from 11 to 12.
         html = poker.get("/cockpit").text
-        assert 'colspan="11"' in html
+        assert 'colspan="12"' in html

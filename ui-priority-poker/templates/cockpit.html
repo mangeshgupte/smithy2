@@ -102,6 +102,22 @@
         @keyframes c-reject-flash { 0%,100% { background: inherit; }
                                     30%,70% { background: rgba(220,60,60,0.25); } }
         .cockpit-table tr.c-drop-reject { animation: c-reject-flash 0.45s ease; }
+        /* t-380: bulk-select bar. Appears above table when ≥1 row checked. */
+        .c-bulk-bar { display: flex; align-items: center; gap: 8px;
+                      padding: 8px 12px; margin-bottom: 8px;
+                      background: var(--surface, #1a1a1a);
+                      border: 1px solid var(--yellow, #c89c2a); border-radius: 4px;
+                      font-size: 12px; }
+        .c-bulk-bar[hidden] { display: none; }
+        .c-bulk-bar button { font: inherit; background: transparent;
+                             border: 1px solid var(--border, #333);
+                             color: var(--text, #ddd); padding: 3px 10px;
+                             border-radius: 2px; cursor: pointer; }
+        .c-bulk-bar button:hover { border-color: var(--yellow, #c89c2a);
+                                   color: var(--yellow, #c89c2a); }
+        .c-bulk-bar .c-bulk-clear { margin-left: auto; color: var(--text-muted, #888); }
+        .c-check { width: 18px; text-align: center; }
+        .c-check input { cursor: pointer; margin: 0; }
     </style>
 </head>
 <body>
@@ -150,9 +166,18 @@
 
         <div class="cockpit-stats" id="stats">Loading…</div>
 
+        <div id="c-bulk-bar" class="c-bulk-bar" hidden>
+            <span id="c-bulk-count">0 selected</span>
+            <button type="button" onclick="bulkAction('defer')">Defer</button>
+            <button type="button" onclick="bulkAction('undefer')">Undefer</button>
+            <button type="button" onclick="bulkAction('clear-hp')">Clear hp</button>
+            <button type="button" class="c-bulk-clear" onclick="clearBulkSelection()">Clear selection</button>
+        </div>
+
         <table class="cockpit-table">
             <thead>
                 <tr>
+                    <th class="c-check"><input type="checkbox" id="c-check-all" onclick="toggleSelectAllVisible(this.checked)"></th>
                     <th></th>
                     <th>id</th>
                     <th>stage</th>
@@ -205,7 +230,7 @@
         let html = '';
         for (let i = 0; i < 6; i++) {
             html += '<tr class="c-skeleton">' +
-                '<td colspan="11"><span class="c-skeleton-bar"></span></td></tr>';
+                '<td colspan="12"><span class="c-skeleton-bar"></span></td></tr>';
         }
         body.innerHTML = html;
     }
@@ -216,6 +241,69 @@
         fetch('/api/cockpit' + (p.toString() ? ('?' + p.toString()) : ''))
             .then(r => r.json()).then(render)
             .catch(() => { document.getElementById('stats').textContent = 'Failed to load.'; });
+    }
+
+    // t-380: bulk-selected task ids. Persisted across re-renders so SSE
+    // refreshes don't drop the user's selection. Only pending+deferred rows
+    // carry a checkbox.
+    const bulkSelected = new Set();
+
+    function refreshBulkBar() {
+        const bar = document.getElementById('c-bulk-bar');
+        const cnt = document.getElementById('c-bulk-count');
+        if (!bar || !cnt) return;
+        bar.hidden = bulkSelected.size === 0;
+        cnt.textContent = bulkSelected.size + ' selected';
+        // Sync the header checkbox indeterminate/checked state.
+        const head = document.getElementById('c-check-all');
+        if (head) {
+            const boxes = document.querySelectorAll('#rows input[data-bulk-id]');
+            const checkedBoxes = document.querySelectorAll(
+                '#rows input[data-bulk-id]:checked');
+            head.indeterminate = checkedBoxes.length > 0 &&
+                                 checkedBoxes.length < boxes.length;
+            head.checked = boxes.length > 0 &&
+                           checkedBoxes.length === boxes.length;
+        }
+    }
+
+    function onBulkCheck(evt) {
+        const cb = evt.currentTarget;
+        const id = cb.dataset.bulkId;
+        if (cb.checked) bulkSelected.add(id);
+        else bulkSelected.delete(id);
+        refreshBulkBar();
+    }
+
+    function toggleSelectAllVisible(on) {
+        const boxes = document.querySelectorAll('#rows input[data-bulk-id]');
+        boxes.forEach(cb => {
+            cb.checked = on;
+            const id = cb.dataset.bulkId;
+            if (on) bulkSelected.add(id);
+            else bulkSelected.delete(id);
+        });
+        refreshBulkBar();
+    }
+
+    function clearBulkSelection() {
+        bulkSelected.clear();
+        document.querySelectorAll('#rows input[data-bulk-id]:checked')
+            .forEach(cb => cb.checked = false);
+        refreshBulkBar();
+    }
+
+    function bulkAction(action) {
+        const ids = Array.from(bulkSelected);
+        if (!ids.length) return;
+        fetch('/api/bulk', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({action, ids}),
+        }).then(r => r.json()).then(resp => {
+            if (!resp.ok) { alert('Bulk failed: ' + (resp.error || 'unknown')); return; }
+            bulkSelected.clear();
+            loadRows();
+        });
     }
 
     // t-388: taskIds currently expanded inline. Persisted across re-renders
@@ -244,7 +332,7 @@
         tr.className = 'c-section-head';
         tr.dataset.section = key;
         const caret = sectionOpen[key] ? '▾' : '▸';
-        tr.innerHTML = `<td colspan="11"><span class="c-section-caret">${caret}</span>` +
+        tr.innerHTML = `<td colspan="12"><span class="c-section-caret">${caret}</span>` +
                        ` ${label} <span class="c-section-chip">${count}</span></td>`;
         tr.addEventListener('click', () => {
             sectionOpen[key] = !sectionOpen[key];
@@ -265,7 +353,7 @@
             const msg = (data.total === 0)
                 ? 'No tasks in this project yet. Add one via <code>smithy add-task</code>.'
                 : 'No tasks match the current filters. Try widening or <a href="#" onclick="clearFilters();return false;">clear all</a>.';
-            body.innerHTML = `<tr><td colspan="11" class="c-empty">${msg}</td></tr>`;
+            body.innerHTML = `<tr><td colspan="12" class="c-empty">${msg}</td></tr>`;
             return;
         }
         const sections = splitSections(data.rows);
@@ -279,6 +367,7 @@
             renderSectionHead(body, key, label, rows.length);
             if (sectionOpen[key]) rows.forEach(t => renderRow(body, t));
         });
+        refreshBulkBar();
     }
 
     function renderRow(body, t) {
@@ -299,7 +388,9 @@
             }
             const hp = (t.human_priority == null) ? '—' : ('p' + t.human_priority);
             const isOpen = expanded.has(t.id);
+            const checked = bulkSelected.has(t.id) ? 'checked' : '';
             tr.innerHTML =
+                `<td class="c-check"><input type="checkbox" data-bulk-id="${t.id}" ${checked} onclick="onBulkCheck(event)"></td>` +
                 `<td class="c-expand ${isOpen ? 'open' : ''}" onclick="toggleInlineExpand(event, '${t.id}')">${isOpen ? '▾' : '▸'}</td>` +
                 `<td class="c-id"><a href="#" onclick="openDrawer('${t.id}');return false;">${t.id}</a></td>` +
                 `<td><span class="c-stage stage-${t.stage}">${t.stage}</span></td>` +
@@ -337,6 +428,7 @@
         const heat = t.ship_heat ? ('h' + t.ship_heat) : '—';
         const sha = t.commit_sha ? `<code class="c-sha">${t.commit_sha}</code>` : '—';
         tr.innerHTML =
+            `<td class="c-check"></td>` +
             `<td class="c-expand ${isOpen ? 'open' : ''}" onclick="toggleInlineExpand(event, '${t.id}')">${isOpen ? '▾' : '▸'}</td>` +
             `<td class="c-id"><a href="#" onclick="openDrawer('${t.id}');return false;">${t.id}</a></td>` +
             `<td><span class="c-stage stage-${t.stage}">${t.stage}</span></td>` +
@@ -353,7 +445,7 @@
         tr.className = 'c-inline-panel';
         tr.dataset.panelFor = t.id;
         tr.innerHTML =
-            `<td></td><td colspan="10" class="c-inline-body">
+            `<td></td><td></td><td colspan="10" class="c-inline-body">
                 <div class="c-inline-desc">${(t.desc || '(no description)').replace(/</g,'&lt;')}</div>
                 <dl class="c-inline-dl">
                     <dt>reason</dt><dd>${t.priority_reason || '—'}</dd>

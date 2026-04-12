@@ -2,21 +2,21 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1043,
-    "used": 803,
+    "used": 808,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
     "research": {
       "target": 0.156,
-      "heats": 45,
+      "heats": 48,
       "progress": 0.9,
-      "value_ema": 0.795
+      "value_ema": 0.798
     },
     "planning": {
       "target": 0.21,
-      "heats": 33,
+      "heats": 34,
       "progress": 0.85,
-      "value_ema": 0.75
+      "value_ema": 0.765
     },
     "implementation": {
       "target": 0.049,
@@ -32,9 +32,9 @@
     },
     "editing": {
       "target": 0.183,
-      "heats": 185,
+      "heats": 186,
       "progress": 0.88,
-      "value_ema": 0.788
+      "value_ema": 0.777
     },
     "marketing": {
       "target": 0.219,
@@ -49,7 +49,7 @@
       "planning": 0.5,
       "implementation": -0.5,
       "testing": 0.014,
-      "editing": -0.372,
+      "editing": -0.365,
       "marketing": 0.5
     }
   },
@@ -3420,12 +3420,12 @@
       "id": "t-380",
       "stage": "implementation",
       "desc": "Queue Cockpit bulk actions \u2014 multi-select, apply action to all selected. Scoped as optional follow-up per research \u00a7t-380.",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 3,
       "blocked_by": [],
       "initiative_id": "ini-016",
       "human_priority": null,
-      "priority_reason": "ini-016 rank=1 + poker"
+      "priority_reason": "ini-016 rank=2 + poker"
     },
     {
       "id": "t-381",
@@ -3464,34 +3464,34 @@
       "id": "t-384",
       "stage": "editing",
       "desc": "Seed intents (ini-017 pre-research). Populate state.json with three explicit intents: (1) project-level: 'Create an AI collaborator who can run autonomously, while also being responsive to human steers, and can carry out the high-level intents that the human expresses and wants.' (2) ini-016 Queue Cockpit: 'Give the human a way to ensure that individual task assignments conform to the high-level intent the human has, and gives a way to identify and correct drift.' (3) ini-012 Four UIs: 'Play with different UIs which would inform a good way of adopting steerability.' Use whatever schema exists today; note schema gaps for t-384 to resolve. Seed corpus for auto-discovery + UI testing.",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-017",
-      "human_priority": 10,
-      "priority_reason": "you:p10"
+      "human_priority": null,
+      "priority_reason": null
     },
     {
       "id": "t-385",
       "stage": "research",
       "desc": "Intent Hierarchy design study (ini-017). Six audit questions: (1) schema \u2014 project-level intent location (state.json commander_intent?), initiatives[].intent shape audit, need for sub-initiative/theme layer, (2) inheritance \u2014 resolver function pure+deterministic (task\u2192initiative\u2192project fallback), (3) auto-discovery \u2014 synthesize intent from initiative name + task descs + worklog + commits; decide research-heat vs CLI vs Forge self-reflection at creation, (4) editor UX \u2014 Intent Editor level switcher vs inline edit on deep-dive, (5) display \u2014 breadcrumb in deep-dive/Cockpit/drawer, short+expand vs always-full, (6) drift detection (note design implications, out-of-scope impl). Output: research/intent-hierarchy.md with schema diff + resolver pseudocode + auto-discovery plan + editor UX sketch + 4-6 impl candidates (retro format value-theses).",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-017",
       "human_priority": null,
-      "priority_reason": "ini-017 rank=2 + poker"
+      "priority_reason": null
     },
     {
       "id": "t-386",
       "stage": "research",
       "desc": "Witness-style patrol for stall recovery \u2014 research/witness-patrol.md. Scope: (1) stuck-state detector (pending queue + no in_progress + all idle + stale heat); (2) role placement \u2014 fold into Marshal vs new Witness role \u2014 recommend w/ rationale; (3) activation mechanism (cron/piggyback/hook/human/hybrid) \u2014 reuse smithy patrol --fix; (4) actions policy (self-nudge \u2192 force-pop \u2192 alert, tiered); (5) livelock guard (per-target cooldown); (6) testing (synthetic stall fixture). Output: role + activation recommendations, stuck-state machine, 3-5 impl candidates retro-format w/ value theses.",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-009",
       "human_priority": null,
-      "priority_reason": "ini-009 rank=3 + poker"
+      "priority_reason": null
     },
     {
       "id": "t-387",
@@ -3563,23 +3563,23 @@
       "id": "t-393",
       "stage": "research",
       "desc": "Parallel Forges design \u2014 research/parallel-forges-design.md. Scope: (1) mine research/gas-town-{autonomy-memory-gap,comms-mapping,extension-points}.md \u2014 cite polecats/crew/refinery/witness mechanics, merge queue, GUPP, max_polecats back-pressure; (2) worktree layout (.worktrees/forge-NN/), shared vs per-worktree worklog.tsv; (3) branch strategy (per-heat vs per-session) + merge cadence; (4) Assembly role: teammate? duties per cycle (pick/rebase/test/merge-or-reject); conflict policy; (5) Marshal dispatch across N Forges \u2014 per-forge slot in state.json or assignments field; (6) state.json concurrency \u2014 409 retry sufficiency vs lock; (7) nudge cycle at N \u2014 broadcast vs per-forge; witness becomes critical; (8) failure modes + reset-one-forge procedure; (9) MVS: N=2 first; (10) shutdown analysis: what must freeze. Output: explicit Gas Town citations, concrete schema diffs, ASCII sequence diagram, risk table.",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-018",
       "human_priority": null,
-      "priority_reason": "ini-018 rank=1 + poker"
+      "priority_reason": null
     },
     {
       "id": "t-394",
       "stage": "planning",
       "desc": "Parallel Forges impl plan \u2014 planning/parallel-forges-plan.md. Ordered tasks (retro-format w/ value theses), heat estimates, dependency graph, shut-down-first section, integration checklist. **Surface to Anvil for human review before any impl pushes.** Blocked_by: t-393.",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-018",
       "human_priority": null,
-      "priority_reason": "ini-018 rank=1 + poker"
+      "priority_reason": null
     }
   ],
   "ideas": [
@@ -3626,7 +3626,7 @@
       "description": "Run multiple Forge workers concurrently via per-Forge git worktrees. Dedicated Assembly teammate handles merge queue integration (conflicts, test-on-integrate, merge ordering). Unlocks parallelism (Marshal dispatches N heats simultaneously) and enforces branch hygiene. Incremental: N=2 proof before N=3+.",
       "status": "approved",
       "budget_cap": null,
-      "heats_used": 0,
+      "heats_used": 2,
       "viewed_at": null,
       "rank": 1
     },
@@ -3649,7 +3649,7 @@
       "description": "Intent is a primitive field attached uniformly to every unit of work (task, initiative, project). Same shape everywhere \u2014 no 'level' concept in storage. Inheritance/chain is one view over intents, not the core concept. Other views: search by intent content, gap audit (units with no intent), drift detection (contradicting intents). Auto-discoverable per-unit AND inline-editable wherever a unit is displayed.",
       "status": "approved",
       "budget_cap": null,
-      "heats_used": 0,
+      "heats_used": 2,
       "viewed_at": "2026-04-12T21:37:51Z",
       "rank": 3
     },
@@ -3660,7 +3660,7 @@
       "description": "Research how humans steer autonomous systems \u2014 not monitor, STEER. The core question: what controls does a human need to change direction without becoming a bottleneck? Study: (1) Real-time strategy games (StarCraft command hierarchy \u2014 strategic goals, tactical orders, unit autonomy), (2) Military C2 frameworks (mission-type orders, commander's intent, OODA), (3) Product management (OKRs, roadmap prioritization, sprint planning), (4) Air traffic control (constraints not commands), (5) Existing AI tools (Devin's chat-to-steer, Cursor's accept/reject, Claude Code hooks). For each, extract: what decisions the human makes, at what frequency, what information they need to decide, and what the feedback loop looks like. Deliverable: research/steering-patterns.md with a taxonomy of steering modes and which are worth prototyping as UIs.",
       "status": "approved",
       "budget_cap": 10,
-      "heats_used": 35,
+      "heats_used": 36,
       "rank": 4,
       "planned_start": 635,
       "planned_end": 645,
@@ -3851,11 +3851,7 @@
       "created": "2026-04-11T10:44:28.678810"
     }
   ],
-  "next_tasks": [
-    "t-386",
-    "t-385",
-    "t-380"
-  ],
+  "next_tasks": [],
   "schema_version": 1,
   "intents": [
     {

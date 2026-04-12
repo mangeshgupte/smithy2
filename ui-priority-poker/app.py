@@ -517,6 +517,67 @@ async def reorder_tasks(request: Request):
     return JSONResponse({"ok": True, "changed": len(changes), "order": order})
 
 
+@app.post("/api/bulk")
+async def bulk_action(request: Request):
+    """t-380: Apply one action to many tasks atomically.
+
+    Body: {"action": "defer"|"undefer"|"clear-hp", "ids": ["t-1", ...]}.
+    Single save; per-id steering log. Skips ids that are not applicable
+    (e.g. clear-hp on hp-null, defer on complete) rather than failing the
+    whole batch. Returns counts.
+    """
+    body = await request.json()
+    action = body.get("action")
+    ids = body.get("ids", [])
+    if action not in ("defer", "undefer", "clear-hp"):
+        return JSONResponse({"ok": False, "error": "unknown action"}, status_code=400)
+    if not isinstance(ids, list) or not all(isinstance(x, str) for x in ids):
+        return JSONResponse({"ok": False, "error": "ids must be list[str]"}, status_code=400)
+
+    state, mtime = _load_state_with_mtime()
+    q_by_id = {t["id"]: t for t in state.get("queue", [])}
+    applied, skipped = [], []
+    for tid in ids:
+        t = q_by_id.get(tid)
+        if not t:
+            skipped.append((tid, "not_found"))
+            continue
+        if action == "defer":
+            if t.get("status") not in ("pending", "deferred"):
+                skipped.append((tid, f"status={t.get('status')}"))
+                continue
+            before = t.get("status")
+            if before == "deferred":
+                skipped.append((tid, "already_deferred"))
+                continue
+            t["status"] = "deferred"
+            applied.append((tid, "status", before, "deferred"))
+        elif action == "undefer":
+            if t.get("status") != "deferred":
+                skipped.append((tid, f"status={t.get('status')}"))
+                continue
+            t["status"] = "pending"
+            applied.append((tid, "status", "deferred", "pending"))
+        elif action == "clear-hp":
+            before = t.get("human_priority")
+            if before is None:
+                skipped.append((tid, "hp_already_null"))
+                continue
+            t["human_priority"] = None
+            t["priority_reason"] = None
+            applied.append((tid, "human_priority", before, None))
+
+    if applied:
+        _save_state_checked(state, mtime)
+        actor = _actor_from_request(request, "bellows-poker")
+        for tid, field, before, after in applied:
+            log_steering(STATE_DIR, actor=actor, task_id=tid, field=field,
+                         before=before, after=after, source=f"cockpit-bulk-{action}")
+    return JSONResponse({"ok": True, "action": action,
+                         "applied": len(applied), "skipped": len(skipped),
+                         "applied_ids": [a[0] for a in applied]})
+
+
 @app.post("/api/task/{task_id}/defer")
 async def defer_task(task_id: str, request: Request):
     """Set status='deferred'. Scheduler skips (filters pending only). Reversible via /undefer."""
