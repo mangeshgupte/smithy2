@@ -43,6 +43,14 @@
                     white-space: nowrap; color: var(--text-muted, #aaa); font-size: 11px; }
         .c-kebab { cursor: pointer; color: var(--text-muted, #888); padding: 0 4px; }
         .c-empty { padding: 32px; text-align: center; color: var(--text-muted, #888); }
+        .c-empty a { color: var(--yellow, #c89c2a); }
+        .c-age { color: var(--text-muted, #888); font-size: 11px; white-space: nowrap; }
+        .c-skeleton td { padding: 8px; }
+        .c-skeleton-bar { display: block; height: 10px; background: var(--surface-hover, #222);
+                          border-radius: 2px; animation: c-skel 1.2s infinite; }
+        @keyframes c-skel { 0%,100% { opacity: 0.4; } 50% { opacity: 0.7; } }
+        .cockpit-table tr.c-focused { background: var(--surface-hover, #222);
+                                      outline: 1px solid var(--yellow, #c89c2a); }
     </style>
 </head>
 <body>
@@ -102,6 +110,7 @@
                     <th>you</th>
                     <th>reason</th>
                     <th>initiative</th>
+                    <th title="Heats since first worklog mention">age</th>
                     <th>desc</th>
                     <th></th>
                 </tr>
@@ -134,8 +143,20 @@
         window.location.href = '/cockpit';
     }
 
+    function renderSkeleton() {
+        const body = document.getElementById('rows');
+        if (body.children.length > 0) return;  // don't blank a populated table
+        let html = '';
+        for (let i = 0; i < 6; i++) {
+            html += '<tr class="c-skeleton">' +
+                '<td colspan="11"><span class="c-skeleton-bar"></span></td></tr>';
+        }
+        body.innerHTML = html;
+    }
+
     function loadRows() {
         const p = buildUrl();
+        renderSkeleton();
         fetch('/api/cockpit' + (p.toString() ? ('?' + p.toString()) : ''))
             .then(r => r.json()).then(render)
             .catch(() => { document.getElementById('stats').textContent = 'Failed to load.'; });
@@ -147,7 +168,10 @@
         const body = document.getElementById('rows');
         body.innerHTML = '';
         if (!data.rows.length) {
-            body.innerHTML = '<tr><td colspan="10" class="c-empty">No tasks match.</td></tr>';
+            const msg = (data.total === 0)
+                ? 'No tasks in this project yet. Add one via <code>smithy add-task</code>.'
+                : 'No tasks match the current filters. Try widening or <a href="#" onclick="clearFilters();return false;">clear all</a>.';
+            body.innerHTML = `<tr><td colspan="11" class="c-empty">${msg}</td></tr>`;
             return;
         }
         data.rows.forEach(t => {
@@ -169,6 +193,7 @@
                 `</td>` +
                 `<td class="c-reason" title="${(t.priority_reason || '').replace(/"/g, '&quot;')}">${t.priority_reason || '—'}</td>` +
                 `<td>${t.initiative_id || '—'}</td>` +
+                `<td class="c-age">${t.age_heats == null ? '—' : (t.age_heats + 'h')}</td>` +
                 `<td class="c-desc" title="${(t.desc || '').replace(/"/g, '&quot;')}">${t.desc || ''}</td>` +
                 `<td><span class="c-kebab" onclick="toggleDefer('${t.id}', '${t.status}')" title="defer/undefer">${t.status === 'deferred' ? '▶' : '⏸'}</span></td>`;
             body.appendChild(tr);
@@ -203,6 +228,34 @@
         const path = (status === 'deferred') ? '/undefer' : '/defer';
         fetch('/api/task/' + taskId + path, {method: 'POST'}).then(loadRows);
     }
+
+    // Keyboard nav (t-379): j/k move row focus, Enter opens drawer, x toggles defer.
+    let focusedIndex = -1;
+    function focusRow(i) {
+        const rows = document.querySelectorAll('#rows tr[data-task-id]');
+        if (!rows.length) return;
+        rows.forEach(r => r.classList.remove('c-focused'));
+        focusedIndex = Math.max(0, Math.min(i, rows.length - 1));
+        rows[focusedIndex].classList.add('c-focused');
+        rows[focusedIndex].scrollIntoView({block: 'nearest'});
+    }
+    document.addEventListener('keydown', e => {
+        // Skip when typing in filter inputs.
+        const tag = (e.target.tagName || '').toLowerCase();
+        if (tag === 'input' || tag === 'select' || tag === 'textarea') return;
+        if (e.key === 'j') { e.preventDefault(); focusRow(focusedIndex + 1); }
+        else if (e.key === 'k') { e.preventDefault(); focusRow(focusedIndex - 1); }
+        else if (e.key === 'Enter' && focusedIndex >= 0) {
+            const row = document.querySelectorAll('#rows tr[data-task-id]')[focusedIndex];
+            if (row) openDrawer(row.dataset.taskId);
+        } else if (e.key === 'x' && focusedIndex >= 0) {
+            const row = document.querySelectorAll('#rows tr[data-task-id]')[focusedIndex];
+            if (row) {
+                const isDeferred = row.classList.contains('deferred-row');
+                toggleDefer(row.dataset.taskId, isDeferred ? 'deferred' : 'pending');
+            }
+        }
+    });
 
     // Live refresh via Poker's SSE stream.
     try {

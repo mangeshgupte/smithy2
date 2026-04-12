@@ -86,6 +86,8 @@ class TaskSummary:
     priority_reason: Optional[str] = None
     initiative_id: Optional[str] = None
     blocked_by: list = field(default_factory=list)
+    # t-379: heats since the task first appeared in worklog; None if never logged.
+    age_heats: Optional[int] = None
 
     def to_dict(self) -> dict:
         return {
@@ -95,6 +97,7 @@ class TaskSummary:
             "priority_reason": self.priority_reason,
             "initiative_id": self.initiative_id,
             "blocked_by": self.blocked_by,
+            "age_heats": self.age_heats,
         }
 
     @classmethod
@@ -234,6 +237,16 @@ class TaskDetail:
                 continue
             rows.append(TaskSummary.from_queue_row(row))
 
+        # t-379 age enrichment: heats since first worklog mention. Single pass
+        # over worklog.tsv so the N+1 trap flagged in research stays closed.
+        first_heat = _worklog_first_heats(project_root)
+        current_heat = (state.get("budget") or {}).get("used")
+        if isinstance(current_heat, int):
+            for r in rows:
+                fh = first_heat.get(r.id)
+                if isinstance(fh, int):
+                    r.age_heats = max(0, current_heat - fh)
+
         if order == "scheduler":
             rows.sort(key=scheduler_key)
         return rows
@@ -272,6 +285,29 @@ def _load_state(project_root: Path) -> dict:
         return json.loads(path.read_text())
     except (OSError, json.JSONDecodeError):
         return {"queue": [], "initiatives": []}
+
+
+def _worklog_first_heats(project_root: Path) -> dict:
+    """Map task_id -> earliest heat number seen in worklog.tsv (t-379)."""
+    path = project_root / "worklog.tsv"
+    if not path.exists():
+        return {}
+    out = {}
+    try:
+        with open(path) as f:
+            for row in csv.DictReader(f, delimiter="\t"):
+                tid = row.get("task_id")
+                if not tid:
+                    continue
+                try:
+                    heat = int(row.get("heat", ""))
+                except (TypeError, ValueError):
+                    continue
+                if tid not in out or heat < out[tid]:
+                    out[tid] = heat
+    except OSError:
+        pass
+    return out
 
 
 def _read_worklog_for_task(project_root: Path, task_id: str) -> list:
