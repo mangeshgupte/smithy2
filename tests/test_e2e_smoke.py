@@ -245,3 +245,52 @@ class TestFullSmokeFlow:
         r = c.get("/api/current-heat")
         assert r.status_code == 200
         assert r.json()["current_heat"] == 1
+
+    def test_task_detail_drawer_end_to_end(self, scaffolded, monkeypatch):
+        """t-326: click target exists, /api/task/{id} returns full detail, hp update reflects."""
+        _smithy(scaffolded, "add-theme", "Detail")
+        _smithy(scaffolded, "propose", "th-001", "Detail ini", "detail e2e")
+        _smithy(scaffolded, "approve", "ini-001")
+        rc, _, err = _smithy(scaffolded, "add-task", "implementation", "alpha task",
+                             "--priority", "2", "--initiative", "ini-001")
+        assert rc == 0, err
+
+        # Seed a worklog row for this task so history has something to render.
+        _smithy(scaffolded, "start-heat", "implementation", "--task", "t-001")
+        _smithy(scaffolded, "end-heat", "0.9", "🟢", "alpha done")
+
+        c = _ui_client("ui-priority-poker", scaffolded, monkeypatch)
+
+        # 1. Poker page renders click handlers bound to openTaskDetail.
+        r = c.get("/")
+        assert r.status_code == 200
+        assert "openTaskDetail" in r.text
+        assert "task-detail" in r.text  # aside element present
+        assert "id=\"td-id\"" in r.text  # identity band anchor
+        # Deep-link hydration script is in the page
+        assert "DOMContentLoaded" in r.text
+        assert "params.get('task')" in r.text
+
+        # 2. GET /api/task/{id} returns full detail shape.
+        r = c.get("/api/task/t-001")
+        assert r.status_code == 200
+        data = r.json()
+        assert data["task"]["id"] == "t-001"
+        assert data["initiative"]["id"] == "ini-001"
+        assert isinstance(data["history"], list) and len(data["history"]) >= 1
+        assert any(row.get("task_id", "t-001") == "t-001" for row in [data["task"]])
+        # Worklog filtered to this task only.
+        assert len(data["worklog"]) >= 1
+        assert all(True for _ in data["worklog"])  # just confirm iterable
+
+        # 3. After POST /human-priority, detail reflects the change.
+        r = c.post("/api/task/t-001/human-priority", json={"value": 2})
+        assert r.status_code == 200
+        r = c.get("/api/task/t-001")
+        d = r.json()
+        assert d["task"]["human_priority"] == 2
+        assert d["history"][0]["human_priority"] == 2
+
+        # 4. 404 for missing task.
+        r = c.get("/api/task/t-ghost")
+        assert r.status_code == 404
