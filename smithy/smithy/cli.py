@@ -9,6 +9,7 @@ from pathlib import Path
 from .state import (
     find_project_root, load_state, save_state, validate_state,
     append_worklog, write_checkpoint, delete_checkpoint,
+    forge_checkpoint_path, DEFAULT_FORGE_ID,
     VALID_STAGES, VALID_SIGNALS, VALID_OUTCOMES,
 )
 from .task_detail import scheduler_key
@@ -320,6 +321,130 @@ def shutdown_status_cmd(ctx):
         "checkpoint": checkpoint,
         "quiesced": quiesced,
     })
+
+
+@cli.command("forge-spawn")
+@click.argument("forge_id")
+@click.option("--base", default="main", help="Base branch for the worktree.")
+@click.pass_context
+def forge_spawn_cmd(ctx, forge_id, base):
+    """t-397 I2: Create a git worktree for a new Forge and register it.
+
+    Refuses to run past state.parallel.max_forges, refuses duplicate ids,
+    and is idempotent on the state-registration step (but won't re-create
+    an existing worktree — clean up first with forge-reset).
+    """
+    import subprocess
+    root = ctx.obj["root"]
+    state = load_state(root)
+    parallel = state.setdefault("parallel", {})
+    forges = parallel.setdefault("forges", [])
+    existing = {f["id"] for f in forges}
+    if forge_id in existing:
+        _output({"error": f"forge {forge_id} already registered"})
+        sys.exit(1)
+    max_forges = parallel.get("max_forges", 1)
+    if len(forges) >= max_forges:
+        _output({"error": f"already at max_forges={max_forges}; bump the cap first",
+                 "forges": sorted(existing)})
+        sys.exit(1)
+
+    worktree_dir = root / ".worktrees" / forge_id
+    if worktree_dir.exists():
+        _output({"error": f"worktree path {worktree_dir} already exists",
+                 "hint": "remove the directory or run 'git worktree remove' first"})
+        sys.exit(1)
+
+    branch = f"{forge_id}/scratch"
+    worktree_dir.parent.mkdir(parents=True, exist_ok=True)
+    result = subprocess.run(
+        ["git", "worktree", "add", "-b", branch, str(worktree_dir), base],
+        cwd=str(root), capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        _output({"error": "git worktree add failed", "stderr": result.stderr.strip()})
+        sys.exit(1)
+
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    forges.append({
+        "id": forge_id,
+        "status": "idle",
+        "current_task": None,
+        "current_heat": None,
+        "started_at": now,
+        "last_heartbeat": now,
+        "worktree": str(worktree_dir.relative_to(root)),
+        "branch": branch,
+    })
+    save_state(root, state)
+    _output({"spawned": forge_id, "worktree": str(worktree_dir),
+             "branch": branch})
+    _err(f"Forge {forge_id} spawned at {worktree_dir} (branch {branch}).")
+
+
+@cli.command("forge-reset")
+@click.argument("forge_id")
+@click.option("--remove-worktree", is_flag=True, default=False,
+              help="Also git-worktree-remove the Forge's worktree.")
+@click.pass_context
+def forge_reset_cmd(ctx, forge_id, remove_worktree):
+    """t-397 I2: Reclaim a (possibly zombie) Forge.
+
+    Clears its checkpoint; re-queues any in-flight task (status→pending,
+    assigned_forge→null); resets the registry entry to idle. Optionally
+    removes the git worktree so forge-spawn can re-create from scratch.
+    forge-01 is refused to keep the default Forge alive.
+    """
+    import subprocess
+    if forge_id == DEFAULT_FORGE_ID:
+        _output({"error": "refusing to reset the default forge-01"})
+        sys.exit(1)
+    root = ctx.obj["root"]
+    state = load_state(root)
+    parallel = state.setdefault("parallel", {})
+    forges = parallel.setdefault("forges", [])
+    entry = next((f for f in forges if f["id"] == forge_id), None)
+    if entry is None:
+        _output({"error": f"forge {forge_id} not found"})
+        sys.exit(1)
+
+    requeued = None
+    task_id = entry.get("current_task")
+    if task_id:
+        for t in state.get("queue", []):
+            if t["id"] == task_id:
+                t["status"] = "pending"
+                t["assigned_forge"] = None
+                requeued = task_id
+                break
+
+    cp = forge_checkpoint_path(root, forge_id)
+    checkpoint_removed = cp.exists()
+    if cp.exists():
+        cp.unlink()
+
+    entry["status"] = "idle"
+    entry["current_task"] = None
+    entry["current_heat"] = None
+
+    worktree_removed = False
+    if remove_worktree:
+        wt = entry.get("worktree")
+        if wt:
+            wt_path = root / wt
+            result = subprocess.run(
+                ["git", "worktree", "remove", "--force", str(wt_path)],
+                cwd=str(root), capture_output=True, text=True,
+            )
+            worktree_removed = result.returncode == 0
+            if result.returncode != 0:
+                _err(f"(warn) git worktree remove failed: {result.stderr.strip()}")
+
+    save_state(root, state)
+    _output({"reset": forge_id, "requeued_task": requeued,
+             "checkpoint_removed": checkpoint_removed,
+             "worktree_removed": worktree_removed})
+    _err(f"Forge {forge_id} reset" + (f" (requeued {requeued})" if requeued else ""))
 
 
 @cli.command("validate")
