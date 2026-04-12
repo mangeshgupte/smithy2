@@ -46,9 +46,10 @@
 
             {% for theme in decomposition %}
             <div class="tree-theme">
-                <div class="tree-node theme-node {{ 'new-item' if theme.is_new }}">
+                <div class="tree-node theme-node {{ 'new-item' if theme.is_new }}" onclick="toggleCollapse(this.parentElement)">
+                    <span class="collapse-toggle">▼</span>
                     {% if theme.is_new %}
-                    <input type="checkbox" name="themes" value="{{ theme.name }}" class="node-check" checked onchange="toggleThemeChildren(this)">
+                    <input type="checkbox" name="themes" value="{{ theme.name }}" class="node-check" checked onchange="toggleThemeChildren(this)" onclick="event.stopPropagation()">
                     {% else %}
                     <span class="node-icon">📁</span>
                     {% endif %}
@@ -91,7 +92,7 @@
             <div class="existing-item">
                 <div class="existing-header">
                     <span class="editable-name" onclick="startEditName(this, 'theme', '{{ th.id }}')">📁 {{ th.name }}</span>
-                    <span class="existing-status">({{ th.status }})</span>
+                    <span class="existing-status status-{{ th.status }}">{{ th.status }}</span>
                     <form method="post" action="/delete-theme/{{ th.id }}" style="display:inline">
                         <button type="submit" class="delete-btn" title="Delete theme + initiatives" onclick="return confirm('Delete theme and all its initiatives?')">✕</button>
                     </form>
@@ -100,7 +101,7 @@
                 {% if ini.theme_id == th.id %}
                 <div class="existing-sub">
                     <span class="editable-name" onclick="startEditName(this, 'initiative', '{{ ini.id }}')">📋 {{ ini.title }}</span>
-                    <span class="existing-status">{{ ini.status }}</span>
+                    <span class="existing-status status-{{ ini.status }}">{{ ini.status }}</span>
                     <form method="post" action="/delete-initiative/{{ ini.id }}" style="display:inline">
                         <button type="submit" class="delete-btn" title="Delete initiative" onclick="return confirm('Delete this initiative?')">✕</button>
                     </form>
@@ -128,6 +129,9 @@
     {% endif %}
 
     <script>
+    function toggleCollapse(themeEl) {
+        themeEl.classList.toggle('collapsed');
+    }
     function selectAll(checked) {
         document.querySelectorAll('.node-check').forEach(cb => cb.checked = checked);
     }
@@ -174,7 +178,15 @@
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({[field]: val})
-        }).then(r => { if (r.ok) location.reload(); });
+        }).then(r => {
+            if (r.ok) {
+                const flash = document.createElement('span');
+                flash.className = 'save-flash';
+                flash.textContent = '✓ saved';
+                input.parentNode.appendChild(flash);
+                setTimeout(() => location.reload(), 600);
+            }
+        });
     }
 
     function exportCLI() {
