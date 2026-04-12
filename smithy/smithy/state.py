@@ -5,8 +5,14 @@ from pathlib import Path
 from datetime import datetime
 
 VALID_STAGES = ["research", "planning", "implementation", "testing", "editing", "marketing"]
-VALID_SIGNALS = ["🟢", "🟡", "🔴"]
-VALID_OUTCOMES = ["complete", "partial", "blocked"]
+# 🟢/🟡/🔴 — Forge value signal. ✅/🔀/🚫 — Assembly merge indicator
+# (t-399 I4 amendment: merge indicator is distinct from value score).
+VALID_SIGNALS = ["🟢", "🟡", "🔴", "✅", "🔀", "🚫"]
+# t-399 I4: "submitted" = Forge committed to branch, awaiting Assembly merge.
+# "merged" / "merged-with-resolution" / "rejected" are Assembly's post-merge
+# worklog outcomes (second row per task in the two-row lifecycle).
+VALID_OUTCOMES = ["complete", "partial", "blocked",
+                  "submitted", "merged", "merged-with-resolution", "rejected"]
 VALID_THEME_STATUSES = ["active", "paused"]
 VALID_INITIATIVE_STATUSES = ["proposed", "approved", "active", "done", "rejected"]
 
@@ -58,6 +64,12 @@ def _apply_steerability_defaults(state: dict) -> dict:
     parallel = state.setdefault("parallel", {})
     parallel.setdefault("max_forges", 1)
     parallel.setdefault("halt_flag", False)
+    # t-399 I4: Assembly lifecycle flag. When False (default), end-heat behaves
+    # legacy (status→complete). When True, end-heat sets status→submitted and
+    # Assembly completes the lifecycle via assembly-merge / assembly-reject.
+    assembly = parallel.setdefault("assembly", {})
+    assembly.setdefault("enabled", False)
+    assembly.setdefault("last_heartbeat", None)
     forges = parallel.setdefault("forges", [])
     if not forges:
         forges.append({
@@ -188,7 +200,7 @@ def validate_state(state: dict) -> list[str]:
         errors.append("duplicate task IDs in queue")
 
     for task in queue:
-        if task["status"] not in ("pending", "in_progress", "complete"):
+        if task["status"] not in ("pending", "in_progress", "complete", "submitted"):
             errors.append(f"invalid task status for {task['id']}: {task['status']}")
 
     # Themes validation

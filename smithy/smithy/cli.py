@@ -189,15 +189,33 @@ def end_heat(ctx, value, signal, notes, outcome, progress, no_nudge):
     integral = max(-0.5, min(0.5, integral))
     state["allocator"]["integral"][stage] = round(integral, 3)
 
-    # Mark task complete if outcome is complete
+    # t-399 I4: two-row lifecycle gate. When Assembly is enabled, a
+    # "complete" end-heat is really a "submitted" hand-off — Forge committed
+    # to its branch and the task awaits Assembly's merge. Assembly flips
+    # status to "complete" via `assembly-merge` (or back to "pending" via
+    # `assembly-reject"). Default (enabled=False) preserves legacy N=1 flow.
+    assembly_enabled = (
+        (state.get("parallel") or {}).get("assembly", {}).get("enabled", False)
+    )
+    effective_outcome = outcome
+    if assembly_enabled and outcome == "complete" and task_id != "generated":
+        effective_outcome = "submitted"
+
+    # Mark task status based on effective outcome.
     completed_task = None
-    if outcome == "complete" and task_id != "generated":
+    if effective_outcome == "complete" and task_id != "generated":
         for task in state.get("queue", []):
             if task["id"] == task_id:
                 task["status"] = "complete"
                 # Auto-clear sticky human priority on complete (t-312).
                 task["human_priority"] = None
                 task["priority_reason"] = None
+                completed_task = task
+                break
+    elif effective_outcome == "submitted" and task_id != "generated":
+        for task in state.get("queue", []):
+            if task["id"] == task_id:
+                task["status"] = "submitted"
                 completed_task = task
                 break
 
@@ -222,8 +240,9 @@ def end_heat(ctx, value, signal, notes, outcome, progress, no_nudge):
     # Save state
     save_state(root, state)
 
-    # Append worklog
-    append_worklog(root, heat, stage, task_id, outcome, value, signal, notes)
+    # Append worklog (use effective_outcome so "submitted" lands when Assembly
+    # is enabled — the second row is written later by assembly-merge/reject).
+    append_worklog(root, heat, stage, task_id, effective_outcome, value, signal, notes)
 
     # Delete checkpoint
     delete_checkpoint(root)
@@ -232,7 +251,7 @@ def end_heat(ctx, value, signal, notes, outcome, progress, no_nudge):
         "heat": heat,
         "stage": stage,
         "task_id": task_id,
-        "outcome": outcome,
+        "outcome": effective_outcome,
         "value": value,
         "signal": signal,
         "overall_progress": state["overall_progress"],
@@ -339,6 +358,88 @@ def assembly_heartbeat_cmd(ctx):
     assembly["last_heartbeat"] = now
     save_state(root, state)
     _output({"last_heartbeat": now})
+
+
+@cli.command("assembly-merge")
+@click.argument("task_id")
+@click.option("--sha", required=True, help="Merge commit SHA on main.")
+@click.option("--resolution", is_flag=True, default=False,
+              help="Assembly resolved conflicts before merging.")
+@click.pass_context
+def assembly_merge_cmd(ctx, task_id, sha, resolution):
+    """t-399 I4: Assembly's successful merge. Flips submitted → complete,
+    writes the second worklog row (outcome=merged or merged-with-resolution,
+    signal=✅ or 🔀). Safe to call only after a Forge end-heat left the task
+    in `submitted` status."""
+    root = ctx.obj["root"]
+    state = load_state(root)
+    task = None
+    for t in state.get("queue", []):
+        if t["id"] == task_id:
+            task = t
+            break
+    if task is None:
+        _output({"error": f"unknown task: {task_id}"})
+        sys.exit(1)
+    if task["status"] != "submitted":
+        _output({"error": f"task {task_id} status is {task['status']!r}, "
+                          f"expected 'submitted'"})
+        sys.exit(1)
+
+    task["status"] = "complete"
+    task["human_priority"] = None
+    task["priority_reason"] = None
+
+    # Initiative heats_used was already incremented at end-heat; do not
+    # double-count. Save state.
+    save_state(root, state)
+
+    outcome = "merged-with-resolution" if resolution else "merged"
+    signal = "🔀" if resolution else "✅"
+    stage = "implementation"  # Assembly is stage-agnostic; record as impl.
+    # Worklog value=0 for Assembly rows — merge indicator carries the signal.
+    append_worklog(root, state["budget"]["used"], stage, task_id,
+                   outcome, 0.0, signal, f"merge sha={sha[:12]}")
+    _output({"task_id": task_id, "status": "complete", "outcome": outcome,
+             "sha": sha})
+
+
+@cli.command("assembly-reject")
+@click.argument("task_id")
+@click.option("--reason", required=True, help="Why Assembly rejected the branch.")
+@click.pass_context
+def assembly_reject_cmd(ctx, task_id, reason):
+    """t-399 I4: Assembly rejection. Flips submitted → pending, bumps
+    human_priority by +5 (to avoid lossy re-run loops), stamps
+    priority_reason='assembly rejected: <reason>' (truncated to 40 chars),
+    and writes the second worklog row (outcome=rejected, signal=🚫)."""
+    root = ctx.obj["root"]
+    state = load_state(root)
+    task = None
+    for t in state.get("queue", []):
+        if t["id"] == task_id:
+            task = t
+            break
+    if task is None:
+        _output({"error": f"unknown task: {task_id}"})
+        sys.exit(1)
+    if task["status"] != "submitted":
+        _output({"error": f"task {task_id} status is {task['status']!r}, "
+                          f"expected 'submitted'"})
+        sys.exit(1)
+
+    task["status"] = "pending"
+    hp = task.get("human_priority") or 0
+    task["human_priority"] = hp + 5
+    pr = f"assembly rejected: {reason}"[:40]
+    task["priority_reason"] = pr
+    save_state(root, state)
+
+    append_worklog(root, state["budget"]["used"], "implementation", task_id,
+                   "rejected", 0.0, "🚫", f"reason={reason[:80]}")
+    _output({"task_id": task_id, "status": "pending",
+             "human_priority": task["human_priority"],
+             "priority_reason": pr})
 
 
 @cli.command("forge-spawn")

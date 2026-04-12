@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1043,
-    "used": 812,
+    "used": 813,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 308,
+      "heats": 309,
       "progress": 0.98,
-      "value_ema": 0.754
+      "value_ema": 0.723
     },
     "testing": {
       "target": 0.183,
@@ -3960,19 +3960,19 @@
       "id": "t-398",
       "stage": "implementation",
       "desc": "I3: Assembly teammate scaffold (~0.5h). Persona dir personas/assembly/ with CLAUDE.md, spawn path in Anvil. No merge-loop yet. Blocked_by: I2.",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-018",
       "human_priority": null,
-      "priority_reason": "ini-018 rank=1 + poker",
+      "priority_reason": null,
       "assigned_forge": null
     },
     {
       "id": "t-399",
       "stage": "implementation",
       "desc": "I4: Assembly merge loop (~2h, may split). Pick branch \u2192 rebase onto main \u2192 pytest \u2192 ff-merge or abort-on-conflict (never auto-resolve). PRESERVE per-heat commits (no squash). HALT autonomous tail before this heat \u2014 nudge Anvil first. Blocked_by: I3.",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-018",
@@ -4061,7 +4061,7 @@
       "description": "Run multiple Forge workers concurrently via per-Forge git worktrees. Dedicated Assembly teammate handles merge queue integration (conflicts, test-on-integrate, merge ordering). Unlocks parallelism (Marshal dispatches N heats simultaneously) and enforces branch hygiene. Incremental: N=2 proof before N=3+.",
       "status": "approved",
       "budget_cap": null,
-      "heats_used": 5,
+      "heats_used": 6,
       "viewed_at": null,
       "rank": 1
     },
@@ -4287,7 +4287,6 @@
     }
   ],
   "next_tasks": [
-    "t-399",
     "t-400",
     "t-401",
     "t-402"
