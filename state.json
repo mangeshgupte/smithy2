@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1043,
-    "used": 809,
+    "used": 810,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 305,
+      "heats": 306,
       "progress": 0.98,
-      "value_ema": 0.761
+      "value_ema": 0.758
     },
     "testing": {
       "target": 0.183,
@@ -3585,18 +3585,18 @@
       "id": "t-395",
       "stage": "implementation",
       "desc": "I0: Shutdown + sentinel machinery. state.parallel.halt_flag + end-heat + start-heat respect it. N=1 default behavior preserved. Prereq for all I1+.",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-018",
       "human_priority": null,
-      "priority_reason": "ini-018 rank=1 + poker"
+      "priority_reason": null
     },
     {
       "id": "t-396",
       "stage": "implementation",
       "desc": "I1: Schema + per-Forge namespacing. Add state.parallel.{max_forges, forges[]}, queue[].assigned_forge. Schema-additive; N=1 behavior identical. Blocked_by: I0.",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-018",
@@ -3714,7 +3714,7 @@
       "description": "Run multiple Forge workers concurrently via per-Forge git worktrees. Dedicated Assembly teammate handles merge queue integration (conflicts, test-on-integrate, merge ordering). Unlocks parallelism (Marshal dispatches N heats simultaneously) and enforces branch hygiene. Incremental: N=2 proof before N=3+.",
       "status": "approved",
       "budget_cap": null,
-      "heats_used": 2,
+      "heats_used": 3,
       "viewed_at": null,
       "rank": 1
     },
@@ -3940,7 +3940,6 @@
     }
   ],
   "next_tasks": [
-    "t-396",
     "t-397",
     "t-398",
     "t-399",

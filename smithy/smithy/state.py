@@ -47,8 +47,27 @@ def _apply_steerability_defaults(state: dict) -> dict:
     for task in state.get("queue", []) or []:
         task.setdefault("human_priority", None)
         task.setdefault("priority_reason", None)
+        # t-396 I1: assigned_forge lets Marshal pin a task to a specific Forge
+        # at N≥2. Null = unassigned (any idle Forge may take it).
+        task.setdefault("assigned_forge", None)
     for ini in state.get("initiatives", []) or []:
         ini.setdefault("viewed_at", None)
+    # t-396 I1: seed the parallel registry. Default is one idle Forge so
+    # existing code paths see `parallel.forges[0].id == "forge-01"` without
+    # a migration step. halt_flag from I0 lives under the same umbrella.
+    parallel = state.setdefault("parallel", {})
+    parallel.setdefault("max_forges", 1)
+    parallel.setdefault("halt_flag", False)
+    forges = parallel.setdefault("forges", [])
+    if not forges:
+        forges.append({
+            "id": "forge-01",
+            "status": "idle",
+            "current_task": None,
+            "current_heat": None,
+            "started_at": None,
+            "last_heartbeat": None,
+        })
     return state
 
 
@@ -235,6 +254,27 @@ def validate_state(state: dict) -> list[str]:
         if va is not None and not isinstance(va, str):
             errors.append(f"initiative {ini['id']} viewed_at must be ISO str or null")
 
+    # t-396 I1: parallel block. max_forges positive int; forges list of dicts
+    # with unique ids; assigned_forge on each task must reference a known
+    # forge id (when non-null).
+    parallel = state.get("parallel") or {}
+    max_forges = parallel.get("max_forges", 1)
+    if not isinstance(max_forges, int) or max_forges < 1:
+        errors.append(f"parallel.max_forges must be positive int, got {max_forges!r}")
+    forges = parallel.get("forges") or []
+    if not isinstance(forges, list):
+        errors.append("parallel.forges must be a list")
+        forges = []
+    forge_ids = [f.get("id") for f in forges if isinstance(f, dict)]
+    if len(forge_ids) != len(set(forge_ids)):
+        errors.append("duplicate forge ids in parallel.forges")
+    forge_id_set = {fid for fid in forge_ids if fid}
+    for task in queue:
+        af = task.get("assigned_forge")
+        if af is not None and af not in forge_id_set:
+            errors.append(f"task {task['id']} assigned_forge references unknown "
+                          f"forge: {af}")
+
     return errors
 
 
@@ -257,8 +297,34 @@ def append_worklog(project_dir: Path, heat: int, stage: str, task_id: str,
         f.write(row)
 
 
-def write_checkpoint(project_dir: Path, heat: int, stage: str, task_id: str):
-    """Write .forge-checkpoint.json."""
+DEFAULT_FORGE_ID = "forge-01"
+
+
+def forge_checkpoint_path(project_dir: Path, forge_id: str = DEFAULT_FORGE_ID) -> Path:
+    """t-396 I1: Return the checkpoint path for a given Forge id.
+
+    Default forge-01 keeps the legacy `.forge-checkpoint.json` filename so N=1
+    behavior is byte-identical. Any other forge id uses the namespaced form
+    `.forge-<id>-checkpoint.json`. I2 (`forge-spawn`) will create non-default
+    Forges.
+    """
+    if forge_id == DEFAULT_FORGE_ID:
+        return project_dir / ".forge-checkpoint.json"
+    return project_dir / f".{forge_id}-checkpoint.json"
+
+
+def forge_nudge_queue_path(project_dir: Path, forge_id: str = DEFAULT_FORGE_ID) -> Path:
+    """t-396 I1: Per-Forge nudge queue path. Default forge-01 uses legacy
+    `.smithy-nudge-queue/forge.jsonl`; others use `forge-<id>.jsonl`."""
+    base = project_dir / ".smithy-nudge-queue"
+    if forge_id == DEFAULT_FORGE_ID:
+        return base / "forge.jsonl"
+    return base / f"{forge_id}.jsonl"
+
+
+def write_checkpoint(project_dir: Path, heat: int, stage: str, task_id: str,
+                     forge_id: str = DEFAULT_FORGE_ID):
+    """Write forge checkpoint. Forge id defaults to 'forge-01'."""
     import subprocess
     git_head = subprocess.run(
         ["git", "rev-parse", "HEAD"], capture_output=True, text=True, cwd=project_dir
@@ -268,16 +334,17 @@ def write_checkpoint(project_dir: Path, heat: int, stage: str, task_id: str):
         "heat": heat,
         "stage": stage,
         "task_id": task_id,
+        "forge_id": forge_id,
         "git_head": git_head,
         "timestamp": datetime.now().isoformat(),
     }
-    path = project_dir / ".forge-checkpoint.json"
+    path = forge_checkpoint_path(project_dir, forge_id)
     path.write_text(json.dumps(checkpoint, indent=2) + "\n")
 
 
-def delete_checkpoint(project_dir: Path):
-    """Delete .forge-checkpoint.json if it exists."""
-    path = project_dir / ".forge-checkpoint.json"
+def delete_checkpoint(project_dir: Path, forge_id: str = DEFAULT_FORGE_ID):
+    """Delete the named Forge's checkpoint if it exists."""
+    path = forge_checkpoint_path(project_dir, forge_id)
     if path.exists():
         path.unlink()
 
