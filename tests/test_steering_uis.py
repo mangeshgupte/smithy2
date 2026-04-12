@@ -204,6 +204,67 @@ class TestPriorityPoker:
         assert "ini-002" not in data  # ini-002 is proposed
 
 
+class TestConcurrency:
+    """t-316: POST handlers use mtime check and return 409 on concurrent writes."""
+
+    def _bump_mtime(self, state_path):
+        """Rewrite state.json so its mtime advances past any prior read."""
+        import time
+        time.sleep(0.01)
+        state_path.write_text(state_path.read_text())
+
+    def test_poker_reorder_rejects_stale_write(self, poker_client):
+        c, tmp = poker_client
+        state_path = tmp / "state.json"
+        # Client-side read is implicit in the handler — simulate a concurrent
+        # external writer by bumping mtime mid-flight via monkey-patching the
+        # load helper. Easier: rewrite state.json *after* poker's load but
+        # before its save. We do this by making two successive POSTs where the
+        # second reuses a stale mtime — simulate by writing state, then forcing
+        # a mtime bump, then POST reorder which will load fresh so it passes.
+        # The real stale-write path is: after load_with_mtime, another writer
+        # touches the file. We patch time.sleep between load and save.
+        #
+        # Simpler approach: drive through the internal helpers.
+        import importlib, sys
+        sys.path.insert(0, str(Path(__file__).parent.parent / "ui-priority-poker"))
+        if "app" in sys.modules:
+            del sys.modules["app"]
+        app_mod = importlib.import_module("app")
+        state, mtime = app_mod._load_state_with_mtime()
+        # External writer bumps mtime.
+        self._bump_mtime(state_path)
+        # Now checked save with stale mtime must raise.
+        with pytest.raises(app_mod.ConcurrentWriteError):
+            app_mod._save_state_checked(state, mtime)
+
+    def test_poker_reorder_happy_path_still_works(self, poker_client):
+        c, tmp = poker_client
+        r = c.post("/reorder", json={"order": ["ini-001"]})
+        assert r.status_code == 200
+        assert r.json()["ok"] is True
+
+    def test_poker_concurrent_write_returns_409(self, poker_client, monkeypatch):
+        """When _save_state_checked raises mid-handler, the app returns 409."""
+        c, tmp = poker_client
+        import importlib, sys
+        sys.path.insert(0, str(Path(__file__).parent.parent / "ui-priority-poker"))
+        if "app" in sys.modules:
+            del sys.modules["app"]
+        app_mod = importlib.import_module("app")
+
+        def _always_conflict(state, mtime):
+            raise app_mod.ConcurrentWriteError("simulated conflict")
+
+        monkeypatch.setattr(app_mod, "_save_state_checked", _always_conflict)
+        # Need a fresh client bound to the patched app
+        from starlette.testclient import TestClient
+        c2 = TestClient(app_mod.app)
+        r = c2.post("/reorder", json={"order": ["ini-001"]})
+        assert r.status_code == 409
+        assert "conflict" in r.json()["error"].lower() or "changed" in r.json()["error"].lower()
+
+
 class TestPokerDrawer:
     """t-314/t-319: drawer sections, /view, /human-priority endpoints."""
 

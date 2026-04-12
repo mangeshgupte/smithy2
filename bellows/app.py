@@ -9,11 +9,32 @@ from datetime import datetime
 from fastapi import FastAPI, Request, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
 from forge_reader import discover_projects, read_project, get_morning_briefing, compute_heat_diff
 
 app = FastAPI(title="Bellows")
+
+
+class ConcurrentWriteError(Exception):
+    """Another writer touched state.json between our load and save."""
+
+
+def _load_project_state_with_mtime(state_path: Path):
+    """Return (state_dict, mtime) for a project's state.json."""
+    mtime = state_path.stat().st_mtime
+    return json.loads(state_path.read_text()), mtime
+
+
+def _save_project_state_checked(state_path: Path, state: dict, expected_mtime: float):
+    if state_path.exists() and state_path.stat().st_mtime - expected_mtime > 1e-6:
+        raise ConcurrentWriteError("state.json changed since read")
+    state_path.write_text(json.dumps(state, indent=2) + "\n")
+
+
+@app.exception_handler(ConcurrentWriteError)
+async def _concurrent_write_handler(request, exc):
+    return JSONResponse({"ok": False, "error": str(exc)}, status_code=409)
 
 BASE_DIR = Path(__file__).parent
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
@@ -155,7 +176,7 @@ async def project_decide_action(request: Request, project_name: str, task_id: st
     inbox_path = project_dir / "inbox.md"
 
     # Find the task in state.json and update it
-    state = json.loads(state_path.read_text())
+    state, mtime = _load_project_state_with_mtime(state_path)
     task_desc = task_id
     for task in state.get("queue", []):
         if task["id"] == task_id:
@@ -169,7 +190,7 @@ async def project_decide_action(request: Request, project_name: str, task_id: st
                 task["priority"] = max(task.get("priority", 2) + 1, 3)
             break
 
-    state_path.write_text(json.dumps(state, indent=2) + "\n")
+    _save_project_state_checked(state_path, state, mtime)
 
     # Write decision to inbox.md so Forge sees it
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -202,7 +223,7 @@ async def project_decide_undo(request: Request, project_name: str, task_id: str)
     state_path = project_dir / "state.json"
 
     # Reverse the action in state.json
-    state = json.loads(state_path.read_text())
+    state, mtime = _load_project_state_with_mtime(state_path)
     for task in state.get("queue", []):
         if task["id"] == task_id:
             if original_action == "reject":
@@ -210,7 +231,7 @@ async def project_decide_undo(request: Request, project_name: str, task_id: str)
             elif original_action == "defer":
                 task["priority"] = max(task.get("priority", 3) - 1, 1)
             break
-    state_path.write_text(json.dumps(state, indent=2) + "\n")
+    _save_project_state_checked(state_path, state, mtime)
 
     # Append undo note to inbox
     inbox_path = project_dir / "inbox.md"

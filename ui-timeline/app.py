@@ -37,6 +37,29 @@ def _save_state(state):
     path.write_text(json.dumps(state, indent=2) + "\n")
 
 
+class ConcurrentWriteError(Exception):
+    """Another writer touched state.json between our load and save."""
+
+
+def _load_state_with_mtime():
+    path = Path(STATE_DIR) / "state.json"
+    if not path.exists():
+        return {}, 0.0
+    return json.loads(path.read_text()), path.stat().st_mtime
+
+
+def _save_state_checked(state, expected_mtime):
+    path = Path(STATE_DIR) / "state.json"
+    if path.exists() and path.stat().st_mtime - expected_mtime > 1e-6:
+        raise ConcurrentWriteError("state.json changed since read")
+    _save_state(state)
+
+
+@app.exception_handler(ConcurrentWriteError)
+async def _concurrent_write_handler(request, exc):
+    return JSONResponse({"ok": False, "error": str(exc)}, status_code=409)
+
+
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request, start: int = None, end: int = None):
     state = _load_state()
@@ -125,7 +148,7 @@ async def index(request: Request, start: int = None, end: int = None):
 @app.post("/update")
 async def update_timeline(request: Request):
     data = await request.json()
-    state = _load_state()
+    state, mtime = _load_state_with_mtime()
 
     for update in data.get("updates", []):
         ini_id = update["id"]
@@ -135,7 +158,7 @@ async def update_timeline(request: Request):
                 ini["planned_end"] = update.get("end", ini.get("planned_end", 0))
                 break
 
-    _save_state(state)
+    _save_state_checked(state, mtime)
     return JSONResponse({"ok": True})
 
 

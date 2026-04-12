@@ -57,6 +57,31 @@ def _save_state(state):
     path.write_text(json.dumps(state, indent=2) + "\n")
 
 
+class ConcurrentWriteError(Exception):
+    """Another writer touched state.json between our load and save."""
+
+
+def _load_state_with_mtime():
+    """Return (state, mtime). mtime=0.0 if no file exists yet."""
+    path = Path(STATE_DIR) / "state.json"
+    if not path.exists():
+        return {"initiatives": [], "themes": []}, 0.0
+    return json.loads(path.read_text()), path.stat().st_mtime
+
+
+def _save_state_checked(state, expected_mtime):
+    """Save only if mtime hasn't advanced. Mirrors smithy.state.save_state_checked."""
+    path = Path(STATE_DIR) / "state.json"
+    if path.exists() and path.stat().st_mtime - expected_mtime > 1e-6:
+        raise ConcurrentWriteError("state.json changed since read")
+    _save_state(state)
+
+
+@app.exception_handler(ConcurrentWriteError)
+async def _concurrent_write_handler(request, exc):
+    return JSONResponse({"ok": False, "error": str(exc)}, status_code=409)
+
+
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     state = _load_state()
@@ -130,26 +155,26 @@ async def reorder(request: Request):
     data = await request.json()
     new_order = data.get("order", [])  # list of initiative IDs in new rank order
 
-    state = _load_state()
+    state, mtime = _load_state_with_mtime()
     ini_map = {i["id"]: i for i in state.get("initiatives", [])}
 
     for rank, ini_id in enumerate(new_order, 1):
         if ini_id in ini_map:
             ini_map[ini_id]["rank"] = rank
 
-    _save_state(state)
+    _save_state_checked(state, mtime)
     return JSONResponse({"ok": True, "order": new_order})
 
 
 @app.post("/approve/{initiative_id}")
 async def approve(initiative_id: str):
-    state = _load_state()
+    state, mtime = _load_state_with_mtime()
     for ini in state.get("initiatives", []):
         if ini["id"] == initiative_id:
             if ini["status"] == "proposed":
                 ini["status"] = "approved"
                 break
-    _save_state(state)
+    _save_state_checked(state, mtime)
     return JSONResponse({"ok": True})
 
 
@@ -210,7 +235,7 @@ async def set_human_priority(task_id: str, request: Request):
     if value is not None and not isinstance(value, int):
         return JSONResponse({"ok": False, "error": "value must be int or null"}, status_code=400)
 
-    state = _load_state()
+    state, mtime = _load_state_with_mtime()
     for t in state.get("queue", []):
         if t["id"] == task_id:
             if value is None:
@@ -221,7 +246,7 @@ async def set_human_priority(task_id: str, request: Request):
                 # Preserve reason if already human-set; otherwise stamp a short one.
                 if not t.get("priority_reason") or t.get("priority_reason", "").startswith(("ini-", "p")):
                     t["priority_reason"] = f"you:p{value}"[:40]
-            _save_state(state)
+            _save_state_checked(state, mtime)
             return JSONResponse({"ok": True, "task": t})
     return JSONResponse({"ok": False, "error": "not found"}, status_code=404)
 
@@ -229,21 +254,21 @@ async def set_human_priority(task_id: str, request: Request):
 @app.post("/api/initiative/{initiative_id}/view")
 async def mark_viewed(initiative_id: str):
     """Stamp viewed_at = now() on drawer open. Enables 'shipped since viewed'."""
-    state = _load_state()
+    state, mtime = _load_state_with_mtime()
     for ini in state.get("initiatives", []):
         if ini["id"] == initiative_id:
             ini["viewed_at"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
-            _save_state(state)
+            _save_state_checked(state, mtime)
             return JSONResponse({"ok": True, "viewed_at": ini["viewed_at"]})
     return JSONResponse({"ok": False, "error": "not found"}, status_code=404)
 
 
 @app.post("/reject/{initiative_id}")
 async def reject(initiative_id: str):
-    state = _load_state()
+    state, mtime = _load_state_with_mtime()
     for ini in state.get("initiatives", []):
         if ini["id"] == initiative_id:
             ini["status"] = "rejected"
             break
-    _save_state(state)
+    _save_state_checked(state, mtime)
     return JSONResponse({"ok": True})

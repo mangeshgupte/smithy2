@@ -37,6 +37,29 @@ def _save_state(state):
     path.write_text(json.dumps(state, indent=2) + "\n")
 
 
+class ConcurrentWriteError(Exception):
+    """Another writer touched state.json between our load and save."""
+
+
+def _load_state_with_mtime():
+    path = Path(STATE_DIR) / "state.json"
+    if not path.exists():
+        return {}, 0.0
+    return json.loads(path.read_text()), path.stat().st_mtime
+
+
+def _save_state_checked(state, expected_mtime):
+    path = Path(STATE_DIR) / "state.json"
+    if path.exists() and path.stat().st_mtime - expected_mtime > 1e-6:
+        raise ConcurrentWriteError("state.json changed since read")
+    _save_state(state)
+
+
+@app.exception_handler(ConcurrentWriteError)
+async def _concurrent_write_handler(request, exc):
+    return JSONResponse({"ok": False, "error": str(exc)}, status_code=409)
+
+
 def _load_intent():
     """Load intent from identity.md."""
     path = Path(STATE_DIR) / "identity.md"
@@ -173,7 +196,7 @@ async def apply_decomposition(request: Request):
     if not decomposition:
         return RedirectResponse(url="/", status_code=303)
 
-    state = _load_state()
+    state, mtime = _load_state_with_mtime()
     themes = state.setdefault("themes", [])
     initiatives = state.setdefault("initiatives", [])
 
@@ -219,7 +242,7 @@ async def apply_decomposition(request: Request):
                     "heats_used": 0,
                 })
 
-    _save_state(state)
+    _save_state_checked(state, mtime)
 
     # Record intent in history
     _record_intent(intent)
@@ -256,7 +279,7 @@ async def edit_theme(theme_id: str, request: Request):
     """Edit a theme's name."""
     from fastapi.responses import JSONResponse
     data = await request.json()
-    state = _load_state()
+    state, mtime = _load_state_with_mtime()
     for t in state.get("themes", []):
         if t["id"] == theme_id:
             if "name" in data:
@@ -264,7 +287,7 @@ async def edit_theme(theme_id: str, request: Request):
             break
     else:
         return JSONResponse({"error": "Theme not found"}, status_code=404)
-    _save_state(state)
+    _save_state_checked(state, mtime)
     return JSONResponse({"ok": True, "id": theme_id})
 
 
@@ -273,7 +296,7 @@ async def edit_initiative(initiative_id: str, request: Request):
     """Edit an initiative's title or description."""
     from fastapi.responses import JSONResponse
     data = await request.json()
-    state = _load_state()
+    state, mtime = _load_state_with_mtime()
     for i in state.get("initiatives", []):
         if i["id"] == initiative_id:
             if "title" in data:
@@ -283,26 +306,26 @@ async def edit_initiative(initiative_id: str, request: Request):
             break
     else:
         return JSONResponse({"error": "Initiative not found"}, status_code=404)
-    _save_state(state)
+    _save_state_checked(state, mtime)
     return JSONResponse({"ok": True, "id": initiative_id})
 
 
 @app.post("/delete-theme/{theme_id}")
 async def delete_theme(theme_id: str):
     """Delete a theme and all its initiatives."""
-    state = _load_state()
+    state, mtime = _load_state_with_mtime()
     state["themes"] = [t for t in state.get("themes", []) if t["id"] != theme_id]
     state["initiatives"] = [i for i in state.get("initiatives", []) if i["theme_id"] != theme_id]
-    _save_state(state)
+    _save_state_checked(state, mtime)
     return RedirectResponse(url="/", status_code=303)
 
 
 @app.post("/delete-initiative/{initiative_id}")
 async def delete_initiative(initiative_id: str):
     """Delete an initiative."""
-    state = _load_state()
+    state, mtime = _load_state_with_mtime()
     state["initiatives"] = [i for i in state.get("initiatives", []) if i["id"] != initiative_id]
-    _save_state(state)
+    _save_state_checked(state, mtime)
     return RedirectResponse(url="/", status_code=303)
 
 
