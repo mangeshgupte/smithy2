@@ -31,7 +31,7 @@
     <div class="constraint-list">
         {% for c in constraints %}
         {% if c.status in ['active', 'inactive'] %}
-        <div class="constraint-card type-{{ c.type }} status-{{ c.get('_status', 'green') }} {{ 'violated' if not c.get('_ok', True) }}">
+        <div class="constraint-card type-{{ c.type }} status-{{ c.get('_status', 'green') }} {{ 'violated' if not c.get('_ok', True) }} {{ 'inactive' if c.status == 'inactive' }}">
             <div class="constraint-icon">
                 {% if c.type == 'budget_cap' %}⏱{% elif c.type == 'floor' %}📊{% elif c.type == 'exclude' %}🚫{% endif %}
             </div>
@@ -41,15 +41,19 @@
                     {% elif c.type == 'floor' %}Floor: {{ c.stage }} &ge; {{ c.value }}%
                     {% elif c.type == 'exclude' %}Exclude: {{ c.description }}
                     {% endif %}
+                    <span class="type-badge badge-{{ 'cap' if c.type == 'budget_cap' else ('floor' if c.type == 'floor' else 'exclude') }}">{{ c.type|replace('_', ' ') }}</span>
                 </div>
                 {% if c.get('_progress') %}
                 <div class="constraint-progress {{ 'ok' if c.get('_ok') else 'bad' }}">
-                    {{ c._progress }} {% if c.get('_ok') %}&check;{% else %}&xwedge;{% endif %}
+                    {{ c._progress }} {% if c.get('_ok') %}&check;{% else %}&cross;{% endif %}
                 </div>
+                {% if c.type == 'budget_cap' and c.get('_ratio') is not none %}
+                <div class="constraint-bar"><div class="constraint-bar-fill {{ 'ok' if c._ratio < 0.8 else ('warn' if c._ratio < 1.0 else 'over') }}" style="width: {{ [c._ratio * 100, 100]|min }}%"></div></div>
+                {% endif %}
                 {% endif %}
             </div>
             <form method="post" action="/toggle/{{ c.id }}" style="display:inline">
-                <button type="submit" class="toggle-btn" title="{% if c.status == 'active' %}Pause{% else %}Activate{% endif %}">{% if c.status == 'active' %}&#9208;{% else %}&#9654;{% endif %}</button>
+                <button type="submit" class="toggle-btn" title="{% if c.status == 'active' %}Pause{% else %}Activate{% endif %}">{% if c.status == 'active' %}⏸{% else %}▶{% endif %}</button>
             </form>
             <form method="post" action="/remove/{{ c.id }}" class="remove-form" style="display:inline">
                 <button type="submit" class="remove-btn" title="Remove">&times;</button>
@@ -138,7 +142,13 @@
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({[field]: val})
         }).then(r => {
-            if (r.ok) location.reload();
+            if (r.ok) {
+                const flash = document.createElement('span');
+                flash.className = 'save-flash';
+                flash.textContent = '✓ saved';
+                input.parentNode.appendChild(flash);
+                setTimeout(() => location.reload(), 600);
+            }
         });
     }
 

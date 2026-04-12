@@ -64,6 +64,7 @@ def _check_violations(state):
                     c["_status"] = "green"
                 c["_progress"] = f"{used}/{cap}"
                 c["_ok"] = used < cap
+                c["_ratio"] = used / cap if cap > 0 else 0
 
         elif c["type"] == "floor":
             stage = c.get("stage")

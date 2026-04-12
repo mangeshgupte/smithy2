@@ -1,10 +1,21 @@
 /* Constraint Board — CSS */
 :root {
-    --bg: #0d1117; --surface: #161b22; --border: #30363d;
-    --text: #e6edf3; --text-muted: #8b949e;
-    --green: #3fb950; --blue: #58a6ff; --yellow: #d29922; --red: #f85149;
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface-hover: #1c2129;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --green: #3fb950;
+    --blue: #58a6ff;
+    --yellow: #d29922;
+    --red: #f85149;
     --radius: 12px;
+    --shadow-sm: 0 2px 6px rgba(0,0,0,0.2);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.3);
+    --shadow-lg: 0 8px 24px rgba(0,0,0,0.4);
 }
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 /* Cross-UI navigation */
@@ -13,58 +24,211 @@
 .nav-link:hover { color: var(--text); background: var(--surface); }
 .nav-link.active { color: var(--blue); background: rgba(88,166,255,0.1); font-weight: 600; }
 
-body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); max-width: 600px; margin: 0 auto; padding: 24px; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 24px;
+}
+
 header { text-align: center; padding: 20px 0; }
-header h1 { font-size: 24px; }
+header h1 { font-size: 24px; letter-spacing: -0.5px; }
 .refresh-btn { background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--text-muted); cursor: pointer; font-size: 16px; padding: 2px 8px; margin-left: 8px; vertical-align: middle; transition: all 0.2s; }
 .refresh-btn:hover { color: var(--blue); border-color: var(--blue); }
 .refresh-btn.spinning { animation: spin 0.6s linear; }
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 .subtitle { color: var(--text-muted); font-size: 14px; margin-top: 4px; }
 
-.violation-banner { background: rgba(248,81,73,0.12); border: 1px solid var(--red); border-radius: var(--radius); padding: 16px; margin: 16px 0; color: var(--red); font-weight: 600; }
-.violation-item { display: block; font-weight: 400; font-size: 13px; margin-top: 4px; }
-.all-clear { text-align: center; padding: 12px; color: var(--green); font-weight: 600; margin: 16px 0; }
+/* Violation banner */
+.violation-banner {
+    background: rgba(248,81,73,0.1);
+    border: 1px solid var(--red);
+    border-left: 4px solid var(--red);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    margin: 16px 0;
+    color: var(--red);
+    font-weight: 600;
+    box-shadow: 0 0 12px rgba(248,81,73,0.15);
+    animation: bannerPulse 3s ease infinite;
+}
+@keyframes bannerPulse { 0%,100% { box-shadow: 0 0 12px rgba(248,81,73,0.15); } 50% { box-shadow: 0 0 20px rgba(248,81,73,0.25); } }
+.violation-item { display: block; font-weight: 400; font-size: 13px; margin-top: 6px; color: var(--text); opacity: 0.85; }
+.all-clear {
+    text-align: center; padding: 14px;
+    color: var(--green); font-weight: 600; margin: 16px 0;
+    background: rgba(63,185,80,0.06);
+    border: 1px solid rgba(63,185,80,0.2);
+    border-radius: var(--radius);
+}
 
+/* Constraint cards */
 .constraint-list { display: flex; flex-direction: column; gap: 10px; margin: 16px 0; }
-.constraint-card { display: flex; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; gap: 12px; }
-.constraint-card.violated { border-color: var(--red); background: rgba(248,81,73,0.05); }
-.constraint-card.status-yellow { border-color: var(--yellow); }
-.constraint-card.status-green { border-color: var(--green); border-left-width: 3px; }
-.constraint-card.status-red { border-color: var(--red); }
-.constraint-icon { font-size: 24px; width: 36px; text-align: center; }
-.constraint-body { flex: 1; }
-.constraint-title { font-size: 14px; font-weight: 600; }
+
+.constraint-card {
+    display: flex;
+    align-items: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    gap: 12px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.15s ease, opacity 0.2s ease, border-color 0.2s ease;
+}
+.constraint-card:hover { background: var(--surface-hover); box-shadow: var(--shadow-md); }
+
+/* Type-specific left border colors */
+.constraint-card.type-budget_cap { border-left-color: var(--blue); }
+.constraint-card.type-floor { border-left-color: var(--green); }
+.constraint-card.type-exclude { border-left-color: var(--yellow); }
+
+/* Violation state */
+.constraint-card.violated {
+    border-color: var(--red);
+    border-left-color: var(--red);
+    background: rgba(248,81,73,0.06);
+    box-shadow: 0 0 10px rgba(248,81,73,0.12);
+}
+.constraint-card.violated .constraint-icon { animation: shake 0.5s ease; }
+@keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+
+/* Status colors (non-violated) */
+.constraint-card.status-green:not(.violated) { border-left-color: var(--green); }
+.constraint-card.status-yellow:not(.violated) { border-left-color: var(--yellow); }
+.constraint-card.status-red:not(.violated) { border-left-color: var(--red); }
+
+/* Inactive constraints */
+.constraint-card.inactive { opacity: 0.45; }
+.constraint-card.inactive:hover { opacity: 0.7; }
+
+.constraint-icon { font-size: 22px; width: 36px; text-align: center; flex-shrink: 0; }
+
+/* Type badge */
+.type-badge {
+    font-size: 10px; font-weight: 700; padding: 2px 7px;
+    border-radius: 6px; letter-spacing: 0.5px;
+    text-transform: uppercase; margin-left: 8px;
+}
+.type-badge.badge-cap { background: var(--blue); color: #000; }
+.type-badge.badge-floor { background: var(--green); color: #000; }
+.type-badge.badge-exclude { background: var(--yellow); color: #000; }
+
+.constraint-body { flex: 1; min-width: 0; }
+
+.constraint-title {
+    font-size: 14px; font-weight: 600;
+    cursor: pointer;
+    transition: color 0.15s;
+}
+.constraint-title:hover { color: var(--blue); }
+
 .constraint-progress { font-size: 12px; margin-top: 4px; }
 .constraint-progress.ok { color: var(--green); }
-.constraint-progress.bad { color: var(--red); }
-.remove-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 16px; padding: 4px 8px; }
+.constraint-progress.bad { color: var(--red); font-weight: 600; }
+
+/* Progress bar for budget constraints */
+.constraint-bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+.constraint-bar-fill { height: 100%; border-radius: 2px; transition: width 0.3s ease; }
+.constraint-bar-fill.ok { background: var(--green); }
+.constraint-bar-fill.warn { background: var(--yellow); }
+.constraint-bar-fill.over { background: var(--red); }
+
+/* Action buttons */
+.toggle-btn {
+    background: none; border: 1px solid var(--border); border-radius: 6px;
+    cursor: pointer; font-size: 13px; padding: 4px 8px;
+    color: var(--text-muted); transition: all 0.15s;
+}
+.toggle-btn:hover { color: var(--blue); border-color: var(--blue); }
+
+.remove-btn {
+    background: none; border: none;
+    color: var(--text-muted); cursor: pointer;
+    font-size: 18px; padding: 4px 8px;
+    transition: color 0.15s;
+}
 .remove-btn:hover { color: var(--red); }
 
-.add-section { margin-top: 24px; }
-.add-toggle { cursor: pointer; color: var(--blue); font-weight: 600; font-size: 14px; list-style: none; }
-.add-form { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
-.form-row { display: flex; gap: 8px; }
-select, input[type=number], input[type=text] { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 10px; font-size: 14px; }
-.submit-btn { background: var(--blue); color: #fff; border: none; border-radius: 8px; padding: 12px; font-size: 14px; font-weight: 600; cursor: pointer; }
-.submit-btn:hover { opacity: 0.9; }
-.toggle-btn { background: none; border: none; cursor: pointer; font-size: 14px; padding: 4px 6px; color: var(--text-muted); }
-.toggle-btn:hover { color: var(--blue); }
+/* Edit input */
+.edit-input {
+    background: var(--bg); border: 2px solid var(--blue);
+    border-radius: 6px; color: var(--text);
+    padding: 4px 8px; font-size: 14px;
+    outline: none; transition: border-color 0.15s;
+}
+.edit-input:focus { border-color: #79bbff; box-shadow: 0 0 0 3px rgba(88,166,255,0.15); }
 
-.constraint-card:has(.toggle-btn:first-of-type) { }
-/* Inactive constraints */
-.constraint-card { transition: opacity 0.2s; }
+/* Save feedback */
+.save-flash {
+    display: inline-block; font-size: 12px; color: var(--green);
+    font-weight: 600; margin-left: 8px;
+    animation: flashIn 0.3s ease;
+}
+@keyframes flashIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
 
-.suggestions { margin: 16px 0; padding: 12px; background: rgba(210,153,34,0.08); border: 1px solid var(--yellow); border-radius: var(--radius); }
-.suggestion-item { font-size: 13px; color: var(--text-muted); padding: 4px 0; }
+/* Suggestions */
+.suggestions {
+    margin: 16px 0; padding: 14px 16px;
+    background: rgba(210,153,34,0.06);
+    border: 1px solid rgba(210,153,34,0.3);
+    border-radius: var(--radius);
+}
+.suggestions h2 { font-size: 13px; color: var(--yellow); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+.suggestion-item { font-size: 13px; color: var(--text-muted); padding: 3px 0; }
 
-.quick-templates { margin: 16px 0; }
+/* Quick templates */
+.quick-templates { margin: 20px 0; }
+.quick-templates h2 { font-size: 13px; color: var(--text-muted); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
 .template-row { display: flex; gap: 8px; flex-wrap: wrap; }
-.template-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 8px 12px; font-size: 13px; cursor: pointer; }
-.template-btn:hover { background: var(--bg); border-color: var(--blue); }
+.template-btn {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); padding: 8px 14px;
+    font-size: 13px; cursor: pointer;
+    transition: all 0.15s;
+}
+.template-btn:hover { background: var(--surface-hover); border-color: var(--blue); box-shadow: var(--shadow-sm); }
+
+/* Add form */
+.add-section { margin-top: 24px; border-top: 1px solid var(--border); padding-top: 20px; }
+.add-toggle {
+    cursor: pointer; color: var(--blue); font-weight: 600; font-size: 14px;
+    list-style: none; transition: color 0.15s;
+}
+.add-toggle:hover { color: #79bbff; }
+.add-form { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+.form-row { display: flex; gap: 8px; }
+
+select, input[type=number], input[type=text] {
+    flex: 1; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); padding: 10px 12px; font-size: 14px;
+    transition: border-color 0.15s;
+}
+select:focus, input[type=number]:focus, input[type=text]:focus {
+    outline: none; border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(88,166,255,0.1);
+}
+
+.submit-btn {
+    background: var(--blue); color: #fff; border: none;
+    border-radius: 8px; padding: 12px; font-size: 14px;
+    font-weight: 600; cursor: pointer;
+    transition: all 0.15s;
+    box-shadow: var(--shadow-sm);
+}
+.submit-btn:hover { opacity: 0.9; box-shadow: var(--shadow-md); transform: translateY(-1px); }
 
 .empty { text-align: center; padding: 48px; color: var(--text-muted); }
 
-.constraint-title { cursor: pointer; }
-.constraint-title:hover { color: var(--blue); }
-.edit-input { background: var(--bg); border: 1px solid var(--blue); border-radius: 4px; color: var(--text); padding: 2px 6px; font-size: 14px; }
+/* Mobile responsive */
+@media (max-width: 480px) {
+    body { padding: 12px; }
+    header h1 { font-size: 20px; }
+    .constraint-card { padding: 12px; gap: 8px; }
+    .constraint-icon { font-size: 18px; width: 28px; }
+    .form-row { flex-direction: column; }
+    .template-row { flex-direction: column; }
+    .template-btn { width: 100%; text-align: center; }
+}
