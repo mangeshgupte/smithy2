@@ -191,6 +191,25 @@ async def toggle_constraint(constraint_id: str):
     return RedirectResponse(url="/", status_code=303)
 
 
+@app.get("/api/state")
+async def api_state():
+    """Return current constraint state for live refresh."""
+    state = _load_state()
+    constraints = state.get("constraints", [])
+    _check_violations(state)
+    data = []
+    for c in constraints:
+        data.append({
+            "id": c["id"], "type": c["type"], "stage": c.get("stage"),
+            "value": c.get("value"), "status": c.get("status"),
+            "description": c.get("description", ""),
+            "_status": c.get("_status", "green"),
+            "_progress": c.get("_progress"),
+            "_ok": c.get("_ok", True),
+        })
+    return JSONResponse({"constraints": data, "count": len(data)})
+
+
 @app.get("/events")
 async def events():
     """SSE endpoint — yields 'state-changed' when state.json is modified."""

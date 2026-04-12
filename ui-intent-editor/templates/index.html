@@ -8,7 +8,7 @@
 </head>
 <body>
     <header>
-        <h1>🎯 Intent Editor</h1>
+        <h1>🎯 Intent Editor <button class="refresh-btn" onclick="refreshPage()" title="Refresh">↻</button></h1>
         <p class="subtitle">{{ project }} — write outcomes, system creates tasks</p>
     </header>
 
@@ -193,6 +193,12 @@
         navigator.clipboard.writeText(cmds.join('\n')).then(() => {
             alert('Copied ' + cmds.length + ' commands to clipboard');
         });
+    }
+
+    function refreshPage() {
+        const btn = document.querySelector('.refresh-btn');
+        btn.classList.add('spinning');
+        fetch('/api/state').then(() => location.reload()).catch(() => location.reload());
     }
     </script>
 </body>

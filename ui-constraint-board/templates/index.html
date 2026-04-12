@@ -8,7 +8,7 @@
 </head>
 <body>
     <header>
-        <h1>🛡️ Constraint Board</h1>
+        <h1>🛡️ Constraint Board <button class="refresh-btn" onclick="refreshPage()" title="Refresh">↻</button></h1>
         <p class="subtitle">{{ project }} — {{ constraints|selectattr('status', 'equalto', 'active')|list|length }} active constraints</p>
     </header>
 
@@ -143,6 +143,12 @@
             if (!confirm('Remove this constraint?')) e.preventDefault();
         });
     });
+
+    function refreshPage() {
+        const btn = document.querySelector('.refresh-btn');
+        btn.classList.add('spinning');
+        fetch('/api/state').then(() => location.reload()).catch(() => location.reload());
+    }
     </script>
 </body>
 </html>

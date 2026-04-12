@@ -298,6 +298,27 @@ async def delete_initiative(initiative_id: str):
     return RedirectResponse(url="/", status_code=303)
 
 
+@app.get("/api/state")
+async def api_state():
+    """Return current intent and decomposition state for live refresh."""
+    from fastapi.responses import JSONResponse
+    state = _load_state()
+    intent = _load_intent()
+    themes = state.get("themes", [])
+    initiatives = state.get("initiatives", [])
+    data = {
+        "intent": intent,
+        "themes": [{"id": t["id"], "name": t["name"], "status": t.get("status")} for t in themes],
+        "initiatives": [
+            {"id": i["id"], "title": i["title"], "theme_id": i["theme_id"],
+             "status": i["status"], "heats_used": i.get("heats_used", 0),
+             "budget_cap": i.get("budget_cap")}
+            for i in initiatives
+        ],
+    }
+    return JSONResponse(data)
+
+
 @app.get("/events")
 async def events():
     """SSE endpoint — yields 'state-changed' when state.json is modified."""

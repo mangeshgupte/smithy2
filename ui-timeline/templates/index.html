@@ -8,7 +8,7 @@
 </head>
 <body>
     <header>
-        <h1>📅 Timeline</h1>
+        <h1>📅 Timeline <button class="refresh-btn" onclick="refreshPage()" title="Refresh">↻</button></h1>
         <p class="subtitle">{{ project }} — drag bar endpoints to allocate budget</p>
         <p class="budget-info">Budget: {{ used }}/{{ total }} heats ({{ total - used }} remaining)</p>
     </header>
@@ -400,6 +400,12 @@
             });
         }).catch(() => {});
     }, 5000);
+
+    function refreshPage() {
+        const btn = document.querySelector('.refresh-btn');
+        btn.classList.add('spinning');
+        fetch('/api/state').then(() => location.reload()).catch(() => location.reload());
+    }
     </script>
 </body>
 </html>

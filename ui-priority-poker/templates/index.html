@@ -8,7 +8,7 @@
 </head>
 <body>
     <header>
-        <h1>🃏 Priority Poker</h1>
+        <h1>🃏 Priority Poker <button class="refresh-btn" onclick="refreshPage()" title="Refresh">↻</button></h1>
         <p class="subtitle">{{ project }} — drag to reorder. Rank IS steering.</p>
     </header>
 
@@ -258,6 +258,12 @@
             rejectCard(dragEl.dataset.id);
         }
     });
+
+    function refreshPage() {
+        const btn = document.querySelector('.refresh-btn');
+        btn.classList.add('spinning');
+        fetch('/api/state').then(() => location.reload()).catch(() => location.reload());
+    }
     </script>
 </body>
 </html>
