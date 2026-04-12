@@ -419,11 +419,21 @@ def _upcoming_path() -> Path:
     return Path(PROJECTS_DIR) / ".upcoming.json"
 
 
-def _log_upcoming_steering(project_name, task_id, field, before, after, source):
+def _actor_from_request(request: Request, default: str) -> str:
+    """Honor optional X-Actor header (t-342). Falls back to UI-default actor.
+    Trims whitespace; ignores empty/>64-char values to keep the log column tidy."""
+    raw = (request.headers.get("x-actor") or "").strip()
+    if raw and len(raw) <= 64:
+        return raw
+    return default
+
+
+def _log_upcoming_steering(project_name, task_id, field, before, after, source,
+                           actor="bellows-upcoming"):
     """Route an Upcoming mutation to the affected project's steering.log."""
     project_root = Path(PROJECTS_DIR) / project_name
     if project_root.exists():
-        log_steering(project_root, actor="bellows-upcoming", task_id=task_id,
+        log_steering(project_root, actor=actor, task_id=task_id,
                      field=field, before=before, after=after, source=source)
 
 
@@ -567,8 +577,9 @@ async def api_upcoming_pin(request: Request):
         return JSONResponse({"ok": True, "noop": True})
     pinned.append({"project": project, "task_id": task_id})
     _save_upcoming_checked(data, mtime)
+    actor = _actor_from_request(request, "bellows-upcoming")
     _log_upcoming_steering(project, task_id, "upcoming_pinned", None, len(pinned),
-                           "upcoming-pin")
+                           "upcoming-pin", actor=actor)
     return JSONResponse({"ok": True, "pinned_count": len(pinned)})
 
 
@@ -588,8 +599,9 @@ async def api_upcoming_unpin(request: Request):
     if before == after:
         return JSONResponse({"ok": True, "noop": True})
     _save_upcoming_checked(data, mtime)
+    actor = _actor_from_request(request, "bellows-upcoming")
     _log_upcoming_steering(project, task_id, "upcoming_pinned", before, None,
-                           "upcoming-unpin")
+                           "upcoming-unpin", actor=actor)
     return JSONResponse({"ok": True, "pinned_count": after})
 
 
@@ -617,9 +629,10 @@ async def api_upcoming_reorder(request: Request):
         cleaned.append({"project": project, "task_id": task_id})
     data["pinned"] = cleaned
     _save_upcoming_checked(data, mtime)
+    actor = _actor_from_request(request, "bellows-upcoming")
     for rank, r in enumerate(cleaned, 1):
         _log_upcoming_steering(r["project"], r["task_id"], "upcoming_rank",
-                               None, rank, "upcoming-reorder")
+                               None, rank, "upcoming-reorder", actor=actor)
     return JSONResponse({"ok": True, "pinned_count": len(cleaned)})
 
 

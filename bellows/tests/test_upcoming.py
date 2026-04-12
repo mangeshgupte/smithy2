@@ -211,6 +211,15 @@ class TestSteeringLogEndpoint:
         assert r.json()["count"] == 1
         assert r.json()["rows"][0]["task_id"] == "t-002"
 
+    def test_x_actor_header_overrides_default(self, two_projects):
+        """t-342: X-Actor header overrides the default bellows-upcoming actor."""
+        c, _ = two_projects
+        c.post("/api/upcoming/pin", json={"project": "proj-a", "task_id": "t-001"},
+               headers={"X-Actor": "cli:smithy-retro"})
+        r = c.get("/api/project/proj-a/steering-log?task_id=t-001")
+        rows = r.json()["rows"]
+        assert rows[0]["actor"] == "cli:smithy-retro"
+
     def test_upcoming_pin_produces_attribution_row(self, two_projects):
         c, tmp = two_projects
         c.post("/api/upcoming/pin", json={"project": "proj-a", "task_id": "t-001"})

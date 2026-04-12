@@ -98,6 +98,30 @@ class TestPokerWireUps:
         assert "poker-drawer-defer" in fields
         assert "poker-drawer-undefer" in fields
 
+    def test_x_actor_header_overrides_default(self, poker_client):
+        """t-342: X-Actor header overrides the default bellows-poker actor."""
+        c, tmp = poker_client
+        c.post("/api/task/t-001/human-priority", json={"value": 2},
+               headers={"X-Actor": "human:mangesh"})
+        rows = read_steering_log(tmp, task_id="t-001")
+        assert rows[-1]["actor"] == "human:mangesh"
+
+    def test_x_actor_header_empty_falls_back_to_default(self, poker_client):
+        """Empty X-Actor → default actor preserved."""
+        c, tmp = poker_client
+        c.post("/api/task/t-001/human-priority", json={"value": 2},
+               headers={"X-Actor": "   "})
+        rows = read_steering_log(tmp, task_id="t-001")
+        assert rows[-1]["actor"] == "bellows-poker"
+
+    def test_x_actor_header_oversize_ignored(self, poker_client):
+        """X-Actor > 64 chars is ignored to keep log column tidy."""
+        c, tmp = poker_client
+        c.post("/api/task/t-001/human-priority", json={"value": 2},
+               headers={"X-Actor": "x" * 100})
+        rows = read_steering_log(tmp, task_id="t-001")
+        assert rows[-1]["actor"] == "bellows-poker"
+
     def test_delete_logs_queue_membership(self, poker_client):
         c, tmp = poker_client
         (tmp / "worklog.tsv").write_text(

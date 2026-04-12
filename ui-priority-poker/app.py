@@ -11,6 +11,14 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from steering_log import log_steering  # noqa: E402
 
+
+def _actor_from_request(request, default: str) -> str:
+    """Honor optional X-Actor header (t-342). Falls back to UI-default actor."""
+    raw = (request.headers.get("x-actor") or "").strip()
+    if raw and len(raw) <= 64:
+        return raw
+    return default
+
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -334,15 +342,15 @@ async def set_human_priority(task_id: str, request: Request):
                 if not t.get("priority_reason") or t.get("priority_reason", "").startswith(("ini-", "p")):
                     t["priority_reason"] = f"you:p{value}"[:40]
             _save_state_checked(state, mtime)
-            log_steering(STATE_DIR, actor="bellows-poker", task_id=task_id,
-                         field="human_priority", before=before, after=value,
-                         source="poker-drawer")
+            log_steering(STATE_DIR, actor=_actor_from_request(request, "bellows-poker"),
+                         task_id=task_id, field="human_priority",
+                         before=before, after=value, source="poker-drawer")
             return JSONResponse({"ok": True, "task": t})
     return JSONResponse({"ok": False, "error": "not found"}, status_code=404)
 
 
 @app.post("/api/task/{task_id}/defer")
-async def defer_task(task_id: str):
+async def defer_task(task_id: str, request: Request):
     """Set status='deferred'. Scheduler skips (filters pending only). Reversible via /undefer."""
     state, mtime = _load_state_with_mtime()
     for t in state.get("queue", []):
@@ -352,15 +360,16 @@ async def defer_task(task_id: str):
             before = t.get("status")
             t["status"] = "deferred"
             _save_state_checked(state, mtime)
-            log_steering(STATE_DIR, actor="bellows-poker", task_id=task_id,
-                         field="status", before=before, after="deferred",
+            log_steering(STATE_DIR, actor=_actor_from_request(request, "bellows-poker"),
+                         task_id=task_id, field="status",
+                         before=before, after="deferred",
                          source="poker-drawer-defer")
             return JSONResponse({"ok": True, "task": t})
     return JSONResponse({"ok": False, "error": "not found"}, status_code=404)
 
 
 @app.post("/api/task/{task_id}/undefer")
-async def undefer_task(task_id: str):
+async def undefer_task(task_id: str, request: Request):
     state, mtime = _load_state_with_mtime()
     for t in state.get("queue", []):
         if t["id"] == task_id:
@@ -368,15 +377,16 @@ async def undefer_task(task_id: str):
                 return JSONResponse({"ok": False, "error": f"task is {t['status']}, not deferred"}, status_code=400)
             t["status"] = "pending"
             _save_state_checked(state, mtime)
-            log_steering(STATE_DIR, actor="bellows-poker", task_id=task_id,
-                         field="status", before="deferred", after="pending",
+            log_steering(STATE_DIR, actor=_actor_from_request(request, "bellows-poker"),
+                         task_id=task_id, field="status",
+                         before="deferred", after="pending",
                          source="poker-drawer-undefer")
             return JSONResponse({"ok": True, "task": t})
     return JSONResponse({"ok": False, "error": "not found"}, status_code=404)
 
 
 @app.delete("/api/task/{task_id}")
-async def delete_task(task_id: str):
+async def delete_task(task_id: str, request: Request):
     """Remove task from queue + append worklog audit entry for recoverability.
 
     Audit row carries stage='-' signal='🗑' notes='deleted via poker drawer: <desc>'.
@@ -389,8 +399,9 @@ async def delete_task(task_id: str):
     desc = target.get("desc", "")
     state["queue"] = [t for t in state["queue"] if t["id"] != task_id]
     _save_state_checked(state, mtime)
-    log_steering(STATE_DIR, actor="bellows-poker", task_id=task_id,
-                 field="queue_membership", before="present", after="removed",
+    log_steering(STATE_DIR, actor=_actor_from_request(request, "bellows-poker"),
+                 task_id=task_id, field="queue_membership",
+                 before="present", after="removed",
                  source="poker-drawer-delete")
 
     worklog_path = Path(STATE_DIR) / "worklog.tsv"
