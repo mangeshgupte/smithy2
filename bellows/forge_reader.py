@@ -12,10 +12,10 @@ from datetime import datetime, timezone
 #
 # Show what changed in state.json between the current HEAD and N commits back.
 # Forge commits every heat, so HEAD~1 is usually "one heat ago". This surfaces
-# whether steering (rank, constraints, intent) actually shifted Forge's behavior
+# whether steering (rank, intent, timeline) actually shifted Forge's behavior
 # — previously invisible because state mutations are silent byproducts of heats.
 
-_ID_KEYED_ARRAYS = {"queue", "themes", "initiatives", "constraints"}
+_ID_KEYED_ARRAYS = {"queue", "themes", "initiatives"}
 
 
 def _flatten(obj, prefix=""):

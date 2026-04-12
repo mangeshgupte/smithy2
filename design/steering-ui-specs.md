@@ -54,54 +54,13 @@ Four standalone FastAPI apps, each a different steering metaphor. All read/write
 
 ---
 
-## UI B: Constraint Board
+## UI B: Constraint Board — RETIRED (2026-04-12)
 
-**Metaphor**: ATC-style boundaries. Direct through constraints, not commands.
-
-### Layout
-```
-┌─────────────────────────────────┐
-│  Constraint Board — the-smithy  │
-├─────────────────────────────────┤
-│                                 │
-│  Active Constraints:            │
-│                                 │
-│  ┌────────────────────────────┐ │
-│  │ ⏱ Budget: research ≤ 5h   │ │
-│  │ ■■■■░ 4/5 heats           │ │
-│  └────────────────────────────┘ │
-│                                 │
-│  ┌────────────────────────────┐ │
-│  │ 📊 Floor: testing ≥ 15%   │ │
-│  │ Currently: 18% ✓          │ │
-│  └────────────────────────────┘ │
-│                                 │
-│  ┌────────────────────────────┐ │
-│  │ 🚫 Exclude: don't touch   │ │
-│  │ tutor/ this sprint         │ │
-│  └────────────────────────────┘ │
-│                                 │
-│  [+ Add constraint]            │
-│                                 │
-│  Violations: none ✓            │
-└─────────────────────────────────┘
-```
-
-### Constraint Types
-1. **Budget cap**: "Stage X ≤ N heats" or "Initiative Y ≤ N heats"
-2. **Floor**: "Stage X ≥ N% of total" 
-3. **Exclude**: "Don't work on <path/subject/stage>"
-4. **Deadline**: "Initiative X done by heat N"
-
-### Tech
-- **Backend**: FastAPI, stores constraints in state.json `constraints` list
-- **Frontend**: HTML forms for adding constraints, cards for active ones
-- **Enforcement**: Forge reads constraints in Step 1, skips tasks that would violate
-
-### Files
-- `ui-constraint-board/app.py` — CRUD routes for constraints
-- `ui-constraint-board/templates/index.html`
-- `ui-constraint-board/static/style.css`
+Removed per "ranking over constraints" philosophy shift. See
+`research/steering-patterns-retrospective.md` §8 and commits `176df2c` (UI
+delete, t-310) and t-318 (deep cleanup). Preference signals live in Poker
+rank; hard caps/floors were brittle, over-specified, and hid the same
+signal that ranking already carries.
 
 ---
 
