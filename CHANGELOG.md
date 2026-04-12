@@ -1,5 +1,40 @@
 # Changelog
 
+## v1.7 — Docs, Timeline Indicator, E2E + Agent Teams Retro (heats 710-719)
+
+### Documentation
+- **WALKTHROUGH.md** rewritten as narrative (484 lines): "Alex" walks the tasq-CLI maintainer through init → steering → execution → review in 6 acts, with terminal samples and state.json snippets (`3c2813f`)
+- **QUICKSTART.md** added (114 lines): 5-minute copy-pastable recipe, steering UI table with ports, CLI cheat sheet; README header now links QUICKSTART / WALKTHROUGH / STEERING (`5869532`)
+- **docs/retro-agent-teams.md** (153 lines): Marshal-seat retrospective — what worked (nudge cycle, separation of concerns, `TASK_COMPLETE` template), friction (persona-cwd bug, Anvil/Forge cross-talk, stale task IDs, CLI gotchas), recommendations (shared cwd contract, cursor field, consider folding Marshal into Anvil), concrete heat+commit citations (`3acb8c6`)
+
+### Forge Persona Rewrite
+- **personas/forge/CLAUDE.md** aligned with Agent Teams: cd-first spawn pattern, 6-step heat loop, `TASK_COMPLETE` report template, removed stale `HOOK_DONE` / dispatch references (`b238c43`)
+
+### Timeline Current-Heat Indicator
+- **Vertical "now · hN" line** across the bar region, full-height gridline overlay, red pill label (`bd4f3de`)
+- **GET /api/current-heat** endpoint; browser polls every 5s and reacts to SSE `state-changed`
+- **4 new tests** for the endpoint + indicator render conditions
+
+### Visual Polish (Timeline)
+- **Shadow system + gradient bars + status color-coding** (approved=blue, active=green, proposed=yellow-dim, rejected=grey, complete=dark) with hover lift; drag indicator pill shows `h{start} → h{end} ({n}h)`; gridlines; mobile @480px (`e780c58`)
+
+### E2E Smoke Test
+- **tests/test_e2e_smoke.py** (190 lines, 23 tests, 1.9s runtime): `TestCLIStateFlow` (5), `TestUIStackOverState` (12 parametrized), `TestNavConsistency` (4), `TestFullSmokeFlow` (2) — scaffolds a tmp project, exercises add-task/queue/start-heat/end-heat, loads all 4 UIs over the same state.json, verifies nav env vars, headline flow CLI heat → Timeline `/api/current-heat` reports 1 (`acac7c4`)
+
+### Port Mismatch Sweep
+- `URL_BELLOWS` default **8000 → 8080** across all 4 steering UIs
+- **STEERING.md** and **README.md** 8081-8084 → 8001-8004 to match `NAV_LINKS` defaults; README steering table reordered ascending (`cc706ec`)
+
+### UI Reactivity Tests (carryover from batch start)
+- **21 tests** for nav bars, refresh button, `/api/state` across all 4 UIs, state-change reactions, env var overrides, empty-state shapes; fixed poker `/api/state` assertion format (`27b4628`)
+
+### Stats
+- **Heats**: 710-719 (10 heats)
+- **Tests**: 114/114 passing (+23 e2e, +4 timeline indicator, +21 UI reactivity on top of v1.6's 230)
+- **Files touched**: CHANGELOG, README, STEERING, WALKTHROUGH, QUICKSTART, personas/forge/CLAUDE.md, ui-timeline (app.py, templates, static), all 4 ui-*/app.py (port defaults), tests/test_steering_uis.py, tests/test_e2e_smoke.py (new), docs/retro-agent-teams.md (new)
+
+---
+
 ## v1.6 — Steering UIs Production + Visual Design System (heats 688-709)
 
 ### Marshal Agent Completion (ini-015)
