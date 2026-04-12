@@ -388,17 +388,170 @@ class TestTimeline:
         assert "Timeline" in r.text
 
 
+@pytest.fixture
+def intent_client(state_with_initiatives, monkeypatch):
+    """Create a test client for the Intent Editor app with identity.md."""
+    monkeypatch.setenv("FORGE_PROJECT_DIR", str(state_with_initiatives))
+    (state_with_initiatives / "identity.md").write_text(
+        "# Test\n\n## Commander's Intent\n\n"
+        "- **Core Features**\n"
+        "  - Build user auth\n"
+        "  - Add data export\n"
+        "- **Quality**\n"
+        "  - Reach 90% coverage\n"
+    )
+    sys.path.insert(0, str(Path(__file__).parent.parent / "ui-intent-editor"))
+    import importlib
+    app_mod = importlib.import_module("app")
+    importlib.reload(app_mod)
+    from starlette.testclient import TestClient
+    return TestClient(app_mod.app), state_with_initiatives
+
+
 class TestIntentEditor:
-    def test_renders(self, state_with_initiatives, monkeypatch):
-        monkeypatch.setenv("FORGE_PROJECT_DIR", str(state_with_initiatives))
-        # Create identity.md for intent reading
-        (state_with_initiatives / "identity.md").write_text("# Test\n\n## Commander's Intent\n\n- Build things\n")
-        sys.path.insert(0, str(Path(__file__).parent.parent / "ui-intent-editor"))
-        import importlib
-        app_mod = importlib.import_module("app")
-        importlib.reload(app_mod)
-        from starlette.testclient import TestClient
-        c = TestClient(app_mod.app)
+    def test_renders(self, intent_client):
+        c, _ = intent_client
         r = c.get("/")
         assert r.status_code == 200
         assert "Intent Editor" in r.text
+
+    def test_renders_intent_text(self, intent_client):
+        """Intent textarea shows current intent from identity.md."""
+        c, _ = intent_client
+        r = c.get("/")
+        assert "Core Features" in r.text
+        assert "Build user auth" in r.text
+
+    def test_decomposition_shows_themes(self, intent_client):
+        """Decomposition tree shows parsed themes from intent."""
+        c, _ = intent_client
+        r = c.get("/")
+        assert "Core Features" in r.text
+        assert "Quality" in r.text
+
+    def test_decomposition_shows_initiatives(self, intent_client):
+        """Sub-bullets appear as initiatives under their theme."""
+        c, _ = intent_client
+        r = c.get("/")
+        assert "Build user auth" in r.text
+        assert "Add data export" in r.text
+        assert "Reach 90% coverage" in r.text
+
+    def test_apply_creates_themes(self, intent_client):
+        """Applying decomposition creates new themes in state.json."""
+        c, tmp = intent_client
+        intent = "- **NewTheme**\n  - New initiative"
+        c.post("/apply", data={
+            "intent": intent,
+            "themes": "NewTheme",
+            "initiatives": "NewTheme::New initiative",
+        })
+        saved = json.loads((tmp / "state.json").read_text())
+        theme_names = [t["name"] for t in saved["themes"]]
+        assert "NewTheme" in theme_names
+
+    def test_apply_creates_multiple_themes(self, intent_client):
+        """Applying decomposition with multiple bold bullets creates themes."""
+        c, tmp = intent_client
+        intent = "- **Alpha**\n- **Beta**"
+        c.post("/apply", data={
+            "intent": intent,
+            "themes": ["Alpha", "Beta"],
+        })
+        saved = json.loads((tmp / "state.json").read_text())
+        theme_names = [t["name"] for t in saved["themes"]]
+        assert "Alpha" in theme_names
+        assert "Beta" in theme_names
+
+    def test_apply_skips_unchecked(self, intent_client):
+        """Only checked items are created — unchecked themes/initiatives skipped."""
+        c, tmp = intent_client
+        intent = "- **SkippedTheme**\n  - Skipped ini"
+        c.post("/apply", data={"intent": intent})  # no checkboxes
+        saved = json.loads((tmp / "state.json").read_text())
+        theme_names = [t["name"] for t in saved["themes"]]
+        assert "SkippedTheme" not in theme_names
+
+    def test_apply_records_history(self, intent_client):
+        """Applying intent records to history."""
+        c, tmp = intent_client
+        intent = "- **Test**\n  - Something"
+        c.post("/apply", data={
+            "intent": intent,
+            "themes": "Test",
+            "initiatives": "Test::Something",
+        })
+        history = json.loads((tmp / "intents.json").read_text())
+        assert len(history) >= 1
+        assert history[-1]["text"] == intent
+
+    def test_edit_theme_renames(self, intent_client):
+        """POST /edit-theme/{id} renames the theme."""
+        c, tmp = intent_client
+        saved = json.loads((tmp / "state.json").read_text())
+        th_id = saved["themes"][0]["id"]
+        r = c.post(f"/edit-theme/{th_id}", json={"name": "Renamed Theme"})
+        assert r.status_code == 200
+        saved = json.loads((tmp / "state.json").read_text())
+        th = next(t for t in saved["themes"] if t["id"] == th_id)
+        assert th["name"] == "Renamed Theme"
+
+    def test_edit_theme_unknown_returns_404(self, intent_client):
+        c, _ = intent_client
+        r = c.post("/edit-theme/th-999", json={"name": "Nope"})
+        assert r.status_code == 404
+
+    def test_edit_initiative_renames(self, intent_client):
+        """POST /edit-initiative/{id} renames the initiative."""
+        c, tmp = intent_client
+        saved = json.loads((tmp / "state.json").read_text())
+        ini_id = saved["initiatives"][0]["id"]
+        r = c.post(f"/edit-initiative/{ini_id}", json={"title": "Renamed Ini"})
+        assert r.status_code == 200
+        saved = json.loads((tmp / "state.json").read_text())
+        ini = next(i for i in saved["initiatives"] if i["id"] == ini_id)
+        assert ini["title"] == "Renamed Ini"
+
+    def test_edit_initiative_unknown_returns_404(self, intent_client):
+        c, _ = intent_client
+        r = c.post("/edit-initiative/ini-999", json={"title": "Nope"})
+        assert r.status_code == 404
+
+    def test_delete_theme_cascades(self, intent_client):
+        """Deleting a theme removes it and all its initiatives."""
+        c, tmp = intent_client
+        saved = json.loads((tmp / "state.json").read_text())
+        th_id = saved["themes"][0]["id"]
+        ini_count_before = len([i for i in saved["initiatives"] if i["theme_id"] == th_id])
+        assert ini_count_before > 0
+        c.post(f"/delete-theme/{th_id}")
+        saved = json.loads((tmp / "state.json").read_text())
+        assert all(t["id"] != th_id for t in saved["themes"])
+        assert all(i["theme_id"] != th_id for i in saved["initiatives"])
+
+    def test_delete_initiative(self, intent_client):
+        """Deleting an initiative removes it from state."""
+        c, tmp = intent_client
+        saved = json.loads((tmp / "state.json").read_text())
+        ini_id = saved["initiatives"][0]["id"]
+        c.post(f"/delete-initiative/{ini_id}")
+        saved = json.loads((tmp / "state.json").read_text())
+        assert all(i["id"] != ini_id for i in saved["initiatives"])
+
+    def test_api_state_returns_data(self, intent_client):
+        """GET /api/state returns themes and initiatives."""
+        c, _ = intent_client
+        r = c.get("/api/state")
+        assert r.status_code == 200
+        data = r.json()
+        assert "themes" in data
+        assert "initiatives" in data
+        assert "intent" in data
+        assert len(data["themes"]) > 0
+
+    def test_existing_state_shows_current(self, intent_client):
+        """Current State section shows existing themes and initiatives."""
+        c, _ = intent_client
+        r = c.get("/")
+        assert "Current State" in r.text
+        assert "Core" in r.text  # th-001 name from fixture
