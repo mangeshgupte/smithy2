@@ -781,6 +781,88 @@ class TestIntentEditor:
         assert "Core" in r.text  # th-001 name from fixture
 
 
+def _render_decomposition(themes):
+    """Canonical renderer: themes list → markdown. Inverse of _decompose_intent."""
+    lines = []
+    for t in themes:
+        lines.append(f"- **{t['name']}**")
+        for ini in t.get("initiatives", []):
+            lines.append(f"  - {ini}")
+    return "\n".join(lines)
+
+
+def _normalize(themes):
+    """Strip non-load-bearing fields (raw, is_new) so comparison is structural."""
+    return [
+        {"name": t["name"], "initiatives": list(t.get("initiatives", []))}
+        for t in themes
+    ]
+
+
+@pytest.fixture
+def decompose_fn(intent_client):
+    """Import _decompose_intent from the loaded intent-editor app module."""
+    # intent_client fixture already sys.path-inserted and imported "app"
+    import importlib
+    app_mod = importlib.import_module("app")
+    return app_mod._decompose_intent
+
+
+class TestDecomposeRoundTrip:
+    """parse → render → parse equivalence — catches silent markdown parser regressions
+    (the t-293 class of bug, where a one-char parse change can silently reshape the tree).
+    """
+
+    @pytest.mark.parametrize("intent", [
+        "- **Auth**\n  - Registration\n  - Login",
+        "- **Auth**\n  - Registration\n- **Data**\n  - Import\n  - Export",
+        "- **Single**\n  - Only one",
+        "- **Empty theme**",
+        "- **A**\n  - x\n- **B**\n  - y\n- **C**\n  - z",
+    ])
+    def test_round_trip_preserves_structure(self, decompose_fn, intent):
+        """parse(render(parse(md))) == parse(md) — structurally."""
+        first = _normalize(decompose_fn(intent))
+        rendered = _render_decomposition(first)
+        second = _normalize(decompose_fn(rendered))
+        assert second == first, (
+            f"Round-trip drift:\n  input: {intent!r}\n  first: {first}\n"
+            f"  rendered: {rendered!r}\n  second: {second}"
+        )
+
+    def test_round_trip_stable_under_trailing_whitespace(self, decompose_fn):
+        """Trailing spaces on sub-bullets must not shift nesting (t-293 regression guard)."""
+        intent = "- **Theme**\n  - initiative with trailing spaces   \n  - clean initiative"
+        first = _normalize(decompose_fn(intent))
+        rendered = _render_decomposition(first)
+        second = _normalize(decompose_fn(rendered))
+        assert first == second
+        assert len(first) == 1
+        assert len(first[0]["initiatives"]) == 2
+
+    def test_sub_bullets_stay_nested(self, decompose_fn):
+        """Guard against the t-293 bug directly: sub-bullets must not bubble up to themes."""
+        intent = "- **Parent**\n  - child one\n  - child two"
+        themes = decompose_fn(intent)
+        assert len(themes) == 1, "sub-bullets leaked to top-level themes"
+        assert themes[0]["name"] == "Parent"
+        assert themes[0]["initiatives"] == ["child one", "child two"]
+
+    def test_empty_input_round_trips(self, decompose_fn):
+        assert _normalize(decompose_fn("")) == []
+        assert _normalize(decompose_fn(_render_decomposition([]))) == []
+
+    def test_renderer_output_is_parseable(self, decompose_fn):
+        """Any output from the canonical renderer must parse back cleanly."""
+        themes_in = [
+            {"name": "Alpha", "initiatives": ["one", "two"]},
+            {"name": "Beta", "initiatives": ["three"]},
+        ]
+        md = _render_decomposition(themes_in)
+        parsed = _normalize(decompose_fn(md))
+        assert parsed == themes_in
+
+
 class TestUIReactivity:
     """Cross-cutting tests for reactivity features shared by all 4 UIs."""
 
