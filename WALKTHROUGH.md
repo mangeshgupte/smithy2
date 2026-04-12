@@ -263,7 +263,7 @@ Forge loops back to Step 1, calls `queue-pop`, gets `t-002`. The whole cycle —
 
 ---
 
-## Act 5 — Cycle Continues, Alex Adds a Constraint
+## Act 5 — Alex Re-ranks to Shift Focus
 
 By heat 6, Alex glances at the tmux pane and sees steady progress. Commits scrolling in `git log`:
 
@@ -277,36 +277,9 @@ e5c9202 [testing] t-002: parse_date() — 5 tests
 3a2f19c [testing] t-001: tokenize() unit tests — 5 cases, fixed unicode + semicolon bugs
 ```
 
-Six heats, all testing. But Alex is starting to worry — the budget is 100 heats total, and they also want coverage reporting and CI to happen. They open the Constraint Board: `http://localhost:8002`.
+Six heats, all testing. But Alex also wants coverage reporting and CI to happen before the budget is gone. They open Priority Poker (`http://localhost:8001`) and drag the coverage and CI initiatives above the remaining testing work. Rank IS the steering signal — Marshal watches `state.json`, sees the new order, and interleaves accordingly on the next heat.
 
-They add a constraint:
-
-```
-Type:       Budget cap
-Stage:      testing
-Value:      40
-Description: Don't spend more than 40 heats on testing
-```
-
-The Constraint Board writes to `state.json`:
-
-```json
-"constraints": [
-  { "id": "con-001", "type": "budget_cap", "stage": "testing",
-    "value": 40, "status": "active", "description": "...", "created": "2026-04-11T19:42:11" }
-]
-```
-
-Marshal wakes (file watch), reads the new constraint, and updates its task-generation strategy:
-
-```
-Marshal: New constraint — testing cap at 40 heats.
-Marshal: Currently 6 heats used in testing. Headroom: 34.
-Marshal: Re-planning. Will interleave coverage (ini-004) and CI (ini-005)
-         starting at heat 25 to leave room before cap.
-```
-
-Alex doesn't need to redo the poker ranking — Marshal absorbs the constraint and re-plans on its own. The board shows a green progress bar (6/40, 15% used). If it turns yellow (80%) or red (100%), Alex will see it immediately.
+No constraint needed. The preference signal already lives in the rank.
 
 ---
 
@@ -394,7 +367,7 @@ a0f32c5 [editing] t-050: test helpers — dedupe fixture boilerplate
 | Decomposing goals in Intent Editor | Human | Converts fuzzy wants into discrete initiatives the system can prioritize. |
 | Ranking in Priority Poker | Human | The system doesn't know *your* priorities — you tell it by ordering cards. |
 | Approving initiatives | Human | Approval gates work. Proposed = visible but dormant. Approved = Marshal can generate tasks. |
-| Adding the testing budget cap | Human | The constraint board is how you say "enough of this stage." Saves you from re-ranking. |
+| Re-ranking to shift focus | Human | Drag cards in Poker instead of capping stages — preference signal lives in the rank. |
 | Asking "what's the status?" | Human | Anvil summarizes honestly — you learn what's working without reading commits. |
 
 ## Callouts — Where the System Self-Drives
@@ -402,9 +375,9 @@ a0f32c5 [editing] t-050: test helpers — dedupe fixture boilerplate
 | Moment | Who drove it | Why it mattered |
 |--------|--------------|-----------------|
 | Generating tasks from initiatives | Marshal | You don't write 20 task descriptions — Marshal breaks initiatives into heat-sized work. |
-| Ordering the queue | Marshal | Poker rank + constraint budget + stage balance → concrete order. |
+| Ordering the queue | Marshal | Poker rank + stage balance → concrete order. |
 | Fixing 2 bugs in a testing heat | Forge | Testing heats can fix the bugs they surface. No ticket needed. |
-| Re-planning when constraint added | Marshal | You add a cap; Marshal interleaves other stages on its own. |
+| Re-planning when rank changes | Marshal | You reorder Poker; Marshal interleaves other stages on its own. |
 | Every commit, every heat | Forge | The record is the artifact. `git log` is the status dashboard. |
 | Self-assessment 🟢/🟡/🔴 | Forge | Honest signal feeds the allocator's future stage decisions. |
 
@@ -424,7 +397,6 @@ smithy start-all
 smithy add-theme "Testing"
 smithy propose th-001 "Unit tests" "Full coverage of parser"
 smithy approve ini-001
-smithy add-constraint budget_cap --stage testing --value 40
 
 # Queue / execution (Marshal and Forge do these automatically)
 smithy queue-push t-001 t-002 t-003
@@ -455,12 +427,11 @@ smithy start-all             # resume from handoff
 | UI | Port | Use when |
 |----|------|----------|
 | 🃏 Priority Poker | 8001 | You know what the work is — just order it. |
-| 🛡️ Constraint Board | 8002 | "Don't spend more than N heats on X" or "no more of Y." |
 | 🎯 Intent Editor | 8003 | You have goals in bullets, want the system to decompose. |
 | 📅 Timeline | 8004 | You want to plan *when* each initiative runs in the budget. |
-| 🔔 Bellows | 8000 | Multi-project dashboard — watching several Forges at once. |
+| 🔔 Bellows | 8080 | Multi-project dashboard — watching several Forges at once. |
 
-All four steering UIs share a nav bar — click any icon to switch. Each shows live state (SSE polling) and writes directly to `state.json`. No redeploys. See `STEERING.md` for the full reference.
+All three steering UIs share a nav bar — click any icon to switch. Each shows live state (SSE polling) and writes directly to `state.json`. No redeploys. See `STEERING.md` for the full reference.
 
 ---
 

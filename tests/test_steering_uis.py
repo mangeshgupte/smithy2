@@ -205,176 +205,6 @@ class TestPriorityPoker:
 
 
 @pytest.fixture
-def constraint_client(state_with_initiatives, monkeypatch):
-    """Create a test client for the Constraint Board app."""
-    monkeypatch.setenv("FORGE_PROJECT_DIR", str(state_with_initiatives))
-    sys.path.insert(0, str(Path(__file__).parent.parent / "ui-constraint-board"))
-    import importlib
-    app_mod = importlib.import_module("app")
-    importlib.reload(app_mod)
-    from starlette.testclient import TestClient
-    return TestClient(app_mod.app), state_with_initiatives
-
-
-class TestConstraintBoard:
-    def test_renders(self, constraint_client):
-        c, _ = constraint_client
-        r = c.get("/")
-        assert r.status_code == 200
-        assert "Constraint Board" in r.text
-
-    def test_renders_no_constraints(self, constraint_client):
-        """Empty constraints shows 'no constraints' message."""
-        c, tmp = constraint_client
-        state = json.loads((tmp / "state.json").read_text())
-        state["constraints"] = []
-        (tmp / "state.json").write_text(json.dumps(state, indent=2))
-        r = c.get("/")
-        assert "No constraints" in r.text
-
-    def test_add_budget_cap(self, constraint_client):
-        """Add a budget_cap constraint and verify it persists."""
-        c, tmp = constraint_client
-        r = c.post("/add", data={"type": "budget_cap", "stage": "research", "value": "5", "description": ""})
-        assert r.status_code == 200  # redirect
-        saved = json.loads((tmp / "state.json").read_text())
-        caps = [con for con in saved["constraints"] if con["type"] == "budget_cap" and con["stage"] == "research"]
-        assert len(caps) == 1
-        assert caps[0]["value"] == 5
-        assert caps[0]["status"] == "active"
-        assert caps[0]["id"].startswith("con-")
-
-    def test_add_floor(self, constraint_client):
-        """Add a floor constraint."""
-        c, tmp = constraint_client
-        c.post("/add", data={"type": "floor", "stage": "testing", "value": "15", "description": ""})
-        saved = json.loads((tmp / "state.json").read_text())
-        floors = [con for con in saved["constraints"] if con["type"] == "floor"]
-        assert len(floors) == 1
-        assert floors[0]["stage"] == "testing"
-        assert floors[0]["value"] == 15
-
-    def test_add_exclude(self, constraint_client):
-        """Add an exclude constraint with description."""
-        c, tmp = constraint_client
-        c.post("/add", data={"type": "exclude", "stage": "", "value": "0", "description": "Do not touch auth module"})
-        saved = json.loads((tmp / "state.json").read_text())
-        excludes = [con for con in saved["constraints"] if con["type"] == "exclude"]
-        assert len(excludes) == 1
-        assert excludes[0]["description"] == "Do not touch auth module"
-
-    def test_add_auto_increments_id(self, constraint_client):
-        """Multiple adds produce unique incrementing IDs."""
-        c, tmp = constraint_client
-        c.post("/add", data={"type": "budget_cap", "stage": "research", "value": "5", "description": ""})
-        c.post("/add", data={"type": "floor", "stage": "testing", "value": "10", "description": ""})
-        saved = json.loads((tmp / "state.json").read_text())
-        ids = [con["id"] for con in saved["constraints"]]
-        assert len(set(ids)) == len(ids)  # all unique
-
-    def test_remove_constraint(self, constraint_client):
-        """Remove deletes a constraint from state.json."""
-        c, tmp = constraint_client
-        # Add then remove
-        c.post("/add", data={"type": "budget_cap", "stage": "research", "value": "5", "description": ""})
-        saved = json.loads((tmp / "state.json").read_text())
-        con_id = saved["constraints"][0]["id"]
-        c.post(f"/remove/{con_id}")
-        saved = json.loads((tmp / "state.json").read_text())
-        assert all(con["id"] != con_id for con in saved["constraints"])
-
-    def test_remove_nonexistent_is_safe(self, constraint_client):
-        """Removing a non-existent constraint doesn't error."""
-        c, _ = constraint_client
-        r = c.post("/remove/con-999")
-        assert r.status_code == 200
-
-    def test_toggle_active_to_inactive(self, constraint_client):
-        """Toggle switches an active constraint to inactive."""
-        c, tmp = constraint_client
-        c.post("/add", data={"type": "budget_cap", "stage": "research", "value": "5", "description": ""})
-        saved = json.loads((tmp / "state.json").read_text())
-        con_id = saved["constraints"][0]["id"]
-        assert saved["constraints"][0]["status"] == "active"
-        c.post(f"/toggle/{con_id}")
-        saved = json.loads((tmp / "state.json").read_text())
-        con = next(con for con in saved["constraints"] if con["id"] == con_id)
-        assert con["status"] == "inactive"
-
-    def test_toggle_inactive_to_active(self, constraint_client):
-        """Toggle switches an inactive constraint back to active."""
-        c, tmp = constraint_client
-        c.post("/add", data={"type": "budget_cap", "stage": "research", "value": "5", "description": ""})
-        saved = json.loads((tmp / "state.json").read_text())
-        con_id = saved["constraints"][0]["id"]
-        # Toggle twice: active → inactive → active
-        c.post(f"/toggle/{con_id}")
-        c.post(f"/toggle/{con_id}")
-        saved = json.loads((tmp / "state.json").read_text())
-        con = next(con for con in saved["constraints"] if con["id"] == con_id)
-        assert con["status"] == "active"
-
-    def test_edit_value(self, constraint_client):
-        """Edit endpoint updates constraint value."""
-        c, tmp = constraint_client
-        c.post("/add", data={"type": "budget_cap", "stage": "research", "value": "5", "description": ""})
-        saved = json.loads((tmp / "state.json").read_text())
-        con_id = saved["constraints"][0]["id"]
-        r = c.post(f"/edit/{con_id}", json={"value": 20})
-        assert r.status_code == 200
-        saved = json.loads((tmp / "state.json").read_text())
-        con = next(con for con in saved["constraints"] if con["id"] == con_id)
-        assert con["value"] == 20
-
-    def test_edit_description(self, constraint_client):
-        """Edit endpoint updates constraint description."""
-        c, tmp = constraint_client
-        c.post("/add", data={"type": "exclude", "stage": "", "value": "0", "description": "old desc"})
-        saved = json.loads((tmp / "state.json").read_text())
-        con_id = saved["constraints"][0]["id"]
-        r = c.post(f"/edit/{con_id}", json={"description": "new desc"})
-        assert r.status_code == 200
-        saved = json.loads((tmp / "state.json").read_text())
-        con = next(con for con in saved["constraints"] if con["id"] == con_id)
-        assert con["description"] == "new desc"
-
-    def test_edit_preserves_other_fields(self, constraint_client):
-        """Editing value doesn't change type, stage, or status."""
-        c, tmp = constraint_client
-        c.post("/add", data={"type": "budget_cap", "stage": "research", "value": "5", "description": ""})
-        saved = json.loads((tmp / "state.json").read_text())
-        con_id = saved["constraints"][0]["id"]
-        c.post(f"/edit/{con_id}", json={"value": 99})
-        saved = json.loads((tmp / "state.json").read_text())
-        con = next(con for con in saved["constraints"] if con["id"] == con_id)
-        assert con["type"] == "budget_cap"
-        assert con["stage"] == "research"
-        assert con["status"] == "active"
-
-    def test_edit_nonexistent_returns_404(self, constraint_client):
-        """Editing a non-existent constraint returns 404."""
-        c, _ = constraint_client
-        r = c.post("/edit/con-999", json={"value": 10})
-        assert r.status_code == 404
-
-    def test_violation_detected(self, constraint_client):
-        """Budget cap violation shows in the UI when heats exceed cap."""
-        c, tmp = constraint_client
-        # research has 10 heats — add cap of 5
-        c.post("/add", data={"type": "budget_cap", "stage": "research", "value": "5", "description": ""})
-        r = c.get("/")
-        assert "violated" in r.text.lower() or "⚠" in r.text or "warning" in r.text.lower()
-
-    def test_no_violation_under_cap(self, constraint_client):
-        """No violation when heats are under the cap."""
-        c, tmp = constraint_client
-        # research has 10 heats — cap of 100 should be fine
-        c.post("/add", data={"type": "budget_cap", "stage": "research", "value": "100", "description": ""})
-        r = c.get("/")
-        assert "All constraints satisfied" in r.text
-
-
-@pytest.fixture
 def timeline_client(tmp_path, monkeypatch):
     """Create a test client for the Timeline app with overlapping initiatives."""
     state = {
@@ -873,7 +703,6 @@ class TestUIReactivity:
         c, _ = poker_client
         r = c.get("/")
         assert "steering-nav" in r.text
-        assert "Constraints" in r.text
         assert "Intent" in r.text
         assert "Timeline" in r.text
 
@@ -882,13 +711,6 @@ class TestUIReactivity:
         c, _ = poker_client
         r = c.get("/")
         assert 'active' in r.text
-
-    def test_constraint_has_nav_bar(self, constraint_client):
-        """Constraint Board renders the cross-UI navigation bar."""
-        c, _ = constraint_client
-        r = c.get("/")
-        assert "steering-nav" in r.text
-        assert "Poker" in r.text
 
     def test_timeline_has_nav_bar(self, timeline_client):
         """Timeline renders the cross-UI navigation bar."""
@@ -912,12 +734,6 @@ class TestUIReactivity:
         r = c.get("/")
         assert "refresh-btn" in r.text
 
-    def test_constraint_has_refresh(self, constraint_client):
-        """Constraint Board has a refresh button."""
-        c, _ = constraint_client
-        r = c.get("/")
-        assert "refresh-btn" in r.text
-
     def test_timeline_has_refresh(self, timeline_client):
         """Timeline has a refresh button."""
         c, _ = timeline_client
@@ -932,37 +748,6 @@ class TestUIReactivity:
 
     # --- /api/state endpoints ---
 
-    def test_constraint_api_state(self, constraint_client):
-        """Constraint Board /api/state returns constraint data."""
-        c, _ = constraint_client
-        r = c.get("/api/state")
-        assert r.status_code == 200
-        data = r.json()
-        assert "constraints" in data
-        assert "count" in data
-
-    def test_constraint_api_state_after_add(self, constraint_client):
-        """Constraint Board /api/state reflects added constraints."""
-        c, _ = constraint_client
-        c.post("/add", data={"type": "budget_cap", "stage": "research", "value": "10", "description": ""})
-        r = c.get("/api/state")
-        data = r.json()
-        assert data["count"] >= 1
-        con = data["constraints"][0]
-        assert con["type"] == "budget_cap"
-        assert con["stage"] == "research"
-
-    def test_constraint_api_state_violation_status(self, constraint_client):
-        """Constraint Board /api/state includes violation status fields."""
-        c, _ = constraint_client
-        # research has 10 heats — cap at 5 should trigger violation
-        c.post("/add", data={"type": "budget_cap", "stage": "research", "value": "5", "description": ""})
-        r = c.get("/api/state")
-        data = r.json()
-        con = data["constraints"][0]
-        assert con["_ok"] is False
-        assert con["_status"] == "red"
-
     def test_intent_api_state_structure(self, intent_client):
         """Intent Editor /api/state returns structured data with themes/initiatives/intent."""
         c, _ = intent_client
@@ -974,11 +759,10 @@ class TestUIReactivity:
 
     # --- All 4 UIs respond to /api/state ---
 
-    def test_all_api_state_endpoints(self, poker_client, constraint_client, timeline_client, intent_client):
-        """All 4 UIs have working /api/state endpoints."""
+    def test_all_api_state_endpoints(self, poker_client, timeline_client, intent_client):
+        """All 3 UIs have working /api/state endpoints."""
         for name, (client, _) in [
             ("poker", poker_client),
-            ("constraint", constraint_client),
             ("timeline", timeline_client),
             ("intent", intent_client),
         ]:
@@ -998,16 +782,6 @@ class TestUIReactivity:
         r = c.get("/api/state")
         data = r.json()
         assert data["ini-001"]["heats_used"] == 99
-
-    def test_constraint_api_reflects_state_change(self, constraint_client):
-        """Constraint /api/state reflects added constraint after state change."""
-        c, tmp = constraint_client
-        # Add via API, then verify /api/state picks it up
-        c.post("/add", data={"type": "floor", "stage": "testing", "value": "20", "description": ""})
-        r = c.get("/api/state")
-        data = r.json()
-        types = [con["type"] for con in data["constraints"]]
-        assert "floor" in types
 
     def test_timeline_api_reflects_state_change(self, timeline_client):
         """Timeline /api/state reflects changes after updating planned positions."""
@@ -1029,7 +803,7 @@ class TestUIReactivity:
         (tmp_path / "state.json").write_text(json.dumps(state, indent=2))
         monkeypatch.setenv("FORGE_PROJECT_DIR", str(tmp_path))
         monkeypatch.setenv("URL_POKER", "http://custom:9001")
-        monkeypatch.setenv("URL_CONSTRAINTS", "http://custom:9002")
+        monkeypatch.setenv("URL_INTENT", "http://custom:9003")
         sys.path.insert(0, str(Path(__file__).parent.parent / "ui-priority-poker"))
         import importlib
         app_mod = importlib.import_module("app")
@@ -1038,7 +812,7 @@ class TestUIReactivity:
         c = TestClient(app_mod.app)
         r = c.get("/")
         assert "http://custom:9001" in r.text
-        assert "http://custom:9002" in r.text
+        assert "http://custom:9003" in r.text
 
     # --- Empty state resilience ---
 
@@ -1060,26 +834,6 @@ class TestUIReactivity:
         assert r.status_code == 200
         data = r.json()
         assert data == {}  # no approved/active initiatives = empty dict
-
-    def test_constraint_api_state_empty(self, tmp_path, monkeypatch):
-        """Constraint /api/state returns valid JSON with no constraints."""
-        state = {"project": "test", "budget": {"total_heats": 10, "used": 0},
-                 "stages": {}, "allocator": {"integral": {}}, "queue": [],
-                 "themes": [], "initiatives": [], "constraints": [], "ideas": [],
-                 "feedback_cursor": 0, "inbox_cursor": 0, "human_priorities": [], "overall_progress": 0}
-        (tmp_path / "state.json").write_text(json.dumps(state, indent=2))
-        monkeypatch.setenv("FORGE_PROJECT_DIR", str(tmp_path))
-        sys.path.insert(0, str(Path(__file__).parent.parent / "ui-constraint-board"))
-        import importlib
-        app_mod = importlib.import_module("app")
-        importlib.reload(app_mod)
-        from starlette.testclient import TestClient
-        c = TestClient(app_mod.app)
-        r = c.get("/api/state")
-        assert r.status_code == 200
-        data = r.json()
-        assert data["constraints"] == []
-        assert data["count"] == 0
 
     def test_timeline_api_state_empty(self, tmp_path, monkeypatch):
         """Timeline /api/state returns valid JSON with no initiatives."""

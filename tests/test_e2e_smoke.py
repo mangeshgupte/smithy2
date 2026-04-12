@@ -109,11 +109,10 @@ class TestCLIStateFlow:
 
 
 class TestUIStackOverState:
-    """All 4 steering UIs load against the scaffolded state.json."""
+    """All 3 steering UIs load against the scaffolded state.json."""
 
     @pytest.mark.parametrize("ui_dir,expected_title", [
         ("ui-priority-poker", "Poker"),
-        ("ui-constraint-board", "Constraint"),
         ("ui-intent-editor", "Intent"),
         ("ui-timeline", "Timeline"),
     ])
@@ -124,7 +123,7 @@ class TestUIStackOverState:
         assert expected_title in r.text
 
     @pytest.mark.parametrize("ui_dir", [
-        "ui-priority-poker", "ui-constraint-board", "ui-intent-editor", "ui-timeline",
+        "ui-priority-poker", "ui-intent-editor", "ui-timeline",
     ])
     def test_ui_api_state_responds(self, scaffolded, monkeypatch, ui_dir):
         c = _ui_client(ui_dir, scaffolded, monkeypatch)
@@ -134,23 +133,22 @@ class TestUIStackOverState:
         r.json()
 
     @pytest.mark.parametrize("ui_dir", [
-        "ui-priority-poker", "ui-constraint-board", "ui-intent-editor", "ui-timeline",
+        "ui-priority-poker", "ui-intent-editor", "ui-timeline",
     ])
     def test_ui_nav_bar_present(self, scaffolded, monkeypatch, ui_dir):
         c = _ui_client(ui_dir, scaffolded, monkeypatch)
         r = c.get("/")
         assert 'class="steering-nav"' in r.text
-        # All 4 UIs should link to each other (+ Bellows)
-        for expected_label in ("Poker", "Constraints", "Intent", "Timeline"):
+        # All 3 UIs should link to each other (+ Bellows)
+        for expected_label in ("Poker", "Intent", "Timeline"):
             assert expected_label in r.text, f"{ui_dir} missing nav link to {expected_label}"
 
 
 class TestNavConsistency:
-    """Cross-UI nav URLs: all 4 UIs use the same env-var hooks."""
+    """Cross-UI nav URLs: all 3 UIs use the same env-var hooks."""
 
     @pytest.mark.parametrize("ui_dir,env_var,url", [
-        ("ui-priority-poker", "URL_CONSTRAINTS", "http://example.test:1234"),
-        ("ui-constraint-board", "URL_INTENT", "http://example.test:1234"),
+        ("ui-priority-poker", "URL_INTENT", "http://example.test:1234"),
         ("ui-intent-editor", "URL_TIMELINE", "http://example.test:1234"),
         ("ui-timeline", "URL_POKER", "http://example.test:1234"),
     ])

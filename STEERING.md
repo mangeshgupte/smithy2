@@ -1,38 +1,39 @@
 # Steering UIs
 
-Four ways to direct Forge without micromanaging. Each UI is a different mental model for the same goal: shaping what autonomous work gets done, in what order, under what constraints.
+Three ways to direct Forge without micromanaging. Each UI is a different mental model for the same goal: shaping what autonomous work gets done and in what order.
 
-You don't tell Forge which file to edit. You tell it what matters — by ranking, bounding, describing, or scheduling. It figures out the rest.
+You don't tell Forge which file to edit. You tell it what matters — by ranking, describing, or scheduling. It figures out the rest.
 
 ## Philosophy
 
-Traditional project management is imperative: assign tasks, track hours, review PRs. Forge's steering is declarative: express priorities, set constraints, describe outcomes. The system translates your intent into executable work.
+Traditional project management is imperative: assign tasks, track hours, review PRs. Forge's steering is declarative: express priorities, describe outcomes. The system translates your intent into executable work.
 
-Each UI targets a different cognitive style:
+**Ranking over constraints.** We previously shipped a Constraints UI (hard caps/floors per stage). It was retired 2026-04-12 — hard constraints are brittle, over-specify, and hide the preference signal that ranking already carries. If research matters less than testing, the answer is to rank testing-tasks above research-tasks, not to cap research. See `research/steering-patterns-retrospective.md` §7.
+
+Each remaining UI targets a different cognitive style:
 
 - **Poker** — "These three things matter most. Do them in this order."
-- **Constraints** — "Don't spend more than 15 heats on research. Testing must get at least 20%."
 - **Intent** — "I want user auth and data export. Break that down and make it happen."
 - **Timeline** — "Auth starts at heat 50 and finishes by heat 70. Export comes after."
 
-Use one. Use all four. They write to the same `state.json` — changes from any UI are visible to all others and picked up by Forge on the next heat.
+Use one. Use all three. They write to the same `state.json` — changes from any UI are visible to all others and picked up by Forge on the next heat.
 
 ## Architecture
 
 ```
-┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
-│   Poker     │  │ Constraints │  │   Intent    │  │  Timeline   │
-│  :8001      │  │   :8002     │  │   :8003     │  │   :8004     │
-└──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘
-       │                │                │                │
-       └────────────────┴────────────────┴────────────────┘
-                                 │
-                          state.json (read/write)
-                                 │
-                    ┌────────────┴────────────┐
-                    │         Forge           │
-                    │  (reads on next heat)   │
-                    └─────────────────────────┘
+┌─────────────┐  ┌─────────────┐  ┌─────────────┐
+│   Poker     │  │   Intent    │  │  Timeline   │
+│  :8001      │  │   :8003     │  │   :8004     │
+└──────┬──────┘  └──────┬──────┘  └──────┬──────┘
+       │                │                │
+       └────────────────┴────────────────┘
+                        │
+                state.json (read/write)
+                        │
+           ┌────────────┴────────────┐
+           │         Forge           │
+           │  (reads on next heat)   │
+           └─────────────────────────┘
 ```
 
 Each UI is a standalone FastAPI app. No shared database, no message queue — just a JSON file on disk. This means:
@@ -48,11 +49,10 @@ Each UI is a standalone FastAPI app. No shared database, no message queue — ju
 # Install dependencies (once)
 pip install fastapi uvicorn jinja2
 
-# Start all 4 UIs (each in a separate terminal):
-cd ui-priority-poker   && uvicorn app:app --port 8001 &
-cd ui-constraint-board && uvicorn app:app --port 8002 &
-cd ui-intent-editor    && uvicorn app:app --port 8003 &
-cd ui-timeline         && uvicorn app:app --port 8004 &
+# Start all 3 UIs (each in a separate terminal):
+cd ui-priority-poker && uvicorn app:app --port 8001 &
+cd ui-intent-editor  && uvicorn app:app --port 8003 &
+cd ui-timeline       && uvicorn app:app --port 8004 &
 
 # Or use smithy start-all to launch everything in tmux
 smithy start-all
@@ -99,42 +99,6 @@ The simplest steering interface. Initiatives appear as draggable cards. Drag the
 | POST | `/approve/{id}` | Move initiative to approved status |
 | POST | `/reject/{id}` | Move initiative to rejected status |
 | GET | `/api/state` | JSON: ranked initiatives with task counts |
-| GET | `/events` | SSE stream for live updates |
-
----
-
-## Constraint Board
-
-**Port:** 8002 | **Metaphor:** Set boundaries, not commands. ATC-style guardrails.
-
-Instead of telling Forge what to do, tell it what NOT to do. Set budget caps, stage floors, and exclusion rules. The board flags violations in real time — red banners when a constraint is breached, green when all are satisfied.
-
-### Features
-
-- **Three constraint types:** budget cap (max heats per stage), floor (minimum heats), exclusion (skip a stage entirely)
-- **Real-time violation detection** with banner alerts
-- **Click-to-edit** constraint values, descriptions, and stages inline
-- **Toggle active/inactive** without deleting — paused constraints are dimmed
-- **Smart suggestions** for uncovered stages
-- **Quick templates** for common constraint patterns
-
-### state.json fields
-
-| Field | Read/Write | Purpose |
-|-------|-----------|---------|
-| `constraints[]` | Read/Write | Full CRUD — add, edit, remove, toggle |
-| `stages{}` | Read | Current heat counts for violation checking |
-
-### Routes
-
-| Method | Path | Purpose |
-|--------|------|---------|
-| GET | `/` | Render constraint board with violation status |
-| POST | `/add` | Add a new constraint (form: type, stage, value, description) |
-| POST | `/remove/{id}` | Delete a constraint |
-| POST | `/toggle/{id}` | Toggle active/inactive |
-| POST | `/edit/{id}` | Edit value, stage, or description (JSON) |
-| GET | `/api/state` | JSON: constraints with violation status |
 | GET | `/events` | SSE stream for live updates |
 
 ---
@@ -238,7 +202,6 @@ URLs are configurable via environment variables:
 | Variable | Default | UI |
 |----------|---------|-----|
 | `URL_POKER` | `http://localhost:8001` | Priority Poker |
-| `URL_CONSTRAINTS` | `http://localhost:8002` | Constraint Board |
 | `URL_INTENT` | `http://localhost:8003` | Intent Editor |
 | `URL_TIMELINE` | `http://localhost:8004` | Timeline View |
 | `URL_BELLOWS` | `http://localhost:8080` | Bellows dashboard |
@@ -247,16 +210,15 @@ Bellows project pages also include steering links in their tab navigation.
 
 ## Testing
 
-66 tests across all 4 UIs:
+Tests across the 3 UIs:
 
 ```bash
 python3 -m pytest tests/test_steering_uis.py -v
 
 # By UI:
-python3 -m pytest tests/test_steering_uis.py::TestPriorityPoker     # 15 tests
-python3 -m pytest tests/test_steering_uis.py::TestConstraintBoard    # 16 tests
-python3 -m pytest tests/test_steering_uis.py::TestTimeline           # 19 tests
-python3 -m pytest tests/test_steering_uis.py::TestIntentEditor       # 16 tests
+python3 -m pytest tests/test_steering_uis.py::TestPriorityPoker   # 15 tests
+python3 -m pytest tests/test_steering_uis.py::TestTimeline        # 19 tests
+python3 -m pytest tests/test_steering_uis.py::TestIntentEditor    # 16 tests
 ```
 
 Tests use Starlette's `TestClient` with temporary `state.json` fixtures. No running server required.

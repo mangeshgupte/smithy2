@@ -47,7 +47,6 @@ Open any of these in a browser:
 |---|---|---|
 | 🎯 Intent Editor | http://localhost:8003 | Write bullets → decomposed into themes + initiatives |
 | 🃏 Priority Poker | http://localhost:8001 | Drag to rank, click to approve |
-| 🛡️ Constraint Board | http://localhost:8002 | Budget caps, floors, excludes |
 | 📅 Timeline | http://localhost:8004 | Schedule initiatives across heats |
 | 🔔 Bellows | http://localhost:8080 | Multi-project dashboard |
 
@@ -93,7 +92,6 @@ smithy end-heat <value> <signal> "<notes>"
 
 # Steering
 smithy add-task <stage> "<desc>" --initiative <ini-id>
-smithy add-constraint budget_cap --stage testing --value 40
 smithy queue-push t-001 t-002 t-003
 
 # Feedback (async; Forge reads between heats)

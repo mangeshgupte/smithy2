@@ -24,7 +24,6 @@ PROJECTS_DIR = os.environ.get("FORGE_PROJECTS_DIR", str(Path.home() / "vibes"))
 
 STEERING_LINKS = [
     ("🃏 Poker", os.environ.get("URL_POKER", "http://localhost:8001")),
-    ("🛡️ Constraints", os.environ.get("URL_CONSTRAINTS", "http://localhost:8002")),
     ("🎯 Intent", os.environ.get("URL_INTENT", "http://localhost:8003")),
     ("📅 Timeline", os.environ.get("URL_TIMELINE", "http://localhost:8004")),
 ]
