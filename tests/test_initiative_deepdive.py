@@ -163,3 +163,53 @@ class TestInitiativeHTML:
         client, _ = bellows
         r = client.get("/project/proj-a/initiative/ini-nope")
         assert r.status_code == 404
+
+    def test_page_has_task_drawer(self, bellows):
+        client, _ = bellows
+        html = client.get("/project/proj-a/initiative/ini-1").text
+        assert 'id="task-drawer"' in html
+        assert "openTaskDrawer" in html
+        assert "?task=" not in html.split("</script>")[0] or "searchParams" in html
+
+    def test_page_deep_link_task_param_preserved(self, bellows):
+        client, _ = bellows
+        # ?task= should survive to the rendered page (JS reads it on mount).
+        r = client.get("/project/proj-a/initiative/ini-1?task=t-002")
+        assert r.status_code == 200
+        # Page shouldn't strip/reject the param — drawer JS reads window.location.
+        assert "task-drawer" in r.text
+
+
+class TestTaskAPI:
+    def test_task_detail_returns_fields(self, bellows):
+        client, _ = bellows
+        r = client.get("/api/project/proj-a/task/t-002")
+        assert r.status_code == 200
+        body = r.json()
+        assert body["task"]["id"] == "t-002"
+        assert body["task"]["desc"] == "Pending pinned"
+        assert body["initiative"]["id"] == "ini-1"
+        assert body["initiative"]["title"] == "Deep Dive Target"
+
+    def test_task_detail_404_unknown_task(self, bellows):
+        client, _ = bellows
+        r = client.get("/api/project/proj-a/task/t-999")
+        assert r.status_code == 404
+
+    def test_task_detail_404_unknown_project(self, bellows):
+        client, _ = bellows
+        r = client.get("/api/project/nope/task/t-002")
+        assert r.status_code == 404
+
+    def test_task_detail_no_initiative(self, bellows, tmp_path):
+        client, _ = bellows
+        # Task with no initiative_id — initiative field should be null
+        state_path = tmp_path / "proj-a" / "state.json"
+        state = json.loads(state_path.read_text())
+        state["queue"].append({"id": "t-xx", "stage": "research", "desc": "orphan",
+                               "status": "pending", "priority": 2, "blocked_by": [],
+                               "human_priority": None})
+        state_path.write_text(json.dumps(state))
+        r = client.get("/api/project/proj-a/task/t-xx")
+        assert r.status_code == 200
+        assert r.json()["initiative"] is None

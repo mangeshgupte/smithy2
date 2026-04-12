@@ -780,3 +780,4 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-12T12:46:49Z	779	implementation	t-360	complete	0.85	🟢	t-360 shipped — idle-state banner (5 kinds)
 2026-04-12T12:47:52Z	780	implementation	t-361	complete	0.85	🟢	t-361 shipped — /activity full-log browser
 2026-04-12T12:54:15Z	781	research	t-362	complete	0.85	🟢	t-362 shipped — initiative deep-dive design: Bellows route, no intent field (use description), filter upcoming via queue, drawer copy-over
+2026-04-12T12:57:01Z	782	implementation	t-363	complete	0.85	🟢	t-363 shipped — Bellows /project/{name}/initiative/{id} route + JSON API + data layer, 11 tests, 439/439 green

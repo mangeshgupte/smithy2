@@ -57,4 +57,104 @@
     <p class="empty">No tasks linked to this initiative yet.</p>
     {% endif %}
 </section>
+
+<!-- Read-only task drawer (t-364) — click task_id to open; edits stay in Poker. -->
+<div id="task-drawer-backdrop" class="task-drawer-backdrop" onclick="closeTaskDrawer()"></div>
+<aside id="task-drawer" class="task-drawer" aria-hidden="true" role="dialog" aria-labelledby="td-id">
+    <button class="task-drawer-close" onclick="closeTaskDrawer()" aria-label="Close">×</button>
+    <div class="task-drawer-body">
+        <div class="td-id" id="td-id">—</div>
+        <div class="td-desc" id="td-desc">Select a task.</div>
+        <dl class="td-dl">
+            <dt>Stage</dt><dd id="td-stage">—</dd>
+            <dt>Status</dt><dd id="td-status">—</dd>
+            <dt>Marshal</dt><dd id="td-priority">—</dd>
+            <dt>You</dt><dd id="td-human">—</dd>
+            <dt>Reason</dt><dd id="td-reason">—</dd>
+            <dt>Initiative</dt><dd id="td-initiative">—</dd>
+            <dt>Blocked by</dt><dd id="td-blocked">—</dd>
+        </dl>
+        <p class="td-note">Edit in <a id="td-poker-link" href="{{ poker_url }}" target="_blank">Poker ↗</a></p>
+        <h3>Worklog <span id="td-worklog-count"></span></h3>
+        <ul class="td-worklog" id="td-worklog"></ul>
+    </div>
+</aside>
+
+<script>
+const PROJECT_NAME = {{ project.name|tojson }};
+const POKER_URL = {{ poker_url|tojson }};
+
+function openTaskDrawer(taskId) {
+    const drawer = document.getElementById('task-drawer');
+    const backdrop = document.getElementById('task-drawer-backdrop');
+    drawer.setAttribute('aria-hidden', 'false');
+    backdrop.classList.add('show');
+    document.getElementById('td-id').textContent = taskId;
+    document.getElementById('td-desc').textContent = 'Loading…';
+
+    const url = new URL(window.location.href);
+    url.searchParams.set('task', taskId);
+    history.replaceState(null, '', url.toString());
+
+    fetch(`/api/project/${encodeURIComponent(PROJECT_NAME)}/task/${encodeURIComponent(taskId)}`)
+        .then(r => r.ok ? r.json() : Promise.reject(r))
+        .then(data => {
+            const t = data.task || {};
+            document.getElementById('td-desc').textContent = t.desc || '—';
+            document.getElementById('td-stage').textContent = t.stage || '—';
+            document.getElementById('td-status').textContent = t.status || '—';
+            document.getElementById('td-priority').textContent = 'p' + (t.priority ?? '—');
+            document.getElementById('td-human').textContent =
+                t.human_priority == null ? '—' : ('p' + t.human_priority);
+            document.getElementById('td-reason').textContent = t.priority_reason || '—';
+            document.getElementById('td-initiative').textContent =
+                data.initiative ? `${data.initiative.id} · ${data.initiative.title}` : '—';
+            document.getElementById('td-blocked').textContent =
+                (t.blocked_by || []).join(', ') || '—';
+            document.getElementById('td-poker-link').href = POKER_URL + '/?task=' + encodeURIComponent(taskId);
+
+            const wl = data.worklog || [];
+            document.getElementById('td-worklog-count').textContent = '(' + wl.length + ')';
+            const list = document.getElementById('td-worklog');
+            list.innerHTML = '';
+            wl.slice(-10).reverse().forEach(w => {
+                const li = document.createElement('li');
+                li.textContent = `h${w.heat} ${w.signal || ''} ${w.stage} ${w.value ?? ''} — ${w.notes || ''}`;
+                list.appendChild(li);
+            });
+        })
+        .catch(() => { document.getElementById('td-desc').textContent = 'Failed to load.'; });
+}
+
+function closeTaskDrawer() {
+    document.getElementById('task-drawer').setAttribute('aria-hidden', 'true');
+    document.getElementById('task-drawer-backdrop').classList.remove('show');
+    const url = new URL(window.location.href);
+    url.searchParams.delete('task');
+    history.replaceState(null, '', url.toString());
+}
+
+// Intercept task-id link clicks to open drawer instead of navigating.
+document.querySelectorAll('.task-id a').forEach(a => {
+    a.addEventListener('click', e => {
+        e.preventDefault();
+        const tr = a.closest('tr[data-task-id]');
+        if (tr) openTaskDrawer(tr.dataset.taskId);
+    });
+});
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' &&
+        document.getElementById('task-drawer').getAttribute('aria-hidden') === 'false') {
+        closeTaskDrawer();
+    }
+});
+
+// Deep-link: open drawer from ?task=<id> on page load.
+(function() {
+    const params = new URLSearchParams(window.location.search);
+    const t = params.get('task');
+    if (t) openTaskDrawer(t);
+})();
+</script>
 {% endblock %}
