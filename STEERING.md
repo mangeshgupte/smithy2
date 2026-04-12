@@ -189,7 +189,70 @@ A Gantt-style view where each initiative is a horizontal bar. Drag the start or 
 | GET | `/` | Render timeline (optional `?start=N&end=M` for viewport) |
 | POST | `/update` | Persist bar positions (JSON: `{updates: [{id, start, end}, ...]}`) |
 | GET | `/api/state` | JSON: initiative progress data |
+| GET | `/api/steering-log` | JSON: attribution rows for the steering-trigger lane |
 | GET | `/events` | SSE stream for live updates |
+
+### Steering-trigger lane
+
+A thin attribution lane along the bar region renders a marker for every steering event in `steering.log` that falls inside the visible heat window. Hover a marker to see `h{heat} · {actor} · {task_id}` and the `field: before → after` delta. Populated by Poker/Bellows mutations; empty until a human has actually steered.
+
+---
+
+## Steering Attribution Pipeline
+
+Every mutation in Priority Poker and Bellows Upcoming writes a row to `steering.log` (per-project, append-only TSV) with 8 columns:
+
+```
+timestamp · heat · actor · task_id · field · before · after · source
+```
+
+**Surfaces that read the log:**
+
+| Surface | Use |
+|---------|-----|
+| Timeline `GET /api/steering-log` | Markers on the now-lane |
+| Bellows `GET /api/project/<name>/steering-log?task_id=&actor=&since=&limit=` | Per-project query API |
+| `smithy steering-retro --since=7d [--format=markdown\|json]` | Weekly digest: pins, ships, pin→ship lag, by-actor |
+
+**Actor identity:** Bellows and Poker mutation endpoints honor an optional `X-Actor` request header. When absent, the default actor is `bellows-poker`, `bellows-upcoming`, etc. Empty or >64-char values are ignored. Use this to tag scripted or multi-agent pins.
+
+**What generates rows:**
+
+| Surface | Endpoint | field | source |
+|---------|----------|-------|--------|
+| Poker | `POST /api/task/<id>/human-priority` | `human_priority` | `poker-drawer` |
+| Poker | `POST /api/task/<id>/defer` | `status` | `poker-drawer-defer` |
+| Poker | `POST /api/task/<id>/undefer` | `status` | `poker-drawer-undefer` |
+| Poker | `DELETE /api/task/<id>` | `queue_membership` | `poker-drawer-delete` |
+| Bellows | `POST /api/upcoming/pin` | `upcoming_pinned` | `upcoming-pin` |
+| Bellows | `POST /api/upcoming/unpin` | `upcoming_pinned` | `upcoming-unpin` |
+| Bellows | `POST /api/upcoming/reorder` | `upcoming_rank` | `upcoming-reorder` |
+
+Example retro digest:
+
+```
+$ smithy steering-retro --since 7d
+
+# Steering retro — since 2026-04-05T…
+
+- Pin events: 12 across 8 unique task(s)
+- Heats completed: 43 (across 18 unique task(s))
+- Shipped post-pin: 6 (avg lag 3.2h)
+- Pure-allocator heats: 22 (22/40 task-heats had no prior steering)
+
+## Shipped post-pin
+| task | pin heat | ship heat | lag | value | signal |
+|------|----------|-----------|-----|-------|--------|
+| t-120 | 780 | 781 | 1h | 0.9 | 🟢 |
+…
+
+## By actor
+| actor | events |
+|-------|--------|
+| bellows-poker | 7 |
+| human:mangesh | 3 |
+| bellows-upcoming | 2 |
+```
 
 ---
 

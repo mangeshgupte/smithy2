@@ -23,7 +23,7 @@ You communicate asynchronously. Drop ideas in `inbox.md`. Read status in `outbox
 All bookkeeping goes through `smithy`, a Python CLI that keeps state deterministic:
 
 ```
-smithy init          # Scaffold a new project
+smithy init          # Scaffold a new project (see --template=<shape>)
 smithy start-heat    # Begin a heat (update counters, read feeds)
 smithy allocate      # Wavefront allocator recommends a stage
 smithy end-heat      # Close a heat (log, update state, self-assess)
@@ -36,6 +36,10 @@ smithy queue-push    # Add a task to the next_tasks queue
 smithy queue-pop     # Claim the next task from the queue
 smithy set-next-tasks # Set ordered task list (Marshal → Forge)
 smithy list-tasks    # List tasks with filters (status, stage, limit)
+
+# Attribution & retros
+smithy steering-retro      # Weekly digest: pins, ships, pin→ship lag, by-actor
+                           #   --since=7d|24h|ISO, --format=markdown|json
 
 # Session management
 smithy start-all     # Launch smithy2 tmux session with all personas
@@ -124,9 +128,14 @@ Anvil spawns Marshal and Forge as Agent Teams teammates. Marshal uses `smithy se
 ```bash
 # From the Smithy repo:
 pip install -e smithy/
-smithy init my-project ~/projects/my-project --with-personas
+smithy init my-project --target ~/projects/my-project --with-personas
 
-# Describe your project:
+# Seed from a template shape (skip if you want a blank scaffold):
+smithy init --list-templates           # see available shapes
+smithy init my-project --target ~/projects/my-project --with-personas \
+    --template cli                     # lib | cli | web | data-pipe | mobile | research
+
+# Describe your project (templates pre-fill intent bullets + themes/initiatives):
 vim ~/projects/my-project/identity.md
 
 # Start all personas in tmux:
@@ -140,6 +149,31 @@ claude
 ```
 
 `smithy start-all` creates a `smithy2` tmux session with anvil, forge, and marshal windows, each running Claude Code. Tell Anvil "Start" and it spawns the other two as teammates.
+
+## Intent Templates
+
+`smithy init --template=<shape>` pre-fills `identity.md` and `state.json` with sensible starting themes + initiatives for 6 common project shapes. Each template encodes the highest-risk failure mode for that shape as theme 1 (auth for web, schema for pipelines, offline for mobile).
+
+| Template | For | Top theme |
+|----------|-----|-----------|
+| `lib` | Library / SDK | API Surface |
+| `cli` | CLI tool | Command UX |
+| `web` | Web app (product) | Golden-path flow |
+| `data-pipe` | Data pipeline | Ingest & Schema |
+| `mobile` | Mobile app | Offline & Sync |
+| `research` | Exploratory research | Core Questions |
+
+See `research/intent-template-library.md` for intent bullets + value-thesis per shape. Omit `--template` for a blank scaffold (backwards-compatible).
+
+## Steering Attribution
+
+Every human steering event (Poker priority flip, Bellows pin/reorder, Timeline tweak) writes a row to a per-project `steering.log` with `timestamp · heat · actor · task_id · field · before→after · source`. Three surfaces consume it:
+
+- **Timeline UI** renders markers on the heat lane — hover for the attribution row
+- **`GET /api/project/<name>/steering-log`** on Bellows returns rows filtered by `task_id` / `actor` / `since`
+- **`smithy steering-retro --since=7d`** emits a weekly markdown digest: pins made, tasks shipped post-pin, avg pin→ship lag in heats, pure-allocator heats, by-actor breakdown
+
+Pass `X-Actor: <name>` on any Bellows/Poker mutation request to override the default UI actor (useful for scripted or multi-agent pins).
 
 ## Built With The Smithy
 
