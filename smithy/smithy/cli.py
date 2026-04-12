@@ -2078,5 +2078,139 @@ def commit(ctx, message):
     _err(f"Committed: {full_msg}")
 
 
+def _parse_since(spec: str) -> str:
+    """Parse --since into an ISO timestamp cutoff.
+
+    Accepts: '7d', '24h', or an ISO date/timestamp. Returns UTC ISO string.
+    """
+    from datetime import datetime, timedelta
+    spec = (spec or "").strip()
+    if not spec:
+        spec = "7d"
+    now = datetime.utcnow()
+    if spec.endswith("d") and spec[:-1].isdigit():
+        cutoff = now - timedelta(days=int(spec[:-1]))
+    elif spec.endswith("h") and spec[:-1].isdigit():
+        cutoff = now - timedelta(hours=int(spec[:-1]))
+    else:
+        # Assume ISO — pass through, no parsing validation beyond this
+        return spec
+    return cutoff.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+@cli.command("steering-retro")
+@click.option("--since", default="7d", help="Time window: Nd, Nh, or ISO timestamp")
+@click.option("--format", "fmt", type=click.Choice(["markdown", "json"]), default="markdown")
+@click.pass_context
+def steering_retro(ctx, since, fmt):
+    """Weekly steering retro — summarize pins, ships, lag, and pure-allocator heats.
+
+    Reads steering.log + worklog.tsv. Emits markdown (default) or JSON digest for the
+    given window (default last 7 days).
+    """
+    import csv
+    root = ctx.obj["root"]
+    cutoff = _parse_since(since)
+
+    steering_path = root / "steering.log"
+    steering_rows = []
+    if steering_path.exists():
+        with open(steering_path) as f:
+            for row in csv.DictReader(f, delimiter="\t"):
+                if row.get("timestamp", "") >= cutoff:
+                    steering_rows.append(row)
+
+    worklog_path = root / "worklog.tsv"
+    worklog_rows = []
+    if worklog_path.exists():
+        with open(worklog_path) as f:
+            for row in csv.DictReader(f, delimiter="\t"):
+                if row.get("timestamp", "") >= cutoff:
+                    worklog_rows.append(row)
+
+    # Pin events: human_priority set (non-null after), or upcoming_pinned rank bump
+    pin_events = [r for r in steering_rows
+                  if (r.get("field") == "human_priority" and r.get("after") not in ("null", ""))
+                  or (r.get("field") == "upcoming_pinned" and r.get("after") not in ("null", ""))]
+
+    # Task → earliest pin heat
+    earliest_pin = {}
+    for r in pin_events:
+        tid = r.get("task_id", "-")
+        try:
+            h = int(r.get("heat", "0"))
+        except ValueError:
+            continue
+        if tid not in earliest_pin or h < earliest_pin[tid]:
+            earliest_pin[tid] = h
+
+    # Tasks shipped (outcome == complete) in window
+    ships = [r for r in worklog_rows if r.get("outcome") == "complete"]
+    shipped_task_ids = {r.get("task_id") for r in ships}
+
+    # Shipped-post-pin: pin_heat < ship_heat
+    post_pin = []
+    for r in ships:
+        tid = r.get("task_id")
+        if tid in earliest_pin:
+            try:
+                ship_h = int(r.get("heat", "0"))
+            except ValueError:
+                continue
+            pin_h = earliest_pin[tid]
+            if ship_h > pin_h:
+                post_pin.append({"task_id": tid, "pin_heat": pin_h, "ship_heat": ship_h,
+                                 "lag": ship_h - pin_h, "value": r.get("value"),
+                                 "signal": r.get("signal")})
+
+    avg_lag = (sum(p["lag"] for p in post_pin) / len(post_pin)) if post_pin else None
+
+    # Pure-allocator heats: worklog rows whose task_id has no prior steering event
+    steered_task_ids = {r.get("task_id") for r in steering_rows if r.get("task_id") != "-"}
+    pure_allocator = [r for r in worklog_rows
+                      if r.get("task_id") and r.get("task_id") not in steered_task_ids]
+
+    digest = {
+        "since": cutoff,
+        "pins_made": len(pin_events),
+        "unique_tasks_pinned": len(earliest_pin),
+        "tasks_shipped": len(ships),
+        "shipped_post_pin": post_pin,
+        "avg_lag_heats": avg_lag,
+        "pure_allocator_heats": len(pure_allocator),
+    }
+
+    if fmt == "json":
+        _output(digest)
+        return
+
+    # Markdown
+    lines = [
+        f"# Steering retro — since {cutoff}",
+        "",
+        f"- **Pin events:** {len(pin_events)} across {len(earliest_pin)} unique task(s)",
+        f"- **Tasks shipped:** {len(ships)}",
+        f"- **Shipped post-pin:** {len(post_pin)}" +
+            (f" (avg lag {avg_lag:.1f}h)" if avg_lag is not None else ""),
+        f"- **Pure-allocator heats:** {len(pure_allocator)} "
+        f"({len(pure_allocator)}/{len(worklog_rows)} heats had no prior steering)",
+        "",
+    ]
+    if post_pin:
+        lines.append("## Shipped post-pin")
+        lines.append("")
+        lines.append("| task | pin heat | ship heat | lag | value | signal |")
+        lines.append("|------|----------|-----------|-----|-------|--------|")
+        for p in sorted(post_pin, key=lambda x: x["lag"]):
+            lines.append(f"| {p['task_id']} | {p['pin_heat']} | {p['ship_heat']} | "
+                         f"{p['lag']}h | {p['value']} | {p['signal']} |")
+        lines.append("")
+    if pin_events and not post_pin:
+        lines.append("_No pinned tasks shipped in window yet._")
+        lines.append("")
+
+    click.echo("\n".join(lines))
+
+
 if __name__ == "__main__":
     cli()

@@ -1,16 +1,16 @@
 {
   "project": "the-smithy",
   "budget": {
-    "total_heats": 843,
-    "used": 740,
+    "total_heats": 1043,
+    "used": 760,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
     "research": {
       "target": 0.156,
-      "heats": 36,
+      "heats": 40,
       "progress": 0.9,
-      "value_ema": 0.819
+      "value_ema": 0.812
     },
     "planning": {
       "target": 0.21,
@@ -20,21 +20,21 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 266,
+      "heats": 277,
       "progress": 0.98,
-      "value_ema": 0.818
+      "value_ema": 0.817
     },
     "testing": {
       "target": 0.183,
-      "heats": 134,
+      "heats": 136,
       "progress": 0.88,
-      "value_ema": 0.861
+      "value_ema": 0.856
     },
     "editing": {
       "target": 0.183,
-      "heats": 178,
+      "heats": 181,
       "progress": 0.88,
-      "value_ema": 0.816
+      "value_ema": 0.813
     },
     "marketing": {
       "target": 0.219,
@@ -48,8 +48,8 @@
       "research": 0.5,
       "planning": 0.5,
       "implementation": -0.5,
-      "testing": 0.003,
-      "editing": -0.375,
+      "testing": 0.005,
+      "editing": -0.378,
       "marketing": 0.5
     }
   },
@@ -2810,66 +2810,223 @@
       "id": "t-322",
       "stage": "editing",
       "desc": "Poker UI polish: done-task rows currently escape the drawer box (alignment bug). Fix CSS/layout so shipped-since-viewed section stays contained within the drawer. Visual only, no schema changes.",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "human_priority": null,
-      "priority_reason": "p1 + stage-balance"
+      "priority_reason": null
     },
     {
       "id": "t-323",
       "stage": "research",
       "desc": "Task detail UI design sketch. Modal vs dedicated page? What fields matter (desc/stage/priority/human_priority/priority_reason/initiative/blocked_by/history of priority changes/worklog mentions)? Click target = full row or dedicated affordance? Output: research/task-detail-ui.md with recommendation.",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-009",
       "human_priority": null,
-      "priority_reason": "ini-009 rank=1 + poker"
+      "priority_reason": null
     },
     {
       "id": "t-324",
       "stage": "implementation",
       "desc": "Backend: GET /api/task/{id} endpoint returning full task object + relevant history (priority-change events, worklog rows matching task_id). Add to Poker (and Bellows?). Unit tests for happy path, 404, history assembly.",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-009",
       "human_priority": null,
-      "priority_reason": "ini-009 rank=1 + poker"
+      "priority_reason": null
     },
     {
       "id": "t-325",
       "stage": "implementation",
       "desc": "Frontend: wire click handler on Poker task rows to open task detail per t-323's recommendation (modal or route). Render all fields + history. Close returns to drawer state.",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-009",
       "human_priority": null,
-      "priority_reason": "ini-009 rank=1 + poker"
+      "priority_reason": null
     },
     {
       "id": "t-326",
       "stage": "testing",
       "desc": "E2E task detail: click task row \u2192 detail loads with full history; close returns to drawer open state; priority-change event visible after /human-priority POST.",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-009",
       "human_priority": null,
-      "priority_reason": "ini-009 rank=1 + poker"
+      "priority_reason": null
     },
     {
       "id": "t-327",
       "stage": "research",
       "desc": "Cross-project upcoming tasks view \u2014 design study. Answer: (1) does Bellows enumerate multi-project today? (2) global ordering schema (global_rank vs derived)? (3) Poker coupling semantics \u2014 immediate re-score vs tick? (4) 'remove' semantics \u2014 deprioritize/defer/delete? (5) drag-to-top: human_priority=0 vs new global_override field? interaction with per-project human_priority? (6) new Bellows page vs new UI? Output: research/upcoming-tasks-view.md with wireframe + schema diff + 3-5 impl task candidates (retro format: value thesis per).",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-009",
       "human_priority": null,
-      "priority_reason": "ini-009 rank=1 + poker"
+      "priority_reason": null
+    },
+    {
+      "id": "t-328",
+      "stage": "implementation",
+      "desc": "Bellows /api/upcoming endpoint + GC on read. Reads .upcoming.json (compound keys {project, task_id}), resolves each to live task state, drops stale refs (task complete or missing) with one-line toast metadata. Returns merged view sorted by (globally_pinned_rank ?? +inf, human_priority ?? +inf, priority, id). Tests: pin resolution, stale GC, merge order.",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-009",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-329",
+      "stage": "implementation",
+      "desc": "Bellows /upcoming route \u2014 page render. Pinned section (drag-to-reorder, \u00d7 unpin per row) + Up Next section (\ud83d\udccc pin per row). Polls /api/upcoming every 5s. Click task id/desc routes to that project's Poker ?task=<id> (reuses t-325 deep link). Drag pattern reused from Poker.",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-009",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-330",
+      "stage": "implementation",
+      "desc": "Upcoming POST endpoints: /api/upcoming/pin (appends), /api/upcoming/unpin (removes), /api/upcoming/reorder (full reorder). Mutate .upcoming.json under mtime precondition (reuse v1.8 pattern, 409 on conflict). Tests: pin happy, duplicate pin no-op, unpin happy, unpin-unknown no-op, reorder with unknown id skip, 409 on concurrent.",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-009",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-331",
+      "stage": "editing",
+      "desc": "Poker \ud83d\udccc badge polish: pinned-to-Upcoming indicator on task rows in drawer (so user knows which tasks are in the cross-project upcoming list without opening it).",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-009",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-332",
+      "stage": "testing",
+      "desc": "E2E Upcoming: scaffold two tmp projects, pin one task from each, verify /api/upcoming returns both in pinned order; complete one \u2192 GC removes on next read; unpin other \u2192 empty state; reorder \u2192 ordering reflects in next GET; 409 on concurrent write.",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-009",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-333",
+      "stage": "implementation",
+      "desc": "Task detail drawer (t-325) \u2014 add 3 lifecycle actions: (1) deprioritize [\u2193\u2193] = set human_priority=9999 sentinel (sticky to bottom, reversible via clear); (2) defer = set status='deferred' (extend enum, scheduler skips, reversible via un-defer); (3) delete = drop from queue + log worklog audit entry for recoverability, requires typed-confirm dialog. All three in drawer Priority band. Tests: each action round-trip, scheduler respects deferred, worklog shows delete event.",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-009",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-334",
+      "stage": "editing",
+      "desc": "CLI list-tasks: add 'deferred' to --status Choice so users can filter on it directly (currently only visible via --status all).",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-335",
+      "stage": "implementation",
+      "desc": "Poker drawer: add 'Deferred' section (collapsed by default) showing tasks with status=deferred for the initiative. Un-defer action inline \u2192 restores status=pending. Surfaces otherwise-invisible deferred work.",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-009",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-336",
+      "stage": "research",
+      "desc": "Intent template library \u2014 6+ project-shape templates (lib, CLI, web, data-pipe, mobile, research). Format: template name + intent bullets + seed theme/initiative map. Output: research/intent-template-library.md ending in value-thesis per template.",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-337",
+      "stage": "research",
+      "desc": "Attribution audit \u2014 can we show steering-shifted-Forge? Scope: use diff + human_priority + worklog to trace poker reorder \u2192 task reorder \u2192 shipped heat. Output: research/steering-attribution-audit.md with feasibility verdict + schema proposal if viable.",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-338",
+      "stage": "implementation",
+      "desc": "steering.log append-only file + shared logger helper. Wire into ~8 call-sites (queue-push, set-next-tasks, set-priority, complete-task, poker reorder, downrank, defer, etc). Foundation for attribution pipeline. See research/steering-attribution-audit.md \u00a7t-338-candidate.",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-339",
+      "stage": "implementation",
+      "desc": "GET /api/project/{name}/steering-log endpoint on Bellows. Reads steering.log, returns JSONL as array with optional ?since=<ts>. See research/steering-attribution-audit.md \u00a7t-339-candidate.",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-340",
+      "stage": "implementation",
+      "desc": "Timeline UI: annotate heat bars with steering-trigger markers (which poke caused which task reorder). Consumes /api/steering-log. See research/steering-attribution-audit.md \u00a7t-340-candidate.",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-341",
+      "stage": "marketing",
+      "desc": "smithy weekly-retro CLI \u2014 renders steering.log + worklog into a weekly markdown digest. See research/steering-attribution-audit.md \u00a7t-341-candidate.",
+      "status": "in_progress",
+      "priority": 3,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": "p3 + stage-balance"
+    },
+    {
+      "id": "t-342",
+      "stage": "implementation",
+      "desc": "steering.log actor identity header \u2014 capture which persona/user triggered each event. Low urgency, low cost while logging code fresh. See research/steering-attribution-audit.md \u00a7t-342-candidate.",
+      "status": "complete",
+      "priority": 3,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": null
     }
   ],
   "ideas": [
@@ -2997,7 +3154,7 @@
       "description": "Research how humans steer autonomous systems \u2014 not monitor, STEER. The core question: what controls does a human need to change direction without becoming a bottleneck? Study: (1) Real-time strategy games (StarCraft command hierarchy \u2014 strategic goals, tactical orders, unit autonomy), (2) Military C2 frameworks (mission-type orders, commander's intent, OODA), (3) Product management (OKRs, roadmap prioritization, sprint planning), (4) Air traffic control (constraints not commands), (5) Existing AI tools (Devin's chat-to-steer, Cursor's accept/reject, Claude Code hooks). For each, extract: what decisions the human makes, at what frequency, what information they need to decide, and what the feedback loop looks like. Deliverable: research/steering-patterns.md with a taxonomy of steering modes and which are worth prototyping as UIs.",
       "status": "approved",
       "budget_cap": 10,
-      "heats_used": 12,
+      "heats_used": 24,
       "rank": 1,
       "planned_start": 635,
       "planned_end": 645,
@@ -3106,12 +3263,6 @@
       "created": "2026-04-11T10:44:28.678810"
     }
   ],
-  "next_tasks": [
-    "t-323",
-    "t-324",
-    "t-325",
-    "t-326",
-    "t-327"
-  ],
+  "next_tasks": [],
   "schema_version": 1
 }
