@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activity Log — {{ project }}</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .activity-page { max-width: 900px; margin: 0 auto; padding: 16px; }
+        .activity-filters { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0;
+                            padding: 12px; background: var(--surface, #1a1a1a);
+                            border: 1px solid var(--border, #333); border-radius: 6px; }
+        .activity-filters label { display: flex; flex-direction: column; gap: 2px; font-size: 11px;
+                                  color: var(--text-muted, #aaa); }
+        .activity-filters input, .activity-filters select {
+            padding: 4px 6px; background: var(--surface-hover, #222);
+            border: 1px solid var(--border, #333); color: var(--text, #ddd);
+            border-radius: 3px; font: inherit; min-width: 120px;
+        }
+        .activity-stats { font-size: 12px; color: var(--text-muted, #888); margin: 8px 0; }
+        .log-table { width: 100%; border-collapse: collapse; font-family: var(--font-mono, monospace);
+                     font-size: 12px; }
+        .log-table th { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border, #333);
+                        color: var(--text-muted, #888); font-weight: normal; }
+        .log-table td { padding: 6px 8px; border-bottom: 1px solid var(--surface-hover, #222); vertical-align: top; }
+        .log-table tr.origin-forge { opacity: 0.72; }
+        .log-table tr:hover { background: var(--surface, #1a1a1a); }
+        .log-heat { color: var(--text-muted, #888); white-space: nowrap; }
+        .log-verb { font-weight: 600; }
+        .log-task { color: var(--yellow, #c89c2a); }
+        .log-detail { color: var(--text-muted, #aaa); font-size: 11px; }
+    </style>
+</head>
+<body>
+    <nav class="steering-nav">
+        {% for label, url, active in nav_links %}
+        <a href="{{ url }}" class="nav-link">{{ label }}</a>
+        {% endfor %}
+    </nav>
+    <div class="activity-page">
+        <header>
+            <h1>📜 Activity Log</h1>
+            <p class="subtitle">{{ project }} — full history of steering events + Forge heats.</p>
+            <p><a href="/" style="font-size: 12px;">← back to Poker</a></p>
+        </header>
+
+        <div class="activity-filters">
+            <label>actor <input type="text" id="f-actor" placeholder="any"></label>
+            <label>verb
+                <select id="f-verb">
+                    <option value="">any</option>
+                    <option>pinned</option>
+                    <option>unpinned</option>
+                    <option>priority-set</option>
+                    <option>deferred</option>
+                    <option>undeferred</option>
+                    <option>deleted</option>
+                    <option>reordered</option>
+                    <option>completed</option>
+                </select>
+            </label>
+            <label>origin
+                <select id="f-origin">
+                    <option value="">any</option>
+                    <option>steering</option>
+                    <option>forge</option>
+                </select>
+            </label>
+            <label>task_id <input type="text" id="f-task" placeholder="e.g. t-001"></label>
+            <label>since (ISO) <input type="text" id="f-since" placeholder="2026-04-01"></label>
+            <label>limit <input type="number" id="f-limit" value="200" min="1" max="500"></label>
+            <label style="justify-content: flex-end;">
+                <button onclick="loadLog()" style="padding: 4px 10px; margin-top: auto;">refresh</button>
+            </label>
+        </div>
+
+        <div class="activity-stats" id="stats">Loading…</div>
+
+        <table class="log-table">
+            <thead>
+                <tr>
+                    <th>heat · when</th>
+                    <th>actor</th>
+                    <th>verb</th>
+                    <th>task</th>
+                    <th>detail</th>
+                </tr>
+            </thead>
+            <tbody id="log-body"></tbody>
+        </table>
+    </div>
+
+    <script>
+    function loadLog() {
+        const limit = document.getElementById('f-limit').value || 200;
+        const since = document.getElementById('f-since').value.trim();
+        const url = '/api/activity?limit=' + limit + (since ? '&since=' + encodeURIComponent(since) : '');
+        fetch(url).then(r => r.json()).then(data => {
+            const actor = document.getElementById('f-actor').value.trim().toLowerCase();
+            const verb = document.getElementById('f-verb').value;
+            const origin = document.getElementById('f-origin').value;
+            const task = document.getElementById('f-task').value.trim();
+            let rows = data.entries || [];
+            if (actor) rows = rows.filter(e => (e.actor || '').toLowerCase().includes(actor));
+            if (verb) rows = rows.filter(e => e.verb === verb);
+            if (origin) rows = rows.filter(e => e.origin === origin);
+            if (task) rows = rows.filter(e => (e.task_id || '') === task);
+
+            document.getElementById('stats').textContent =
+                rows.length + ' / ' + data.count + ' entries (filtered)';
+
+            const body = document.getElementById('log-body');
+            body.innerHTML = '';
+            rows.forEach(e => {
+                const tr = document.createElement('tr');
+                tr.className = 'origin-' + (e.origin || 'unknown');
+                tr.innerHTML =
+                    '<td class="log-heat">h' + e.heat + ' · ' + (e.when || '') + '</td>' +
+                    '<td>' + (e.actor || '-') + '</td>' +
+                    '<td class="log-verb">' + e.verb + '</td>' +
+                    '<td class="log-task">' + (e.task_id || '-') + '</td>' +
+                    '<td class="log-detail">' + (e.detail || '') + '</td>';
+                body.appendChild(tr);
+            });
+            if (rows.length === 0) {
+                body.innerHTML = '<tr><td colspan="5" style="padding: 24px; text-align: center; color: #888;">No matching entries.</td></tr>';
+            }
+        }).catch(() => {
+            document.getElementById('stats').textContent = 'Failed to load.';
+        });
+    }
+    loadLog();
+    </script>
+</body>
+</html>

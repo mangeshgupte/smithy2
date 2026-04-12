@@ -267,6 +267,16 @@ async def api_state():
     return JSONResponse(data)
 
 
+@app.get("/activity", response_class=HTMLResponse)
+async def activity_browser(request: Request):
+    """Full activity log browser — rendered view of /api/activity with filters."""
+    state = _load_state()
+    return templates.TemplateResponse(request=request, name="activity.html", context={
+        "project": state.get("project", "unknown"),
+        "nav_links": NAV_LINKS,
+    })
+
+
 @app.get("/api/idle-state")
 async def api_idle_state():
     """Diagnose why Forge may be idle. Returns {kind, message} or {kind: 'active'}."""
