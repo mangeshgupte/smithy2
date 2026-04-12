@@ -99,6 +99,20 @@ class TestCLIStateFlow:
         assert state["budget"]["used"] == 1
         assert state["stages"]["testing"]["heats"] == 1
 
+    def test_list_tasks_filter_includes_deferred(self, scaffolded):
+        """t-334 — --status deferred is a valid Choice and filters to deferred tasks only."""
+        _smithy(scaffolded, "add-task", "testing", "pending task")
+        _smithy(scaffolded, "add-task", "testing", "deferred task")
+        state = json.loads((scaffolded / "state.json").read_text())
+        for t in state["queue"]:
+            if t["desc"] == "deferred task":
+                t["status"] = "deferred"
+        (scaffolded / "state.json").write_text(json.dumps(state))
+        rc, out, err = _smithy(scaffolded, "list-tasks", "--status", "deferred")
+        assert rc == 0, err
+        assert "deferred task" in out
+        assert "pending task" not in out
+
     def test_end_heat_triggers_nudge_to_marshal(self, scaffolded):
         """end-heat should fire a nudge — either delivered via tmux or queued to .smithy-nudge-queue."""
         _smithy(scaffolded, "start-heat", "testing")

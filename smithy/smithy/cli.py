@@ -733,7 +733,7 @@ def queue_clear(ctx):
 
 @cli.command("list-tasks")
 @click.option("--status", "status_filter", default="pending",
-              type=click.Choice(["pending", "complete", "in_progress", "all"]),
+              type=click.Choice(["pending", "complete", "in_progress", "deferred", "all"]),
               help="Filter by status (default: pending)")
 @click.option("--stage", "stage_filter", default=None,
               type=click.Choice(VALID_STAGES),
