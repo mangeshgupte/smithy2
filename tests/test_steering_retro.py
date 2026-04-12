@@ -148,6 +148,38 @@ class TestSteeringRetro:
         assert data["heats_completed"] == 2
         assert data["unique_tasks_touched"] == 1
 
+    def test_gap4_by_actor_breakdown(self, tmp_path):
+        """By-actor section counts events per actor, sorted descending."""
+        _seed(tmp_path)
+        _write_steering(tmp_path, [
+            ("2099-04-11T10:00:00Z", 10, "human:mangesh", "t-001",
+             "human_priority", "null", "0", "poker-drawer"),
+            ("2099-04-11T11:00:00Z", 11, "human:mangesh", "t-002",
+             "human_priority", "null", "0", "poker-drawer"),
+            ("2099-04-11T12:00:00Z", 12, "bellows-poker", "t-003",
+             "human_priority", "null", "0", "poker-drawer"),
+        ])
+        runner = CliRunner()
+        r = runner.invoke(cli, ["--dir", str(tmp_path), "steering-retro",
+                                "--format", "json", "--since", "30d"])
+        data = json.loads(r.output)
+        assert data["by_actor"] == [
+            {"actor": "human:mangesh", "events": 2},
+            {"actor": "bellows-poker", "events": 1},
+        ]
+
+    def test_gap4_by_actor_markdown_section(self, tmp_path):
+        _seed(tmp_path)
+        _write_steering(tmp_path, [
+            ("2099-04-11T10:00:00Z", 10, "human:mangesh", "t-001",
+             "human_priority", "null", "0", "poker-drawer"),
+        ])
+        runner = CliRunner()
+        r = runner.invoke(cli, ["--dir", str(tmp_path), "steering-retro",
+                                "--since", "30d"])
+        assert "## By actor" in r.output
+        assert "human:mangesh" in r.output
+
     def test_gap3_empty_log_footer(self, tmp_path):
         """Markdown includes a footer hint when steering.log is missing."""
         _seed(tmp_path)

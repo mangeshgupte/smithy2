@@ -2223,6 +2223,13 @@ def steering_retro(ctx, since, fmt):
     pure_allocator = [r for r in task_heats
                       if r.get("task_id") not in steered_task_ids]
 
+    # By-actor breakdown — count steering events per actor (Gap 4 / t-348)
+    by_actor = {}
+    for r in steering_rows:
+        actor = r.get("actor") or "-"
+        by_actor[actor] = by_actor.get(actor, 0) + 1
+    by_actor_sorted = sorted(by_actor.items(), key=lambda x: (-x[1], x[0]))
+
     digest = {
         "since": cutoff,
         "pins_made": len(pin_events),
@@ -2234,6 +2241,7 @@ def steering_retro(ctx, since, fmt):
         "pure_allocator_heats": len(pure_allocator),
         "task_heats_total": len(task_heats),
         "steering_log_present": steering_path.exists(),
+        "by_actor": [{"actor": a, "events": n} for a, n in by_actor_sorted],
     }
 
     if fmt == "json":
@@ -2265,6 +2273,14 @@ def steering_retro(ctx, since, fmt):
         lines.append("")
     if pin_events and not post_pin:
         lines.append("_No pinned tasks shipped in window yet._")
+        lines.append("")
+    if by_actor_sorted:
+        lines.append("## By actor")
+        lines.append("")
+        lines.append("| actor | events |")
+        lines.append("|-------|--------|")
+        for a, n in by_actor_sorted:
+            lines.append(f"| {a} | {n} |")
         lines.append("")
     if empty_log:
         footer = ("_Note: steering.log not present — no attribution data yet. "
