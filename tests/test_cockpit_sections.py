@@ -102,6 +102,21 @@ def test_complete_ts_uses_largest_heat_row(tmp_path):
     assert rows[0].last_worklog_ts == "2026-04-12T09:00:00Z"
 
 
+def test_api_complete_rows_include_ship_info(poker):
+    r = poker.get("/api/cockpit")
+    rows = {row["id"]: row for row in r.json()["rows"]}
+    c1 = rows["t-c1"]
+    # Complete rows carry ship_heat / ship_signal / ship_value from worklog.
+    assert c1["ship_heat"] == "5"
+    assert c1["ship_signal"] == "🟢"
+    assert c1["ship_value"] == "0.8"
+    # commit_sha is None in a fixture repo with no matching commit subject.
+    assert "commit_sha" in c1
+    # Non-complete rows don't carry ship_* fields (kept minimal).
+    assert "ship_heat" not in rows["t-pending"]
+    assert "ship_heat" not in rows["t-deferred"]
+
+
 def test_age_heats_still_populated(tmp_project):
     # Regression: the refactor combined the two worklog passes; age must still
     # come through for callers that don't care about last_worklog_ts.

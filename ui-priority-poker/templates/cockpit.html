@@ -75,6 +75,14 @@
                           background: var(--surface-hover, #222); color: var(--text, #ddd);
                           border-radius: 8px; font-size: 10px; }
         .c-section-caret { display: inline-block; width: 10px; }
+        /* t-391: Complete-section row shape — dimmer, smaller, shipped metadata. */
+        tr.c-complete-row td { color: var(--text-muted, #aaa); }
+        .c-complete-row .c-id a { color: var(--text-muted, #888); }
+        .c-ship-val { white-space: nowrap; }
+        .c-ship-heat { color: var(--text-muted, #888); font-size: 11px; }
+        .c-ship-sha { font-size: 11px; }
+        .c-ship-sha code { background: var(--surface-hover, #222); padding: 1px 4px;
+                           border-radius: 2px; color: var(--yellow, #c89c2a); }
         /* t-389: DnD affordances. Pending rows are draggable. */
         .cockpit-table tr[draggable="true"] { cursor: grab; }
         .cockpit-table tr.c-dragging { opacity: 0.4; }
@@ -258,6 +266,7 @@
     }
 
     function renderRow(body, t) {
+            if (t.status === 'complete') { renderCompleteRow(body, t); return; }
             const tr = document.createElement('tr');
             if (t.status === 'deferred') tr.classList.add('deferred-row');
             tr.dataset.taskId = t.id;
@@ -296,6 +305,31 @@
                 const panel = buildInlinePanel(t);
                 body.appendChild(panel);
             }
+    }
+
+    // t-391: Complete-row shape. id + stage + desc, plus value emoji, heat
+    // number, short commit sha. No priority/hp/reason — those aren't
+    // actionable for shipped work.
+    function renderCompleteRow(body, t) {
+        const tr = document.createElement('tr');
+        tr.className = 'c-complete-row';
+        tr.dataset.taskId = t.id;
+        tr.dataset.status = t.status;
+        const isOpen = expanded.has(t.id);
+        const signal = t.ship_signal || '';
+        const valTxt = t.ship_value ? (signal + ' ' + t.ship_value) : (signal || '—');
+        const heat = t.ship_heat ? ('h' + t.ship_heat) : '—';
+        const sha = t.commit_sha ? `<code class="c-sha">${t.commit_sha}</code>` : '—';
+        tr.innerHTML =
+            `<td class="c-expand ${isOpen ? 'open' : ''}" onclick="toggleInlineExpand(event, '${t.id}')">${isOpen ? '▾' : '▸'}</td>` +
+            `<td class="c-id"><a href="#" onclick="openDrawer('${t.id}');return false;">${t.id}</a></td>` +
+            `<td><span class="c-stage stage-${t.stage}">${t.stage}</span></td>` +
+            `<td class="c-ship-val" title="outcome signal + value">${valTxt}</td>` +
+            `<td class="c-ship-heat">${heat}</td>` +
+            `<td class="c-ship-sha">${sha}</td>` +
+            `<td class="c-desc" colspan="5" title="${(t.desc || '').replace(/"/g, '&quot;')}">${t.desc || ''}</td>`;
+        body.appendChild(tr);
+        if (isOpen) body.appendChild(buildInlinePanel(t));
     }
 
     function buildInlinePanel(t) {

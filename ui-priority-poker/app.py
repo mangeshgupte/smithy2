@@ -21,6 +21,13 @@ try:
 except ImportError:
     TaskDetail = None
     TaskSummary = None
+try:
+    from smithy.worklog_agg import worklog_latest_per_task, commit_sha_per_task
+except ImportError:
+    def worklog_latest_per_task(_):
+        return {}
+    def commit_sha_per_task(_, __):
+        return {}
 
 
 def _actor_from_request(request, default: str) -> str:
@@ -375,8 +382,29 @@ async def api_cockpit(stage: str = None, status: str = None,
         total = len(_load_state().get("queue", []))
     except Exception:
         pass
+    # t-391: Complete section renders value/heat/commit_sha. Enrich only the
+    # complete-status rows so the git log scan stays scoped and cheap.
+    complete_ids = [r.id for r in rows if r.status == "complete"]
+    ship = {}
+    sha_map = {}
+    if complete_ids:
+        try:
+            ship = worklog_latest_per_task(Path(STATE_DIR))
+            sha_map = commit_sha_per_task(Path(STATE_DIR), complete_ids)
+        except Exception:
+            ship, sha_map = {}, {}
+    out_rows = []
+    for r in rows:
+        d = r.to_dict()
+        if r.status == "complete":
+            info = ship.get(r.id, {})
+            d["ship_heat"] = info.get("heat") or None
+            d["ship_signal"] = info.get("signal") or ""
+            d["ship_value"] = info.get("value") or ""
+            d["commit_sha"] = sha_map.get(r.id)
+        out_rows.append(d)
     return {
-        "rows": [r.to_dict() for r in rows],
+        "rows": out_rows,
         "filtered": len(rows),
         "total": total,
     }
