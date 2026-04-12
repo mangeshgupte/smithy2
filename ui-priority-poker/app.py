@@ -224,6 +224,66 @@ async def events():
     )
 
 
+@app.get("/api/task/{task_id}")
+async def get_task_detail(task_id: str):
+    """Full task detail — task object + initiative + worklog rows + current-priority snapshot.
+
+    History is derived from worklog (design doc: research/task-detail-ui.md). We don't
+    schema-bump tasks with a history[] field until a real case forces it — for now the
+    current `priority_reason` is the canonical explanation and worklog is the audit trail.
+    """
+    state = _load_state()
+    task = next((t for t in state.get("queue", []) if t["id"] == task_id), None)
+    if not task:
+        return JSONResponse({"error": "task not found", "id": task_id}, status_code=404)
+
+    initiative = None
+    ini_id = task.get("initiative_id")
+    if ini_id:
+        ini = next((i for i in state.get("initiatives", []) if i["id"] == ini_id), None)
+        if ini:
+            initiative = {
+                "id": ini["id"],
+                "title": ini.get("title", ""),
+                "rank": ini.get("rank"),
+                "status": ini.get("status"),
+            }
+
+    # Read worklog rows that mention this task. Append-only file, so no locking needed.
+    worklog_path = Path(STATE_DIR) / "worklog.tsv"
+    worklog_rows = []
+    if worklog_path.exists():
+        with open(worklog_path) as f:
+            reader = csv.DictReader(f, delimiter="\t")
+            for row in reader:
+                if row.get("task_id") == task_id:
+                    worklog_rows.append({
+                        "heat": int(row["heat"]) if row.get("heat", "").isdigit() else row.get("heat"),
+                        "stage": row.get("stage", ""),
+                        "value": float(row["value"]) if row.get("value") else None,
+                        "signal": row.get("signal", ""),
+                        "timestamp": row.get("timestamp", ""),
+                        "notes": row.get("notes", ""),
+                    })
+
+    # Current-state priority snapshot (the "history" band starts with this). Future
+    # enhancement can walk git log of state.json or add task.history[] if users ask.
+    history = [{
+        "ts": worklog_rows[-1]["timestamp"] if worklog_rows else "",
+        "source": "current",
+        "priority": task.get("priority"),
+        "human_priority": task.get("human_priority"),
+        "priority_reason": task.get("priority_reason"),
+    }]
+
+    return JSONResponse({
+        "task": task,
+        "initiative": initiative,
+        "history": history,
+        "worklog": worklog_rows,
+    })
+
+
 @app.post("/api/task/{task_id}/human-priority")
 async def set_human_priority(task_id: str, request: Request):
     """Set or clear a task's sticky human_priority.

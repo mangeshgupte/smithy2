@@ -1034,3 +1034,73 @@ class TestUIReactivity:
         assert r.status_code == 200
         data = r.json()
         assert data == {}
+
+
+class TestTaskDetailAPI:
+    """t-324: GET /api/task/{id} — full task detail for the drawer UI."""
+
+    def test_happy_path(self, poker_client):
+        c, tmp = poker_client
+        r = c.get("/api/task/t-001")
+        assert r.status_code == 200
+        data = r.json()
+        assert data["task"]["id"] == "t-001"
+        assert data["task"]["desc"] == "Test task"
+        assert data["initiative"]["id"] == "ini-001"
+        assert data["initiative"]["title"] == "Build X"
+        assert data["initiative"]["rank"] == 1
+        assert isinstance(data["history"], list) and len(data["history"]) >= 1
+        assert isinstance(data["worklog"], list)
+
+    def test_404_for_unknown_task(self, poker_client):
+        c, _ = poker_client
+        r = c.get("/api/task/t-ghost")
+        assert r.status_code == 404
+        assert r.json()["id"] == "t-ghost"
+
+    def test_initiative_null_when_unassigned(self, poker_client):
+        c, tmp = poker_client
+        state = json.loads((tmp / "state.json").read_text())
+        state["queue"].append({
+            "id": "t-free", "stage": "research", "desc": "no ini", "status": "pending",
+            "priority": 2, "blocked_by": [],
+        })
+        (tmp / "state.json").write_text(json.dumps(state))
+        r = c.get("/api/task/t-free")
+        assert r.status_code == 200
+        assert r.json()["initiative"] is None
+
+    def test_worklog_filters_by_task_id(self, poker_client):
+        c, tmp = poker_client
+        (tmp / "worklog.tsv").write_text(
+            "timestamp\theat\tstage\ttask_id\toutcome\tvalue\tsignal\tnotes\n"
+            "2026-04-12T10:00:00Z\t1\timplementation\tt-001\tcomplete\t0.8\t🟢\tfirst\n"
+            "2026-04-12T11:00:00Z\t2\tresearch\tt-999\tcomplete\t0.5\t🟡\tother\n"
+            "2026-04-12T12:00:00Z\t3\tediting\tt-001\tcomplete\t0.9\t🟢\tsecond\n"
+        )
+        r = c.get("/api/task/t-001")
+        data = r.json()
+        assert len(data["worklog"]) == 2
+        assert {row["heat"] for row in data["worklog"]} == {1, 3}
+        assert all(row.get("stage") in ("implementation", "editing") for row in data["worklog"])
+
+    def test_history_snapshot_reflects_current_priority(self, poker_client):
+        c, tmp = poker_client
+        state = json.loads((tmp / "state.json").read_text())
+        state["queue"][0]["human_priority"] = 7
+        state["queue"][0]["priority_reason"] = "you:p7"
+        (tmp / "state.json").write_text(json.dumps(state))
+        r = c.get("/api/task/t-001")
+        hist = r.json()["history"]
+        assert hist[0]["priority"] == 1
+        assert hist[0]["human_priority"] == 7
+        assert hist[0]["priority_reason"] == "you:p7"
+
+    def test_no_worklog_file_returns_empty_list(self, poker_client):
+        c, tmp = poker_client
+        wl = tmp / "worklog.tsv"
+        if wl.exists():
+            wl.unlink()
+        r = c.get("/api/task/t-001")
+        assert r.status_code == 200
+        assert r.json()["worklog"] == []
