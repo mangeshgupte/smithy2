@@ -564,6 +564,49 @@ class TestTimeline:
         assert ini2["planned_start"] == 75
         assert ini2["planned_end"] == 90
 
+    def test_current_heat_api(self, timeline_client):
+        """/api/current-heat returns budget.used."""
+        c, _ = timeline_client
+        r = c.get("/api/current-heat")
+        assert r.status_code == 200
+        data = r.json()
+        assert data["current_heat"] == 50
+        assert data["total_heats"] == 100
+
+    def test_current_heat_api_reflects_state_change(self, timeline_client):
+        """/api/current-heat reflects updated budget.used."""
+        c, tmp = timeline_client
+        state = json.loads((tmp / "state.json").read_text())
+        state["budget"]["used"] = 77
+        (tmp / "state.json").write_text(json.dumps(state, indent=2))
+        r = c.get("/api/current-heat")
+        assert r.json()["current_heat"] == 77
+
+    def test_now_indicator_rendered(self, timeline_client):
+        """HTML renders the current-heat indicator when initiatives exist."""
+        c, _ = timeline_client
+        r = c.get("/")
+        assert 'id="now-indicator"' in r.text
+        assert 'data-heat="50"' in r.text
+        assert "now · h50" in r.text
+
+    def test_now_indicator_hidden_when_empty(self, tmp_path, monkeypatch):
+        """No initiatives → no now-indicator (avoids rendering on blank timeline)."""
+        (tmp_path / "state.json").write_text(json.dumps({
+            "project": "empty", "budget": {"total_heats": 100, "used": 10},
+            "initiatives": [], "themes": [], "queue": [], "constraints": [],
+        }))
+        monkeypatch.setenv("FORGE_PROJECT_DIR", str(tmp_path))
+        sys.path.insert(0, str(Path(__file__).parent.parent / "ui-timeline"))
+        import importlib
+        app_mod = importlib.import_module("app")
+        importlib.reload(app_mod)
+        from starlette.testclient import TestClient
+        c = TestClient(app_mod.app)
+        r = c.get("/")
+        assert r.status_code == 200
+        assert 'id="now-indicator"' not in r.text
+
 
 @pytest.fixture
 def intent_client(state_with_initiatives, monkeypatch):

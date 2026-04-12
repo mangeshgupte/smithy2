@@ -32,8 +32,17 @@
             </div>
         </div>
 
-        <!-- Gridlines overlay -->
-        <div class="grid-overlay" id="grid-overlay"></div>
+        <!-- Gridlines overlay + current-heat indicator (both span the bar region) -->
+        <div class="grid-overlay" id="grid-overlay">
+            {% if initiatives %}
+            {% set tl_range = timeline_end - timeline_start %}
+            {% set init_now_pct = ((used - timeline_start) / tl_range * 100)|round(1) if tl_range > 0 else 0 %}
+            <div class="now-indicator" id="now-indicator" data-heat="{{ used }}" style="left: {{ init_now_pct }}%">
+                <div class="now-label">now · h{{ used }}</div>
+                <div class="now-line"></div>
+            </div>
+            {% endif %}
+        </div>
 
         <!-- Axis -->
         <div class="timeline-axis">
@@ -209,13 +218,29 @@
         }
     }
 
+    let CURRENT_HEAT = USED;
+
     function updateNowMarker() {
+        // Axis tick
         const marker = document.querySelector('.now-marker');
-        if (!marker) return;
         const range = viewEnd - viewStart || 1;
-        const pct = (USED - viewStart) / range * 100;
-        marker.style.left = pct + '%';
-        marker.style.display = (pct < -5 || pct > 105) ? 'none' : '';
+        const pct = (CURRENT_HEAT - viewStart) / range * 100;
+        if (marker) {
+            marker.style.left = pct + '%';
+            marker.style.display = (pct < -5 || pct > 105) ? 'none' : '';
+        }
+        // Full-height indicator line + label
+        const indicator = document.getElementById('now-indicator');
+        if (indicator) {
+            if (pct < 0 || pct > 100) {
+                indicator.style.display = 'none';
+            } else {
+                indicator.style.display = '';
+                indicator.style.left = pct + '%';
+                const label = indicator.querySelector('.now-label');
+                if (label) label.textContent = 'now · h' + CURRENT_HEAT;
+            }
+        }
     }
 
     function updateBars() {
@@ -437,6 +462,12 @@
                     if (data[id].budget_cap) bar.dataset.cap = data[id].budget_cap;
                 }
             });
+        }).catch(() => {});
+        fetch('/api/current-heat').then(r => r.json()).then(data => {
+            if (typeof data.current_heat === 'number' && data.current_heat !== CURRENT_HEAT) {
+                CURRENT_HEAT = data.current_heat;
+                updateNowMarker();
+            }
         }).catch(() => {});
     }, 5000);
 

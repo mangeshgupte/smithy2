@@ -155,6 +155,17 @@ async def api_state():
     return JSONResponse(data)
 
 
+@app.get("/api/current-heat")
+async def api_current_heat():
+    """Return the current heat (budget.used) for the now-indicator."""
+    state = _load_state()
+    budget = state.get("budget", {})
+    return JSONResponse({
+        "current_heat": budget.get("used", 0),
+        "total_heats": budget.get("total_heats", 0),
+    })
+
+
 @app.get("/events")
 async def events():
     """SSE endpoint — yields 'state-changed' when state.json is modified."""
