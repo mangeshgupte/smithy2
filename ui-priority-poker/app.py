@@ -337,21 +337,7 @@ async def get_task_detail(task_id: str):
     current `priority_reason` is the canonical explanation and worklog is the audit trail.
     """
     state = _load_state()
-    task = next((t for t in state.get("queue", []) if t["id"] == task_id), None)
-    if not task:
-        return JSONResponse({"error": "task not found", "id": task_id}, status_code=404)
-
-    initiative = None
-    ini_id = task.get("initiative_id")
-    if ini_id:
-        ini = next((i for i in state.get("initiatives", []) if i["id"] == ini_id), None)
-        if ini:
-            initiative = {
-                "id": ini["id"],
-                "title": ini.get("title", ""),
-                "rank": ini.get("rank"),
-                "status": ini.get("status"),
-            }
+    task = next((t for t in state.get("queue", []) if t.get("id") == task_id), None)
 
     # Read worklog rows that mention this task. Append-only file, so no locking needed.
     worklog_path = Path(STATE_DIR) / "worklog.tsv"
@@ -369,6 +355,39 @@ async def get_task_detail(task_id: str):
                         "timestamp": row.get("timestamp", ""),
                         "notes": row.get("notes", ""),
                     })
+
+    # t-370 bug fix: fall back to worklog-reconstructed task stub when the queue row was
+    # pruned (completed/archived) but worklog still references the id. Returning a 404 in
+    # this case broke the Poker drawer for any task_id shown in shipped/deferred sections
+    # after purge. Stub task has id/stage/status=archived + worklog rows.
+    if not task:
+        if not worklog_rows:
+            return JSONResponse({"error": "task not found", "id": task_id}, status_code=404)
+        latest = worklog_rows[-1]
+        task = {
+            "id": task_id,
+            "desc": (latest.get("notes") or "(archived — reconstructed from worklog)")[:240],
+            "stage": latest.get("stage", ""),
+            "status": "archived",
+            "priority": None,
+            "human_priority": None,
+            "priority_reason": None,
+            "blocked_by": [],
+            "initiative_id": None,
+            "_reconstructed": True,
+        }
+
+    initiative = None
+    ini_id = task.get("initiative_id")
+    if ini_id:
+        ini = next((i for i in state.get("initiatives", []) if i["id"] == ini_id), None)
+        if ini:
+            initiative = {
+                "id": ini["id"],
+                "title": ini.get("title", ""),
+                "rank": ini.get("rank"),
+                "status": ini.get("status"),
+            }
 
     # Current-state priority snapshot (the "history" band starts with this). Future
     # enhancement can walk git log of state.json or add task.history[] if users ask.
