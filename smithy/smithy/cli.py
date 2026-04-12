@@ -613,18 +613,33 @@ def queue_pop(ctx):
         _err("Queue empty")
         return
 
-    task_id = next_tasks.pop(0)
+    # Skip stale heads — IDs that reference already-completed, cancelled,
+    # or missing tasks. Previously queue-pop returned a just-completed task
+    # if its id lingered at the head of next_tasks.
+    queue_by_id = {t["id"]: t for t in state.get("queue", [])}
+    skipped = []
+    task = None
+    task_id = None
+    while next_tasks:
+        candidate_id = next_tasks.pop(0)
+        candidate = queue_by_id.get(candidate_id)
+        if candidate and candidate.get("status") == "pending":
+            task_id = candidate_id
+            task = candidate
+            break
+        skipped.append(candidate_id)
+
     state["next_tasks"] = next_tasks
     save_state(root, state)
 
-    # Find full task details
-    task = None
-    for t in state.get("queue", []):
-        if t["id"] == task_id:
-            task = t
-            break
+    if task is None:
+        _output({"task": None, "message": "Queue empty (all heads stale)", "skipped_stale": skipped})
+        _err(f"Queue empty after skipping {len(skipped)} stale head(s): {skipped}")
+        return
 
-    _output({"task_id": task_id, "task": task, "remaining": len(next_tasks)})
+    if skipped:
+        _err(f"Skipped {len(skipped)} stale head(s): {skipped}")
+    _output({"task_id": task_id, "task": task, "remaining": len(next_tasks), "skipped_stale": skipped})
     _err(f"Popped {task_id} ({len(next_tasks)} remaining)")
 
 

@@ -1000,6 +1000,60 @@ class TestQueueShortcuts:
         assert priorities == sorted(priorities)
 
 
+class TestQueuePopStaleSkip:
+    """queue-pop must skip stale heads (completed/cancelled/missing tasks)."""
+
+    def test_pop_skips_completed_head(self, project, runner):
+        state = json.loads((project / "state.json").read_text())
+        state["queue"].append({"id": "t-002", "stage": "testing", "desc": "Real next", "status": "pending", "priority": 1, "blocked_by": []})
+        state["queue"][0]["status"] = "complete"
+        state["next_tasks"] = ["t-001", "t-002"]
+        (project / "state.json").write_text(json.dumps(state))
+
+        result = runner.invoke(cli, ["--dir", str(project), "queue-pop"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["task_id"] == "t-002"
+        assert data["skipped_stale"] == ["t-001"]
+        # Both consumed from next_tasks
+        state2 = json.loads((project / "state.json").read_text())
+        assert state2["next_tasks"] == []
+
+    def test_pop_skips_missing_id(self, project, runner):
+        state = json.loads((project / "state.json").read_text())
+        state["next_tasks"] = ["t-ghost", "t-001"]
+        (project / "state.json").write_text(json.dumps(state))
+
+        result = runner.invoke(cli, ["--dir", str(project), "queue-pop"])
+        data = json.loads(result.output)
+        assert data["task_id"] == "t-001"
+        assert "t-ghost" in data["skipped_stale"]
+
+    def test_pop_all_stale_returns_empty(self, project, runner):
+        state = json.loads((project / "state.json").read_text())
+        state["queue"][0]["status"] = "complete"
+        state["next_tasks"] = ["t-001", "t-ghost"]
+        (project / "state.json").write_text(json.dumps(state))
+
+        result = runner.invoke(cli, ["--dir", str(project), "queue-pop"])
+        data = json.loads(result.output)
+        assert data["task"] is None
+        assert set(data["skipped_stale"]) == {"t-001", "t-ghost"}
+        state2 = json.loads((project / "state.json").read_text())
+        assert state2["next_tasks"] == []
+
+    def test_pop_healthy_head_unchanged(self, project, runner):
+        """No stale entries → behavior identical to before (no skipped list)."""
+        state = json.loads((project / "state.json").read_text())
+        state["next_tasks"] = ["t-001"]
+        (project / "state.json").write_text(json.dumps(state))
+
+        result = runner.invoke(cli, ["--dir", str(project), "queue-pop"])
+        data = json.loads(result.output)
+        assert data["task_id"] == "t-001"
+        assert data["skipped_stale"] == []
+
+
 class TestSyncStages:
     """Tests for sync-stages command."""
 
