@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1043,
-    "used": 798,
+    "used": 803,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 299,
+      "heats": 304,
       "progress": 0.98,
-      "value_ema": 0.746
+      "value_ema": 0.787
     },
     "testing": {
       "target": 0.183,
@@ -3464,7 +3464,7 @@
       "id": "t-384",
       "stage": "editing",
       "desc": "Seed intents (ini-017 pre-research). Populate state.json with three explicit intents: (1) project-level: 'Create an AI collaborator who can run autonomously, while also being responsive to human steers, and can carry out the high-level intents that the human expresses and wants.' (2) ini-016 Queue Cockpit: 'Give the human a way to ensure that individual task assignments conform to the high-level intent the human has, and gives a way to identify and correct drift.' (3) ini-012 Four UIs: 'Play with different UIs which would inform a good way of adopting steerability.' Use whatever schema exists today; note schema gaps for t-384 to resolve. Seed corpus for auto-discovery + UI testing.",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-017",
@@ -3497,12 +3497,12 @@
       "id": "t-387",
       "stage": "implementation",
       "desc": "Poker 'X queued' summary card \u2192 Cockpit teaser. Replace summary content with compact list of top 2 next_tasks (id, stage, M:pN, truncated desc). Add 'Show all \u2192' link + whole-card click \u2192 /cockpit. Reuse Cockpit row partial (note: t-378 scoped-down, partials not extracted \u2014 inline and file follow-up to consolidate). Empty state unchanged. Tests: 2 rows when 2+ queued, N rows when N<2, link target /cockpit.",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-016",
       "human_priority": null,
-      "priority_reason": "ini-016 rank=1 + poker"
+      "priority_reason": null
     },
     {
       "id": "t-388",
@@ -3519,45 +3519,67 @@
       "id": "t-389",
       "stage": "implementation",
       "desc": "t-388 H2: Cockpit DnD reorder. Drag rows to reorder within Pending section only. Promoted-to-top \u2192 hp=0; relative reorder sets hp in 10s. Blocked tasks snap back above blocker (visual reject). Persist via /set-human-priority or new /reorder. SSE picks up. Test: DnD persists hp in state.json; blocked-by holds.",
-      "status": "pending",
+      "status": "complete",
       "priority": 0,
       "blocked_by": [],
       "initiative_id": "ini-016",
       "human_priority": null,
-      "priority_reason": "ini-016 rank=1 + poker"
+      "priority_reason": null
     },
     {
       "id": "t-390",
       "stage": "implementation",
       "desc": "t-388 H3: Cockpit section split \u2014 Pending (incl in_progress) \u2192 Deferred (collapsible, collapsed) \u2192 Complete (collapsible, collapsed, reverse completion time from worklog). Dense one-line muted headings with count chip. Filters apply within each section.",
-      "status": "pending",
+      "status": "complete",
       "priority": 0,
       "blocked_by": [],
       "initiative_id": "ini-016",
       "human_priority": null,
-      "priority_reason": "ini-016 rank=1 + poker"
+      "priority_reason": null
     },
     {
       "id": "t-391",
       "stage": "implementation",
       "desc": "t-388 H4: Complete-section row shape \u2014 drop M:p/you:p/priority_reason; keep id/stage/desc; add value emoji, heat number, short commit sha. Reuse t-382 helpers (_worklog_latest_per_task, _commit_sha_per_task).",
-      "status": "pending",
+      "status": "complete",
       "priority": 0,
       "blocked_by": [],
       "initiative_id": "ini-016",
       "human_priority": null,
-      "priority_reason": "ini-016 rank=1 + poker"
+      "priority_reason": null
     },
     {
       "id": "t-392",
       "stage": "implementation",
       "desc": "t-388 H5: Cockpit polish buffer \u2014 drag ghost/drop-indicator, alt-\u2191/\u2193 a11y reorder, undo toast on successful reorder. Audit other surfaces using same row component and apply fixes. Fallback: roll up any t-388 H2-H4 spillover.",
-      "status": "pending",
+      "status": "complete",
       "priority": 0,
       "blocked_by": [],
       "initiative_id": "ini-016",
       "human_priority": null,
-      "priority_reason": "ini-016 rank=1 + poker"
+      "priority_reason": null
+    },
+    {
+      "id": "t-393",
+      "stage": "research",
+      "desc": "Parallel Forges design \u2014 research/parallel-forges-design.md. Scope: (1) mine research/gas-town-{autonomy-memory-gap,comms-mapping,extension-points}.md \u2014 cite polecats/crew/refinery/witness mechanics, merge queue, GUPP, max_polecats back-pressure; (2) worktree layout (.worktrees/forge-NN/), shared vs per-worktree worklog.tsv; (3) branch strategy (per-heat vs per-session) + merge cadence; (4) Assembly role: teammate? duties per cycle (pick/rebase/test/merge-or-reject); conflict policy; (5) Marshal dispatch across N Forges \u2014 per-forge slot in state.json or assignments field; (6) state.json concurrency \u2014 409 retry sufficiency vs lock; (7) nudge cycle at N \u2014 broadcast vs per-forge; witness becomes critical; (8) failure modes + reset-one-forge procedure; (9) MVS: N=2 first; (10) shutdown analysis: what must freeze. Output: explicit Gas Town citations, concrete schema diffs, ASCII sequence diagram, risk table.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-018",
+      "human_priority": null,
+      "priority_reason": "ini-018 rank=1 + poker"
+    },
+    {
+      "id": "t-394",
+      "stage": "planning",
+      "desc": "Parallel Forges impl plan \u2014 planning/parallel-forges-plan.md. Ordered tasks (retro-format w/ value theses), heat estimates, dependency graph, shut-down-first section, integration checklist. **Surface to Anvil for human review before any impl pushes.** Blocked_by: t-393.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-018",
+      "human_priority": null,
+      "priority_reason": "ini-018 rank=1 + poker"
     }
   ],
   "ideas": [
@@ -3598,6 +3620,104 @@
   ],
   "initiatives": [
     {
+      "id": "ini-018",
+      "theme_id": "th-002",
+      "title": "Parallel Forges",
+      "description": "Run multiple Forge workers concurrently via per-Forge git worktrees. Dedicated Assembly teammate handles merge queue integration (conflicts, test-on-integrate, merge ordering). Unlocks parallelism (Marshal dispatches N heats simultaneously) and enforces branch hygiene. Incremental: N=2 proof before N=3+.",
+      "status": "approved",
+      "budget_cap": null,
+      "heats_used": 0,
+      "viewed_at": null,
+      "rank": 1
+    },
+    {
+      "id": "ini-016",
+      "theme_id": "th-003",
+      "title": "Queue Cockpit",
+      "description": "Primary UI surface for steering per-task prioritization. Live view of the actual task queue synced to state.json, showing every task with Marshal priority, human priority, stage, status, priority reason, initiative tag. Human downranks/promotes/pins/defers from this surface. Poker remains for initiative-level steering; this is the per-task master cockpit.",
+      "status": "approved",
+      "budget_cap": null,
+      "heats_used": 12,
+      "viewed_at": "2026-04-12T21:16:55Z",
+      "rank": 2,
+      "intent": "Give the human a way to ensure that individual task assignments conform to the high-level intent the human has, and gives a way to identify and correct drift."
+    },
+    {
+      "id": "ini-017",
+      "theme_id": "th-002",
+      "title": "Intents as Primitives",
+      "description": "Intent is a primitive field attached uniformly to every unit of work (task, initiative, project). Same shape everywhere \u2014 no 'level' concept in storage. Inheritance/chain is one view over intents, not the core concept. Other views: search by intent content, gap audit (units with no intent), drift detection (contradicting intents). Auto-discoverable per-unit AND inline-editable wherever a unit is displayed.",
+      "status": "approved",
+      "budget_cap": null,
+      "heats_used": 0,
+      "viewed_at": "2026-04-12T21:37:51Z",
+      "rank": 3
+    },
+    {
+      "id": "ini-009",
+      "theme_id": "th-002",
+      "title": "Steering patterns research",
+      "description": "Research how humans steer autonomous systems \u2014 not monitor, STEER. The core question: what controls does a human need to change direction without becoming a bottleneck? Study: (1) Real-time strategy games (StarCraft command hierarchy \u2014 strategic goals, tactical orders, unit autonomy), (2) Military C2 frameworks (mission-type orders, commander's intent, OODA), (3) Product management (OKRs, roadmap prioritization, sprint planning), (4) Air traffic control (constraints not commands), (5) Existing AI tools (Devin's chat-to-steer, Cursor's accept/reject, Claude Code hooks). For each, extract: what decisions the human makes, at what frequency, what information they need to decide, and what the feedback loop looks like. Deliverable: research/steering-patterns.md with a taxonomy of steering modes and which are worth prototyping as UIs.",
+      "status": "approved",
+      "budget_cap": 10,
+      "heats_used": 35,
+      "rank": 4,
+      "planned_start": 635,
+      "planned_end": 645,
+      "viewed_at": "2026-04-12T21:07:11Z"
+    },
+    {
+      "id": "ini-010",
+      "theme_id": "th-003",
+      "title": "UI A: Priority poker",
+      "description": "A desktop web UI where the human steers by ranking, not approving. Shows all active initiatives as cards. Human drags to reorder \u2014 that IS the steering. No approve/reject buttons. Everything proposed is fair game unless explicitly killed. The ranking determines allocation weight. Top card gets 3x budget share, second gets 2x, rest get 1x. Real-time: as Forge works, cards show live progress and the stack rebalances. The human's only job: keep the stack in the right order. Inspired by planning poker + priority queues. Build as a standalone page in Bellows.",
+      "status": "approved",
+      "budget_cap": 15,
+      "heats_used": 9,
+      "rank": 5,
+      "planned_start": 645,
+      "planned_end": 655,
+      "viewed_at": "2026-04-12T21:07:16Z"
+    },
+    {
+      "id": "ini-015",
+      "theme_id": "th-002",
+      "title": "Marshal agent",
+      "description": "New persona sitting between Anvil and Forge. An AI agent (Claude session) that runs before every heat and decides task ordering. Replaces the wavefront allocator. Reads all steering signals: theme rankings, initiative status/budget caps, constraint board rules, priority poker order, timeline allocations, task priorities, blocked_by deps, recent worklog history, human_priorities. Produces a single ordered list of next N tasks written to state.json. Forge becomes a pure executor \u2014 reads the list, pops the top task, does the work. The Marshal makes the steering UIs meaningful: they're all inputs that the Marshal synthesizes into one queue. Architecture: Anvil (strategy) \u2192 Marshal (ordering) \u2192 Forge (execution).",
+      "status": "active",
+      "budget_cap": 25,
+      "heats_used": 24,
+      "viewed_at": "2026-04-12T21:07:19Z",
+      "rank": 6
+    },
+    {
+      "id": "ini-014",
+      "theme_id": "th-003",
+      "title": "UI reactivity \u2014 state change detection",
+      "description": "All 4 steering UIs should reflect state.json changes without auto-polling. Options: (1) Manual refresh button visible on every UI \u2014 'Refresh' button in header that reloads data via AJAX (not full page reload). (2) File watcher via SSE \u2014 backend watches state.json with watchdog/inotify and pushes events to frontend via Server-Sent Events. Frontend updates DOM on event. (3) Hybrid \u2014 manual refresh button always visible, plus optional SSE for live updates. Start with manual refresh button on all 4 UIs (simplest, no dependencies). Then add SSE as an enhancement. Each UI needs: a GET /api/state endpoint returning current data as JSON, a JS function that fetches it and re-renders the relevant DOM elements, a visible Refresh button in the header that calls this function.",
+      "status": "approved",
+      "budget_cap": 10,
+      "heats_used": 5,
+      "planned_start": 640,
+      "planned_end": 655,
+      "rank": 7,
+      "viewed_at": "2026-04-12T20:07:18Z"
+    },
+    {
+      "id": "ini-012",
+      "theme_id": "th-003",
+      "title": "UI C: Timeline view",
+      "description": "A desktop web UI where the human steers by shaping a timeline. Horizontal axis is heats (or time). Initiatives are horizontal bars showing planned start/end. The human drags bar endpoints to allocate budget. Overlapping bars = parallel work. Gaps = cool-down. The visual makes tradeoffs obvious \u2014 stretching one initiative squeezes another. Forge reads the timeline and works accordingly. Inspired by Gantt charts but interactive and simple. Build as a standalone page in Bellows.",
+      "status": "approved",
+      "budget_cap": 15,
+      "heats_used": 8,
+      "rank": 8,
+      "planned_start": 650,
+      "planned_end": 665,
+      "viewed_at": null,
+      "intent": "Play with different UIs which would inform a good way of adopting steerability."
+    },
+    {
       "id": "ini-001",
       "theme_id": "th-001",
       "title": "Logic Subject Expansion",
@@ -3605,8 +3725,34 @@
       "status": "rejected",
       "budget_cap": null,
       "heats_used": 0,
-      "rank": 8,
+      "rank": 9,
       "viewed_at": null
+    },
+    {
+      "id": "ini-013",
+      "theme_id": "th-003",
+      "title": "UI D: Intent editor",
+      "description": "A desktop web UI focused on natural-language steering. The human writes a short intent statement (2-3 sentences). The system decomposes it into themes, initiatives, and tasks automatically. Human reviews the decomposition and edits \u2014 delete a branch, promote a task, add a constraint. The intent is the source of truth, not the task list. When intent changes, the decomposition updates. Inspired by commander's intent in military doctrine. The human thinks in outcomes, the system thinks in tasks. Build as a standalone page in Bellows.",
+      "status": "approved",
+      "budget_cap": 20,
+      "heats_used": 10,
+      "rank": 9,
+      "planned_start": 645,
+      "planned_end": 665,
+      "viewed_at": null
+    },
+    {
+      "id": "ini-011",
+      "theme_id": "th-003",
+      "title": "UI B: Constraint board",
+      "description": "A desktop web UI where the human steers by setting constraints, not giving orders. Instead of telling Forge what to do, the human defines boundaries: 'no more than 5 heats on research', 'testing must stay above 80%', 'don't touch tutor', 'ship something deployable by Friday'. Constraints are cards on a board. Forge works freely within them. When a constraint would be violated, Forge stops and asks. The human's only job: add/remove/adjust constraints. Inspired by air traffic control \u2014 direct through boundaries, not waypoints. Build as a standalone page in Bellows.",
+      "status": "approved",
+      "budget_cap": 15,
+      "heats_used": 10,
+      "rank": 10,
+      "planned_start": 650,
+      "planned_end": 665,
+      "viewed_at": "2026-04-12T19:52:52Z"
     },
     {
       "id": "ini-002",
@@ -3677,117 +3823,6 @@
       "budget_cap": 12,
       "heats_used": 0,
       "viewed_at": null
-    },
-    {
-      "id": "ini-009",
-      "theme_id": "th-002",
-      "title": "Steering patterns research",
-      "description": "Research how humans steer autonomous systems \u2014 not monitor, STEER. The core question: what controls does a human need to change direction without becoming a bottleneck? Study: (1) Real-time strategy games (StarCraft command hierarchy \u2014 strategic goals, tactical orders, unit autonomy), (2) Military C2 frameworks (mission-type orders, commander's intent, OODA), (3) Product management (OKRs, roadmap prioritization, sprint planning), (4) Air traffic control (constraints not commands), (5) Existing AI tools (Devin's chat-to-steer, Cursor's accept/reject, Claude Code hooks). For each, extract: what decisions the human makes, at what frequency, what information they need to decide, and what the feedback loop looks like. Deliverable: research/steering-patterns.md with a taxonomy of steering modes and which are worth prototyping as UIs.",
-      "status": "approved",
-      "budget_cap": 10,
-      "heats_used": 35,
-      "rank": 3,
-      "planned_start": 635,
-      "planned_end": 645,
-      "viewed_at": "2026-04-12T21:07:11Z"
-    },
-    {
-      "id": "ini-010",
-      "theme_id": "th-003",
-      "title": "UI A: Priority poker",
-      "description": "A desktop web UI where the human steers by ranking, not approving. Shows all active initiatives as cards. Human drags to reorder \u2014 that IS the steering. No approve/reject buttons. Everything proposed is fair game unless explicitly killed. The ranking determines allocation weight. Top card gets 3x budget share, second gets 2x, rest get 1x. Real-time: as Forge works, cards show live progress and the stack rebalances. The human's only job: keep the stack in the right order. Inspired by planning poker + priority queues. Build as a standalone page in Bellows.",
-      "status": "approved",
-      "budget_cap": 15,
-      "heats_used": 9,
-      "rank": 4,
-      "planned_start": 645,
-      "planned_end": 655,
-      "viewed_at": "2026-04-12T21:07:16Z"
-    },
-    {
-      "id": "ini-011",
-      "theme_id": "th-003",
-      "title": "UI B: Constraint board",
-      "description": "A desktop web UI where the human steers by setting constraints, not giving orders. Instead of telling Forge what to do, the human defines boundaries: 'no more than 5 heats on research', 'testing must stay above 80%', 'don't touch tutor', 'ship something deployable by Friday'. Constraints are cards on a board. Forge works freely within them. When a constraint would be violated, Forge stops and asks. The human's only job: add/remove/adjust constraints. Inspired by air traffic control \u2014 direct through boundaries, not waypoints. Build as a standalone page in Bellows.",
-      "status": "approved",
-      "budget_cap": 15,
-      "heats_used": 10,
-      "rank": 9,
-      "planned_start": 650,
-      "planned_end": 665,
-      "viewed_at": "2026-04-12T19:52:52Z"
-    },
-    {
-      "id": "ini-012",
-      "theme_id": "th-003",
-      "title": "UI C: Timeline view",
-      "description": "A desktop web UI where the human steers by shaping a timeline. Horizontal axis is heats (or time). Initiatives are horizontal bars showing planned start/end. The human drags bar endpoints to allocate budget. Overlapping bars = parallel work. Gaps = cool-down. The visual makes tradeoffs obvious \u2014 stretching one initiative squeezes another. Forge reads the timeline and works accordingly. Inspired by Gantt charts but interactive and simple. Build as a standalone page in Bellows.",
-      "status": "approved",
-      "budget_cap": 15,
-      "heats_used": 8,
-      "rank": 7,
-      "planned_start": 650,
-      "planned_end": 665,
-      "viewed_at": null
-    },
-    {
-      "id": "ini-013",
-      "theme_id": "th-003",
-      "title": "UI D: Intent editor",
-      "description": "A desktop web UI focused on natural-language steering. The human writes a short intent statement (2-3 sentences). The system decomposes it into themes, initiatives, and tasks automatically. Human reviews the decomposition and edits \u2014 delete a branch, promote a task, add a constraint. The intent is the source of truth, not the task list. When intent changes, the decomposition updates. Inspired by commander's intent in military doctrine. The human thinks in outcomes, the system thinks in tasks. Build as a standalone page in Bellows.",
-      "status": "approved",
-      "budget_cap": 20,
-      "heats_used": 10,
-      "rank": 8,
-      "planned_start": 645,
-      "planned_end": 665,
-      "viewed_at": null
-    },
-    {
-      "id": "ini-014",
-      "theme_id": "th-003",
-      "title": "UI reactivity \u2014 state change detection",
-      "description": "All 4 steering UIs should reflect state.json changes without auto-polling. Options: (1) Manual refresh button visible on every UI \u2014 'Refresh' button in header that reloads data via AJAX (not full page reload). (2) File watcher via SSE \u2014 backend watches state.json with watchdog/inotify and pushes events to frontend via Server-Sent Events. Frontend updates DOM on event. (3) Hybrid \u2014 manual refresh button always visible, plus optional SSE for live updates. Start with manual refresh button on all 4 UIs (simplest, no dependencies). Then add SSE as an enhancement. Each UI needs: a GET /api/state endpoint returning current data as JSON, a JS function that fetches it and re-renders the relevant DOM elements, a visible Refresh button in the header that calls this function.",
-      "status": "approved",
-      "budget_cap": 10,
-      "heats_used": 5,
-      "planned_start": 640,
-      "planned_end": 655,
-      "rank": 6,
-      "viewed_at": "2026-04-12T20:07:18Z"
-    },
-    {
-      "id": "ini-015",
-      "theme_id": "th-002",
-      "title": "Marshal agent",
-      "description": "New persona sitting between Anvil and Forge. An AI agent (Claude session) that runs before every heat and decides task ordering. Replaces the wavefront allocator. Reads all steering signals: theme rankings, initiative status/budget caps, constraint board rules, priority poker order, timeline allocations, task priorities, blocked_by deps, recent worklog history, human_priorities. Produces a single ordered list of next N tasks written to state.json. Forge becomes a pure executor \u2014 reads the list, pops the top task, does the work. The Marshal makes the steering UIs meaningful: they're all inputs that the Marshal synthesizes into one queue. Architecture: Anvil (strategy) \u2192 Marshal (ordering) \u2192 Forge (execution).",
-      "status": "active",
-      "budget_cap": 25,
-      "heats_used": 24,
-      "viewed_at": "2026-04-12T21:07:19Z",
-      "rank": 5
-    },
-    {
-      "id": "ini-016",
-      "theme_id": "th-003",
-      "title": "Queue Cockpit",
-      "description": "Primary UI surface for steering per-task prioritization. Live view of the actual task queue synced to state.json, showing every task with Marshal priority, human priority, stage, status, priority reason, initiative tag. Human downranks/promotes/pins/defers from this surface. Poker remains for initiative-level steering; this is the per-task master cockpit.",
-      "status": "approved",
-      "budget_cap": null,
-      "heats_used": 7,
-      "viewed_at": "2026-04-12T21:16:55Z",
-      "rank": 1
-    },
-    {
-      "id": "ini-017",
-      "theme_id": "th-002",
-      "title": "Intents as Primitives",
-      "description": "Intent is a primitive field attached uniformly to every unit of work (task, initiative, project). Same shape everywhere \u2014 no 'level' concept in storage. Inheritance/chain is one view over intents, not the core concept. Other views: search by intent content, gap audit (units with no intent), drift detection (contradicting intents). Auto-discoverable per-unit AND inline-editable wherever a unit is displayed.",
-      "status": "approved",
-      "budget_cap": null,
-      "heats_used": 0,
-      "viewed_at": "2026-04-12T21:09:09Z",
-      "rank": 2
     }
   ],
   "feedback_cursor": 26,
@@ -3817,15 +3852,35 @@
     }
   ],
   "next_tasks": [
-    "t-389",
-    "t-390",
-    "t-391",
-    "t-392",
-    "t-387",
-    "t-384",
     "t-386",
     "t-385",
     "t-380"
   ],
-  "schema_version": 1
+  "schema_version": 1,
+  "intents": [
+    {
+      "id": "intent-project",
+      "scope": "project",
+      "scope_id": null,
+      "text": "Create an AI collaborator who can run autonomously, while also being responsive to human steers, and can carry out the high-level intents that the human expresses and wants.",
+      "source": "t-384",
+      "created_at": "2026-04-12T21:43:55Z"
+    },
+    {
+      "id": "intent-ini-016",
+      "scope": "initiative",
+      "scope_id": "ini-016",
+      "text": "Give the human a way to ensure that individual task assignments conform to the high-level intent the human has, and gives a way to identify and correct drift.",
+      "source": "t-384",
+      "created_at": "2026-04-12T21:43:55Z"
+    },
+    {
+      "id": "intent-ini-012",
+      "scope": "initiative",
+      "scope_id": "ini-012",
+      "text": "Play with different UIs which would inform a good way of adopting steerability.",
+      "source": "t-384",
+      "created_at": "2026-04-12T21:43:55Z"
+    }
+  ]
 }

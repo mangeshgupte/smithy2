@@ -20,7 +20,8 @@ The first project is The Smithy system itself. The Smith builds, tests, and refi
 
 The human's strategic intent. Reference this when generating tasks or making decisions.
 
-- **Intent**: Build a reliable, transparent, self-directing AI coworker system
+- **Intent** (project-level, canonical — t-384): Create an AI collaborator who can run autonomously, while also being responsive to human steers, and can carry out the high-level intents that the human expresses and wants.
+- **Legacy framing**: Build a reliable, transparent, self-directing AI coworker system
 - **Success looks like**: Someone can forge-init a new project, run 20 heats, and get useful output without babysitting
 - **Tone**: Careful, well-tested, documented. Quality over speed.
 - **Boundaries**: No external dependencies (no Python wrappers, no databases). Flat files only. No messaging integration yet.
