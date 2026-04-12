@@ -116,21 +116,50 @@ own CLAUDE.md; heartbeat lands in `parallel.assembly.last_heartbeat`.
 
 ---
 
-### I4 — Assembly merge loop (value: **high**)
+### I4 — Assembly merge loop (value: **high**) *(amended 2026-04-12)*
 
-**Thesis:** This is the heart of parallelism. Rebase → pytest → ff-merge,
-abort on conflict, reject on test fail. Conflict policy is explicit:
-never auto-resolve.
+**Thesis:** This is the heart of parallelism. Rebase → pytest → attempt
+merge. **Assembly uses LLM-level judgment** on conflicts: resolve when
+reasonable (no semantic contradiction, small surface, tests green
+post-resolution); discard the branch and requeue the task when not.
 
-**Scope:** 2 heats (complex + tests). Touches: `personas/assembly/*`,
-`smithy/parallel.py` (git operations), new `assembly-log.jsonl` audit.
+**Scope:** 3 heats (was 2; scope expanded by resolution path + lifecycle
+rewire). Touches: `personas/assembly/*`, `smithy/parallel.py` (git ops),
+new `assembly-log.jsonl` audit, `smithy end-heat` lifecycle change,
+Marshal scheduler reads `submitted` status.
+
+**Conflict policy (amended):**
+- **Reasonable conflict** → Assembly attempts resolution, re-runs tests,
+  ff-merges if green. Merge indicator `🔀 merged-with-resolution`.
+- **Unreasonable conflict** → Assembly discards the branch (pruned), task
+  status flips back to `pending` with `priority_reason="assembly
+  rejected: <reason>"` and a small priority bump (+5 hp) to avoid lossy
+  loops. Worklog row: `outcome=rejected reason=<conflict>`.
+- **When in doubt, defer** — Assembly's judgment call.
+
+**Task lifecycle (amended — CRITICAL):**
+- Forge `end-heat` commits to branch → task status `submitted` (NOT
+  `complete`).
+- Assembly's successful merge → `complete`.
+- Assembly's rejection → back to `pending` (requeued, bumped).
+- Worklog gets **two rows** per task:
+  - `H_NN outcome=submitted value=🟢/🟡/🔴` (Forge)
+  - `H_NN outcome=merged commit=<sha>` OR `outcome=merged-with-resolution
+    commit=<sha>` OR `outcome=rejected reason=<…>` (Assembly)
+- Merge indicator (✅ / 🔀 / 🚫) is separate from Forge's value score.
+
+**Marshal scheduler impact:** `submitted` status is "not available, not
+blocking, awaiting merge." Requeued tasks get +5 hp bump.
 
 **Depends on:** I3, I2.
 
-**Done when:** fixture with a conflict aborts cleanly and marks heat
-`assembly_blocked`; fixture with failing tests marks `assembly_failed`;
-clean path merges and worklog gets an `outcome=merged` row with sha; 6
-new tests.
+**Done when:** fixtures cover (a) clean merge, (b) resolution-success,
+(c) resolution-attempted-then-abandoned, (d) full-reject + requeue +
+bump; `submitted` state flows through Marshal correctly; worklog
+two-row pattern lands; 8 new tests (was 6).
+
+**Post-I7 polish (flagged, not in this task):** attribution/retro
+tooling needs updating for the two-row lifecycle.
 
 ---
 
@@ -201,11 +230,15 @@ I7 is acceptance, last.
 | I1 schema/namespacing | 1 |
 | I2 spawn/reset CLI | 1 |
 | I3 Assembly scaffold | 0.5 |
-| I4 Assembly merge loop | 2 |
+| I4 Assembly merge loop *(amended)* | 3 |
 | I5 Marshal dispatch | 1.5 |
 | I6 Per-Forge Witness | 1 |
 | I7 Sandbox + docs | 1 |
-| **Total** | **~9 heats** |
+| **Total** | **~10 heats** |
+
+*I4 budget was 2, amended to 3 (2026-04-12) for conflict-resolution path
++ task-lifecycle rewire (`submitted` status, two-row worklog, +5 hp
+requeue bump). Still under the 12-heat guard.*
 
 ~9 heats is 3× t-393's initial 5-heat MVS estimate. The delta is
 shutdown machinery (not in the t-393 MVS), explicit tests, and Witness
