@@ -1,10 +1,18 @@
 """Bellows — FastAPI backend for managing Forge projects."""
 
 import os
+import sys
 from pathlib import Path
 
 import json
 from datetime import datetime
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+try:
+    from steering_log import log_steering
+except ImportError:
+    def log_steering(*args, **kwargs):
+        pass
 
 from fastapi import FastAPI, Request, Form
 from fastapi.staticfiles import StaticFiles
@@ -393,6 +401,14 @@ def _upcoming_path() -> Path:
     return Path(PROJECTS_DIR) / ".upcoming.json"
 
 
+def _log_upcoming_steering(project_name, task_id, field, before, after, source):
+    """Route an Upcoming mutation to the affected project's steering.log."""
+    project_root = Path(PROJECTS_DIR) / project_name
+    if project_root.exists():
+        log_steering(project_root, actor="bellows-upcoming", task_id=task_id,
+                     field=field, before=before, after=after, source=source)
+
+
 def _load_upcoming() -> dict:
     """Read .upcoming.json. Missing file = empty pinned list."""
     path = _upcoming_path()
@@ -533,6 +549,8 @@ async def api_upcoming_pin(request: Request):
         return JSONResponse({"ok": True, "noop": True})
     pinned.append({"project": project, "task_id": task_id})
     _save_upcoming_checked(data, mtime)
+    _log_upcoming_steering(project, task_id, "upcoming_pinned", None, len(pinned),
+                           "upcoming-pin")
     return JSONResponse({"ok": True, "pinned_count": len(pinned)})
 
 
@@ -552,6 +570,8 @@ async def api_upcoming_unpin(request: Request):
     if before == after:
         return JSONResponse({"ok": True, "noop": True})
     _save_upcoming_checked(data, mtime)
+    _log_upcoming_steering(project, task_id, "upcoming_pinned", before, None,
+                           "upcoming-unpin")
     return JSONResponse({"ok": True, "pinned_count": after})
 
 
@@ -579,6 +599,9 @@ async def api_upcoming_reorder(request: Request):
         cleaned.append({"project": project, "task_id": task_id})
     data["pinned"] = cleaned
     _save_upcoming_checked(data, mtime)
+    for rank, r in enumerate(cleaned, 1):
+        _log_upcoming_steering(r["project"], r["task_id"], "upcoming_rank",
+                               None, rank, "upcoming-reorder")
     return JSONResponse({"ok": True, "pinned_count": len(cleaned)})
 
 

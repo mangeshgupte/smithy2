@@ -4,8 +4,12 @@ import asyncio
 import csv
 import json
 import os
+import sys
 from datetime import datetime
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from steering_log import log_steering  # noqa: E402
 
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
@@ -320,6 +324,7 @@ async def set_human_priority(task_id: str, request: Request):
     state, mtime = _load_state_with_mtime()
     for t in state.get("queue", []):
         if t["id"] == task_id:
+            before = t.get("human_priority")
             if value is None:
                 t["human_priority"] = None
                 t["priority_reason"] = None
@@ -329,6 +334,9 @@ async def set_human_priority(task_id: str, request: Request):
                 if not t.get("priority_reason") or t.get("priority_reason", "").startswith(("ini-", "p")):
                     t["priority_reason"] = f"you:p{value}"[:40]
             _save_state_checked(state, mtime)
+            log_steering(STATE_DIR, actor="bellows-poker", task_id=task_id,
+                         field="human_priority", before=before, after=value,
+                         source="poker-drawer")
             return JSONResponse({"ok": True, "task": t})
     return JSONResponse({"ok": False, "error": "not found"}, status_code=404)
 
@@ -341,8 +349,12 @@ async def defer_task(task_id: str):
         if t["id"] == task_id:
             if t.get("status") not in ("pending", "deferred"):
                 return JSONResponse({"ok": False, "error": f"cannot defer {t['status']} task"}, status_code=400)
+            before = t.get("status")
             t["status"] = "deferred"
             _save_state_checked(state, mtime)
+            log_steering(STATE_DIR, actor="bellows-poker", task_id=task_id,
+                         field="status", before=before, after="deferred",
+                         source="poker-drawer-defer")
             return JSONResponse({"ok": True, "task": t})
     return JSONResponse({"ok": False, "error": "not found"}, status_code=404)
 
@@ -356,6 +368,9 @@ async def undefer_task(task_id: str):
                 return JSONResponse({"ok": False, "error": f"task is {t['status']}, not deferred"}, status_code=400)
             t["status"] = "pending"
             _save_state_checked(state, mtime)
+            log_steering(STATE_DIR, actor="bellows-poker", task_id=task_id,
+                         field="status", before="deferred", after="pending",
+                         source="poker-drawer-undefer")
             return JSONResponse({"ok": True, "task": t})
     return JSONResponse({"ok": False, "error": "not found"}, status_code=404)
 
@@ -374,6 +389,9 @@ async def delete_task(task_id: str):
     desc = target.get("desc", "")
     state["queue"] = [t for t in state["queue"] if t["id"] != task_id]
     _save_state_checked(state, mtime)
+    log_steering(STATE_DIR, actor="bellows-poker", task_id=task_id,
+                 field="queue_membership", before="present", after="removed",
+                 source="poker-drawer-delete")
 
     worklog_path = Path(STATE_DIR) / "worklog.tsv"
     if worklog_path.exists():
