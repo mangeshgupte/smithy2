@@ -449,6 +449,27 @@ All three steering UIs share a nav bar — click any icon to switch. Each shows 
 
 ---
 
+## The Activity Side-Panel
+
+Poker now carries a 280px right-rail (`📜 Activity`) that answers *"what's been happening?"* without leaving the page. It merges two streams into one newest-first feed: **steering events** from `steering.log` (pins, defers, reorders, deletes — anything a human did via Poker or Bellows Upcoming) and **Forge heats** from `worklog.tsv` (every heat Forge completed). Forge rows render slightly muted so human steering stays legible.
+
+The panel refreshes every 5 seconds against `GET /api/activity?limit=20`. It's collapsible via the `−` toggle and hides entirely below 900px viewport to stay out of the way on narrow screens. Each entry is a single line:
+
+```
+h770 · just now
+ 🟢 forge completed t-347
+
+h769 · 1m ago
+ 📌 mangesh pinned t-347
+
+h768 · 3m ago
+ ⏸ mangesh deferred t-340
+```
+
+Icons map to verbs: 📌 pinned / 📍 unpinned / ↑ priority-set / ⏸ deferred / ▶ undeferred / 🗑 deleted / ↕ reordered / 🟢 completed. The "view full log →" link deep-links to the raw JSON endpoint if you want to scroll further back. Timeline gets the same panel next — the helper (`smithy/activity.py`) and endpoint are already shared.
+
+---
+
 ## Key Principles
 
 - **Prose is the orchestrator** — CLAUDE.md + protocol files, no framework.
