@@ -6,6 +6,13 @@
     --radius: 12px;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* Cross-UI navigation */
+.steering-nav { display: flex; gap: 4px; justify-content: center; padding: 8px; margin-bottom: 4px; border-bottom: 1px solid var(--border); }
+.nav-link { color: var(--text-muted); text-decoration: none; font-size: 12px; padding: 4px 10px; border-radius: 6px; transition: all 0.15s; }
+.nav-link:hover { color: var(--text); background: var(--surface); }
+.nav-link.active { color: var(--blue); background: rgba(88,166,255,0.1); font-weight: 600; }
+
 body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); max-width: 600px; margin: 0 auto; padding: 24px; }
 header { text-align: center; padding: 20px 0; }
 header h1 { font-size: 24px; }

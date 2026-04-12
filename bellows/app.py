@@ -22,6 +22,13 @@ templates = Jinja2Templates(directory=BASE_DIR / "templates")
 # Where to look for Forge projects
 PROJECTS_DIR = os.environ.get("FORGE_PROJECTS_DIR", str(Path.home() / "vibes"))
 
+STEERING_LINKS = [
+    ("🃏 Poker", os.environ.get("URL_POKER", "http://localhost:8001")),
+    ("🛡️ Constraints", os.environ.get("URL_CONSTRAINTS", "http://localhost:8002")),
+    ("🎯 Intent", os.environ.get("URL_INTENT", "http://localhost:8003")),
+    ("📅 Timeline", os.environ.get("URL_TIMELINE", "http://localhost:8004")),
+]
+
 
 def count_all_decisions(projects: list[dict]) -> int:
     """Count total pending decisions across all projects."""
@@ -79,6 +86,7 @@ async def project_detail(request: Request, project_name: str):
         "project": project,
         "tab": "activity",
         "total_decisions": count_all_decisions(projects),
+        "steering_links": STEERING_LINKS,
     })
 
 
@@ -92,6 +100,7 @@ async def project_board(request: Request, project_name: str):
         "project": project,
         "tab": "board",
         "total_decisions": count_all_decisions(projects),
+        "steering_links": STEERING_LINKS,
     })
 
 
@@ -127,6 +136,7 @@ async def project_decide(request: Request, project_name: str, decided: str = Non
         "decided_id": decided or "",
         "decided_action": action or "",
         "total_decisions": count_all_decisions(projects),
+        "steering_links": STEERING_LINKS,
     })
 
 
@@ -249,6 +259,7 @@ async def project_direct(request: Request, project_name: str):
         "project": project,
         "tab": "direct",
         "total_decisions": count_all_decisions(projects),
+        "steering_links": STEERING_LINKS,
     })
 
 

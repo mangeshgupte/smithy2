@@ -20,6 +20,14 @@ templates = Jinja2Templates(directory=BASE_DIR / "templates")
 
 STATE_DIR = os.environ.get("FORGE_PROJECT_DIR", str(Path(__file__).parent.parent))
 
+NAV_LINKS = [
+    ("🃏 Poker", os.environ.get("URL_POKER", "http://localhost:8001"), False),
+    ("🛡️ Constraints", os.environ.get("URL_CONSTRAINTS", "http://localhost:8002"), True),
+    ("🎯 Intent", os.environ.get("URL_INTENT", "http://localhost:8003"), False),
+    ("📅 Timeline", os.environ.get("URL_TIMELINE", "http://localhost:8004"), False),
+    ("🔔 Bellows", os.environ.get("URL_BELLOWS", "http://localhost:8000"), False),
+]
+
 
 def _load_state():
     path = Path(STATE_DIR) / "state.json"
@@ -114,6 +122,7 @@ async def index(request: Request):
         "suggestions": suggestions,
         "project": state.get("project", "unknown"),
         "stages": list(state.get("stages", {}).keys()),
+        "nav_links": NAV_LINKS,
     })
 
 

@@ -7,6 +7,11 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
+    <nav class="steering-nav">
+        {% for label, url, active in nav_links %}
+        <a href="{{ url }}" class="nav-link{% if active %} active{% endif %}">{{ label }}</a>
+        {% endfor %}
+    </nav>
     <header>
         <h1>🃏 Priority Poker <button class="refresh-btn" onclick="refreshPage()" title="Refresh">↻</button></h1>
         <p class="subtitle">{{ project }} — drag to reorder. Rank IS steering.</p>

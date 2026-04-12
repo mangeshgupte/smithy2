@@ -17,6 +17,10 @@
     </a>
     <a href="/project/{{ project.name }}/board" class="sub-tab">Board</a>
     <a href="/project/{{ project.name }}/direct" class="sub-tab active">Direct</a>
+    <span class="nav-sep">|</span>
+    {% for label, url in steering_links %}
+    <a href="{{ url }}" class="sub-tab steering" target="_blank">{{ label }}</a>
+    {% endfor %}
 </nav>
 
 <!-- Free-form input -->

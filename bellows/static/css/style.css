@@ -416,6 +416,10 @@ body {
     border-bottom-color: var(--blue);
 }
 
+.nav-sep { color: var(--border); align-self: center; font-size: 12px; margin: 0 4px; }
+.sub-tab.steering { font-size: 12px; padding: 10px 12px; opacity: 0.7; }
+.sub-tab.steering:hover { opacity: 1; }
+
 .badge {
     background: var(--yellow);
     color: #000;
