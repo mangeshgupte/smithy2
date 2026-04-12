@@ -736,3 +736,127 @@ class TestIntentEditor:
         r = c.get("/")
         assert "Current State" in r.text
         assert "Core" in r.text  # th-001 name from fixture
+
+
+class TestUIReactivity:
+    """Cross-cutting tests for reactivity features shared by all 4 UIs."""
+
+    # --- Navigation bar ---
+
+    def test_poker_has_nav_bar(self, poker_client):
+        """Priority Poker renders the cross-UI navigation bar."""
+        c, _ = poker_client
+        r = c.get("/")
+        assert "steering-nav" in r.text
+        assert "Constraints" in r.text
+        assert "Intent" in r.text
+        assert "Timeline" in r.text
+
+    def test_poker_nav_highlights_current(self, poker_client):
+        """Poker's nav link is marked active."""
+        c, _ = poker_client
+        r = c.get("/")
+        assert 'active' in r.text
+
+    def test_constraint_has_nav_bar(self, constraint_client):
+        """Constraint Board renders the cross-UI navigation bar."""
+        c, _ = constraint_client
+        r = c.get("/")
+        assert "steering-nav" in r.text
+        assert "Poker" in r.text
+
+    def test_timeline_has_nav_bar(self, timeline_client):
+        """Timeline renders the cross-UI navigation bar."""
+        c, _ = timeline_client
+        r = c.get("/")
+        assert "steering-nav" in r.text
+        assert "Poker" in r.text
+
+    def test_intent_has_nav_bar(self, intent_client):
+        """Intent Editor renders the cross-UI navigation bar."""
+        c, _ = intent_client
+        r = c.get("/")
+        assert "steering-nav" in r.text
+        assert "Poker" in r.text
+
+    # --- Refresh button ---
+
+    def test_poker_has_refresh(self, poker_client):
+        """Priority Poker has a refresh button."""
+        c, _ = poker_client
+        r = c.get("/")
+        assert "refresh-btn" in r.text
+
+    def test_constraint_has_refresh(self, constraint_client):
+        """Constraint Board has a refresh button."""
+        c, _ = constraint_client
+        r = c.get("/")
+        assert "refresh-btn" in r.text
+
+    def test_timeline_has_refresh(self, timeline_client):
+        """Timeline has a refresh button."""
+        c, _ = timeline_client
+        r = c.get("/")
+        assert "refresh-btn" in r.text
+
+    def test_intent_has_refresh(self, intent_client):
+        """Intent Editor has a refresh button."""
+        c, _ = intent_client
+        r = c.get("/")
+        assert "refresh-btn" in r.text
+
+    # --- /api/state endpoints ---
+
+    def test_constraint_api_state(self, constraint_client):
+        """Constraint Board /api/state returns constraint data."""
+        c, _ = constraint_client
+        r = c.get("/api/state")
+        assert r.status_code == 200
+        data = r.json()
+        assert "constraints" in data
+        assert "count" in data
+
+    def test_constraint_api_state_after_add(self, constraint_client):
+        """Constraint Board /api/state reflects added constraints."""
+        c, _ = constraint_client
+        c.post("/add", data={"type": "budget_cap", "stage": "research", "value": "10", "description": ""})
+        r = c.get("/api/state")
+        data = r.json()
+        assert data["count"] >= 1
+        con = data["constraints"][0]
+        assert con["type"] == "budget_cap"
+        assert con["stage"] == "research"
+
+    def test_constraint_api_state_violation_status(self, constraint_client):
+        """Constraint Board /api/state includes violation status fields."""
+        c, _ = constraint_client
+        # research has 10 heats — cap at 5 should trigger violation
+        c.post("/add", data={"type": "budget_cap", "stage": "research", "value": "5", "description": ""})
+        r = c.get("/api/state")
+        data = r.json()
+        con = data["constraints"][0]
+        assert con["_ok"] is False
+        assert con["_status"] == "red"
+
+    def test_intent_api_state_structure(self, intent_client):
+        """Intent Editor /api/state returns structured data with themes/initiatives/intent."""
+        c, _ = intent_client
+        r = c.get("/api/state")
+        data = r.json()
+        assert "themes" in data
+        assert "initiatives" in data
+        assert "intent" in data
+
+    # --- All 4 UIs respond to /api/state ---
+
+    def test_all_api_state_endpoints(self, poker_client, constraint_client, timeline_client, intent_client):
+        """All 4 UIs have working /api/state endpoints."""
+        for name, (client, _) in [
+            ("poker", poker_client),
+            ("constraint", constraint_client),
+            ("timeline", timeline_client),
+            ("intent", intent_client),
+        ]:
+            r = client.get("/api/state")
+            assert r.status_code == 200, f"{name} /api/state failed"
+            assert r.headers["content-type"].startswith("application/json"), f"{name} /api/state not JSON"
