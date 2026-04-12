@@ -9,10 +9,12 @@ from datetime import datetime
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 try:
-    from steering_log import log_steering
+    from steering_log import log_steering, read_steering_log
 except ImportError:
     def log_steering(*args, **kwargs):
         pass
+    def read_steering_log(*args, **kwargs):
+        return []
 
 from fastapi import FastAPI, Request, Form
 from fastapi.staticfiles import StaticFiles
@@ -354,6 +356,22 @@ async def project_heat_diff(request: Request, project_name: str, n: int = 1):
         "total_decisions": count_all_decisions(projects),
         "steering_links": STEERING_LINKS,
     })
+
+
+@app.get("/api/project/{project_name}/steering-log")
+async def api_project_steering_log(project_name: str, task_id: str = None,
+                                   actor: str = None, since: str = None,
+                                   limit: int = 500):
+    """Structured steering attribution rows for a project. Filters optional.
+
+    Query params: task_id, actor, since (ISO-8601 ts), limit (default 500, newest-first).
+    """
+    project_root = Path(PROJECTS_DIR) / project_name
+    if not project_root.exists():
+        return JSONResponse({"error": "project not found"}, status_code=404)
+    rows = read_steering_log(project_root, task_id=task_id, actor=actor, since=since)
+    rows.reverse()  # newest first
+    return {"project": project_name, "count": len(rows), "rows": rows[:max(1, limit)]}
 
 
 @app.get("/api/project/{project_name}/heat-diff")

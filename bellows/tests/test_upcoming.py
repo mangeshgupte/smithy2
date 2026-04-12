@@ -167,6 +167,61 @@ class TestUpcomingAPI:
             assert "status" in t
 
 
+class TestSteeringLogEndpoint:
+    """t-339 — GET /api/project/{name}/steering-log."""
+
+    def test_404_for_unknown_project(self, two_projects):
+        c, _ = two_projects
+        r = c.get("/api/project/ghost/steering-log")
+        assert r.status_code == 404
+
+    def test_empty_when_no_log(self, two_projects):
+        c, _ = two_projects
+        r = c.get("/api/project/proj-a/steering-log")
+        assert r.status_code == 200
+        data = r.json()
+        assert data["project"] == "proj-a"
+        assert data["count"] == 0
+        assert data["rows"] == []
+
+    def test_returns_rows_newest_first(self, two_projects):
+        c, tmp = two_projects
+        import sys
+        from pathlib import Path
+        sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+        from steering_log import log_steering
+        proj = tmp / "proj-a"
+        log_steering(proj, actor="a", task_id="t-001", field="f", before=0, after=1)
+        log_steering(proj, actor="a", task_id="t-002", field="f", before=0, after=1)
+        r = c.get("/api/project/proj-a/steering-log")
+        rows = r.json()["rows"]
+        assert rows[0]["task_id"] == "t-002"
+        assert rows[1]["task_id"] == "t-001"
+
+    def test_task_id_filter(self, two_projects):
+        c, tmp = two_projects
+        import sys
+        from pathlib import Path
+        sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+        from steering_log import log_steering
+        proj = tmp / "proj-a"
+        log_steering(proj, actor="a", task_id="t-001", field="f", before=0, after=1)
+        log_steering(proj, actor="a", task_id="t-002", field="f", before=0, after=1)
+        r = c.get("/api/project/proj-a/steering-log?task_id=t-002")
+        assert r.json()["count"] == 1
+        assert r.json()["rows"][0]["task_id"] == "t-002"
+
+    def test_upcoming_pin_produces_attribution_row(self, two_projects):
+        c, tmp = two_projects
+        c.post("/api/upcoming/pin", json={"project": "proj-a", "task_id": "t-001"})
+        r = c.get("/api/project/proj-a/steering-log?task_id=t-001")
+        rows = r.json()["rows"]
+        assert len(rows) == 1
+        assert rows[0]["actor"] == "bellows-upcoming"
+        assert rows[0]["source"] == "upcoming-pin"
+        assert rows[0]["field"] == "upcoming_pinned"
+
+
 class TestUpcomingMutations:
     def test_pin_happy(self, two_projects):
         c, tmp = two_projects
