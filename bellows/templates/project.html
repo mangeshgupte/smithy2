@@ -18,6 +18,7 @@
     </a>
     <a href="/project/{{ project.name }}/board" class="sub-tab {% if tab == 'board' %}active{% endif %}">Board</a>
     <a href="/project/{{ project.name }}/direct" class="sub-tab {% if tab == 'direct' %}active{% endif %}">Direct</a>
+    <a href="/project/{{ project.name }}/diff" class="sub-tab {% if tab == 'diff' %}active{% endif %}">Diff</a>
     <span class="nav-sep">|</span>
     {% for label, url in steering_links %}
     <a href="{{ url }}" class="sub-tab steering" target="_blank">{{ label }}</a>

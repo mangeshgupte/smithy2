@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from forge_reader import discover_projects, read_project, get_morning_briefing
+from forge_reader import discover_projects, read_project, get_morning_briefing, compute_heat_diff
 
 app = FastAPI(title="Bellows")
 
@@ -308,6 +308,34 @@ async def project_feedback_send(request: Request, project_name: str):
                 )
 
     return RedirectResponse(f"/project/{project_name}/direct", status_code=303)
+
+
+@app.get("/project/{project_name}/diff", response_class=HTMLResponse)
+async def project_heat_diff(request: Request, project_name: str, n: int = 1):
+    """Per-heat diff view — what changed in state.json HEAD vs HEAD~n."""
+    projects = discover_projects(PROJECTS_DIR)
+    project = next((p for p in projects if p["name"] == project_name), None)
+    if not project:
+        return HTMLResponse("<h1>Project not found</h1>", status_code=404)
+    diff = compute_heat_diff(project["dir"], n=max(1, n))
+    return templates.TemplateResponse(request=request, name="heat_diff.html", context={
+        "project": project,
+        "tab": "diff",
+        "diff": diff,
+        "n": n,
+        "total_decisions": count_all_decisions(projects),
+        "steering_links": STEERING_LINKS,
+    })
+
+
+@app.get("/api/project/{project_name}/heat-diff")
+async def api_project_heat_diff(project_name: str, n: int = 1):
+    """JSON heat-diff: what state.json fields changed between HEAD and HEAD~n."""
+    projects = discover_projects(PROJECTS_DIR)
+    project = next((p for p in projects if p["name"] == project_name), None)
+    if not project:
+        return {"error": "project not found"}
+    return compute_heat_diff(project["dir"], n=max(1, n))
 
 
 @app.get("/inbox", response_class=HTMLResponse)

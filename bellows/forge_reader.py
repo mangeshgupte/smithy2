@@ -3,8 +3,142 @@
 import json
 import csv
 import re
+import subprocess
 from pathlib import Path
 from datetime import datetime, timezone
+
+
+# --- Heat diff ---------------------------------------------------------------
+#
+# Show what changed in state.json between the current HEAD and N commits back.
+# Forge commits every heat, so HEAD~1 is usually "one heat ago". This surfaces
+# whether steering (rank, constraints, intent) actually shifted Forge's behavior
+# — previously invisible because state mutations are silent byproducts of heats.
+
+_ID_KEYED_ARRAYS = {"queue", "themes", "initiatives", "constraints"}
+
+
+def _flatten(obj, prefix=""):
+    """Flatten a nested dict/list into {dotted.path: scalar}. Arrays with
+    string `id` fields are keyed by id so per-item changes survive reordering."""
+    out = {}
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            _merge(out, _flatten(v, f"{prefix}.{k}" if prefix else k))
+    elif isinstance(obj, list):
+        # id-keyed if top-level key is in _ID_KEYED_ARRAYS AND items have id
+        parent_key = prefix.rsplit(".", 1)[-1]
+        if parent_key in _ID_KEYED_ARRAYS and obj and isinstance(obj[0], dict) and "id" in obj[0]:
+            for item in obj:
+                _merge(out, _flatten(item, f"{prefix}.{item['id']}"))
+        else:
+            for i, item in enumerate(obj):
+                _merge(out, _flatten(item, f"{prefix}[{i}]"))
+    else:
+        out[prefix] = obj
+    return out
+
+
+def _merge(dst, src):
+    dst.update(src)
+
+
+def _git_show(project_dir: str, ref: str, path: str):
+    """Return file content at the given git ref, or None if missing/unreadable."""
+    try:
+        r = subprocess.run(
+            ["git", "-C", project_dir, "show", f"{ref}:{path}"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if r.returncode == 0:
+            return r.stdout
+    except (subprocess.SubprocessError, FileNotFoundError):
+        pass
+    return None
+
+
+def _git_log_commits(project_dir: str, n: int = 10) -> list[dict]:
+    """Return recent commit summaries: [{sha, subject}, ...]."""
+    try:
+        r = subprocess.run(
+            ["git", "-C", project_dir, "log", f"-{n}", "--pretty=format:%h\t%s"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if r.returncode != 0:
+            return []
+        return [
+            {"sha": sha, "subject": subj}
+            for line in r.stdout.splitlines()
+            if "\t" in line
+            for sha, subj in [line.split("\t", 1)]
+        ]
+    except (subprocess.SubprocessError, FileNotFoundError):
+        return []
+
+
+def compute_heat_diff(project_dir: str, n: int = 1) -> dict:
+    """Diff state.json at HEAD vs HEAD~n.
+
+    Returns:
+        {
+            "base_commit": sha or None,
+            "head_commit": sha or None,
+            "base_heat": int,       # budget.used at base (0 if unknown)
+            "head_heat": int,
+            "changes": {            # dotted.path -> {before, after}
+                "budget.used": {"before": 722, "after": 723},
+                "queue.t-305.status": {"before": "pending", "after": "complete"},
+                ...
+            },
+            "added": [path, ...],   # paths present at HEAD but not base
+            "removed": [path, ...], # paths present at base but not HEAD
+            "available": bool,      # False if git/state.json missing
+        }
+    """
+    empty = {
+        "base_commit": None, "head_commit": None,
+        "base_heat": 0, "head_heat": 0,
+        "changes": {}, "added": [], "removed": [],
+        "available": False,
+    }
+
+    head_txt = _git_show(project_dir, "HEAD", "state.json")
+    base_txt = _git_show(project_dir, f"HEAD~{n}", "state.json")
+    if head_txt is None or base_txt is None:
+        return empty
+
+    try:
+        head_state = json.loads(head_txt)
+        base_state = json.loads(base_txt)
+    except json.JSONDecodeError:
+        return empty
+
+    head_flat = _flatten(head_state)
+    base_flat = _flatten(base_state)
+
+    changes, added, removed = {}, [], []
+    for k in sorted(set(head_flat) | set(base_flat)):
+        if k not in base_flat:
+            added.append(k)
+        elif k not in head_flat:
+            removed.append(k)
+        elif base_flat[k] != head_flat[k]:
+            changes[k] = {"before": base_flat[k], "after": head_flat[k]}
+
+    commits = _git_log_commits(project_dir, n + 1)
+    return {
+        "base_commit": commits[n]["sha"] if len(commits) > n else None,
+        "head_commit": commits[0]["sha"] if commits else None,
+        "base_heat": base_state.get("budget", {}).get("used", 0),
+        "head_heat": head_state.get("budget", {}).get("used", 0),
+        "changes": changes,
+        "added": added,
+        "removed": removed,
+        "available": True,
+    }
+
+
+# --- End heat diff -----------------------------------------------------------
 
 
 def _find_bottleneck(stages: dict) -> str:

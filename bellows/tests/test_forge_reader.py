@@ -184,3 +184,107 @@ class TestIntentHierarchy:
         assert project["themes"] == []
         assert project["initiatives"] == []
         assert project["intent"] == ""
+
+
+# --- Heat diff tests ---------------------------------------------------------
+
+import subprocess as _sp
+from forge_reader import compute_heat_diff, _flatten
+
+
+def _git(cwd, *args):
+    return _sp.run(["git", "-C", str(cwd), *args], capture_output=True, text=True, check=True)
+
+
+@pytest.fixture
+def git_project(tmp_path):
+    """A tmp dir that's a real git repo with two state.json commits."""
+    _git(tmp_path, "init", "-q", "-b", "main")
+    _git(tmp_path, "config", "user.email", "t@t")
+    _git(tmp_path, "config", "user.name", "T")
+    base_state = {
+        "budget": {"used": 100, "total_heats": 200},
+        "queue": [
+            {"id": "t-001", "status": "pending", "priority": 1},
+            {"id": "t-002", "status": "pending", "priority": 2},
+        ],
+        "initiatives": [
+            {"id": "ini-001", "rank": 1, "status": "approved"},
+        ],
+    }
+    (tmp_path / "state.json").write_text(json.dumps(base_state, indent=2))
+    _git(tmp_path, "add", "state.json")
+    _git(tmp_path, "commit", "-q", "-m", "base")
+
+    head_state = {
+        "budget": {"used": 101, "total_heats": 200},
+        "queue": [
+            {"id": "t-001", "status": "complete", "priority": 1},  # status flipped
+            {"id": "t-002", "status": "pending", "priority": 2},
+            {"id": "t-003", "status": "pending", "priority": 1},   # new task
+        ],
+        "initiatives": [
+            {"id": "ini-001", "rank": 2, "status": "approved"},    # rank changed
+        ],
+    }
+    (tmp_path / "state.json").write_text(json.dumps(head_state, indent=2))
+    _git(tmp_path, "add", "state.json")
+    _git(tmp_path, "commit", "-q", "-m", "head")
+    return tmp_path
+
+
+class TestHeatDiff:
+    def test_detects_scalar_change(self, git_project):
+        d = compute_heat_diff(str(git_project))
+        assert d["available"]
+        assert d["changes"]["budget.used"] == {"before": 100, "after": 101}
+        assert d["base_heat"] == 100
+        assert d["head_heat"] == 101
+
+    def test_detects_id_keyed_status_change(self, git_project):
+        """Queue item status flip is keyed by id, not array index."""
+        d = compute_heat_diff(str(git_project))
+        assert d["changes"]["queue.t-001.status"] == {"before": "pending", "after": "complete"}
+
+    def test_detects_added_item(self, git_project):
+        d = compute_heat_diff(str(git_project))
+        added = [p for p in d["added"] if p.startswith("queue.t-003")]
+        assert added, f"expected t-003 fields in added, got {d['added']}"
+
+    def test_detects_initiative_rank_change(self, git_project):
+        d = compute_heat_diff(str(git_project))
+        assert d["changes"]["initiatives.ini-001.rank"] == {"before": 1, "after": 2}
+
+    def test_unchanged_fields_absent(self, git_project):
+        """Fields that didn't change should not appear in changes."""
+        d = compute_heat_diff(str(git_project))
+        assert "budget.total_heats" not in d["changes"]
+        assert "queue.t-002.status" not in d["changes"]
+
+    def test_handles_missing_git(self, tmp_path):
+        """Non-git dir returns available=False, no exception."""
+        d = compute_heat_diff(str(tmp_path))
+        assert d["available"] is False
+        assert d["changes"] == {}
+
+    def test_handles_no_prior_commit(self, tmp_path):
+        """Single-commit repo: HEAD~1 doesn't exist → available=False."""
+        _git(tmp_path, "init", "-q", "-b", "main")
+        _git(tmp_path, "config", "user.email", "t@t")
+        _git(tmp_path, "config", "user.name", "T")
+        (tmp_path / "state.json").write_text('{"budget":{"used":1}}')
+        _git(tmp_path, "add", "state.json")
+        _git(tmp_path, "commit", "-q", "-m", "first")
+        d = compute_heat_diff(str(tmp_path))
+        assert d["available"] is False
+
+    def test_flatten_id_keys_known_arrays(self):
+        """_flatten uses id as key for known arrays, not index."""
+        flat = _flatten({"queue": [{"id": "t-001", "status": "pending"}]})
+        assert "queue.t-001.status" in flat
+        assert "queue[0].status" not in flat
+
+    def test_flatten_indexes_unknown_arrays(self):
+        """Arrays not in the id-keyed set stay indexed."""
+        flat = _flatten({"other_list": [{"id": "x", "v": 1}]})
+        assert "other_list[0].v" in flat

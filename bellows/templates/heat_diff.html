@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title_suffix %} — {{ project.name }} — Heat diff{% endblock %}
+{% block content %}
+<header class="page-header">
+    <a href="/" class="back-link">← Projects</a>
+    <div class="project-title-row">
+        <span class="signal signal-{{ project.signal }}"></span>
+        <h1>{{ project.name }}</h1>
+    </div>
+</header>
+
+<nav class="sub-tabs">
+    <a href="/project/{{ project.name }}" class="sub-tab {% if tab == 'activity' %}active{% endif %}">Activity</a>
+    <a href="/project/{{ project.name }}/decide" class="sub-tab {% if tab == 'decide' %}active{% endif %}">
+        Decide
+        {% if project.decisions %}<span class="badge">{{ project.decisions|length }}</span>{% endif %}
+    </a>
+    <a href="/project/{{ project.name }}/board" class="sub-tab {% if tab == 'board' %}active{% endif %}">Board</a>
+    <a href="/project/{{ project.name }}/direct" class="sub-tab {% if tab == 'direct' %}active{% endif %}">Direct</a>
+    <a href="/project/{{ project.name }}/diff" class="sub-tab {% if tab == 'diff' %}active{% endif %}">Diff</a>
+    <span class="nav-sep">|</span>
+    {% for label, url in steering_links %}
+    <a href="{{ url }}" class="sub-tab steering" target="_blank">{{ label }}</a>
+    {% endfor %}
+</nav>
+
+<section class="diff-section">
+    <h2>Heat diff <span class="muted">(HEAD vs HEAD~{{ n }})</span></h2>
+
+    {% if not diff.available %}
+    <p class="muted">No diff available — need at least {{ n + 1 }} commits with <code>state.json</code>.</p>
+    {% else %}
+    <div class="diff-header">
+        <div>Base: <code>{{ diff.base_commit or "?" }}</code> · heat {{ diff.base_heat }}</div>
+        <div>Head: <code>{{ diff.head_commit or "?" }}</code> · heat {{ diff.head_heat }}</div>
+        <div class="muted">
+            {{ diff.changes|length }} changed,
+            {{ diff.added|length }} added,
+            {{ diff.removed|length }} removed
+        </div>
+    </div>
+
+    {% if diff.changes %}
+    <h3>Changed</h3>
+    <table class="diff-table">
+        <thead><tr><th>Path</th><th>Before</th><th>After</th></tr></thead>
+        <tbody>
+        {% for path, ba in diff.changes.items() %}
+        <tr>
+            <td><code>{{ path }}</code></td>
+            <td><code class="before">{{ ba.before }}</code></td>
+            <td><code class="after">{{ ba.after }}</code></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    {% if diff.added %}
+    <h3>Added</h3>
+    <ul class="diff-list">{% for p in diff.added %}<li><code>{{ p }}</code></li>{% endfor %}</ul>
+    {% endif %}
+
+    {% if diff.removed %}
+    <h3>Removed</h3>
+    <ul class="diff-list">{% for p in diff.removed %}<li><code>{{ p }}</code></li>{% endfor %}</ul>
+    {% endif %}
+
+    {% if not diff.changes and not diff.added and not diff.removed %}
+    <p class="muted">No changes between these commits.</p>
+    {% endif %}
+    {% endif %}
+</section>
+{% endblock %}
