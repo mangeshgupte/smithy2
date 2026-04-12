@@ -24,6 +24,15 @@
     </div>
     {% endif %}
 
+    {% if idle_state %}
+    <div id="idle-banner" class="idle-banner idle-{{ idle_state.kind }}" data-kind="{{ idle_state.kind }}">
+        <span class="idle-icon">💤</span>
+        <span class="idle-message">{{ idle_state.message }}</span>
+    </div>
+    {% else %}
+    <div id="idle-banner" class="idle-banner" hidden></div>
+    {% endif %}
+
     <div id="card-list" class="card-list">
         {% for ini in initiatives %}
         {% set weight = '3×' if loop.index == 1 else ('2×' if loop.index == 2 else '1×') %}
@@ -584,6 +593,25 @@
 
     renderActivity();
     setInterval(renderActivity, 5000);
+
+    // Idle-state banner — polls /api/idle-state every 10s
+    function refreshIdleBanner() {
+        fetch('/api/idle-state').then(r => r.json()).then(s => {
+            const banner = document.getElementById('idle-banner');
+            if (!banner) return;
+            if (s.kind === 'active' || !s.message) {
+                banner.hidden = true;
+                banner.className = 'idle-banner';
+                return;
+            }
+            banner.hidden = false;
+            banner.className = 'idle-banner idle-' + s.kind;
+            banner.dataset.kind = s.kind;
+            banner.innerHTML = '<span class="idle-icon">💤</span><span class="idle-message"></span>';
+            banner.querySelector('.idle-message').textContent = s.message;
+        }).catch(() => {});
+    }
+    setInterval(refreshIdleBanner, 10000);
 
     function refreshPage() {
         const btn = document.querySelector('.refresh-btn');

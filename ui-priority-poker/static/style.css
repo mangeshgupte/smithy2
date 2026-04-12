@@ -347,3 +347,23 @@ code {
 @media (max-width: 900px) {
     .activity-panel { display: none; }
 }
+
+/* Idle-state banner (t-360) */
+.idle-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 12px 16px;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    background: var(--surface, #1a1a1a);
+    border: 1px solid var(--border, #333);
+    color: var(--text-muted, #aaa);
+}
+.idle-banner[hidden] { display: none; }
+.idle-banner.idle-budget-exhausted { border-color: var(--red, #c04040); color: var(--text, #ddd); }
+.idle-banner.idle-no-intent { border-color: var(--yellow, #c89c2a); color: var(--text, #ddd); }
+.idle-banner.idle-queue-empty { border-color: var(--border, #333); font-style: italic; }
+.idle-banner.idle-waiting { border-color: var(--yellow, #c89c2a); }
+.idle-icon { font-size: 16px; }

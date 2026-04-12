@@ -180,14 +180,41 @@ async def index(request: Request):
         forge_activity = f"Heat {cp.get('heat', '?')} [{cp.get('stage', '?')}] — {cp.get('task_id', '?')}"
 
     project_name = state.get("project", "unknown")
+    idle_state = _compute_idle_state(state, forge_activity, ranked)
     return templates.TemplateResponse(request=request, name="index.html", context={
         "initiatives": ranked,
         "proposed": proposed,
         "project": project_name,
         "forge_activity": forge_activity,
+        "idle_state": idle_state,
         "nav_links": NAV_LINKS,
         "globally_pinned_ids": _globally_pinned_ids(project_name),
     })
+
+
+def _compute_idle_state(state, forge_activity, ranked_initiatives):
+    """Return {kind, message} if Forge is idle for a diagnosable reason, else None.
+
+    Priority order: budget-exhausted > no-intent > queue-empty > waiting-on-heat.
+    """
+    if forge_activity:
+        return None
+    budget = state.get("budget", {}) or {}
+    used = budget.get("used", 0) or 0
+    total = budget.get("total_heats", 0) or 0
+    if total and used >= total:
+        return {"kind": "budget-exhausted",
+                "message": f"Budget exhausted at heat {used}/{total}. Say 'Run N' to extend."}
+    if not ranked_initiatives and not state.get("initiatives"):
+        return {"kind": "no-intent",
+                "message": "No initiatives — write some in the Intent Editor."}
+    pending = [t for t in (state.get("queue") or [])
+               if t.get("status") == "pending"]
+    if not pending:
+        return {"kind": "queue-empty",
+                "message": "Queue empty — Forge idle, awaiting direction."}
+    return {"kind": "waiting",
+            "message": f"{len(pending)} task(s) queued — waiting on Forge to pick up."}
 
 
 @app.post("/reorder")
@@ -238,6 +265,23 @@ async def api_state():
                 "status": i["status"],
             }
     return JSONResponse(data)
+
+
+@app.get("/api/idle-state")
+async def api_idle_state():
+    """Diagnose why Forge may be idle. Returns {kind, message} or {kind: 'active'}."""
+    state = _load_state()
+    checkpoint_path = Path(STATE_DIR) / ".forge-checkpoint.json"
+    forge_activity = None
+    if checkpoint_path.exists():
+        cp = json.loads(checkpoint_path.read_text())
+        forge_activity = f"Heat {cp.get('heat', '?')}"
+    ranked = [i for i in state.get("initiatives", [])
+              if i.get("status") in ("approved", "active")]
+    idle = _compute_idle_state(state, forge_activity, ranked)
+    if idle is None:
+        return JSONResponse({"kind": "active", "message": forge_activity or ""})
+    return JSONResponse(idle)
 
 
 @app.get("/api/activity")
