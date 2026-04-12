@@ -294,3 +294,108 @@ class TestFullSmokeFlow:
         # 4. 404 for missing task.
         r = c.get("/api/task/t-ghost")
         assert r.status_code == 404
+
+
+def _mini_project(base: Path, name: str, queue: list) -> Path:
+    d = base / name
+    d.mkdir(parents=True, exist_ok=True)
+    state = {
+        "project": name,
+        "budget": {"total_heats": 100, "used": 1, "started_at": "2026-04-12T00:00:00Z"},
+        "stages": {s: {"target": 0.16, "heats": 1, "progress": 0.1, "value_ema": 0.7}
+                   for s in ["research", "planning", "implementation", "testing", "editing", "marketing"]},
+        "queue": queue,
+        "themes": [], "initiatives": [], "constraints": [], "ideas": [],
+        "feedback_cursor": 0, "inbox_cursor": 0, "overall_progress": 0.1,
+        "allocator": {"integral": {s: 0 for s in ["research", "planning", "implementation",
+                                                   "testing", "editing", "marketing"]}},
+    }
+    (d / "state.json").write_text(json.dumps(state))
+    return d
+
+
+def _bellows_client(projects_dir: Path, monkeypatch):
+    monkeypatch.setenv("FORGE_PROJECTS_DIR", str(projects_dir))
+    bellows_path = str(REPO_ROOT / "bellows")
+    while bellows_path in sys.path:
+        sys.path.remove(bellows_path)
+    sys.path.insert(0, bellows_path)
+    if "app" in sys.modules:
+        del sys.modules["app"]
+    app_mod = importlib.import_module("app")
+    from starlette.testclient import TestClient
+    return TestClient(app_mod.app), app_mod
+
+
+class TestUpcomingE2E:
+    """Full cross-project Upcoming flow: pin → GC → unpin → reorder → 409."""
+
+    def test_full_lifecycle(self, tmp_path, monkeypatch):
+        _mini_project(tmp_path, "proj-a", [
+            {"id": "t-001", "stage": "implementation", "desc": "a-one",
+             "status": "pending", "priority": 1, "blocked_by": [], "human_priority": None},
+        ])
+        _mini_project(tmp_path, "proj-b", [
+            {"id": "t-010", "stage": "research", "desc": "b-one",
+             "status": "pending", "priority": 1, "blocked_by": [], "human_priority": None},
+        ])
+        c, app_mod = _bellows_client(tmp_path, monkeypatch)
+
+        # 1. Pin one from each project.
+        assert c.post("/api/upcoming/pin",
+                      json={"project": "proj-a", "task_id": "t-001"}).status_code == 200
+        assert c.post("/api/upcoming/pin",
+                      json={"project": "proj-b", "task_id": "t-010"}).status_code == 200
+
+        # 2. GET returns both, in pin order.
+        data = c.get("/api/upcoming").json()
+        assert [(p["project"], p["id"]) for p in data["pinned"]] == [
+            ("proj-a", "t-001"), ("proj-b", "t-010"),
+        ]
+        assert data["gc"] == []
+
+        # 3. Complete t-001 in proj-a → next GET GCs it.
+        state_a = tmp_path / "proj-a" / "state.json"
+        s = json.loads(state_a.read_text())
+        s["queue"][0]["status"] = "complete"
+        state_a.write_text(json.dumps(s))
+        data = c.get("/api/upcoming").json()
+        assert [p["id"] for p in data["pinned"]] == ["t-010"]
+        assert any(g["task_id"] == "t-001" and g["reason"] == "complete" for g in data["gc"])
+        saved = json.loads((tmp_path / ".upcoming.json").read_text())
+        assert saved["pinned"] == [{"project": "proj-b", "task_id": "t-010"}]
+
+        # 4. Unpin the remaining → empty state.
+        assert c.post("/api/upcoming/unpin",
+                      json={"project": "proj-b", "task_id": "t-010"}).status_code == 200
+        assert c.get("/api/upcoming").json()["pinned"] == []
+
+        # 5. Re-pin both and reorder → ordering reflects in next GET.
+        c.post("/api/upcoming/pin", json={"project": "proj-b", "task_id": "t-010"})
+        # Add a new live task in proj-a (t-001 is complete; add t-002)
+        s = json.loads(state_a.read_text())
+        s["queue"].append({"id": "t-002", "stage": "implementation", "desc": "a-two",
+                           "status": "pending", "priority": 1, "blocked_by": [],
+                           "human_priority": None})
+        state_a.write_text(json.dumps(s))
+        c.post("/api/upcoming/pin", json={"project": "proj-a", "task_id": "t-002"})
+        r = c.post("/api/upcoming/reorder", json={"pinned": [
+            {"project": "proj-a", "task_id": "t-002"},
+            {"project": "proj-b", "task_id": "t-010"},
+        ]})
+        assert r.status_code == 200
+        data = c.get("/api/upcoming").json()
+        assert [(p["project"], p["id"]) for p in data["pinned"]] == [
+            ("proj-a", "t-002"), ("proj-b", "t-010"),
+        ]
+
+        # 6. Concurrent write → 409.
+        orig_load = app_mod._load_upcoming_with_mtime
+
+        def stale():
+            d, _ = orig_load()
+            return d, 0.0
+        monkeypatch.setattr(app_mod, "_load_upcoming_with_mtime", stale)
+        r = c.post("/api/upcoming/pin",
+                   json={"project": "proj-a", "task_id": "t-001"})
+        assert r.status_code == 409
