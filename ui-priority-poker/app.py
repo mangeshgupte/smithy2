@@ -44,11 +44,12 @@ templates = Jinja2Templates(directory=BASE_DIR / "templates")
 
 STATE_DIR = os.environ.get("FORGE_PROJECT_DIR", str(Path(__file__).parent.parent))
 
+URL_BELLOWS = os.environ.get("URL_BELLOWS", "http://localhost:8080")
 NAV_LINKS = [
     ("🃏 Poker", os.environ.get("URL_POKER", "http://localhost:8001"), True),
     ("🎯 Intent", os.environ.get("URL_INTENT", "http://localhost:8003"), False),
     ("📅 Timeline", os.environ.get("URL_TIMELINE", "http://localhost:8004"), False),
-    ("🔔 Bellows", os.environ.get("URL_BELLOWS", "http://localhost:8080"), False),
+    ("🔔 Bellows", URL_BELLOWS, False),
 ]
 
 
@@ -194,6 +195,7 @@ async def index(request: Request):
         "idle_state": idle_state,
         "nav_links": NAV_LINKS,
         "globally_pinned_ids": _globally_pinned_ids(project_name),
+        "url_bellows": URL_BELLOWS,
     })
 
 

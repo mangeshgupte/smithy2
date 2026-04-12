@@ -41,7 +41,11 @@
             <div class="card-rank">#{{ loop.index }}</div>
             <div class="card-body" onclick="toggleExpand(this.parentElement)">
                 <div class="card-title">
-                    {{ ini.title }}
+                    <a href="{{ url_bellows }}/project/{{ project }}/initiative/{{ ini.id }}"
+                       class="card-title-link"
+                       draggable="false"
+                       onclick="event.stopPropagation()"
+                       title="Open in Bellows deep-dive">{{ ini.title }}</a>
                     <span class="weight-badge weight-{{ loop.index }}">{{ weight }}</span>
                 </div>
                 <div class="card-meta">
@@ -126,7 +130,7 @@
         <div class="poker-card status-proposed" style="opacity: 0.7;">
             <div class="card-rank">?</div>
             <div class="card-body">
-                <div class="card-title">{{ ini.title }}</div>
+                <div class="card-title"><a href="{{ url_bellows }}/project/{{ project }}/initiative/{{ ini.id }}" class="card-title-link" draggable="false" title="Open in Bellows deep-dive">{{ ini.title }}</a></div>
                 <div class="card-meta">
                     <span class="card-theme">{{ ini.theme_name }}</span>
                     <span>{{ ini.description[:80] }}{% if ini.description|length > 80 %}...{% endif %}</span>
