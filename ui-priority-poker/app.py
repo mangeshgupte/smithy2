@@ -16,6 +16,10 @@ try:
 except ImportError:
     def read_activity(*args, **kwargs):
         return []
+try:
+    from smithy.task_detail import TaskDetail
+except ImportError:
+    TaskDetail = None
 
 
 def _actor_from_request(request, default: str) -> str:
@@ -330,80 +334,21 @@ async def events():
 
 @app.get("/api/task/{task_id}")
 async def get_task_detail(task_id: str):
-    """Full task detail — task object + initiative + worklog rows + current-priority snapshot.
-
-    History is derived from worklog (design doc: research/task-detail-ui.md). We don't
-    schema-bump tasks with a history[] field until a real case forces it — for now the
-    current `priority_reason` is the canonical explanation and worklog is the audit trail.
+    """Full task detail via TaskDetail resolver (t-374). Single source of truth across
+    state.json queue + worklog.tsv + steering.log. Returns {task, initiative, worklog,
+    history} shape the drawer consumes.
     """
-    state = _load_state()
-    task = next((t for t in state.get("queue", []) if t.get("id") == task_id), None)
-
-    # Read worklog rows that mention this task. Append-only file, so no locking needed.
-    worklog_path = Path(STATE_DIR) / "worklog.tsv"
-    worklog_rows = []
-    if worklog_path.exists():
-        with open(worklog_path) as f:
-            reader = csv.DictReader(f, delimiter="\t")
-            for row in reader:
-                if row.get("task_id") == task_id:
-                    worklog_rows.append({
-                        "heat": int(row["heat"]) if row.get("heat", "").isdigit() else row.get("heat"),
-                        "stage": row.get("stage", ""),
-                        "value": float(row["value"]) if row.get("value") else None,
-                        "signal": row.get("signal", ""),
-                        "timestamp": row.get("timestamp", ""),
-                        "notes": row.get("notes", ""),
-                    })
-
-    # t-370 bug fix: fall back to worklog-reconstructed task stub when the queue row was
-    # pruned (completed/archived) but worklog still references the id. Returning a 404 in
-    # this case broke the Poker drawer for any task_id shown in shipped/deferred sections
-    # after purge. Stub task has id/stage/status=archived + worklog rows.
-    if not task:
-        if not worklog_rows:
-            return JSONResponse({"error": "task not found", "id": task_id}, status_code=404)
-        latest = worklog_rows[-1]
-        task = {
-            "id": task_id,
-            "desc": (latest.get("notes") or "(archived — reconstructed from worklog)")[:240],
-            "stage": latest.get("stage", ""),
-            "status": "archived",
-            "priority": None,
-            "human_priority": None,
-            "priority_reason": None,
-            "blocked_by": [],
-            "initiative_id": None,
-            "_reconstructed": True,
-        }
-
-    initiative = None
-    ini_id = task.get("initiative_id")
-    if ini_id:
-        ini = next((i for i in state.get("initiatives", []) if i["id"] == ini_id), None)
-        if ini:
-            initiative = {
-                "id": ini["id"],
-                "title": ini.get("title", ""),
-                "rank": ini.get("rank"),
-                "status": ini.get("status"),
-            }
-
-    # Current-state priority snapshot (the "history" band starts with this). Future
-    # enhancement can walk git log of state.json or add task.history[] if users ask.
-    history = [{
-        "ts": worklog_rows[-1]["timestamp"] if worklog_rows else "",
-        "source": "current",
-        "priority": task.get("priority"),
-        "human_priority": task.get("human_priority"),
-        "priority_reason": task.get("priority_reason"),
-    }]
-
+    if TaskDetail is None:
+        return JSONResponse({"error": "TaskDetail unavailable"}, status_code=500)
+    detail = TaskDetail.resolve(STATE_DIR, task_id)
+    if detail is None:
+        return JSONResponse({"error": "task not found", "id": task_id}, status_code=404)
+    body = detail.to_api_dict()
     return JSONResponse({
-        "task": task,
-        "initiative": initiative,
-        "history": history,
-        "worklog": worklog_rows,
+        "task": body["task"],
+        "initiative": body["initiative"],
+        "history": body["history"],
+        "worklog": body["worklog"],
     })
 
 

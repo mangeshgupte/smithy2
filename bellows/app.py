@@ -8,6 +8,7 @@ import json
 from datetime import datetime
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent / "smithy"))
 try:
     from steering_log import log_steering, read_steering_log
 except ImportError:
@@ -15,6 +16,10 @@ except ImportError:
         pass
     def read_steering_log(*args, **kwargs):
         return []
+try:
+    from smithy.task_detail import TaskDetail
+except ImportError:
+    TaskDetail = None
 
 from fastapi import FastAPI, Request, Form
 from fastapi.staticfiles import StaticFiles
@@ -440,43 +445,12 @@ async def api_project_task(project_name: str, task_id: str):
     project = next((p for p in projects if p["name"] == project_name), None)
     if not project:
         return JSONResponse({"error": "project not found"}, status_code=404)
-
-    project_dir = Path(project["dir"])
-    try:
-        state = json.loads((project_dir / "state.json").read_text())
-    except (OSError, json.JSONDecodeError):
-        return JSONResponse({"error": "state unreadable"}, status_code=500)
-
-    task = next((t for t in state.get("queue", []) if t.get("id") == task_id), None)
-    if not task:
+    if TaskDetail is None:
+        return JSONResponse({"error": "TaskDetail unavailable"}, status_code=500)
+    detail = TaskDetail.resolve(project["dir"], task_id)
+    if detail is None:
         return JSONResponse({"error": "task not found"}, status_code=404)
-
-    initiative = None
-    ini_id = task.get("initiative_id")
-    if ini_id:
-        ini = next((i for i in state.get("initiatives", []) if i.get("id") == ini_id), None)
-        if ini:
-            initiative = {"id": ini["id"], "title": ini.get("title", ""),
-                          "rank": ini.get("rank"), "status": ini.get("status")}
-
-    worklog_rows = []
-    worklog_path = project_dir / "worklog.tsv"
-    if worklog_path.exists():
-        import csv as _csv
-        with open(worklog_path) as f:
-            reader = _csv.DictReader(f, delimiter="\t")
-            for row in reader:
-                if row.get("task_id") == task_id:
-                    worklog_rows.append({
-                        "heat": int(row["heat"]) if row.get("heat", "").isdigit() else row.get("heat"),
-                        "stage": row.get("stage", ""),
-                        "value": float(row["value"]) if row.get("value") else None,
-                        "signal": row.get("signal", ""),
-                        "timestamp": row.get("timestamp", ""),
-                        "notes": row.get("notes", ""),
-                    })
-
-    return {"task": task, "initiative": initiative, "worklog": worklog_rows}
+    return detail.to_api_dict()
 
 
 @app.get("/api/project/{project_name}/initiative/{initiative_id}")

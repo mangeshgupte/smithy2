@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1043,
-    "used": 785,
+    "used": 786,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -26,9 +26,9 @@
     },
     "testing": {
       "target": 0.183,
-      "heats": 139,
+      "heats": 140,
       "progress": 0.88,
-      "value_ema": 0.842
+      "value_ema": 0.829
     },
     "editing": {
       "target": 0.183,
@@ -48,7 +48,7 @@
       "research": 0.5,
       "planning": 0.5,
       "implementation": -0.5,
-      "testing": 0.011,
+      "testing": 0.014,
       "editing": -0.372,
       "marketing": 0.5
     }
@@ -3271,7 +3271,7 @@
       "blocked_by": [],
       "initiative_id": "ini-009",
       "human_priority": null,
-      "priority_reason": "ini-009 rank=1 + poker"
+      "priority_reason": "ini-009 rank=2 + poker"
     },
     {
       "id": "t-367",
@@ -3282,7 +3282,7 @@
       "blocked_by": [],
       "initiative_id": "ini-009",
       "human_priority": null,
-      "priority_reason": "ini-009 rank=1 + poker"
+      "priority_reason": "ini-009 rank=2 + poker"
     },
     {
       "id": "t-368",
@@ -3293,7 +3293,7 @@
       "blocked_by": [],
       "initiative_id": "ini-009",
       "human_priority": null,
-      "priority_reason": "ini-009 rank=1 + poker"
+      "priority_reason": "ini-009 rank=2 + poker"
     },
     {
       "id": "t-369",
@@ -3332,12 +3332,12 @@
       "id": "t-372",
       "stage": "testing",
       "desc": "P0: Regression test \u2014 task exists but detail 404s. Plus E2E: click each status class (in-flight/pending/deferred/complete) \u2192 detail drawer loads with correct fields.",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 0,
       "blocked_by": [],
       "initiative_id": "ini-009",
       "human_priority": null,
-      "priority_reason": "ini-009 rank=1 + poker"
+      "priority_reason": null
     },
     {
       "id": "t-373",
@@ -3354,12 +3354,23 @@
       "id": "t-374",
       "stage": "implementation",
       "desc": "TaskDetail class \u2014 single source of truth (state+worklog+steering.log), migrate Poker + Bellows /api/task endpoints",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 0,
       "blocked_by": [],
       "initiative_id": "ini-009",
       "human_priority": null,
       "priority_reason": "ini-009 rank=1 + poker"
+    },
+    {
+      "id": "t-375",
+      "stage": "research",
+      "desc": "Queue Cockpit design study (ini-016). Primary UI for per-task steering. Audit: (1) layout \u2014 table vs card grid vs split view, (2) state sync \u2014 reuse SSE from Poker or new endpoint, (3) gesture design \u2014 inline buttons vs kebab menu vs both, (4) columns (id/stage/status/M:priority/human:priority/reason/initiative/age/desc-trunc), (5) row order from scheduler (NOT reimplemented), (6) filters (stage/status/initiative via query params), (7) bulk actions (scope as separate task), (8) integration with TaskDetail class (P0 refactor in flight), (9) relationship to Poker + Upcoming + initiative deep-dive (reuses row component). Output: research/queue-cockpit.md with retro-format impl candidates (backend aggregator + page + gesture POSTs + tests + polish, ~4-6 heats).",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-016",
+      "human_priority": null,
+      "priority_reason": "ini-016 rank=1 + poker"
     }
   ],
   "ideas": [
@@ -3407,7 +3418,7 @@
       "status": "rejected",
       "budget_cap": null,
       "heats_used": 0,
-      "rank": 6,
+      "rank": 7,
       "viewed_at": null
     },
     {
@@ -3487,8 +3498,8 @@
       "description": "Research how humans steer autonomous systems \u2014 not monitor, STEER. The core question: what controls does a human need to change direction without becoming a bottleneck? Study: (1) Real-time strategy games (StarCraft command hierarchy \u2014 strategic goals, tactical orders, unit autonomy), (2) Military C2 frameworks (mission-type orders, commander's intent, OODA), (3) Product management (OKRs, roadmap prioritization, sprint planning), (4) Air traffic control (constraints not commands), (5) Existing AI tools (Devin's chat-to-steer, Cursor's accept/reject, Claude Code hooks). For each, extract: what decisions the human makes, at what frequency, what information they need to decide, and what the feedback loop looks like. Deliverable: research/steering-patterns.md with a taxonomy of steering modes and which are worth prototyping as UIs.",
       "status": "approved",
       "budget_cap": 10,
-      "heats_used": 29,
-      "rank": 1,
+      "heats_used": 30,
+      "rank": 2,
       "planned_start": 635,
       "planned_end": 645,
       "viewed_at": "2026-04-12T19:55:47Z"
@@ -3501,7 +3512,7 @@
       "status": "approved",
       "budget_cap": 15,
       "heats_used": 9,
-      "rank": 2,
+      "rank": 3,
       "planned_start": 645,
       "planned_end": 655,
       "viewed_at": "2026-04-12T19:55:45Z"
@@ -3514,7 +3525,7 @@
       "status": "approved",
       "budget_cap": 15,
       "heats_used": 10,
-      "rank": 7,
+      "rank": 8,
       "planned_start": 650,
       "planned_end": 665,
       "viewed_at": "2026-04-12T19:52:52Z"
@@ -3527,7 +3538,7 @@
       "status": "approved",
       "budget_cap": 15,
       "heats_used": 8,
-      "rank": 5,
+      "rank": 6,
       "planned_start": 650,
       "planned_end": 665,
       "viewed_at": null
@@ -3540,7 +3551,7 @@
       "status": "approved",
       "budget_cap": 20,
       "heats_used": 10,
-      "rank": 6,
+      "rank": 7,
       "planned_start": 645,
       "planned_end": 665,
       "viewed_at": null
@@ -3555,7 +3566,7 @@
       "heats_used": 5,
       "planned_start": 640,
       "planned_end": 655,
-      "rank": 4,
+      "rank": 5,
       "viewed_at": null
     },
     {
@@ -3567,7 +3578,18 @@
       "budget_cap": 25,
       "heats_used": 24,
       "viewed_at": "2026-04-12T19:51:22Z",
-      "rank": 3
+      "rank": 4
+    },
+    {
+      "id": "ini-016",
+      "theme_id": "th-003",
+      "title": "Queue Cockpit",
+      "description": "Primary UI surface for steering per-task prioritization. Live view of the actual task queue synced to state.json, showing every task with Marshal priority, human priority, stage, status, priority reason, initiative tag. Human downranks/promotes/pins/defers from this surface. Poker remains for initiative-level steering; this is the per-task master cockpit.",
+      "status": "approved",
+      "budget_cap": null,
+      "heats_used": 0,
+      "viewed_at": "2026-04-12T20:06:07Z",
+      "rank": 1
     }
   ],
   "feedback_cursor": 26,
@@ -3597,9 +3619,9 @@
     }
   ],
   "next_tasks": [
+    "t-375",
     "t-368",
     "t-366",
-    "t-373",
     "t-367"
   ],
   "schema_version": 1
