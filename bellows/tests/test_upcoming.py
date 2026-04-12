@@ -165,3 +165,99 @@ class TestUpcomingAPI:
             assert "project" in t
             assert "id" in t
             assert "status" in t
+
+
+class TestUpcomingMutations:
+    def test_pin_happy(self, two_projects):
+        c, tmp = two_projects
+        r = c.post("/api/upcoming/pin", json={"project": "proj-a", "task_id": "t-001"})
+        assert r.status_code == 200
+        assert r.json()["ok"] is True
+        saved = json.loads((tmp / ".upcoming.json").read_text())
+        assert saved["pinned"] == [{"project": "proj-a", "task_id": "t-001"}]
+
+    def test_pin_duplicate_noop(self, two_projects):
+        c, tmp = two_projects
+        (tmp / ".upcoming.json").write_text(json.dumps({
+            "version": 1, "pinned": [{"project": "proj-a", "task_id": "t-001"}],
+        }))
+        r = c.post("/api/upcoming/pin", json={"project": "proj-a", "task_id": "t-001"})
+        assert r.status_code == 200
+        body = r.json()
+        assert body["ok"] is True and body.get("noop") is True
+        saved = json.loads((tmp / ".upcoming.json").read_text())
+        assert len(saved["pinned"]) == 1
+
+    def test_pin_rejects_missing_fields(self, two_projects):
+        c, _ = two_projects
+        r = c.post("/api/upcoming/pin", json={"project": "proj-a"})
+        assert r.status_code == 400
+
+    def test_unpin_happy(self, two_projects):
+        c, tmp = two_projects
+        (tmp / ".upcoming.json").write_text(json.dumps({
+            "version": 1, "pinned": [
+                {"project": "proj-a", "task_id": "t-001"},
+                {"project": "proj-b", "task_id": "t-010"},
+            ],
+        }))
+        r = c.post("/api/upcoming/unpin", json={"project": "proj-a", "task_id": "t-001"})
+        assert r.status_code == 200
+        saved = json.loads((tmp / ".upcoming.json").read_text())
+        assert saved["pinned"] == [{"project": "proj-b", "task_id": "t-010"}]
+
+    def test_unpin_unknown_noop(self, two_projects):
+        c, tmp = two_projects
+        r = c.post("/api/upcoming/unpin", json={"project": "ghost", "task_id": "t-ghost"})
+        assert r.status_code == 200
+        assert r.json().get("noop") is True
+
+    def test_reorder_happy(self, two_projects):
+        c, tmp = two_projects
+        (tmp / ".upcoming.json").write_text(json.dumps({
+            "version": 1, "pinned": [
+                {"project": "proj-a", "task_id": "t-001"},
+                {"project": "proj-b", "task_id": "t-010"},
+            ],
+        }))
+        r = c.post("/api/upcoming/reorder", json={"pinned": [
+            {"project": "proj-b", "task_id": "t-010"},
+            {"project": "proj-a", "task_id": "t-001"},
+        ]})
+        assert r.status_code == 200
+        saved = json.loads((tmp / ".upcoming.json").read_text())
+        assert saved["pinned"] == [
+            {"project": "proj-b", "task_id": "t-010"},
+            {"project": "proj-a", "task_id": "t-001"},
+        ]
+
+    def test_reorder_skips_malformed(self, two_projects):
+        c, tmp = two_projects
+        r = c.post("/api/upcoming/reorder", json={"pinned": [
+            {"project": "proj-a", "task_id": "t-001"},
+            {"project": "", "task_id": "t-002"},  # empty project → skip
+            {"project": "proj-a"},  # missing task_id → skip
+            {"project": "proj-b", "task_id": "t-010"},
+            {"project": "proj-a", "task_id": "t-001"},  # duplicate → skip
+        ]})
+        assert r.status_code == 200
+        saved = json.loads((tmp / ".upcoming.json").read_text())
+        assert saved["pinned"] == [
+            {"project": "proj-a", "task_id": "t-001"},
+            {"project": "proj-b", "task_id": "t-010"},
+        ]
+
+    def test_concurrent_write_returns_409(self, two_projects, monkeypatch):
+        c, tmp = two_projects
+        (tmp / ".upcoming.json").write_text(json.dumps({
+            "version": 1, "pinned": [{"project": "proj-a", "task_id": "t-001"}],
+        }))
+        # Monkey-patch the loader to return a stale mtime
+        import app as app_mod
+        orig_load = app_mod._load_upcoming_with_mtime
+        def stale():
+            data, _ = orig_load()
+            return data, 0.0
+        monkeypatch.setattr(app_mod, "_load_upcoming_with_mtime", stale)
+        r = c.post("/api/upcoming/pin", json={"project": "proj-b", "task_id": "t-010"})
+        assert r.status_code == 409

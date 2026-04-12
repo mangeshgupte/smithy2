@@ -412,6 +412,26 @@ def _save_upcoming(data: dict) -> None:
     _upcoming_path().write_text(json.dumps(data, indent=2) + "\n")
 
 
+def _load_upcoming_with_mtime() -> tuple[dict, float]:
+    path = _upcoming_path()
+    if not path.exists():
+        return {"version": 1, "pinned": [], "updated_at": ""}, 0.0
+    try:
+        data = json.loads(path.read_text())
+    except json.JSONDecodeError:
+        return {"version": 1, "pinned": [], "updated_at": ""}, path.stat().st_mtime
+    data.setdefault("version", 1)
+    data.setdefault("pinned", [])
+    return data, path.stat().st_mtime
+
+
+def _save_upcoming_checked(data: dict, expected_mtime: float) -> None:
+    path = _upcoming_path()
+    if path.exists() and path.stat().st_mtime - expected_mtime > 1e-6:
+        raise ConcurrentWriteError(".upcoming.json changed since read")
+    _save_upcoming(data)
+
+
 def _resolve_upcoming(projects: list[dict]) -> tuple[list[dict], list[dict], list[dict]]:
     """Walk .upcoming.json.pinned, resolve each compound key against live state.
 
@@ -497,6 +517,69 @@ async def upcoming_page(request: Request):
         "tab": "upcoming",
         "total_decisions": count_all_decisions(projects),
     })
+
+
+@app.post("/api/upcoming/pin")
+async def api_upcoming_pin(request: Request):
+    """Append {project, task_id} to pinned. Duplicate = no-op."""
+    body = await request.json()
+    project = (body.get("project") or "").strip()
+    task_id = (body.get("task_id") or "").strip()
+    if not project or not task_id:
+        return JSONResponse({"ok": False, "error": "project and task_id required"}, status_code=400)
+    data, mtime = _load_upcoming_with_mtime()
+    pinned = data.setdefault("pinned", [])
+    if any(r.get("project") == project and r.get("task_id") == task_id for r in pinned):
+        return JSONResponse({"ok": True, "noop": True})
+    pinned.append({"project": project, "task_id": task_id})
+    _save_upcoming_checked(data, mtime)
+    return JSONResponse({"ok": True, "pinned_count": len(pinned)})
+
+
+@app.post("/api/upcoming/unpin")
+async def api_upcoming_unpin(request: Request):
+    """Remove {project, task_id} from pinned. Unknown = no-op."""
+    body = await request.json()
+    project = (body.get("project") or "").strip()
+    task_id = (body.get("task_id") or "").strip()
+    if not project or not task_id:
+        return JSONResponse({"ok": False, "error": "project and task_id required"}, status_code=400)
+    data, mtime = _load_upcoming_with_mtime()
+    before = len(data.get("pinned", []))
+    data["pinned"] = [r for r in data.get("pinned", [])
+                      if not (r.get("project") == project and r.get("task_id") == task_id)]
+    after = len(data["pinned"])
+    if before == after:
+        return JSONResponse({"ok": True, "noop": True})
+    _save_upcoming_checked(data, mtime)
+    return JSONResponse({"ok": True, "pinned_count": after})
+
+
+@app.post("/api/upcoming/reorder")
+async def api_upcoming_reorder(request: Request):
+    """Replace pinned list with a reordered sequence.
+
+    Body: {"pinned": [{"project": "...", "task_id": "..."}, ...]}. Entries with missing
+    fields are skipped; duplicates collapsed to first occurrence.
+    """
+    body = await request.json()
+    new_pinned = body.get("pinned") or []
+    data, mtime = _load_upcoming_with_mtime()
+    seen = set()
+    cleaned = []
+    for r in new_pinned:
+        project = (r.get("project") or "").strip() if isinstance(r, dict) else ""
+        task_id = (r.get("task_id") or "").strip() if isinstance(r, dict) else ""
+        if not project or not task_id:
+            continue
+        key = (project, task_id)
+        if key in seen:
+            continue
+        seen.add(key)
+        cleaned.append({"project": project, "task_id": task_id})
+    data["pinned"] = cleaned
+    _save_upcoming_checked(data, mtime)
+    return JSONResponse({"ok": True, "pinned_count": len(cleaned)})
 
 
 @app.get("/api/upcoming")
