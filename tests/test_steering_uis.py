@@ -860,3 +860,117 @@ class TestUIReactivity:
             r = client.get("/api/state")
             assert r.status_code == 200, f"{name} /api/state failed"
             assert r.headers["content-type"].startswith("application/json"), f"{name} /api/state not JSON"
+
+    # --- Refresh after state change ---
+
+    def test_poker_api_reflects_state_change(self, poker_client):
+        """Poker /api/state reflects changes after modifying state.json."""
+        c, tmp = poker_client
+        state = json.loads((tmp / "state.json").read_text())
+        # Change heats_used — poker api returns {ini_id: {heats_used, ...}}
+        state["initiatives"][0]["heats_used"] = 99
+        (tmp / "state.json").write_text(json.dumps(state, indent=2))
+        r = c.get("/api/state")
+        data = r.json()
+        assert data["ini-001"]["heats_used"] == 99
+
+    def test_constraint_api_reflects_state_change(self, constraint_client):
+        """Constraint /api/state reflects added constraint after state change."""
+        c, tmp = constraint_client
+        # Add via API, then verify /api/state picks it up
+        c.post("/add", data={"type": "floor", "stage": "testing", "value": "20", "description": ""})
+        r = c.get("/api/state")
+        data = r.json()
+        types = [con["type"] for con in data["constraints"]]
+        assert "floor" in types
+
+    def test_timeline_api_reflects_state_change(self, timeline_client):
+        """Timeline /api/state reflects changes after updating planned positions."""
+        c, tmp = timeline_client
+        c.post("/update", json={"updates": [{"id": "ini-001", "start": 10, "end": 25}]})
+        # Re-read state to confirm persistence
+        state = json.loads((tmp / "state.json").read_text())
+        ini = next(i for i in state["initiatives"] if i["id"] == "ini-001")
+        assert ini["planned_start"] == 10
+
+    # --- Env var URL config ---
+
+    def test_nav_links_use_env_vars(self, tmp_path, monkeypatch):
+        """Nav links reflect custom URL env vars."""
+        state = {"project": "test", "budget": {"total_heats": 10, "used": 0},
+                 "stages": {}, "allocator": {"integral": {}}, "queue": [],
+                 "themes": [], "initiatives": [], "constraints": [], "ideas": [],
+                 "feedback_cursor": 0, "inbox_cursor": 0, "human_priorities": [], "overall_progress": 0}
+        (tmp_path / "state.json").write_text(json.dumps(state, indent=2))
+        monkeypatch.setenv("FORGE_PROJECT_DIR", str(tmp_path))
+        monkeypatch.setenv("URL_POKER", "http://custom:9001")
+        monkeypatch.setenv("URL_CONSTRAINTS", "http://custom:9002")
+        sys.path.insert(0, str(Path(__file__).parent.parent / "ui-priority-poker"))
+        import importlib
+        app_mod = importlib.import_module("app")
+        importlib.reload(app_mod)
+        from starlette.testclient import TestClient
+        c = TestClient(app_mod.app)
+        r = c.get("/")
+        assert "http://custom:9001" in r.text
+        assert "http://custom:9002" in r.text
+
+    # --- Empty state resilience ---
+
+    def test_poker_api_state_empty(self, tmp_path, monkeypatch):
+        """Poker /api/state returns valid JSON with empty state."""
+        state = {"project": "test", "budget": {"total_heats": 10, "used": 0},
+                 "stages": {}, "allocator": {"integral": {}}, "queue": [],
+                 "themes": [], "initiatives": [], "constraints": [], "ideas": [],
+                 "feedback_cursor": 0, "inbox_cursor": 0, "human_priorities": [], "overall_progress": 0}
+        (tmp_path / "state.json").write_text(json.dumps(state, indent=2))
+        monkeypatch.setenv("FORGE_PROJECT_DIR", str(tmp_path))
+        sys.path.insert(0, str(Path(__file__).parent.parent / "ui-priority-poker"))
+        import importlib
+        app_mod = importlib.import_module("app")
+        importlib.reload(app_mod)
+        from starlette.testclient import TestClient
+        c = TestClient(app_mod.app)
+        r = c.get("/api/state")
+        assert r.status_code == 200
+        data = r.json()
+        assert data == {}  # no approved/active initiatives = empty dict
+
+    def test_constraint_api_state_empty(self, tmp_path, monkeypatch):
+        """Constraint /api/state returns valid JSON with no constraints."""
+        state = {"project": "test", "budget": {"total_heats": 10, "used": 0},
+                 "stages": {}, "allocator": {"integral": {}}, "queue": [],
+                 "themes": [], "initiatives": [], "constraints": [], "ideas": [],
+                 "feedback_cursor": 0, "inbox_cursor": 0, "human_priorities": [], "overall_progress": 0}
+        (tmp_path / "state.json").write_text(json.dumps(state, indent=2))
+        monkeypatch.setenv("FORGE_PROJECT_DIR", str(tmp_path))
+        sys.path.insert(0, str(Path(__file__).parent.parent / "ui-constraint-board"))
+        import importlib
+        app_mod = importlib.import_module("app")
+        importlib.reload(app_mod)
+        from starlette.testclient import TestClient
+        c = TestClient(app_mod.app)
+        r = c.get("/api/state")
+        assert r.status_code == 200
+        data = r.json()
+        assert data["constraints"] == []
+        assert data["count"] == 0
+
+    def test_timeline_api_state_empty(self, tmp_path, monkeypatch):
+        """Timeline /api/state returns valid JSON with no initiatives."""
+        state = {"project": "test", "budget": {"total_heats": 10, "used": 0},
+                 "stages": {}, "allocator": {"integral": {}}, "queue": [],
+                 "themes": [], "initiatives": [], "constraints": [], "ideas": [],
+                 "feedback_cursor": 0, "inbox_cursor": 0, "human_priorities": [], "overall_progress": 0}
+        (tmp_path / "state.json").write_text(json.dumps(state, indent=2))
+        monkeypatch.setenv("FORGE_PROJECT_DIR", str(tmp_path))
+        sys.path.insert(0, str(Path(__file__).parent.parent / "ui-timeline"))
+        import importlib
+        app_mod = importlib.import_module("app")
+        importlib.reload(app_mod)
+        from starlette.testclient import TestClient
+        c = TestClient(app_mod.app)
+        r = c.get("/api/state")
+        assert r.status_code == 200
+        data = r.json()
+        assert data == {}
