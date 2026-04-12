@@ -6,6 +6,14 @@
 
 An autonomous AI coworker (The Smithy) that works in bounded 5-minute heats, self-directs across project stages, and communicates asynchronously with a human. Bookkeeping is deterministic via the `smithy` CLI. Given a budget and a project, it does useful work while the human is away.
 
+## Retrospective Format (2026-04-12)
+
+**Retros must end in candidates with value-theses, not things-to-consider.** Explicit rationale per candidate makes triage trivial and compounds into shipped work. The t-302 retro (`research/steering-patterns-retrospective.md` §6) shipped 4 of 6 candidates within one session (t-305, t-306, t-307, t-309). Apply this format to all future retros.
+
+## Steering Philosophy (2026-04-12)
+
+**Ranking over constraints.** Hard constraints are an anti-pattern — they tend to over-specify the problem, produce brittle infeasibilities, and hide the human's real preference signal. We steer via rankings instead: human rank + agent priority signal, composed into an ordering the human can nudge at any time (downrank, deprioritize, reorder). The Constraints UI is retired. Steerability = visible queue + visible outcomes + cheap one-gesture re-ranking.
+
 ## Relationship to Gas Town
 
 **Decision: Approach B** — adopt Gas Town's best patterns, stay independent.
@@ -109,6 +117,16 @@ See `research/gas-town-integration-synthesis.md` for the full analysis.
 ### 6. Persona System
 **Status**: Implemented, lightly tested
 **Result**: Anvil (interface) + Forge (worker) with dispatch files. Consolidated from 3 to 2 personas after finding Lens/Anvil overlap. Verified in heat 39.
+
+### 7. Coordination Model: Agent Teams (Decision)
+**Status**: Decided (heat 690)
+**Decision**: Use Claude Code Agent Teams as the primary coordination model. Anvil is the lead agent — it spawns Marshal and Forge as teammates via the `Agent` tool. Communication uses `SendMessage`, shared task lists via `TaskCreate`/`TaskList`.
+
+**Rejected alternative**: Independent tmux sessions coordinated via file-based dispatch + `smithy nudge`. This was built (t-262 through t-266) but Agent Teams provides native messaging, idle notifications, and shared task state without custom infrastructure.
+
+**Known limitation**: Agent Teams is single-session — all teammates are subprocesses of the lead. The `smithy start-all` command (independent tmux windows) cannot use Agent Teams. It remains available as a fallback for crash-resilient scenarios.
+
+**Persona cwd workaround**: The Agent tool spawns in the caller's cwd. Spawn prompts must explicitly `cd` to the persona directory and read the persona's own CLAUDE.md to avoid loading the wrong protocol.
 
 ## Hypotheses
 
