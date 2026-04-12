@@ -1172,6 +1172,112 @@ class TestSteerabilitySchema:
         assert task["priority_reason"] is None
 
 
+class TestSchedulerSort:
+    """t-313: human_priority-aware scheduler sort; priority_reason auto-population."""
+
+    def test_pick_task_prefers_human_priority(self, project, runner):
+        """A task with human_priority=0 wins over a base-priority=0 task without it."""
+        state = json.loads((project / "state.json").read_text())
+        state["queue"] = [
+            {"id": "t-001", "stage": "implementation", "desc": "base p0", "status": "pending",
+             "priority": 0, "blocked_by": [], "human_priority": None, "priority_reason": None},
+            {"id": "t-002", "stage": "implementation", "desc": "sticky", "status": "pending",
+             "priority": 3, "blocked_by": [], "human_priority": 0, "priority_reason": "pinned"},
+        ]
+        (project / "state.json").write_text(json.dumps(state))
+        result = runner.invoke(cli, ["--dir", str(project), "pick-task", "implementation"])
+        data = json.loads(result.output)
+        assert data["task"]["id"] == "t-002"
+
+    def test_pick_task_falls_back_to_priority_when_no_human(self, project, runner):
+        """With no human_priority on either, base priority wins."""
+        state = json.loads((project / "state.json").read_text())
+        state["queue"] = [
+            {"id": "t-001", "stage": "implementation", "desc": "p2", "status": "pending",
+             "priority": 2, "blocked_by": [], "human_priority": None, "priority_reason": None},
+            {"id": "t-002", "stage": "implementation", "desc": "p0", "status": "pending",
+             "priority": 0, "blocked_by": [], "human_priority": None, "priority_reason": None},
+        ]
+        (project / "state.json").write_text(json.dumps(state))
+        result = runner.invoke(cli, ["--dir", str(project), "pick-task", "implementation"])
+        data = json.loads(result.output)
+        assert data["task"]["id"] == "t-002"
+
+    def test_blocked_gating_overrides_sticky_priority(self, project, runner):
+        """human_priority cannot bypass blocked_by — the unblocked task still wins."""
+        state = json.loads((project / "state.json").read_text())
+        state["queue"] = [
+            {"id": "t-001", "stage": "implementation", "desc": "blocker", "status": "pending",
+             "priority": 3, "blocked_by": [], "human_priority": None, "priority_reason": None},
+            {"id": "t-002", "stage": "implementation", "desc": "sticky-blocked", "status": "pending",
+             "priority": 0, "blocked_by": ["t-001"], "human_priority": 0, "priority_reason": "pinned"},
+        ]
+        (project / "state.json").write_text(json.dumps(state))
+        result = runner.invoke(cli, ["--dir", str(project), "pick-task", "implementation"])
+        data = json.loads(result.output)
+        assert data["task"]["id"] == "t-001"
+
+    def test_human_priority_ascending_order(self, project, runner):
+        """Lower human_priority number wins (0 > 1 > 2)."""
+        state = json.loads((project / "state.json").read_text())
+        state["queue"] = [
+            {"id": "t-001", "stage": "implementation", "desc": "hp=2", "status": "pending",
+             "priority": 0, "blocked_by": [], "human_priority": 2, "priority_reason": "r"},
+            {"id": "t-002", "stage": "implementation", "desc": "hp=0", "status": "pending",
+             "priority": 3, "blocked_by": [], "human_priority": 0, "priority_reason": "r"},
+            {"id": "t-003", "stage": "implementation", "desc": "hp=1", "status": "pending",
+             "priority": 1, "blocked_by": [], "human_priority": 1, "priority_reason": "r"},
+        ]
+        (project / "state.json").write_text(json.dumps(state))
+        result = runner.invoke(cli, ["--dir", str(project), "pick-task", "implementation"])
+        assert json.loads(result.output)["task"]["id"] == "t-002"
+
+    def test_add_task_auto_populates_priority_reason(self, project, runner):
+        """add-task fills priority_reason with 'p{N} + <signal>' fallback when no initiative."""
+        result = runner.invoke(cli, ["--dir", str(project), "add-task", "testing", "new one", "--priority", "1"])
+        assert result.exit_code == 0
+        task = json.loads(result.output)["task"]
+        assert task["priority_reason"] is not None
+        assert len(task["priority_reason"]) <= 40
+        assert "p1" in task["priority_reason"]
+        assert task["human_priority"] is None
+
+    def test_add_task_with_initiative_reason_format(self, project, runner):
+        """add-task with --initiative produces 'ini-XXX rank=N + <signal>'."""
+        state = json.loads((project / "state.json").read_text())
+        state["initiatives"] = [
+            {"id": "ini-009", "theme_id": "", "title": "x", "status": "active",
+             "rank": 2, "viewed_at": None}
+        ]
+        (project / "state.json").write_text(json.dumps(state))
+        result = runner.invoke(cli, ["--dir", str(project), "add-task", "testing", "x",
+                                      "--initiative", "ini-009"])
+        assert result.exit_code == 0
+        task = json.loads(result.output)["task"]
+        reason = task["priority_reason"]
+        assert "ini-009" in reason and "rank=2" in reason
+        assert len(reason) <= 40
+
+    def test_queue_push_auto_populates_reason(self, project, runner):
+        """queue-push refreshes priority_reason for Marshal-ordered tasks."""
+        runner.invoke(cli, ["--dir", str(project), "queue-push", "t-001", "--no-nudge"])
+        state = json.loads((project / "state.json").read_text())
+        task = next(t for t in state["queue"] if t["id"] == "t-001")
+        assert task["priority_reason"] is not None
+        assert len(task["priority_reason"]) <= 40
+
+    def test_queue_push_preserves_human_reason(self, project, runner):
+        """If human_priority is set, queue-push does not overwrite priority_reason."""
+        state = json.loads((project / "state.json").read_text())
+        state["queue"][0]["human_priority"] = 0
+        state["queue"][0]["priority_reason"] = "user-pinned"
+        (project / "state.json").write_text(json.dumps(state))
+        runner.invoke(cli, ["--dir", str(project), "queue-push", "t-001", "--no-nudge"])
+        reloaded = json.loads((project / "state.json").read_text())
+        task = next(t for t in reloaded["queue"] if t["id"] == "t-001")
+        assert task["priority_reason"] == "user-pinned"
+
+
 class TestSyncStages:
     """Tests for sync-stages command."""
 

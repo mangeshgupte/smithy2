@@ -14,6 +14,31 @@ from .state import (
 VALID_PERSONAS = ["forge", "marshal", "anvil", "chisel"]
 
 
+def _stage_signal(stage_stats: dict) -> str:
+    """Derive 🟢/🟡/🔴 from a stage's value_ema."""
+    ema = stage_stats.get("value_ema", 0) if stage_stats else 0
+    if ema >= 0.7:
+        return "🟢"
+    if ema >= 0.5:
+        return "🟡"
+    return "🔴"
+
+
+def _build_priority_reason(state: dict, task: dict) -> str:
+    """Format an auto-reason string ≤40 chars: 'ini-XXX rank=N + 🟢' or 'p{N}'."""
+    ini_id = task.get("initiative_id")
+    stage = task.get("stage", "")
+    signal = _stage_signal(state.get("stages", {}).get(stage, {}))
+    if ini_id:
+        ini_map = {i["id"]: i for i in state.get("initiatives", [])}
+        ini = ini_map.get(ini_id)
+        rank = ini.get("rank", "?") if ini else "?"
+        reason = f"{ini_id} rank={rank} + {signal}"
+    else:
+        reason = f"p{task.get('priority', 2)} + {signal}"
+    return reason[:40]
+
+
 def _output(data: dict):
     """Print JSON to stdout (for LLM consumption)."""
     click.echo(json.dumps(data, indent=2))
@@ -342,6 +367,9 @@ def add_task(ctx, stage, desc, priority, blocked_by, initiative_id):
     if initiative_id:
         task["initiative_id"] = initiative_id
 
+    task["human_priority"] = None
+    task["priority_reason"] = _build_priority_reason(state, task)
+
     queue.append(task)
     state["queue"] = queue
     save_state(root, state)
@@ -584,6 +612,12 @@ def queue_push(ctx, task_id, top, no_nudge, target_persona):
     else:
         next_tasks.append(task_id)
     state["next_tasks"] = next_tasks
+
+    # Auto-populate priority_reason on push unless a human has set one.
+    task = queue_map[task_id]
+    if task.get("human_priority") is None:
+        task["priority_reason"] = _build_priority_reason(state, task)
+
     save_state(root, state)
 
     position = "top" if top else "bottom"
@@ -690,8 +724,13 @@ def list_tasks(ctx, status_filter, stage_filter, initiative_filter, limit):
     if initiative_filter:
         tasks = [t for t in tasks if t.get("initiative_id") == initiative_filter]
 
-    # Sort by priority (ascending) then ID
-    tasks.sort(key=lambda t: (t.get("priority", 2), t.get("id", "")))
+    # Sort: human_priority (or +inf) asc, then base priority asc, then ID.
+    # A non-null human_priority sticky-overrides the default priority order.
+    tasks.sort(key=lambda t: (
+        t.get("human_priority") if t.get("human_priority") is not None else float("inf"),
+        t.get("priority", 2),
+        t.get("id", ""),
+    ))
     total_matching = len(tasks)
 
     # Apply limit
@@ -783,7 +822,11 @@ def pick_task(ctx, stage):
                 continue
         ready.append(task)
 
-    ready.sort(key=lambda t: t.get("priority", 3))
+    # Sort: human_priority (or +inf) asc, then base priority asc.
+    ready.sort(key=lambda t: (
+        t.get("human_priority") if t.get("human_priority") is not None else float("inf"),
+        t.get("priority", 3),
+    ))
 
     if ready:
         picked = ready[0]
