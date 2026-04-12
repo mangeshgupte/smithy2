@@ -73,6 +73,20 @@
                             {% endif %}
                         </div>
 
+                        {% if ini.deferred_tasks %}
+                        <details class="drawer-section drawer-deferred">
+                            <summary class="drawer-section-title">Deferred ({{ ini.deferred_tasks|length }})</summary>
+                            {% for task in ini.deferred_tasks %}
+                            <div class="drawer-row deferred-row" data-task-id="{{ task.id }}">
+                                <span class="drawer-task-id" onclick="openTaskDetail(event, '{{ task.id }}')">{{ task.id }}</span>
+                                <span class="drawer-task-desc" onclick="openTaskDetail(event, '{{ task.id }}')">{{ task.desc[:60] }}{% if task.desc|length > 60 %}…{% endif %}</span>
+                                <span class="drawer-task-stage stage-{{ task.stage }}">{{ task.stage }}</span>
+                                <button class="drawer-undefer" onclick="undeferInline(event, '{{ task.id }}')" title="Un-defer → pending">▶ un-defer</button>
+                            </div>
+                            {% endfor %}
+                        </details>
+                        {% endif %}
+
                         {% if ini.shipped_tasks %}
                         <div class="drawer-section">
                             <div class="drawer-section-title">Shipped{% if ini.viewed_at %} since viewed{% endif %} ({{ ini.shipped_tasks|length }})</div>
@@ -408,6 +422,12 @@
         const t = params.get('task');
         if (t) openTaskDetail(null, t);
     });
+
+    function undeferInline(evt, taskId) {
+        evt.stopPropagation();
+        fetch('/api/task/' + taskId + '/undefer', { method: 'POST' })
+            .then(r => { if (r.ok) refreshPage(); });
+    }
 
     function downrank(evt, taskId, currentHp) {
         evt.stopPropagation();

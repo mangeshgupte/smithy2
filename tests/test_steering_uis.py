@@ -1169,6 +1169,43 @@ class TestTaskLifecycleActions:
         assert pending == []
 
 
+class TestDeferredDrawerSection:
+    """t-335 — Deferred section appears in drawer only when deferred tasks exist."""
+
+    def test_no_deferred_no_section(self, poker_client):
+        c, _ = poker_client
+        r = c.get("/")
+        assert r.status_code == 200
+        assert "drawer-deferred" not in r.text
+        assert "drawer-undefer" not in r.text
+
+    def test_deferred_section_renders(self, poker_client):
+        c, tmp = poker_client
+        state = json.loads((tmp / "state.json").read_text())
+        state["queue"].append({
+            "id": "t-999", "stage": "testing", "desc": "shelved for now",
+            "status": "deferred", "priority": 2, "blocked_by": [],
+            "initiative_id": "ini-001", "human_priority": None,
+        })
+        (tmp / "state.json").write_text(json.dumps(state))
+        r = c.get("/")
+        assert "drawer-deferred" in r.text
+        assert "Deferred (1)" in r.text
+        assert "t-999" in r.text
+        assert "shelved for now" in r.text
+        assert "drawer-undefer" in r.text
+
+    def test_undefer_endpoint_restores_pending(self, poker_client):
+        c, tmp = poker_client
+        state = json.loads((tmp / "state.json").read_text())
+        state["queue"][0]["status"] = "deferred"
+        (tmp / "state.json").write_text(json.dumps(state))
+        r = c.post("/api/task/t-001/undefer")
+        assert r.status_code == 200
+        state = json.loads((tmp / "state.json").read_text())
+        assert state["queue"][0]["status"] == "pending"
+
+
 class TestGloballyPinnedBadge:
     """t-331 — 📌 badge rendered on drawer rows for tasks in .upcoming.json."""
 

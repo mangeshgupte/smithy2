@@ -139,6 +139,7 @@ async def index(request: Request):
         all_tasks = task_lists.get(ini["id"], [])
         in_flight = [t for t in all_tasks if t.get("status") == "in_progress"]
         queued = sorted([t for t in all_tasks if t.get("status") == "pending"], key=_sort_key)
+        deferred = [t for t in all_tasks if t.get("status") == "deferred"]
         shipped = [t for t in all_tasks if t.get("status") == "complete"]
         viewed_at = ini.get("viewed_at")
         if viewed_at:
@@ -146,6 +147,7 @@ async def index(request: Request):
         shipped.sort(key=lambda t: worklog_ts.get(t["id"], ""), reverse=True)
         ini["in_flight_tasks"] = in_flight
         ini["queued_tasks"] = queued
+        ini["deferred_tasks"] = deferred
         ini["shipped_tasks"] = shipped
         ini["tasks"] = all_tasks
 

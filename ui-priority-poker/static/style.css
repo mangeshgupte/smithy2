@@ -231,6 +231,10 @@ code {
 .drawer-task-hp { color: var(--text-muted); flex-shrink: 0; }
 .drawer-task-hp.set { color: var(--yellow, #c89c2a); font-weight: 600; }
 .drawer-task-pin { flex-shrink: 0; font-size: 0.85em; cursor: help; }
+.drawer-deferred > summary { cursor: pointer; list-style: revert; }
+.deferred-row { opacity: 0.8; font-style: italic; }
+.drawer-undefer { background: transparent; border: 1px solid var(--border); color: var(--text-muted); cursor: pointer; border-radius: 3px; padding: 1px 8px; font-size: 11px; flex-shrink: 0; }
+.drawer-undefer:hover { background: var(--surface); color: var(--text); }
 .drawer-downrank { background: transparent; border: 1px solid var(--surface); color: var(--text-muted); cursor: pointer; border-radius: 3px; padding: 1px 6px; font-size: 11px; }
 .drawer-downrank:hover { background: var(--surface); color: var(--text); }
 .drawer-row.muted { color: var(--text-muted); opacity: 0.6; font-style: italic; }
