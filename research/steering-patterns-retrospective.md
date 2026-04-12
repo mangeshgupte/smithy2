@@ -93,6 +93,27 @@ Surfaced for Marshal to triage — none created as tasks here:
 
 ---
 
+## 8. Epilogue: Constraint UI Retired (2026-04-12)
+
+Two days after this retro was written, Anvil logged a strategic reversal in `STRATEGY.md`: **ranking over constraints**. The Constraint Board was retired and the `ui-constraint-board/` directory deleted (commit `176df2c`, t-310). A follow-up heat (t-318) will strip the deep references: `add-constraint` CLI command, allocator constraint-handling (~5 refs), design doc section, and the `constraints: []` emission in `state.json`.
+
+**Why the reversal — what §2–§5 above missed:**
+
+- **Constraints are brittle.** A `budget_cap research=15` fires the same whether research is the critical path or a side-quest. The rule doesn't know *why* the cap was set, and the cap doesn't decay as context changes.
+- **Constraints over-specify.** "Don't exceed 15 heats of research" collapses into one knob what is actually a preference: *testing matters more than research right now*. The cap is a lossy encoding of that preference.
+- **Constraints hide the preference signal.** If the human wants less research, they already have a tool that says so — drag research-tasks down in Poker. Adding a cap is a second way to say the same thing, and the two can disagree silently.
+- **Ranking subsumes the use case.** Every scenario we'd planned for Constraint (§5 "safety setup", t-301's `Alex adds a cap`) is better expressed as a rank reorder. The preference lives where steering already lives.
+
+**What this retro got wrong:** §2 treated all four UIs as answering *distinct* questions. That framing gave Constraint more credit than it earned. The actual question Constraint answered — "how do I deprioritize a stage?" — was already answered by Poker. We built a second answer and called it a feature.
+
+**What this retro got right:** §4 flagged "Constraint board is easy to forget" as a failure mode and §2 noted Constraint got "set up once and rarely touched." Both observations were correct and, in hindsight, were the tell. A UI that rarely gets touched either (a) has no work to do, or (b) is the wrong encoding. We assumed (a); it was (b).
+
+**Pattern for future retros:** when a surface shows low usage, investigate before defending it. Low usage + "still useful" is a plausible story but should not be the default one.
+
+**Meta-observation:** §6 of this retro ("Candidate Tasks For ini-009") produced 6 well-scoped follow-ups and all six entered the queue within a session (t-305 through t-310+). The value of a retro ending in "candidates with value theses" compounds across sessions; retros ending in "things to consider" don't. Keep this format.
+
+---
+
 ## References
 
 - `STEERING.md` — user-facing docs for all 4 UIs
