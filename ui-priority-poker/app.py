@@ -218,8 +218,15 @@ def _compute_idle_state(state, forge_activity, ranked_initiatives):
     if not pending:
         return {"kind": "queue-empty",
                 "message": "Queue empty — Forge idle, awaiting direction."}
+    # t-387: teaser to Cockpit — top-2 by scheduler order.
+    ordered = sorted(pending, key=scheduler_key)[:2]
+    next_tasks = [{"id": t.get("id"), "stage": t.get("stage", ""),
+                   "priority": t.get("priority"), "desc": t.get("desc", "")}
+                  for t in ordered]
     return {"kind": "waiting",
-            "message": f"{len(pending)} task(s) queued — waiting on Forge to pick up."}
+            "message": f"{len(pending)} task(s) queued — waiting on Forge to pick up.",
+            "queued_count": len(pending),
+            "next_tasks": next_tasks}
 
 
 @app.post("/reorder")

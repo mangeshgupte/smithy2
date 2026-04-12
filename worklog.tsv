@@ -787,3 +787,13 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-12T13:03:55Z	786	testing	t-372	complete	0.8	🟢	t-372 regression + E2E for task-detail drawer, 4 new tests, 456/456
 2026-04-12T13:06:14Z	787	implementation	t-374	complete	0.9	🟢	t-374 TaskDetail class — single source of truth, both /api/task endpoints migrated, 8 unit tests, 464/464
 2026-04-12T13:08:17Z	788	research	t-375	complete	0.85	🟢	t-375 Queue Cockpit design — 9 framing Qs, scheduler-order invariant, hybrid gesture plan, 5 impl candidates
+2026-04-12T13:11:13Z	789	implementation	t-376	complete	0.9	🟢	t-376 Queue Cockpit aggregator — TaskSummary + TaskDetail.list() + /api/cockpit, 13 tests, 477/477
+2026-04-12T13:14:57Z	790	implementation	t-377	complete	0.85	🟢	Cockpit MVP live: /cockpit page, inline HP/defer gestures, SSE refresh, 5 page tests + 13 API tests. 482/482 suite green.
+2026-04-12T13:16:21Z	791	research	t-368	complete	0.7	🟢	t-314 shipped-since-viewed is live + intact. Addendum written; no fix task needed. Minor in_progress vs in_flight drift flagged, parked.
+2026-04-12T13:20:43Z	792	implementation	t-366	complete	0.8	🟢	Title-only <a> per research §Q5. Active + proposed cards; drag/expand preserved via draggable=false + stopPropagation. 486/486 green.
+2026-04-12T13:57:32Z	793	implementation	t-382	complete	0.85	🟢	Deep-dive 4-section reorder (Intent/In-flight/Upcoming/Shipped); Queued folded into Upcoming, Deferred as <details>. Shipped rows enriched with heat + signal emoji + short commit sha via worklog.tsv + git log -n 500. Silent git fallback. 488/488 green.
+2026-04-12T13:59:26Z	794	implementation	t-378	complete	0.5	🟡	Partial relocated into _partials/ subdir; cross-app share declined — three row shapes (div/tr/JS) too different to usefully unify. Reasoning documented in _partials/README.md. 488/488 green.
+2026-04-12T14:02:42Z	795	implementation	t-383	complete	0.9	🟢	Three-tier scheduler_key helper: promoted < un-pinned < deprioritized. Five sort sites unified. 7 new invariant tests, 495/495 green.
+2026-04-12T14:05:46Z	796	implementation	t-379	complete	0.85	🟢	Cockpit polish: age_heats (worklog-derived, O(N+W) single pass), skeleton loader, improved empty-state, j/k row nav + Enter to drawer + x to defer. 9 new tests, 504/504 green.
+2026-04-12T14:21:24Z	797	implementation	t-367	complete	0.6	🟢	?focus=<id> deep-link handler: anchor ids per initiative row + 2s flash on scroll-into-view. Silent no-op on unknown. 3 tests, 507/507 green.
+2026-04-12T14:28:03Z	798	implementation	t-388	complete	0.75	🟢	t-388 H1/5: chevron expand-in-place + inline card (desc/reason/ini/blocked_by/history). URL untouched. 5 tests, 512/512 green. Next heats: DnD reorder.

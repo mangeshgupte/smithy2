@@ -20,3 +20,13 @@
 {"message": "Queue updated. 4 tasks ready. Top: t-375 \u2014 Queue Cockpit design study (ini-016). Primary UI for per-tas", "timestamp": "2026-04-12T13:04:54.518842"}
 {"message": "Queue updated. 8 tasks ready. Top: t-376 \u2014 Queue Cockpit backend aggregator \u2014 TaskDetail.list(project_r", "timestamp": "2026-04-12T13:08:46.929127"}
 {"message": "Queue updated. 8 tasks ready. Top: t-377 \u2014 Queue Cockpit page + gestures (MVP live). Dense table, SSE v", "timestamp": "2026-04-12T13:09:27.395185"}
+{"message": "Queue updated. 7 tasks ready. Top: t-368 \u2014 Audit Poker drawer shipped-section \u2014 t-314 implemented 'ship", "timestamp": "2026-04-12T13:15:16.601931"}
+{"message": "Queue updated. 7 tasks ready. Top: t-366 \u2014 Poker initiative title \u2192 deep-dive link (title-only <a>, pre", "timestamp": "2026-04-12T13:16:02.422343"}
+{"message": "Queue updated. 9 tasks ready. Top: t-366 \u2014 Poker initiative title \u2192 deep-dive link (title-only <a>, pre", "timestamp": "2026-04-12T13:18:34.711112"}
+{"message": "Task t-382 queued. Run smithy queue-pop to start.", "timestamp": "2026-04-12T13:54:24.936282"}
+{"message": "Task t-378 queued. Run smithy queue-pop to start.", "timestamp": "2026-04-12T13:57:56.301459"}
+{"message": "Queue updated. 7 tasks ready. Top: t-383 \u2014 Scheduler bottom-sentinel fix \u2014 human_priority=9999 currentl", "timestamp": "2026-04-12T13:59:49.461206"}
+{"message": "Task t-379 queued. Run smithy queue-pop to start.", "timestamp": "2026-04-12T14:03:17.183177"}
+{"message": "Queue updated. 6 tasks ready. Top: t-367 \u2014 Intent Editor ?focus=<ini-id> scroll hint \u2014 optional polish ", "timestamp": "2026-04-12T14:19:35.361855"}
+{"message": "Queue updated. 6 tasks ready. Top: t-388 \u2014 5-heat Cockpit UX polish block (cap 5 heats total \u2014 split/co", "timestamp": "2026-04-12T14:26:02.334924"}
+{"message": "Queue updated. 9 tasks ready. Top: t-389 \u2014 t-388 H2: Cockpit DnD reorder. Drag rows to reorder within P", "timestamp": "2026-04-12T14:28:52.630591"}

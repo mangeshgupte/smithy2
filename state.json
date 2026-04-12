@@ -2,15 +2,15 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1043,
-    "used": 788,
+    "used": 798,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
     "research": {
       "target": 0.156,
-      "heats": 44,
+      "heats": 45,
       "progress": 0.9,
-      "value_ema": 0.836
+      "value_ema": 0.795
     },
     "planning": {
       "target": 0.21,
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 290,
+      "heats": 299,
       "progress": 0.98,
-      "value_ema": 0.839
+      "value_ema": 0.746
     },
     "testing": {
       "target": 0.183,
@@ -413,8 +413,8 @@
       "status": "complete",
       "priority": 0,
       "blocked_by": [],
-      "human_priority": null,
-      "priority_reason": null
+      "human_priority": 3,
+      "priority_reason": "you:p-1"
     },
     {
       "id": "t-092",
@@ -3266,34 +3266,34 @@
       "id": "t-366",
       "stage": "implementation",
       "desc": "Poker initiative title \u2192 deep-dive link (title-only <a>, preserves drag/expand). See research/initiative-deep-dive.md \u00a7t-365.",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-009",
       "human_priority": null,
-      "priority_reason": "ini-009 rank=2 + poker"
+      "priority_reason": null
     },
     {
       "id": "t-367",
       "stage": "implementation",
       "desc": "Intent Editor ?focus=<ini-id> scroll hint \u2014 optional polish from deep-dive 'Edit in Intent Editor' link. See research/initiative-deep-dive.md \u00a7t-366.",
-      "status": "pending",
+      "status": "complete",
       "priority": 3,
       "blocked_by": [],
       "initiative_id": "ini-009",
       "human_priority": null,
-      "priority_reason": "ini-009 rank=2 + poker"
+      "priority_reason": null
     },
     {
       "id": "t-368",
       "stage": "research",
       "desc": "Audit Poker drawer shipped-section \u2014 t-314 implemented 'shipped-since-viewed' behavior. Is it still live? Regressed? Or removed intentionally? Check ui-priority-poker template + current state.json. Output: brief note in research/initiative-deep-dive.md \u00a7addendum, and if regressed, surface fix as follow-up task.",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-009",
       "human_priority": null,
-      "priority_reason": "ini-009 rank=2 + poker"
+      "priority_reason": null
     },
     {
       "id": "t-369",
@@ -3376,45 +3376,45 @@
       "id": "t-376",
       "stage": "implementation",
       "desc": "Queue Cockpit backend aggregator \u2014 TaskDetail.list(project_root, filter=...) classmethod + /api/cockpit endpoint on Bellows (or Poker). Scheduler-ordered rows, filters (stage/status/initiative), no client-side re-ranking. See research/queue-cockpit.md \u00a7t-376.",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-016",
       "human_priority": null,
-      "priority_reason": "ini-016 rank=1 + poker"
+      "priority_reason": null
     },
     {
       "id": "t-377",
       "stage": "implementation",
       "desc": "Queue Cockpit page + gestures (MVP live). Dense table, SSE via Poker /events, inline \u2191\u2193\u2715 pin/defer for top-3, kebab menu for tail, TaskDetail drawer on row click (reuses existing drawer). See research/queue-cockpit.md \u00a7t-377.",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-016",
       "human_priority": null,
-      "priority_reason": "ini-016 rank=1 + poker"
+      "priority_reason": null
     },
     {
       "id": "t-378",
       "stage": "implementation",
       "desc": "Queue Cockpit shared partials \u2014 extract row template/CSS so Poker drawer + initiative deep-dive + cockpit all render rows identically. See research/queue-cockpit.md \u00a7t-378.",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-016",
       "human_priority": null,
-      "priority_reason": "ini-016 rank=1 + poker"
+      "priority_reason": null
     },
     {
       "id": "t-379",
       "stage": "implementation",
       "desc": "Queue Cockpit polish \u2014 empty-state, loading skeleton, age-in-heats column formatting, keyboard shortcuts (j/k, x=defer). See research/queue-cockpit.md \u00a7t-379.",
-      "status": "pending",
+      "status": "complete",
       "priority": 3,
       "blocked_by": [],
       "initiative_id": "ini-016",
       "human_priority": null,
-      "priority_reason": "ini-016 rank=1 + poker"
+      "priority_reason": null
     },
     {
       "id": "t-380",
@@ -3442,12 +3442,122 @@
       "id": "t-382",
       "stage": "implementation",
       "desc": "Initiative deep-dive shipped-ledger enrichment \u2014 reorder template to 4 sections (Intent / In-flight / Upcoming / Shipped) per addendum. Shipped rows: commit hash + value emoji + heat number inline. Consumes TaskSummary.",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-009",
       "human_priority": null,
-      "priority_reason": "ini-009 rank=2 + poker"
+      "priority_reason": null
+    },
+    {
+      "id": "t-383",
+      "stage": "implementation",
+      "desc": "Scheduler bottom-sentinel fix \u2014 human_priority=9999 currently sorts ABOVE None-hp (None\u2192inf > 9999). Pick approach: (a) flip None\u2192-1 so None sorts first, 9999 sorts last; (b) larger sentinel 10^9 + keep None\u2192inf; (c) introduce 'deferred-in-queue' status distinct from hp sentinel. Picker: Forge based on t-333 deprioritize semantics. Tests: un-pinned + deprioritized \u2192 deprioritized last; promoted (hp=0) + un-pinned + deprioritized \u2192 that exact order. Patch Poker + Cockpit + Upcoming scheduler in one heat.",
+      "status": "complete",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-016",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-384",
+      "stage": "editing",
+      "desc": "Seed intents (ini-017 pre-research). Populate state.json with three explicit intents: (1) project-level: 'Create an AI collaborator who can run autonomously, while also being responsive to human steers, and can carry out the high-level intents that the human expresses and wants.' (2) ini-016 Queue Cockpit: 'Give the human a way to ensure that individual task assignments conform to the high-level intent the human has, and gives a way to identify and correct drift.' (3) ini-012 Four UIs: 'Play with different UIs which would inform a good way of adopting steerability.' Use whatever schema exists today; note schema gaps for t-384 to resolve. Seed corpus for auto-discovery + UI testing.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-017",
+      "human_priority": 10,
+      "priority_reason": "you:p10"
+    },
+    {
+      "id": "t-385",
+      "stage": "research",
+      "desc": "Intent Hierarchy design study (ini-017). Six audit questions: (1) schema \u2014 project-level intent location (state.json commander_intent?), initiatives[].intent shape audit, need for sub-initiative/theme layer, (2) inheritance \u2014 resolver function pure+deterministic (task\u2192initiative\u2192project fallback), (3) auto-discovery \u2014 synthesize intent from initiative name + task descs + worklog + commits; decide research-heat vs CLI vs Forge self-reflection at creation, (4) editor UX \u2014 Intent Editor level switcher vs inline edit on deep-dive, (5) display \u2014 breadcrumb in deep-dive/Cockpit/drawer, short+expand vs always-full, (6) drift detection (note design implications, out-of-scope impl). Output: research/intent-hierarchy.md with schema diff + resolver pseudocode + auto-discovery plan + editor UX sketch + 4-6 impl candidates (retro format value-theses).",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-017",
+      "human_priority": null,
+      "priority_reason": "ini-017 rank=2 + poker"
+    },
+    {
+      "id": "t-386",
+      "stage": "research",
+      "desc": "Witness-style patrol for stall recovery \u2014 research/witness-patrol.md. Scope: (1) stuck-state detector (pending queue + no in_progress + all idle + stale heat); (2) role placement \u2014 fold into Marshal vs new Witness role \u2014 recommend w/ rationale; (3) activation mechanism (cron/piggyback/hook/human/hybrid) \u2014 reuse smithy patrol --fix; (4) actions policy (self-nudge \u2192 force-pop \u2192 alert, tiered); (5) livelock guard (per-target cooldown); (6) testing (synthetic stall fixture). Output: role + activation recommendations, stuck-state machine, 3-5 impl candidates retro-format w/ value theses.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-009",
+      "human_priority": null,
+      "priority_reason": "ini-009 rank=3 + poker"
+    },
+    {
+      "id": "t-387",
+      "stage": "implementation",
+      "desc": "Poker 'X queued' summary card \u2192 Cockpit teaser. Replace summary content with compact list of top 2 next_tasks (id, stage, M:pN, truncated desc). Add 'Show all \u2192' link + whole-card click \u2192 /cockpit. Reuse Cockpit row partial (note: t-378 scoped-down, partials not extracted \u2014 inline and file follow-up to consolidate). Empty state unchanged. Tests: 2 rows when 2+ queued, N rows when N<2, link target /cockpit.",
+      "status": "in_progress",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-016",
+      "human_priority": null,
+      "priority_reason": "ini-016 rank=1 + poker"
+    },
+    {
+      "id": "t-388",
+      "stage": "implementation",
+      "desc": "5-heat Cockpit UX polish block (cap 5 heats total \u2014 split/combine as needed). MUST: (1) chevron expand no longer navigates \u2014 stop-prop, expand in-place only, URL unchanged, id-click still opens drawer; (2) expand-as-card inline (desc/priority_reason/initiative/blocked_by/history), many-open allowed, collapse on re-click; (3) drag-and-drop reorder \u2014 promoted\u2192hp=0, relative reorder sets hp in 10s, blocked tasks snap back above blocker, persist via /set-human-priority or /reorder, SSE picks up new order. NICE: drag ghost/indicator, alt-\u2191/\u2193 a11y, undo toast. OUT: multi-select, cross-initiative. TESTS: chevron URL unchanged, DnD persists hp, blocked-by holds. Apply to /cockpit AND any other surface using same row component. Do NOT touch t-384/t-385/t-386 during block.",
+      "status": "complete",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-016",
+      "human_priority": null,
+      "priority_reason": null
+    },
+    {
+      "id": "t-389",
+      "stage": "implementation",
+      "desc": "t-388 H2: Cockpit DnD reorder. Drag rows to reorder within Pending section only. Promoted-to-top \u2192 hp=0; relative reorder sets hp in 10s. Blocked tasks snap back above blocker (visual reject). Persist via /set-human-priority or new /reorder. SSE picks up. Test: DnD persists hp in state.json; blocked-by holds.",
+      "status": "pending",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-016",
+      "human_priority": null,
+      "priority_reason": "ini-016 rank=1 + poker"
+    },
+    {
+      "id": "t-390",
+      "stage": "implementation",
+      "desc": "t-388 H3: Cockpit section split \u2014 Pending (incl in_progress) \u2192 Deferred (collapsible, collapsed) \u2192 Complete (collapsible, collapsed, reverse completion time from worklog). Dense one-line muted headings with count chip. Filters apply within each section.",
+      "status": "pending",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-016",
+      "human_priority": null,
+      "priority_reason": "ini-016 rank=1 + poker"
+    },
+    {
+      "id": "t-391",
+      "stage": "implementation",
+      "desc": "t-388 H4: Complete-section row shape \u2014 drop M:p/you:p/priority_reason; keep id/stage/desc; add value emoji, heat number, short commit sha. Reuse t-382 helpers (_worklog_latest_per_task, _commit_sha_per_task).",
+      "status": "pending",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-016",
+      "human_priority": null,
+      "priority_reason": "ini-016 rank=1 + poker"
+    },
+    {
+      "id": "t-392",
+      "stage": "implementation",
+      "desc": "t-388 H5: Cockpit polish buffer \u2014 drag ghost/drop-indicator, alt-\u2191/\u2193 a11y reorder, undo toast on successful reorder. Audit other surfaces using same row component and apply fixes. Fallback: roll up any t-388 H2-H4 spillover.",
+      "status": "pending",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-016",
+      "human_priority": null,
+      "priority_reason": "ini-016 rank=1 + poker"
     }
   ],
   "ideas": [
@@ -3495,7 +3605,7 @@
       "status": "rejected",
       "budget_cap": null,
       "heats_used": 0,
-      "rank": 7,
+      "rank": 8,
       "viewed_at": null
     },
     {
@@ -3575,11 +3685,11 @@
       "description": "Research how humans steer autonomous systems \u2014 not monitor, STEER. The core question: what controls does a human need to change direction without becoming a bottleneck? Study: (1) Real-time strategy games (StarCraft command hierarchy \u2014 strategic goals, tactical orders, unit autonomy), (2) Military C2 frameworks (mission-type orders, commander's intent, OODA), (3) Product management (OKRs, roadmap prioritization, sprint planning), (4) Air traffic control (constraints not commands), (5) Existing AI tools (Devin's chat-to-steer, Cursor's accept/reject, Claude Code hooks). For each, extract: what decisions the human makes, at what frequency, what information they need to decide, and what the feedback loop looks like. Deliverable: research/steering-patterns.md with a taxonomy of steering modes and which are worth prototyping as UIs.",
       "status": "approved",
       "budget_cap": 10,
-      "heats_used": 31,
-      "rank": 2,
+      "heats_used": 35,
+      "rank": 3,
       "planned_start": 635,
       "planned_end": 645,
-      "viewed_at": "2026-04-12T19:55:47Z"
+      "viewed_at": "2026-04-12T21:07:11Z"
     },
     {
       "id": "ini-010",
@@ -3589,10 +3699,10 @@
       "status": "approved",
       "budget_cap": 15,
       "heats_used": 9,
-      "rank": 3,
+      "rank": 4,
       "planned_start": 645,
       "planned_end": 655,
-      "viewed_at": "2026-04-12T19:55:45Z"
+      "viewed_at": "2026-04-12T21:07:16Z"
     },
     {
       "id": "ini-011",
@@ -3602,7 +3712,7 @@
       "status": "approved",
       "budget_cap": 15,
       "heats_used": 10,
-      "rank": 8,
+      "rank": 9,
       "planned_start": 650,
       "planned_end": 665,
       "viewed_at": "2026-04-12T19:52:52Z"
@@ -3615,7 +3725,7 @@
       "status": "approved",
       "budget_cap": 15,
       "heats_used": 8,
-      "rank": 6,
+      "rank": 7,
       "planned_start": 650,
       "planned_end": 665,
       "viewed_at": null
@@ -3628,7 +3738,7 @@
       "status": "approved",
       "budget_cap": 20,
       "heats_used": 10,
-      "rank": 7,
+      "rank": 8,
       "planned_start": 645,
       "planned_end": 665,
       "viewed_at": null
@@ -3643,7 +3753,7 @@
       "heats_used": 5,
       "planned_start": 640,
       "planned_end": 655,
-      "rank": 5,
+      "rank": 6,
       "viewed_at": "2026-04-12T20:07:18Z"
     },
     {
@@ -3654,8 +3764,8 @@
       "status": "active",
       "budget_cap": 25,
       "heats_used": 24,
-      "viewed_at": "2026-04-12T19:51:22Z",
-      "rank": 4
+      "viewed_at": "2026-04-12T21:07:19Z",
+      "rank": 5
     },
     {
       "id": "ini-016",
@@ -3664,9 +3774,20 @@
       "description": "Primary UI surface for steering per-task prioritization. Live view of the actual task queue synced to state.json, showing every task with Marshal priority, human priority, stage, status, priority reason, initiative tag. Human downranks/promotes/pins/defers from this surface. Poker remains for initiative-level steering; this is the per-task master cockpit.",
       "status": "approved",
       "budget_cap": null,
-      "heats_used": 1,
-      "viewed_at": "2026-04-12T20:07:00Z",
+      "heats_used": 7,
+      "viewed_at": "2026-04-12T21:16:55Z",
       "rank": 1
+    },
+    {
+      "id": "ini-017",
+      "theme_id": "th-002",
+      "title": "Intents as Primitives",
+      "description": "Intent is a primitive field attached uniformly to every unit of work (task, initiative, project). Same shape everywhere \u2014 no 'level' concept in storage. Inheritance/chain is one view over intents, not the core concept. Other views: search by intent content, gap audit (units with no intent), drift detection (contradicting intents). Auto-discoverable per-unit AND inline-editable wherever a unit is displayed.",
+      "status": "approved",
+      "budget_cap": null,
+      "heats_used": 0,
+      "viewed_at": "2026-04-12T21:09:09Z",
+      "rank": 2
     }
   ],
   "feedback_cursor": 26,
@@ -3696,13 +3817,14 @@
     }
   ],
   "next_tasks": [
-    "t-377",
-    "t-378",
-    "t-379",
-    "t-368",
-    "t-366",
-    "t-382",
-    "t-367",
+    "t-389",
+    "t-390",
+    "t-391",
+    "t-392",
+    "t-387",
+    "t-384",
+    "t-386",
+    "t-385",
     "t-380"
   ],
   "schema_version": 1

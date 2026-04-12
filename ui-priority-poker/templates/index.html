@@ -25,10 +25,32 @@
     {% endif %}
 
     {% if idle_state %}
+    {% if idle_state.kind == "waiting" and idle_state.next_tasks %}
+    <a href="/cockpit" class="idle-banner-link" id="idle-banner" style="text-decoration:none;color:inherit;display:block;">
+        <div class="idle-banner idle-{{ idle_state.kind }}" data-kind="{{ idle_state.kind }}">
+            <div class="idle-header">
+                <span class="idle-icon">💤</span>
+                <span class="idle-message">{{ idle_state.message }}</span>
+            </div>
+            <ul class="idle-next-list">
+                {% for nt in idle_state.next_tasks %}
+                <li class="idle-next-row">
+                    <span class="nt-id">{{ nt.id }}</span>
+                    <span class="nt-stage">{{ nt.stage }}</span>
+                    <span class="nt-prio">M:p{{ nt.priority if nt.priority is not none else '-' }}</span>
+                    <span class="nt-desc">{{ nt.desc[:60] }}{% if nt.desc|length > 60 %}…{% endif %}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            <div class="idle-show-all">Show all →</div>
+        </div>
+    </a>
+    {% else %}
     <div id="idle-banner" class="idle-banner idle-{{ idle_state.kind }}" data-kind="{{ idle_state.kind }}">
         <span class="idle-icon">💤</span>
         <span class="idle-message">{{ idle_state.message }}</span>
     </div>
+    {% endif %}
     {% else %}
     <div id="idle-banner" class="idle-banner" hidden></div>
     {% endif %}
