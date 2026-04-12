@@ -2,6 +2,8 @@
 
 An autonomous AI worker that runs inside Claude Code. Give it a budget, point it at a project, walk away. It works.
 
+**New here?** → [QUICKSTART.md](QUICKSTART.md) (5 min) · [WALKTHROUGH.md](WALKTHROUGH.md) (narrative) · [STEERING.md](STEERING.md) (UIs)
+
 ```
 cd my-project
 claude
