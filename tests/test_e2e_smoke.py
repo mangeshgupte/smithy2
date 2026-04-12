@@ -29,12 +29,17 @@ def _smithy(dir_path: Path, *args):
 
 
 def _ui_client(ui_dir_name: str, project_dir: Path, monkeypatch):
-    """Load a UI app pointed at project_dir and return a TestClient."""
+    """Load a UI app pointed at project_dir and return a TestClient.
+
+    All three UI modules share the name "app", so sys.path order decides which
+    one `import app` resolves to. We must force *this* UI's path to position 0
+    every call, otherwise a previously-loaded UI's path shadows it.
+    """
     monkeypatch.setenv("FORGE_PROJECT_DIR", str(project_dir))
-    ui_path = REPO_ROOT / ui_dir_name
-    if str(ui_path) not in sys.path:
-        sys.path.insert(0, str(ui_path))
-    # Each UI module is named "app" — force reload to pick up env
+    ui_path = str(REPO_ROOT / ui_dir_name)
+    while ui_path in sys.path:
+        sys.path.remove(ui_path)
+    sys.path.insert(0, ui_path)
     if "app" in sys.modules:
         del sys.modules["app"]
     app_mod = importlib.import_module("app")
@@ -174,6 +179,60 @@ class TestFullSmokeFlow:
         r = c.get("/")
         assert r.status_code == 200
         assert "Smoke ini" in r.text
+
+    def test_steerability_loop_end_to_end(self, scaffolded, monkeypatch):
+        """Human POSTs human_priority via Poker → scheduler reorders → pick-task flips.
+
+        Covers t-315: baseline agent ordering, human override, blocked-gating immunity,
+        and auto-clear on task completion.
+        """
+        # 1. Scaffold initiative + two competing tasks.
+        _smithy(scaffolded, "add-theme", "Steer")
+        _smithy(scaffolded, "propose", "th-001", "Steer ini", "steerability e2e")
+        _smithy(scaffolded, "approve", "ini-001")
+        rc, _, err = _smithy(scaffolded, "add-task", "implementation", "task A",
+                             "--priority", "1", "--initiative", "ini-001")
+        assert rc == 0, err
+        rc, _, err = _smithy(scaffolded, "add-task", "implementation", "task B",
+                             "--priority", "3", "--initiative", "ini-001")
+        assert rc == 0, err
+
+        # 2. Baseline: agent priority picks A (p1) over B (p3).
+        rc, out, _ = _smithy(scaffolded, "pick-task", "implementation")
+        assert rc == 0
+        assert json.loads(out)["task"]["id"] == "t-001"
+
+        # 3. Human overrides B via Poker endpoint.
+        c = _ui_client("ui-priority-poker", scaffolded, monkeypatch)
+        r = c.post("/api/task/t-002/human-priority", json={"value": 0})
+        assert r.status_code == 200
+        assert r.json()["task"]["human_priority"] == 0
+
+        # 4. Pick flips to B — human_priority=0 beats agent p1.
+        rc, out, _ = _smithy(scaffolded, "pick-task", "implementation")
+        assert rc == 0
+        assert json.loads(out)["task"]["id"] == "t-002"
+
+        # 5. Blocked-gating: a sticky-priority task with unmet blocked_by does NOT win.
+        rc, _, err = _smithy(scaffolded, "add-task", "implementation", "task C blocked",
+                             "--priority", "3", "--initiative", "ini-001",
+                             "--blocked-by", "t-001")
+        assert rc == 0, err
+        r = c.post("/api/task/t-003/human-priority", json={"value": 0})
+        assert r.status_code == 200
+        # B still wins — sticky C is blocked by incomplete A.
+        rc, out, _ = _smithy(scaffolded, "pick-task", "implementation")
+        picked = json.loads(out)["task"]
+        assert picked["id"] == "t-002", f"expected t-002 to win, got {picked['id']}"
+
+        # 6. Auto-clear: completing B nulls human_priority and priority_reason (t-312).
+        _smithy(scaffolded, "start-heat", "implementation", "--task", "t-002")
+        _smithy(scaffolded, "end-heat", "0.8", "🟢", "e2e complete")
+        state = json.loads((scaffolded / "state.json").read_text())
+        b = next(t for t in state["queue"] if t["id"] == "t-002")
+        assert b["status"] == "complete"
+        assert b["human_priority"] is None
+        assert b["priority_reason"] is None
 
     def test_heat_advances_timeline_current_heat(self, scaffolded, monkeypatch):
         # Run one heat
