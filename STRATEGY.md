@@ -82,14 +82,13 @@ See `research/gas-town-integration-synthesis.md` for the full analysis.
 
 ### What's Missing
 
-- Tutor: offline card caching (PWA service worker)
-- Tutor: "teach it back" mode (unlocks after mastery)
-- Repo map for non-dogfood projects (t-044)
-- Lint→test→fix loop (t-045)
-- Self-critique / Reflexion (t-046)
-- WhatsApp messaging bridge — deferred to v0.7+
-- Semantic memory store (vector DB) — v0.8
-- Parallel heats via sub-agents — v0.9
+- **Full-log browser surface** — extends the activity side-panel past its 20-entry cap
+- **Cross-project activity view** in Bellows — portfolio-level merge of per-project feeds
+- **Steering intent validation** — counterfactual framing ("would Forge have worked on this anyway?") for pin/reorder
+- **Idle-state UX** — explain *why* when queue empty or Forge idle (budget exhausted, no intent, waiting on Marshal)
+- **Feedback loop closure** — surface "what changed" in response to feedback.md entries
+
+_Audited at heat 777 (t-358). Prior list (PWA, teach-it-back, t-044/t-045/t-046, WhatsApp, vector DB, parallel heats) shipped or superseded — see `research/strategy-whats-missing-audit.md`._
 
 ## Main Ideas Being Tried
 
