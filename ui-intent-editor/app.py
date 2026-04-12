@@ -243,6 +243,42 @@ async def apply_decomposition(request: Request):
     return RedirectResponse(url="/", status_code=303)
 
 
+@app.post("/edit-theme/{theme_id}")
+async def edit_theme(theme_id: str, request: Request):
+    """Edit a theme's name."""
+    from fastapi.responses import JSONResponse
+    data = await request.json()
+    state = _load_state()
+    for t in state.get("themes", []):
+        if t["id"] == theme_id:
+            if "name" in data:
+                t["name"] = data["name"]
+            break
+    else:
+        return JSONResponse({"error": "Theme not found"}, status_code=404)
+    _save_state(state)
+    return JSONResponse({"ok": True, "id": theme_id})
+
+
+@app.post("/edit-initiative/{initiative_id}")
+async def edit_initiative(initiative_id: str, request: Request):
+    """Edit an initiative's title or description."""
+    from fastapi.responses import JSONResponse
+    data = await request.json()
+    state = _load_state()
+    for i in state.get("initiatives", []):
+        if i["id"] == initiative_id:
+            if "title" in data:
+                i["title"] = data["title"]
+            if "description" in data:
+                i["description"] = data["description"]
+            break
+    else:
+        return JSONResponse({"error": "Initiative not found"}, status_code=404)
+    _save_state(state)
+    return JSONResponse({"ok": True, "id": initiative_id})
+
+
 @app.post("/delete-theme/{theme_id}")
 async def delete_theme(theme_id: str):
     """Delete a theme and all its initiatives."""

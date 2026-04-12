@@ -68,6 +68,10 @@ textarea:focus { outline: none; border-color: var(--blue); }
 .existing-sub { padding-left: 24px; font-size: 13px; color: var(--text-muted); margin-top: 2px; display: flex; justify-content: space-between; align-items: center; }
 .delete-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px; padding: 2px 6px; }
 .delete-btn:hover { color: #f85149; }
+.editable-name { cursor: pointer; flex: 1; }
+.editable-name:hover { color: var(--blue); }
+.existing-status { font-size: 12px; color: var(--text-muted); margin: 0 8px; }
+.edit-name-input { background: var(--bg); border: 1px solid var(--blue); border-radius: 4px; color: var(--text); padding: 2px 6px; font-size: 13px; width: 200px; }
 
 /* Intent history */
 .history-section { margin-top: 32px; border-top: 1px solid var(--border); padding-top: 20px; }

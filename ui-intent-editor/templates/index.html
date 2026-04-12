@@ -85,7 +85,8 @@
             {% for th in existing_themes %}
             <div class="existing-item">
                 <div class="existing-header">
-                    <span>📁 {{ th.name }} ({{ th.status }})</span>
+                    <span class="editable-name" onclick="startEditName(this, 'theme', '{{ th.id }}')">📁 {{ th.name }}</span>
+                    <span class="existing-status">({{ th.status }})</span>
                     <form method="post" action="/delete-theme/{{ th.id }}" style="display:inline">
                         <button type="submit" class="delete-btn" title="Delete theme + initiatives" onclick="return confirm('Delete theme and all its initiatives?')">✕</button>
                     </form>
@@ -93,7 +94,8 @@
                 {% for ini in existing_initiatives %}
                 {% if ini.theme_id == th.id %}
                 <div class="existing-sub">
-                    <span>📋 {{ ini.title }} — {{ ini.status }}</span>
+                    <span class="editable-name" onclick="startEditName(this, 'initiative', '{{ ini.id }}')">📋 {{ ini.title }}</span>
+                    <span class="existing-status">{{ ini.status }}</span>
                     <form method="post" action="/delete-initiative/{{ ini.id }}" style="display:inline">
                         <button type="submit" class="delete-btn" title="Delete initiative" onclick="return confirm('Delete this initiative?')">✕</button>
                     </form>
@@ -148,6 +150,26 @@
         const current = ta.value.trim();
         if (current && !confirm('Replace current intent with template?')) return;
         ta.value = TEMPLATES[name] || '';
+    }
+
+    function startEditName(el, type, id) {
+        if (el.querySelector('input')) return;
+        const icon = el.textContent.substring(0, 2);
+        const name = el.textContent.substring(3).trim();
+        el.innerHTML = `${icon} <input type="text" class="edit-name-input" value="${name}" onkeydown="if(event.key==='Enter')saveEditName('${type}','${id}',this)" onblur="saveEditName('${type}','${id}',this)" autofocus>`;
+        el.querySelector('input').focus();
+    }
+
+    function saveEditName(type, id, input) {
+        const val = input.value.trim();
+        if (!val) { location.reload(); return; }
+        const endpoint = type === 'theme' ? `/edit-theme/${id}` : `/edit-initiative/${id}`;
+        const field = type === 'theme' ? 'name' : 'title';
+        fetch(endpoint, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({[field]: val})
+        }).then(r => { if (r.ok) location.reload(); });
     }
 
     function exportCLI() {
