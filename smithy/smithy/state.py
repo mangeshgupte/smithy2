@@ -10,6 +10,20 @@ VALID_OUTCOMES = ["complete", "partial", "blocked"]
 VALID_THEME_STATUSES = ["active", "paused"]
 VALID_INITIATIVE_STATUSES = ["proposed", "approved", "active", "done", "rejected"]
 
+# Current state.json schema version. Bump on breaking shape changes so loaders
+# can refuse incompatible files instead of silently mis-parsing them.
+SCHEMA_VERSION = 1
+
+
+class ConcurrentWriteError(RuntimeError):
+    """Raised when an optimistic save detects the file changed under us.
+
+    A writer (UI, CLI) loads state, stamps its mtime, mutates, then calls
+    save_state_checked(expected_mtime=mtime). If another process wrote in
+    the meantime, mtime has advanced and we abort rather than clobber. The
+    caller should reload and retry.
+    """
+
 
 def find_project_root(start: str = ".") -> Path:
     """Walk up from start directory to find state.json."""
@@ -29,11 +43,59 @@ def load_state(project_dir: Path) -> dict:
     return json.loads(path.read_text())
 
 
+def load_state_with_mtime(project_dir: Path) -> tuple[dict, float]:
+    """Load state.json and return (state, mtime) for optimistic concurrency.
+
+    The caller passes the returned mtime back to save_state_checked; if the
+    file was written by another process between load and save, the save aborts.
+    """
+    path = project_dir / "state.json"
+    if not path.exists():
+        raise FileNotFoundError(f"state.json not found at {path}")
+    mtime = path.stat().st_mtime
+    return json.loads(path.read_text()), mtime
+
+
 def save_state(project_dir: Path, state: dict):
-    """Save state.json with validation."""
+    """Save state.json with validation. Stamps schema_version if absent."""
+    state.setdefault("schema_version", SCHEMA_VERSION)
     validate_state(state)
     path = project_dir / "state.json"
     path.write_text(json.dumps(state, indent=2) + "\n")
+
+
+def save_state_checked(project_dir: Path, state: dict, expected_mtime: float):
+    """Save state.json only if mtime hasn't advanced since load.
+
+    Raises ConcurrentWriteError if another writer has touched the file.
+    This makes lost writes loud instead of silent (retro §6 #2).
+    """
+    path = project_dir / "state.json"
+    if path.exists():
+        current_mtime = path.stat().st_mtime
+        # Floating-point mtimes: compare with small epsilon for cross-fs stability.
+        if current_mtime - expected_mtime > 1e-6:
+            raise ConcurrentWriteError(
+                f"state.json changed under us "
+                f"(expected mtime {expected_mtime}, got {current_mtime}). "
+                f"Reload and retry."
+            )
+    save_state(project_dir, state)
+
+
+def check_schema_version(state: dict) -> None:
+    """Raise if state's schema_version is newer than what this code understands.
+
+    Older versions (or missing) are tolerated — save_state will stamp them.
+    Newer versions mean the file was written by newer code; we refuse rather
+    than silently mis-parsing a shape we don't understand.
+    """
+    ver = state.get("schema_version")
+    if ver is not None and ver > SCHEMA_VERSION:
+        raise RuntimeError(
+            f"state.json schema_version {ver} is newer than this "
+            f"code supports (max {SCHEMA_VERSION}). Upgrade smithy."
+        )
 
 
 def validate_state(state: dict) -> list[str]:

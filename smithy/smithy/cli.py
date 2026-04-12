@@ -11,7 +11,7 @@ from .state import (
     VALID_STAGES, VALID_SIGNALS, VALID_OUTCOMES,
 )
 
-VALID_PERSONAS = ["forge", "marshal"]
+VALID_PERSONAS = ["forge", "marshal", "anvil", "chisel"]
 
 
 def _output(data: dict):
@@ -986,6 +986,169 @@ def start_session(ctx, persona):
 
     _output({"started": True, "target": target, "persona": persona, "dir": str(persona_dir)})
     _err(f"Started {persona} window in smithy2 ({persona_dir})")
+
+
+@cli.command("start-all")
+@click.option("--safe", is_flag=True, default=False, help="Run claude without --dangerously-skip-permissions")
+@click.pass_context
+def start_all(ctx, safe):
+    """Start the full smithy2 tmux session with anvil, forge, and marshal windows."""
+    import subprocess
+    root = ctx.obj["root"]
+    claude_cmd = "claude" if safe else "claude --dangerously-skip-permissions"
+    personas = ["anvil", "forge", "marshal"]
+
+    # Check if smithy2 session already exists
+    result = subprocess.run(
+        ["tmux", "has-session", "-t", "smithy2"],
+        capture_output=True, text=True,
+    )
+    if result.returncode == 0:
+        # Session exists — check which windows are missing
+        result = subprocess.run(
+            ["tmux", "list-windows", "-t", "smithy2", "-F", "#{window_name}"],
+            capture_output=True, text=True,
+        )
+        existing = result.stdout.strip().split("\n") if result.stdout.strip() else []
+        started = []
+        skipped = []
+        for p in personas:
+            if p in existing:
+                skipped.append(p)
+                continue
+            persona_dir = root / "personas" / p
+            if not persona_dir.exists():
+                skipped.append(p)
+                continue
+            subprocess.run(
+                ["tmux", "new-window", "-t", "smithy2", "-n", p,
+                 "-c", str(persona_dir)],
+                capture_output=True, text=True,
+            )
+            subprocess.run(
+                ["tmux", "send-keys", "-t", f"smithy2:{p}", claude_cmd, "Enter"],
+                capture_output=True, text=True,
+            )
+            started.append(p)
+        _output({"session": "smithy2", "started": started, "skipped": skipped, "claude_cmd": claude_cmd})
+        _err(f"smithy2: started {started}, skipped {skipped}")
+        return
+
+    # Create fresh session with first persona, then add the rest
+    first = personas[0]
+    first_dir = root / "personas" / first
+    subprocess.run(
+        ["tmux", "new-session", "-d", "-s", "smithy2", "-n", first,
+         "-c", str(first_dir)],
+        capture_output=True, text=True,
+    )
+    subprocess.run(
+        ["tmux", "send-keys", "-t", f"smithy2:{first}", claude_cmd, "Enter"],
+        capture_output=True, text=True,
+    )
+    started = [first]
+
+    for p in personas[1:]:
+        persona_dir = root / "personas" / p
+        if not persona_dir.exists():
+            continue
+        subprocess.run(
+            ["tmux", "new-window", "-t", "smithy2", "-n", p,
+             "-c", str(persona_dir)],
+            capture_output=True, text=True,
+        )
+        subprocess.run(
+            ["tmux", "send-keys", "-t", f"smithy2:{p}", claude_cmd, "Enter"],
+            capture_output=True, text=True,
+        )
+        started.append(p)
+
+    _output({"session": "smithy2", "started": started, "claude_cmd": claude_cmd})
+    _err(f"smithy2 session created with windows: {started}")
+
+
+@cli.command("stop")
+@click.argument("persona", type=click.Choice(VALID_PERSONAS))
+@click.option("--kill", is_flag=True, default=False, help="Kill the tmux window instead of graceful /exit")
+@click.pass_context
+def stop_session(ctx, persona, kill):
+    """Stop a persona's Claude session in the smithy2 tmux session."""
+    import subprocess, time
+    target = f"smithy2:{persona}"
+
+    # Check session and window exist
+    result = subprocess.run(
+        ["tmux", "list-windows", "-t", "smithy2", "-F", "#{window_name}"],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        _output({"stopped": False, "reason": "smithy2 session not found"})
+        _err("smithy2 session not found")
+        return
+
+    existing = result.stdout.strip().split("\n") if result.stdout.strip() else []
+    if persona not in existing:
+        _output({"stopped": False, "reason": f"window '{persona}' not found"})
+        _err(f"Window '{persona}' not found in smithy2")
+        return
+
+    if kill:
+        subprocess.run(["tmux", "kill-window", "-t", target], capture_output=True, text=True)
+        _output({"stopped": True, "persona": persona, "method": "kill"})
+        _err(f"Killed {target}")
+    else:
+        # Send /exit to Claude, wait briefly, then send exit to shell
+        subprocess.run(["tmux", "send-keys", "-t", target, "/exit", "Enter"], capture_output=True, text=True)
+        time.sleep(2)
+        subprocess.run(["tmux", "send-keys", "-t", target, "exit", "Enter"], capture_output=True, text=True)
+        _output({"stopped": True, "persona": persona, "method": "graceful"})
+        _err(f"Sent /exit to {target}")
+
+
+@cli.command("stop-all")
+@click.option("--kill", is_flag=True, default=False, help="Kill the entire smithy2 tmux session")
+@click.pass_context
+def stop_all(ctx, kill):
+    """Stop all Claude sessions in the smithy2 tmux session."""
+    import subprocess, time
+    personas = ["anvil", "forge", "marshal"]
+
+    # Check session exists
+    result = subprocess.run(
+        ["tmux", "has-session", "-t", "smithy2"],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        _output({"stopped": False, "reason": "smithy2 session not found"})
+        _err("smithy2 session not found")
+        return
+
+    if kill:
+        subprocess.run(["tmux", "kill-session", "-t", "smithy2"], capture_output=True, text=True)
+        _output({"stopped": True, "method": "kill-session", "personas": personas})
+        _err("Killed entire smithy2 session")
+        return
+
+    # Graceful: send /exit to each window's Claude, then exit the shell
+    result = subprocess.run(
+        ["tmux", "list-windows", "-t", "smithy2", "-F", "#{window_name}"],
+        capture_output=True, text=True,
+    )
+    existing = result.stdout.strip().split("\n") if result.stdout.strip() else []
+    stopped = []
+    for p in personas:
+        if p not in existing:
+            continue
+        subprocess.run(["tmux", "send-keys", "-t", f"smithy2:{p}", "/exit", "Enter"], capture_output=True, text=True)
+        stopped.append(p)
+
+    # Wait for Claude to exit, then close shells
+    time.sleep(3)
+    for p in stopped:
+        subprocess.run(["tmux", "send-keys", "-t", f"smithy2:{p}", "exit", "Enter"], capture_output=True, text=True)
+
+    _output({"stopped": True, "method": "graceful", "personas": stopped})
+    _err(f"Stopped: {stopped}")
 
 
 @cli.command("process-feedback")
