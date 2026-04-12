@@ -120,6 +120,44 @@
         <span>🗑️ Drop here to reject</span>
     </div>
 
+    <!-- Task detail side drawer (t-325) -->
+    <div id="task-detail-backdrop" class="task-detail-backdrop" onclick="closeTaskDetail()"></div>
+    <aside id="task-detail" class="task-detail" aria-hidden="true" role="dialog" aria-labelledby="td-id">
+        <button class="task-detail-close" onclick="closeTaskDetail()" aria-label="Close" title="Close (ESC)">×</button>
+        <div class="task-detail-body">
+            <div class="td-identity">
+                <div class="td-id" id="td-id">—</div>
+                <div class="td-desc" id="td-desc">Loading…</div>
+                <div class="td-badges">
+                    <span class="td-stage" id="td-stage"></span>
+                    <span class="td-status" id="td-status"></span>
+                </div>
+            </div>
+            <section class="td-section">
+                <h3>Priority</h3>
+                <dl class="td-dl">
+                    <dt>Marshal</dt><dd id="td-priority">—</dd>
+                    <dt>You</dt><dd>
+                        <input id="td-hp-input" type="number" step="1" placeholder="—" />
+                        <button id="td-hp-set" onclick="setHumanPriorityFromDrawer()">set</button>
+                        <button id="td-hp-clear" onclick="clearHumanPriorityFromDrawer()">clear</button>
+                    </dd>
+                    <dt>Reason</dt><dd id="td-reason">—</dd>
+                    <dt>Initiative</dt><dd id="td-initiative">—</dd>
+                    <dt>Blocked by</dt><dd id="td-blocked">—</dd>
+                </dl>
+            </section>
+            <section class="td-section">
+                <h3>History</h3>
+                <ul class="td-history" id="td-history"></ul>
+            </section>
+            <section class="td-section">
+                <h3>Worklog <span class="td-count" id="td-worklog-count"></span></h3>
+                <ul class="td-worklog" id="td-worklog"></ul>
+            </section>
+        </div>
+    </aside>
+
     <script>
     const list = document.getElementById('card-list');
     let dragEl = null;
@@ -218,6 +256,110 @@
                 .catch(() => {});
         }
     }
+
+    // Task detail drawer (t-325)
+    let currentDetailTaskId = null;
+
+    function openTaskDetail(evt, taskId) {
+        if (evt) evt.stopPropagation();
+        currentDetailTaskId = taskId;
+        const url = new URL(window.location);
+        url.searchParams.set('task', taskId);
+        window.history.replaceState({}, '', url);
+        document.getElementById('task-detail').setAttribute('aria-hidden', 'false');
+        document.getElementById('task-detail-backdrop').classList.add('show');
+        document.getElementById('td-id').textContent = taskId;
+        document.getElementById('td-desc').textContent = 'Loading…';
+        fetch('/api/task/' + encodeURIComponent(taskId))
+            .then(r => { if (!r.ok) throw new Error('not found'); return r.json(); })
+            .then(renderTaskDetail)
+            .catch(() => { document.getElementById('td-desc').textContent = 'Task not found'; });
+    }
+
+    function closeTaskDetail() {
+        currentDetailTaskId = null;
+        document.getElementById('task-detail').setAttribute('aria-hidden', 'true');
+        document.getElementById('task-detail-backdrop').classList.remove('show');
+        const url = new URL(window.location);
+        url.searchParams.delete('task');
+        window.history.replaceState({}, '', url);
+    }
+
+    function renderTaskDetail(data) {
+        const t = data.task;
+        document.getElementById('td-id').textContent = t.id;
+        document.getElementById('td-desc').textContent = t.desc || '';
+        document.getElementById('td-stage').textContent = t.stage || '';
+        document.getElementById('td-stage').className = 'td-stage stage-' + (t.stage || 'unknown');
+        document.getElementById('td-status').textContent = t.status || '';
+        document.getElementById('td-status').className = 'td-status status-' + (t.status || 'unknown');
+        document.getElementById('td-priority').textContent = 'p' + (t.priority ?? '?');
+        document.getElementById('td-hp-input').value = t.human_priority ?? '';
+        document.getElementById('td-reason').textContent = t.priority_reason || '—';
+        const iniEl = document.getElementById('td-initiative');
+        if (data.initiative) {
+            iniEl.textContent = data.initiative.id + ' · ' + data.initiative.title + ' (rank ' + (data.initiative.rank ?? '?') + ')';
+        } else {
+            iniEl.textContent = '—';
+        }
+        const bb = t.blocked_by || [];
+        document.getElementById('td-blocked').textContent = bb.length ? bb.join(', ') : 'none';
+
+        // History
+        const histUl = document.getElementById('td-history');
+        histUl.innerHTML = '';
+        (data.history || []).forEach(h => {
+            const li = document.createElement('li');
+            const hp = h.human_priority == null ? '—' : 'p' + h.human_priority;
+            li.textContent = (h.ts || 'now') + ' · ' + (h.source || 'current') +
+                ' · M:p' + (h.priority ?? '?') + ' · you:' + hp +
+                (h.priority_reason ? ' · ' + h.priority_reason : '');
+            histUl.appendChild(li);
+        });
+
+        // Worklog
+        const wlUl = document.getElementById('td-worklog');
+        const wl = data.worklog || [];
+        document.getElementById('td-worklog-count').textContent = '(' + wl.length + ')';
+        wlUl.innerHTML = '';
+        wl.forEach(row => {
+            const li = document.createElement('li');
+            li.textContent = 'h' + row.heat + ' ' + (row.stage || '') + ' ' +
+                (row.signal || '') + ' ' + (row.value ?? '') +
+                (row.notes ? ' — ' + row.notes : '');
+            wlUl.appendChild(li);
+        });
+    }
+
+    function setHumanPriorityFromDrawer() {
+        if (!currentDetailTaskId) return;
+        const raw = document.getElementById('td-hp-input').value;
+        const val = raw === '' ? null : parseInt(raw, 10);
+        if (val !== null && Number.isNaN(val)) return;
+        fetch('/api/task/' + currentDetailTaskId + '/human-priority', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ value: val }),
+        }).then(r => { if (r.ok) { refreshState(); openTaskDetail(null, currentDetailTaskId); } });
+    }
+
+    function clearHumanPriorityFromDrawer() {
+        document.getElementById('td-hp-input').value = '';
+        setHumanPriorityFromDrawer();
+    }
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && document.getElementById('task-detail').getAttribute('aria-hidden') === 'false') {
+            closeTaskDetail();
+        }
+    });
+
+    // Deep link: open drawer from ?task=<id> on page load
+    window.addEventListener('DOMContentLoaded', () => {
+        const params = new URLSearchParams(window.location.search);
+        const t = params.get('task');
+        if (t) openTaskDetail(null, t);
+    });
 
     function downrank(evt, taskId, currentHp) {
         evt.stopPropagation();
