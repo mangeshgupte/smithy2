@@ -1,5 +1,43 @@
 # Changelog
 
+## v1.8 — Steerability: Ranking > Constraints (heats 725-739)
+
+### Philosophy Shift
+- **STRATEGY.md**: ranking-first replaces constraint-first steering. The allocator is the executor; humans ship signal via *order*, not rules. Tasks' `human_priority` (sticky int, ascending) overrides Marshal's `priority` until completion or explicit clear.
+
+### Constraints UI Retirement (ini-008 closeout)
+- **ui-constraint-board deleted** (t-310); CLI constraint commands + state.json `constraints` block preserved for any surviving programmatic users but de-emphasized (t-318 cleanup — STEERING/QUICKSTART/README/WALKTHROUGH rewired around ranking)
+- **docs/retro-agent-teams.md §8** — post-mortem on why constraints didn't earn their keep (t-311)
+
+### Dispatch/ Retirement
+- **`dispatch/` module removed** (t-308) — after queue unification (v1.5) and nudge integration, the old dispatcher had no live callers
+
+### Full Steerability Feature
+- **Sticky `human_priority`** on tasks (t-312): ascending int, null-by-default, persisted across heats, auto-cleared on `status: complete`
+- **Scheduler sort** (t-313): `(human_priority or +inf, priority, id)` — `blocked_by` gating preserved (blocked tasks never lead regardless of priority); `priority_reason` auto-populated as `"ini-XXX rank=N + <signal>"` or `"p{N} + <signal>"`, ≤40 chars; signal vocab = `{recency, poker, stage-balance, blocked-deps-clear}`; wired into `add-task`, `queue-push`, `set-priority`, `set-next-tasks`
+- **Poker drawer UI** (t-314, t-319): per-initiative expandable drawer with In-flight / Queued / Shipped-since-viewed sections; row layout `[task-id] [desc] M:p{N} [· priority_reason] [you:—|p{X}] [↓]`; one-click `↓` downrank; `POST /api/initiative/<id>/view` stamps `viewed_at` on expand; `POST /api/task/<id>/human-priority` with `{value: int|null}` sets/clears with mtime-checked save
+
+### Queue-Pop Stale-Head Bug
+- **t-317**: fixed `queue-pop` race where a task completed by a concurrent process could still be returned as the queue head. Root cause of the t-295 "race mystery" — not a race, a stale-read. Now revalidates status under mtime precondition.
+
+### Per-Heat Diff View
+- **Bellows `/project/<n>/diff?n=K`** (t-306): renders state.json field-level diff between HEAD and HEAD~K commits; JSON sibling at `/api/project/<n>/heat-diff`
+
+### UI Concurrency Safety
+- **All 4 steering UIs + Bellows decision endpoints** (t-316) now use mtime-checked writes; `ConcurrentWriteError` surfaces as HTTP 409. GET/SSE paths untouched.
+
+### Testing
+- **E2E steerability test** (t-315, `tests/test_e2e_smoke.py::test_steerability_loop_end_to_end`): baseline pick → human override flip via Poker TestClient → blocked-gating preservation → auto-clear on completion
+- **Round-trip parser test** (t-305): state.json serialize → parse → compare across fixture corpus
+- **312 tests green** across CLI, steering UIs, bellows, e2e
+
+### Stats
+- **Heats**: 725-739 (14 heats)
+- **Tests**: 312 passing (+10 scheduler sort, +9 poker drawer, +3 concurrency, +1 e2e steerability on top of v1.7's baseline)
+- **Files touched**: STRATEGY.md, smithy/cli.py, smithy/tests/test_smithy.py, ui-priority-poker/{app.py, templates/index.html, templates/_task_row.html, static/style.css}, ui-intent-editor/app.py, ui-timeline/app.py, bellows/app.py, tests/test_steering_uis.py, tests/test_e2e_smoke.py, ui-constraint-board/ (deleted), dispatch/ (deleted)
+
+---
+
 ## v1.7 — Docs, Timeline Indicator, E2E + Agent Teams Retro (heats 710-719)
 
 ### Documentation
