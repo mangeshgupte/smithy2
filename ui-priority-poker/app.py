@@ -433,6 +433,62 @@ async def set_human_priority(task_id: str, request: Request):
     return JSONResponse({"ok": False, "error": "not found"}, status_code=404)
 
 
+@app.post("/api/reorder-tasks")
+async def reorder_tasks(request: Request):
+    """t-389: Bulk-assign human_priority from an ordered list of task_ids.
+
+    Body: {"order": ["t-01", "t-07", ...]}. Assigns hp = idx*10 so insertions
+    between rows later can use (a.hp + b.hp)//2 style math without rewrites.
+    Ignores unknown ids. Validates blocked_by: if any id in `order` appears
+    BEFORE one of its blockers (also present in `order`), returns 409 and
+    makes no change — SSE picks up only on success.
+    """
+    body = await request.json()
+    order = body.get("order", [])
+    if not isinstance(order, list) or not all(isinstance(x, str) for x in order):
+        return JSONResponse({"ok": False, "error": "order must be list[str]"},
+                            status_code=400)
+
+    state, mtime = _load_state_with_mtime()
+    q_by_id = {t["id"]: t for t in state.get("queue", [])}
+    pos = {tid: i for i, tid in enumerate(order)}
+
+    # Blocker check: for each id in order, every blocker that's also present
+    # in order must come earlier. Otherwise reject wholesale (snap-back).
+    for tid in order:
+        task = q_by_id.get(tid)
+        if not task:
+            continue
+        for blocker in task.get("blocked_by", []) or []:
+            if blocker in pos and pos[blocker] >= pos[tid]:
+                return JSONResponse({
+                    "ok": False,
+                    "error": "blocked_by violation",
+                    "task_id": tid,
+                    "blocker": blocker,
+                }, status_code=409)
+
+    changes = []
+    for idx, tid in enumerate(order):
+        t = q_by_id.get(tid)
+        if not t:
+            continue
+        before = t.get("human_priority")
+        after = idx * 10
+        if before != after:
+            t["human_priority"] = after
+            t["priority_reason"] = "you:reorder"
+            changes.append((tid, before, after))
+
+    _save_state_checked(state, mtime)
+    actor = _actor_from_request(request, "bellows-poker")
+    for tid, before, after in changes:
+        log_steering(STATE_DIR, actor=actor, task_id=tid,
+                     field="human_priority", before=before, after=after,
+                     source="cockpit-dnd")
+    return JSONResponse({"ok": True, "changed": len(changes), "order": order})
+
+
 @app.post("/api/task/{task_id}/defer")
 async def defer_task(task_id: str, request: Request):
     """Set status='deferred'. Scheduler skips (filters pending only). Reversible via /undefer."""

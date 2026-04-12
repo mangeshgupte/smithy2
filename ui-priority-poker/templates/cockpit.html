@@ -65,6 +65,14 @@
         .c-inline-history { font-size: 11px; color: var(--text-muted, #aaa); }
         .c-inline-history ul { margin: 4px 0 0 16px; padding: 0; }
         .c-inline-history li { margin: 1px 0; }
+        /* t-389: DnD affordances. Pending rows are draggable. */
+        .cockpit-table tr[draggable="true"] { cursor: grab; }
+        .cockpit-table tr.c-dragging { opacity: 0.4; }
+        .cockpit-table tr.c-drop-above { box-shadow: inset 0 2px 0 0 var(--yellow, #c89c2a); }
+        .cockpit-table tr.c-drop-below { box-shadow: inset 0 -2px 0 0 var(--yellow, #c89c2a); }
+        @keyframes c-reject-flash { 0%,100% { background: inherit; }
+                                    30%,70% { background: rgba(220,60,60,0.25); } }
+        .cockpit-table tr.c-drop-reject { animation: c-reject-flash 0.45s ease; }
     </style>
 </head>
 <body>
@@ -196,6 +204,17 @@
             const tr = document.createElement('tr');
             if (t.status === 'deferred') tr.classList.add('deferred-row');
             tr.dataset.taskId = t.id;
+            tr.dataset.status = t.status;
+            tr.dataset.blockedBy = (t.blocked_by || []).join(',');
+            // t-389: only pending rows are reorderable.
+            if (t.status === 'pending') {
+                tr.draggable = true;
+                tr.addEventListener('dragstart', onRowDragStart);
+                tr.addEventListener('dragover', onRowDragOver);
+                tr.addEventListener('dragleave', onRowDragLeave);
+                tr.addEventListener('drop', onRowDrop);
+                tr.addEventListener('dragend', onRowDragEnd);
+            }
             const hp = (t.human_priority == null) ? '—' : ('p' + t.human_priority);
             const isOpen = expanded.has(t.id);
             tr.innerHTML =
@@ -309,6 +328,96 @@
     function toggleDefer(taskId, status) {
         const path = (status === 'deferred') ? '/undefer' : '/defer';
         fetch('/api/task/' + taskId + path, {method: 'POST'}).then(loadRows);
+    }
+
+    // t-389: DnD reorder within the Pending section.
+    // Drop at top → hp=0. Elsewhere → hp = idx*10 across all pending rows.
+    // Blocked tasks snap back above their blocker (visual reject, no fetch).
+    let dragState = null;
+
+    function pendingRows() {
+        return Array.from(document.querySelectorAll(
+            '#rows tr[data-task-id][data-status="pending"]'));
+    }
+
+    function onRowDragStart(evt) {
+        const tr = evt.currentTarget;
+        dragState = { id: tr.dataset.taskId, row: tr };
+        tr.classList.add('c-dragging');
+        if (evt.dataTransfer) {
+            evt.dataTransfer.effectAllowed = 'move';
+            evt.dataTransfer.setData('text/plain', tr.dataset.taskId);
+        }
+    }
+
+    function onRowDragOver(evt) {
+        if (!dragState) return;
+        const tr = evt.currentTarget;
+        if (tr === dragState.row) return;
+        evt.preventDefault();
+        if (evt.dataTransfer) evt.dataTransfer.dropEffect = 'move';
+        const rect = tr.getBoundingClientRect();
+        const above = (evt.clientY - rect.top) < rect.height / 2;
+        tr.classList.toggle('c-drop-above', above);
+        tr.classList.toggle('c-drop-below', !above);
+    }
+
+    function onRowDragLeave(evt) {
+        evt.currentTarget.classList.remove('c-drop-above', 'c-drop-below');
+    }
+
+    function onRowDragEnd(evt) {
+        evt.currentTarget.classList.remove('c-dragging');
+        document.querySelectorAll('.c-drop-above, .c-drop-below')
+            .forEach(el => el.classList.remove('c-drop-above', 'c-drop-below'));
+        dragState = null;
+    }
+
+    function onRowDrop(evt) {
+        if (!dragState) return;
+        evt.preventDefault();
+        const target = evt.currentTarget;
+        const rect = target.getBoundingClientRect();
+        const above = (evt.clientY - rect.top) < rect.height / 2;
+        target.classList.remove('c-drop-above', 'c-drop-below');
+        const draggedId = dragState.id;
+        if (target === dragState.row) return;
+
+        // Compute candidate new order of pending ids.
+        const current = pendingRows().map(r => r.dataset.taskId);
+        const withoutDragged = current.filter(id => id !== draggedId);
+        const targetId = target.dataset.taskId;
+        const insertAt = withoutDragged.indexOf(targetId) + (above ? 0 : 1);
+        const newOrder = withoutDragged.slice(0, insertAt)
+            .concat([draggedId])
+            .concat(withoutDragged.slice(insertAt));
+
+        // Blocker pre-check (client-side snap-back). Server repeats the check.
+        const blockedBy = (dragState.row.dataset.blockedBy || '')
+            .split(',').filter(Boolean);
+        const draggedIdx = newOrder.indexOf(draggedId);
+        const violation = blockedBy.find(b => {
+            const bi = newOrder.indexOf(b);
+            return bi !== -1 && bi >= draggedIdx;
+        });
+        if (violation) {
+            dragState.row.classList.add('c-drop-reject');
+            setTimeout(() => dragState && dragState.row &&
+                dragState.row.classList.remove('c-drop-reject'), 500);
+            return;
+        }
+
+        fetch('/api/reorder-tasks', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({order: newOrder})
+        }).then(r => r.json()).then(resp => {
+            if (!resp.ok) {
+                // Server rejected (concurrent blocker change). Flash + refetch.
+                target.classList.add('c-drop-reject');
+                setTimeout(() => target.classList.remove('c-drop-reject'), 500);
+            }
+            loadRows();
+        });
     }
 
     // Keyboard nav (t-379): j/k move row focus, Enter opens drawer, x toggles defer.
