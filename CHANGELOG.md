@@ -1,5 +1,46 @@
 # Changelog
 
+## v1.10 — Activity Side-Panel + Attribution Hardening (heats 765-775)
+
+### Philosophy
+- **Attribution is cheap to generate — but invisible unless it surfaces.** v1.9 landed the pipeline (steering.log). v1.10 closes the loop: a cross-UI **activity side-panel** merges steering events with Forge heats into one newest-first stream, visible on Poker today (and Timeline next). The retro that was a weekly CLI output is now a passive peripheral — "what's happening" visible without asking.
+
+### Activity Side-Panel MVP (t-352-t-355)
+- **Shared helper `smithy/smithy/activity.py`** (t-352) — `read_activity(project_root, limit=20, since=None)` merges `steering.log` + `worklog.tsv` tails into the common entry schema `{when, heat, origin, actor, task_id, verb, detail, source}`. Verb mapping from raw rows: `pinned`/`unpinned`/`priority-set` (human_priority or upcoming_pinned), `deferred`/`undeferred` (poker-drawer-defer/-undefer), `deleted` (queue_membership), `reordered` (upcoming_rank), `completed` (worklog outcome=complete). 7 unit tests.
+- **`GET /api/activity?limit=&since=`** on Poker + Timeline (t-353) — thin wrappers over the helper, returning `{count, entries}`. Limit clamped to [1, 500]. 8 parametrized tests across both UIs — merged stream, limit, since, empty-project.
+- **Poker activity side-panel** (t-354) — 280px right-rail, 5s poll, header = `h{heat} · {relative_time}`, body = `{icon} {actor} {verb} {task_id}`. Forge rows muted (opacity 0.72) to keep human steering legible. Collapsible via toggle, hidden below 900px viewport. "view full log →" link deep-links to `/api/activity?limit=500`.
+- **E2E trace** (t-355) — `test_activity_e2e.py`: Bellows pin (X-Actor=test:activity) → steering.log → `read_activity` → Poker `/api/activity` → Poker HTML wiring, all in one test. Locks the t-352→t-354 seam.
+
+### Attribution Hardening (trailing v1.9 items)
+- **Retro Gap 4 — By-actor breakdown** (t-348) — `smithy steering-retro` JSON now includes `by_actor: [{actor, events}]` sorted descending; markdown grows a `## By actor` section. Enables "which teammate pinned the most this week" at a glance.
+- **Retro Gap 1-3 fixes** (t-346) — "Tasks shipped" renamed to "Heats completed" (Forge logs per-heat not per-task); `unique_tasks_touched` added; `shipped_post_pin` dedups by earliest ship heat per task; `task_heats_total` filters denominator to real `t-*` tasks (excludes `generated`/research heats); empty-log footer renders when `steering.log` is missing or empty in window.
+
+### Intent Templates + Regression (t-347, t-351)
+- **`smithy init --template=<shape>`** (t-347) — 6 shapes (lib, cli, web, data-pipe, mobile, research) seed identity.md bullets + themes + initiatives on scaffold. `--list-templates` lists available shapes as JSON. Omitting `--template` preserves backwards-compat (blank scaffold).
+- **Regression suite** (t-351) — 6 parametrized structural-integrity tests: themes/initiatives round-trip verbatim, unique IDs within a template, every initiative's `theme_id` resolves to a seeded theme, intent bullets render in original order, template label present.
+
+### Documentation (t-350, t-349)
+- **`research/activity-side-panel-design.md`** (t-349) — 6 framing Q&As (content, host UIs, freshness, window, interactivity, Forge-event scope), proposed entry schema, `/api/activity` proposal, UI mockup, and the 5 impl candidates (t-352→t-356) with value-theses. This doc is what the MVP shipped against.
+- **README + STEERING docs** (t-350) — `smithy steering-retro` added to CLI cheat sheet; new "Intent Templates" section with 6-shape table; new "Steering Attribution" + "Steering Attribution Pipeline" sections with endpoint/field/source tables and example retro output; Timeline routes table gains `/api/steering-log`.
+
+### Hypotheses
+| # | Hypothesis | Status | Evidence |
+|---|------------|--------|----------|
+| H14 | Merging steering + forge into one stream is more useful than two surfaces | ⏳ inconclusive | Shipped to Poker only; pausing before Timeline render pending feedback on whether the mix is legible or cluttered |
+| H15 | Verb-mapping from raw log fields is cheap to centralize | ✓ validated | 8 verbs mapped in a 10-line helper; zero coupling to UI code; both Poker+Timeline endpoints landed as 5-line wrappers |
+| H16 | Retro gaps surface faster via dogfood than via beta | ✓ validated | First-run dogfood exposed 5 gaps (v1.9 Gap 1-5) before any human used the CLI; 3 fixed in t-346, 1 in t-348, 1 deferred |
+
+### Stats
+- **Heats**: 765-775 (11 heats — 4 impl + 2 editing + 2 research + 2 testing + 1 marketing)
+- **Tests**: +36 across the block (7 activity helper, 8 activity API, 1 activity E2E, 2 retro Gap 1-3 fixes, 2 retro by-actor, 12 intent templates, 6 template regression, misc)
+- **Full suite at v1.10 close**: 193 passing, 3.64s runtime
+
+### Follow-ups queued
+- **t-359** — Timeline activity side-panel render (impl, p3) — reuses t-354 CSS/JS at near-zero cost; pending feedback on Poker version
+- **t-360** — Click-to-jump task anchors (impl, p3) — gate on user feedback per design doc §Q5
+
+---
+
 ## v1.9 — Steering Attribution Pipeline (heats 756-764)
 
 ### Philosophy
