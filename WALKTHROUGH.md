@@ -281,6 +281,20 @@ Six heats, all testing. But Alex also wants coverage reporting and CI to happen 
 
 No constraint needed. The preference signal already lives in the rank.
 
+### Task-level nudges inside an initiative
+
+Alex clicks the initiative row to expand the drawer. The queued tasks render like:
+
+```
+t-012  add CI workflow for pytest           M:p1 · ini-003 rank=1 + poker   you:—   [↓]
+t-013  generate coverage.xml on every run   M:p2 · ini-003 rank=1 + poker   you:—   [↓]
+t-014  upload coverage to codecov           M:p2 · ini-003 rank=1 + poker   you:—   [↓]
+```
+
+Each row shows Marshal's priority (`M:p{N}`), the auto-generated `priority_reason` (≤40 chars, drawn from the `{recency, poker, stage-balance, blocked-deps-clear}` signal vocab), and Alex's sticky override (`you:—` means unset). Alex wants t-013 to happen *before* t-012 and clicks `↓` on t-012. The drawer POSTs to `/api/task/t-012/human-priority` with `{"value": 10}` — `you:p10` now appears on that row, and Marshal's next scheduling pass sorts `(human_priority or +inf, priority, id)`, so t-013 (unset, p2) leads t-012 (p10 sticky).
+
+Alex flips to Bellows and opens `/project/tasq-cli/diff?n=1` to confirm the queue reordered as expected — the per-heat diff view shows `queue[*].human_priority` and order changes across the last N heats. When Forge eventually ships t-012, the sticky override auto-clears on completion; `human_priority` doesn't outlive the task it rode in on.
+
 ---
 
 ## Act 6 — Review
