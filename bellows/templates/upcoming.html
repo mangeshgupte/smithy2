@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title_suffix %} — Upcoming{% endblock %}
+{% block content %}
+<header class="page-header">
+    <h1>Upcoming</h1>
+    <p class="subtitle">Cross-project sequencing · drag pinned rows to reorder · click task to open in Poker</p>
+</header>
+
+<section class="upcoming-section">
+    <h2>📌 Pinned <span class="count" id="pinned-count">(0)</span></h2>
+    <div id="pinned-list" class="upcoming-list pinned-list"></div>
+    <div id="pinned-empty" class="upcoming-empty">No pinned tasks. Use <strong>📌</strong> on an "Up Next" row to pin.</div>
+</section>
+
+<section class="upcoming-section">
+    <h2>Up Next <span class="count" id="up-next-count">(0)</span></h2>
+    <div id="up-next-list" class="upcoming-list"></div>
+    <div id="up-next-empty" class="upcoming-empty">No pending tasks across projects.</div>
+</section>
+
+<div id="gc-toast" class="gc-toast" aria-live="polite"></div>
+
+<script>
+const POLL_MS = 5000;
+let dragEl = null;
+
+async function fetchUpcoming() {
+    try {
+        const r = await fetch('/api/upcoming');
+        if (!r.ok) throw new Error('fetch failed');
+        const data = await r.json();
+        renderPinned(data.pinned || []);
+        renderUpNext(data.up_next || []);
+        if (data.gc && data.gc.length) showGCToast(data.gc);
+    } catch (e) {
+        // Silent fail; next poll will retry
+    }
+}
+
+function projectPokerUrl(project, taskId) {
+    // Each project's Poker is at port 8001 (same host). Deep-link with ?task=<id>.
+    // If user runs multiple projects at different ports, they can set URL_POKER per-project.
+    const base = window.URL_POKER_BASE || 'http://localhost:8001';
+    return `${base}/?task=${encodeURIComponent(taskId)}`;
+}
+
+function rowHtml(task, isPinned) {
+    const projectLabel = task.project || '';
+    const desc = (task.desc || '').slice(0, 80) + ((task.desc || '').length > 80 ? '…' : '');
+    const mp = task.priority ?? '?';
+    const hp = task.human_priority == null ? '—' : 'p' + task.human_priority;
+    const stage = task.stage || '';
+    const pokerUrl = projectPokerUrl(task.project, task.id);
+    const action = isPinned
+        ? `<button class="up-action up-unpin" title="Unpin" onclick="unpin(event, '${task.project}', '${task.id}')">×</button>`
+        : `<button class="up-action up-pin" title="Pin to Upcoming" onclick="pin(event, '${task.project}', '${task.id}')">📌</button>`;
+    return `
+      <div class="upcoming-row" draggable="${isPinned}" data-project="${task.project}" data-task-id="${task.id}">
+        <span class="up-handle">${isPinned ? '≡' : ''}</span>
+        <span class="up-rank">${isPinned ? '#' + task.globally_pinned_rank : ''}</span>
+        <a class="up-project" href="${pokerUrl}" target="_blank" rel="noopener">${projectLabel}</a>
+        <a class="up-task-id" href="${pokerUrl}" target="_blank" rel="noopener">${task.id}</a>
+        <span class="up-desc"><a href="${pokerUrl}" target="_blank" rel="noopener">${desc}</a></span>
+        <span class="up-stage stage-${stage}">${stage}</span>
+        <span class="up-mp">M:p${mp}</span>
+        <span class="up-hp ${hp !== '—' ? 'set' : ''}">you:${hp}</span>
+        ${action}
+      </div>`;
+}
+
+function renderPinned(tasks) {
+    const list = document.getElementById('pinned-list');
+    const empty = document.getElementById('pinned-empty');
+    document.getElementById('pinned-count').textContent = `(${tasks.length})`;
+    if (!tasks.length) {
+        list.innerHTML = '';
+        empty.style.display = 'block';
+        return;
+    }
+    empty.style.display = 'none';
+    list.innerHTML = tasks.map(t => rowHtml(t, true)).join('');
+    wireDragHandlers(list);
+}
+
+function renderUpNext(tasks) {
+    const list = document.getElementById('up-next-list');
+    const empty = document.getElementById('up-next-empty');
+    document.getElementById('up-next-count').textContent = `(${tasks.length})`;
+    if (!tasks.length) {
+        list.innerHTML = '';
+        empty.style.display = 'block';
+        return;
+    }
+    empty.style.display = 'none';
+    list.innerHTML = tasks.slice(0, 50).map(t => rowHtml(t, false)).join('');
+}
+
+function wireDragHandlers(list) {
+    list.querySelectorAll('.upcoming-row').forEach(row => {
+        row.addEventListener('dragstart', e => {
+            dragEl = row;
+            row.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        });
+        row.addEventListener('dragend', () => {
+            row.classList.remove('dragging');
+            persistPinnedOrder();
+        });
+    });
+    list.addEventListener('dragover', e => {
+        e.preventDefault();
+        if (!dragEl) return;
+        const after = rowAfter(list, e.clientY);
+        if (after == null) list.appendChild(dragEl);
+        else list.insertBefore(dragEl, after);
+    });
+}
+
+function rowAfter(container, y) {
+    const rows = [...container.querySelectorAll('.upcoming-row:not(.dragging)')];
+    return rows.reduce((closest, row) => {
+        const box = row.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) return { offset, el: row };
+        return closest;
+    }, { offset: Number.NEGATIVE_INFINITY }).el;
+}
+
+async function persistPinnedOrder() {
+    const rows = [...document.querySelectorAll('#pinned-list .upcoming-row')];
+    const pinned = rows.map(r => ({ project: r.dataset.project, task_id: r.dataset.taskId }));
+    try {
+        const r = await fetch('/api/upcoming/reorder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pinned }),
+        });
+        if (r.ok) fetchUpcoming();
+    } catch (e) { /* next poll re-syncs */ }
+}
+
+async function pin(evt, project, taskId) {
+    evt.preventDefault();
+    evt.stopPropagation();
+    await fetch('/api/upcoming/pin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ project, task_id: taskId }),
+    });
+    fetchUpcoming();
+}
+
+async function unpin(evt, project, taskId) {
+    evt.preventDefault();
+    evt.stopPropagation();
+    await fetch('/api/upcoming/unpin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ project, task_id: taskId }),
+    });
+    fetchUpcoming();
+}
+
+function showGCToast(gc) {
+    const el = document.getElementById('gc-toast');
+    el.textContent = `Cleaned ${gc.length} stale pin${gc.length > 1 ? 's' : ''}: ${gc.map(g => g.project + '/' + g.task_id + ' (' + g.reason + ')').join(', ')}`;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 4000);
+}
+
+window.addEventListener('DOMContentLoaded', fetchUpcoming);
+setInterval(fetchUpcoming, POLL_MS);
+</script>
+{% endblock %}

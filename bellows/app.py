@@ -490,6 +490,15 @@ def _resolve_upcoming(projects: list[dict]) -> tuple[list[dict], list[dict], lis
     return pinned_live, up_next, gc_dropped
 
 
+@app.get("/upcoming", response_class=HTMLResponse)
+async def upcoming_page(request: Request):
+    projects = discover_projects(PROJECTS_DIR)
+    return templates.TemplateResponse(request=request, name="upcoming.html", context={
+        "tab": "upcoming",
+        "total_decisions": count_all_decisions(projects),
+    })
+
+
 @app.get("/api/upcoming")
 async def api_upcoming():
     """Cross-project upcoming task view. Reads .upcoming.json + merges with live state.
