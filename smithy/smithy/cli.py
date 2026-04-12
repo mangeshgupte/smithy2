@@ -3,6 +3,7 @@
 import json
 import sys
 import click
+from datetime import datetime, timezone
 from pathlib import Path
 
 from .state import (
@@ -97,6 +98,17 @@ def start_heat(ctx, stage, task_id):
     root = ctx.obj["root"]
     state = load_state(root)
     budget = state["budget"]
+
+    # t-395 I0: Halt flag blocks new heats. In-flight heats drain via end-heat.
+    parallel = state.get("parallel") or {}
+    if parallel.get("halt_flag"):
+        _output({
+            "error": "Rig is halted — new heats blocked",
+            "halted_at": parallel.get("halted_at"),
+            "reason": parallel.get("halt_reason"),
+            "hint": "smithy resume-rig to clear",
+        })
+        sys.exit(1)
 
     if budget["used"] >= budget["total_heats"]:
         _output({"error": "Budget exhausted", "used": budget["used"], "total": budget["total_heats"]})
@@ -239,7 +251,75 @@ def end_heat(ctx, value, signal, notes, outcome, progress, no_nudge):
         result["nudge"] = {"nudged": False, "reason": "skipped (--no-nudge)"}
         _err(f"Heat {heat} [{stage}] {signal} — {notes[:60]}")
 
+    # t-395 I0: expose halted status so caller knows drain is final.
+    parallel = state.get("parallel") or {}
+    if parallel.get("halt_flag"):
+        result["halt_flag"] = True
+        _err(f"Heat {heat} ended — rig is halted, no new heats until 'smithy resume-rig'.")
+
     _output(result)
+
+
+@cli.command("halt")
+@click.option("--reason", default="", help="Why we're halting (recorded in state).")
+@click.pass_context
+def halt_cmd(ctx, reason):
+    """t-395 I0: Set the halt flag. Marshal stops assigning; running heats
+    drain via end-heat. Idempotent — re-halting updates reason/ts."""
+    root = ctx.obj["root"]
+    state = load_state(root)
+    state.setdefault("parallel", {})
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    state["parallel"]["halt_flag"] = True
+    state["parallel"]["halted_at"] = now
+    state["parallel"]["halt_reason"] = reason or None
+    save_state(root, state)
+    _output({"halt_flag": True, "halted_at": now, "reason": reason or None})
+    _err(f"Rig halted at {now}" + (f" — {reason}" if reason else ""))
+
+
+@cli.command("resume-rig")
+@click.pass_context
+def resume_rig_cmd(ctx):
+    """t-395 I0: Clear the halt flag. New heats permitted again."""
+    root = ctx.obj["root"]
+    state = load_state(root)
+    parallel = state.setdefault("parallel", {})
+    was_halted = bool(parallel.get("halt_flag"))
+    parallel["halt_flag"] = False
+    parallel.pop("halted_at", None)
+    parallel.pop("halt_reason", None)
+    save_state(root, state)
+    _output({"halt_flag": False, "was_halted": was_halted})
+    _err("Rig resumed" if was_halted else "Rig was not halted — no-op.")
+
+
+@cli.command("shutdown-status")
+@click.pass_context
+def shutdown_status_cmd(ctx):
+    """t-395 I0: Report halt state + in-flight checkpoint presence.
+
+    Used by humans and by future Witness to know whether quiesce is complete.
+    """
+    root = ctx.obj["root"]
+    state = load_state(root)
+    parallel = state.get("parallel") or {}
+    cp = root / ".forge-checkpoint.json"
+    checkpoint = None
+    if cp.exists():
+        try:
+            checkpoint = json.loads(cp.read_text())
+        except Exception:
+            checkpoint = {"error": "unreadable"}
+    halted = bool(parallel.get("halt_flag"))
+    quiesced = halted and checkpoint is None
+    _output({
+        "halt_flag": halted,
+        "halted_at": parallel.get("halted_at"),
+        "reason": parallel.get("halt_reason"),
+        "checkpoint": checkpoint,
+        "quiesced": quiesced,
+    })
 
 
 @cli.command("validate")

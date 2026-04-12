@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1043,
-    "used": 808,
+    "used": 809,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 304,
+      "heats": 305,
       "progress": 0.98,
-      "value_ema": 0.787
+      "value_ema": 0.761
     },
     "testing": {
       "target": 0.183,
@@ -3420,12 +3420,12 @@
       "id": "t-380",
       "stage": "implementation",
       "desc": "Queue Cockpit bulk actions \u2014 multi-select, apply action to all selected. Scoped as optional follow-up per research \u00a7t-380.",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 3,
       "blocked_by": [],
       "initiative_id": "ini-016",
       "human_priority": null,
-      "priority_reason": "ini-016 rank=2 + poker"
+      "priority_reason": null
     },
     {
       "id": "t-381",
@@ -3580,6 +3580,94 @@
       "initiative_id": "ini-018",
       "human_priority": null,
       "priority_reason": null
+    },
+    {
+      "id": "t-395",
+      "stage": "implementation",
+      "desc": "I0: Shutdown + sentinel machinery. state.parallel.halt_flag + end-heat + start-heat respect it. N=1 default behavior preserved. Prereq for all I1+.",
+      "status": "in_progress",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-018",
+      "human_priority": null,
+      "priority_reason": "ini-018 rank=1 + poker"
+    },
+    {
+      "id": "t-396",
+      "stage": "implementation",
+      "desc": "I1: Schema + per-Forge namespacing. Add state.parallel.{max_forges, forges[]}, queue[].assigned_forge. Schema-additive; N=1 behavior identical. Blocked_by: I0.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-018",
+      "human_priority": null,
+      "priority_reason": "ini-018 rank=1 + poker"
+    },
+    {
+      "id": "t-397",
+      "stage": "implementation",
+      "desc": "I2: forge-spawn / forge-reset CLI. Create/teardown worktrees at .worktrees/forge-NN/ with branch naming forge-NN/h<N>-<task>. Blocked_by: I1.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-018",
+      "human_priority": null,
+      "priority_reason": "ini-018 rank=1 + poker"
+    },
+    {
+      "id": "t-398",
+      "stage": "implementation",
+      "desc": "I3: Assembly teammate scaffold (~0.5h). Persona dir personas/assembly/ with CLAUDE.md, spawn path in Anvil. No merge-loop yet. Blocked_by: I2.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-018",
+      "human_priority": null,
+      "priority_reason": "ini-018 rank=1 + poker"
+    },
+    {
+      "id": "t-399",
+      "stage": "implementation",
+      "desc": "I4: Assembly merge loop (~2h, may split). Pick branch \u2192 rebase onto main \u2192 pytest \u2192 ff-merge or abort-on-conflict (never auto-resolve). PRESERVE per-heat commits (no squash). HALT autonomous tail before this heat \u2014 nudge Anvil first. Blocked_by: I3.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-018",
+      "human_priority": null,
+      "priority_reason": "ini-018 rank=1 + poker"
+    },
+    {
+      "id": "t-400",
+      "stage": "implementation",
+      "desc": "I5: Marshal dispatch across N=3 Forges. Per-forge slot in next_tasks; avoid collision on task assignment. Blocked_by: I1.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-018",
+      "human_priority": null,
+      "priority_reason": "ini-018 rank=1 + poker"
+    },
+    {
+      "id": "t-401",
+      "stage": "implementation",
+      "desc": "I6: Per-Forge Witness integration. Port t-386 stuck-state detector per-Forge. Blocked_by: I4.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-018",
+      "human_priority": null,
+      "priority_reason": "ini-018 rank=1 + poker"
+    },
+    {
+      "id": "t-402",
+      "stage": "testing",
+      "desc": "I7: N=3 sandbox + docs. Spin 3 Forges (upgraded from N=2 per human). Risk R1 concurrency upgraded 'high likelihood at N=3' \u2014 include in I4 test matrix reference. Acceptance gate: surface to Anvil, do NOT flip halt_flag to real rig without explicit human sign-off. Blocked_by: I5, I6.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-018",
+      "human_priority": null,
+      "priority_reason": "ini-018 rank=1 + poker"
     }
   ],
   "ideas": [
@@ -3637,7 +3725,7 @@
       "description": "Primary UI surface for steering per-task prioritization. Live view of the actual task queue synced to state.json, showing every task with Marshal priority, human priority, stage, status, priority reason, initiative tag. Human downranks/promotes/pins/defers from this surface. Poker remains for initiative-level steering; this is the per-task master cockpit.",
       "status": "approved",
       "budget_cap": null,
-      "heats_used": 12,
+      "heats_used": 13,
       "viewed_at": "2026-04-12T21:16:55Z",
       "rank": 2,
       "intent": "Give the human a way to ensure that individual task assignments conform to the high-level intent the human has, and gives a way to identify and correct drift."
@@ -3851,7 +3939,15 @@
       "created": "2026-04-11T10:44:28.678810"
     }
   ],
-  "next_tasks": [],
+  "next_tasks": [
+    "t-396",
+    "t-397",
+    "t-398",
+    "t-399",
+    "t-400",
+    "t-401",
+    "t-402"
+  ],
   "schema_version": 1,
   "intents": [
     {
