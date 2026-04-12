@@ -7,10 +7,16 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent / "smithy"))
 try:
     from steering_log import read_steering_log
 except ImportError:
     def read_steering_log(*args, **kwargs):
+        return []
+try:
+    from smithy.activity import read_activity
+except ImportError:
+    def read_activity(*args, **kwargs):
         return []
 
 from fastapi import FastAPI, Request
@@ -196,6 +202,16 @@ async def api_steering_log(task_id: str = None, actor: str = None,
     rows = read_steering_log(STATE_DIR, task_id=task_id, actor=actor, since=since)
     rows.reverse()
     return JSONResponse({"count": len(rows), "rows": rows[:max(1, limit)]})
+
+
+@app.get("/api/activity")
+async def api_activity(limit: int = 20, since: str = None):
+    """Unified activity stream — merged steering.log + worklog.tsv tails.
+
+    See research/activity-side-panel-design.md for the entry schema.
+    """
+    entries = read_activity(STATE_DIR, limit=max(1, min(limit, 500)), since=since)
+    return JSONResponse({"count": len(entries), "entries": entries})
 
 
 @app.get("/api/current-heat")

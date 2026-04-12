@@ -9,7 +9,13 @@ from datetime import datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent / "smithy"))
 from steering_log import log_steering  # noqa: E402
+try:
+    from smithy.activity import read_activity
+except ImportError:
+    def read_activity(*args, **kwargs):
+        return []
 
 
 def _actor_from_request(request, default: str) -> str:
@@ -232,6 +238,16 @@ async def api_state():
                 "status": i["status"],
             }
     return JSONResponse(data)
+
+
+@app.get("/api/activity")
+async def api_activity(limit: int = 20, since: str = None):
+    """Unified activity stream — merged steering.log + worklog.tsv tails.
+
+    See research/activity-side-panel-design.md for the entry schema.
+    """
+    entries = read_activity(STATE_DIR, limit=max(1, min(limit, 500)), since=since)
+    return JSONResponse({"count": len(entries), "entries": entries})
 
 
 @app.get("/events")
