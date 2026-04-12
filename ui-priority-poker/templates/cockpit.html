@@ -51,6 +51,20 @@
         @keyframes c-skel { 0%,100% { opacity: 0.4; } 50% { opacity: 0.7; } }
         .cockpit-table tr.c-focused { background: var(--surface-hover, #222);
                                       outline: 1px solid var(--yellow, #c89c2a); }
+        .c-expand { user-select: none; }
+        .c-expand.open { color: var(--yellow, #c89c2a); }
+        tr.c-inline-panel { background: var(--surface, #141414); }
+        tr.c-inline-panel:hover { background: var(--surface, #141414); }
+        .c-inline-body { padding: 10px 16px 14px !important; }
+        .c-inline-desc { font-size: 13px; margin-bottom: 8px; color: var(--text, #ddd);
+                         white-space: pre-wrap; }
+        .c-inline-dl { display: grid; grid-template-columns: max-content 1fr;
+                       gap: 2px 12px; margin: 0 0 10px 0; font-size: 11px; }
+        .c-inline-dl dt { color: var(--text-muted, #888); }
+        .c-inline-dl dd { margin: 0; color: var(--text, #ddd); }
+        .c-inline-history { font-size: 11px; color: var(--text-muted, #aaa); }
+        .c-inline-history ul { margin: 4px 0 0 16px; padding: 0; }
+        .c-inline-history li { margin: 1px 0; }
     </style>
 </head>
 <body>
@@ -162,6 +176,10 @@
             .catch(() => { document.getElementById('stats').textContent = 'Failed to load.'; });
     }
 
+    // t-388: taskIds currently expanded inline. Persisted across re-renders
+    // so SSE refreshes don't collapse the user's open panels.
+    const expanded = new Set();
+
     function render(data) {
         document.getElementById('stats').textContent =
             data.filtered + ' / ' + data.total + ' tasks';
@@ -179,8 +197,9 @@
             if (t.status === 'deferred') tr.classList.add('deferred-row');
             tr.dataset.taskId = t.id;
             const hp = (t.human_priority == null) ? '—' : ('p' + t.human_priority);
+            const isOpen = expanded.has(t.id);
             tr.innerHTML =
-                `<td class="c-expand" onclick="openDrawer('${t.id}')">▸</td>` +
+                `<td class="c-expand ${isOpen ? 'open' : ''}" onclick="toggleInlineExpand(event, '${t.id}')">${isOpen ? '▾' : '▸'}</td>` +
                 `<td class="c-id"><a href="#" onclick="openDrawer('${t.id}');return false;">${t.id}</a></td>` +
                 `<td><span class="c-stage stage-${t.stage}">${t.stage}</span></td>` +
                 `<td>${t.status}</td>` +
@@ -197,7 +216,70 @@
                 `<td class="c-desc" title="${(t.desc || '').replace(/"/g, '&quot;')}">${t.desc || ''}</td>` +
                 `<td><span class="c-kebab" onclick="toggleDefer('${t.id}', '${t.status}')" title="defer/undefer">${t.status === 'deferred' ? '▶' : '⏸'}</span></td>`;
             body.appendChild(tr);
+            if (isOpen) {
+                const panel = buildInlinePanel(t);
+                body.appendChild(panel);
+            }
         });
+    }
+
+    function buildInlinePanel(t) {
+        const tr = document.createElement('tr');
+        tr.className = 'c-inline-panel';
+        tr.dataset.panelFor = t.id;
+        tr.innerHTML =
+            `<td></td><td colspan="10" class="c-inline-body">
+                <div class="c-inline-desc">${(t.desc || '(no description)').replace(/</g,'&lt;')}</div>
+                <dl class="c-inline-dl">
+                    <dt>reason</dt><dd>${t.priority_reason || '—'}</dd>
+                    <dt>initiative</dt><dd>${t.initiative_id || '—'}</dd>
+                    <dt>blocked by</dt><dd>${(t.blocked_by || []).join(', ') || '—'}</dd>
+                    <dt>age</dt><dd>${t.age_heats == null ? '—' : (t.age_heats + ' heats')}</dd>
+                </dl>
+                <div class="c-inline-history" data-history-for="${t.id}">Loading history…</div>
+            </td>`;
+        // Fetch full detail (history) lazily.
+        fetch('/api/task/' + t.id).then(r => r.json()).then(data => {
+            const box = tr.querySelector('.c-inline-history');
+            if (!box) return;
+            const hist = (data.history || []).slice(0, 6);
+            if (!hist.length) { box.textContent = 'No history recorded.'; return; }
+            box.innerHTML = '<strong>history</strong><ul>' + hist.map(h =>
+                `<li>${h.ts ? h.ts.slice(0,16).replace('T',' ') : ''} · ${h.source}` +
+                (h.field ? ` — ${h.field}: ${h.before} → ${h.after}` : '') + '</li>'
+            ).join('') + '</ul>';
+        }).catch(() => {
+            const box = tr.querySelector('.c-inline-history');
+            if (box) box.textContent = '(history unavailable)';
+        });
+        return tr;
+    }
+
+    function toggleInlineExpand(evt, taskId) {
+        // MUST: stop propagation so any wrapping handlers don't navigate.
+        if (evt) { evt.stopPropagation(); evt.preventDefault(); }
+        if (expanded.has(taskId)) expanded.delete(taskId);
+        else expanded.add(taskId);
+        // Re-render without refetch — flip panel on the current dataset.
+        const body = document.getElementById('rows');
+        const tr = body.querySelector(`tr[data-task-id="${taskId}"]`);
+        if (!tr) { loadRows(); return; }
+        const existing = body.querySelector(`tr.c-inline-panel[data-panel-for="${taskId}"]`);
+        const chev = tr.querySelector('.c-expand');
+        if (existing) {
+            existing.remove();
+            if (chev) { chev.textContent = '▸'; chev.classList.remove('open'); }
+        } else {
+            // Build from the row's current data via /api/task. We don't have the
+            // full row object here; synthesize from visible cells + fetch.
+            fetch('/api/task/' + taskId).then(r => r.json()).then(data => {
+                const task = data.task || {};
+                task.age_heats = null; // age stays on the collapsed row; panel uses worklog count
+                const panel = buildInlinePanel(task);
+                tr.after(panel);
+                if (chev) { chev.textContent = '▾'; chev.classList.add('open'); }
+            });
+        }
     }
 
     function openDrawer(taskId) {
