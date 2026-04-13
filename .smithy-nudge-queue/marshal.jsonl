@@ -90,3 +90,4 @@
 {"message": "HEAT_DONE: t-396 complete, value=0.75, signal=\ud83d\udfe2. Re-prioritize.", "timestamp": "2026-04-12T15:18:01.359721"}
 {"message": "HEAT_DONE: t-397 complete, value=0.75, signal=\ud83d\udfe2. Re-prioritize.", "timestamp": "2026-04-12T15:20:38.276117"}
 {"message": "HEAT_DONE: t-398 complete, value=0.65, signal=\ud83d\udfe2. Re-prioritize.", "timestamp": "2026-04-12T15:22:37.054068"}
+{"message": "HEAT_DONE: t-399 partial, value=0.75, signal=\ud83d\udfe2. Re-prioritize.", "timestamp": "2026-04-12T15:28:53.910235"}

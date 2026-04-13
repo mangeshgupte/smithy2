@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1043,
-    "used": 813,
+    "used": 814,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 309,
+      "heats": 310,
       "progress": 0.98,
-      "value_ema": 0.723
+      "value_ema": 0.731
     },
     "testing": {
       "target": 0.183,
@@ -4015,6 +4015,30 @@
       "human_priority": null,
       "priority_reason": "ini-018 rank=1 + poker",
       "assigned_forge": null
+    },
+    {
+      "id": "t-403",
+      "stage": "implementation",
+      "desc": "t-399 I4 H2: Assembly smart-resolve path. rebase-then-test merge loop; attempt resolution when conflict is reasonable (no semantic contradiction, small surface, tests green post-resolution); merge indicator \ud83d\udd00 merged-with-resolution. Tests: clean-merge path, resolution-success path, resolution-attempted-then-abandoned path. Builds on H1 (52b41d1).",
+      "status": "in_progress",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-018",
+      "human_priority": null,
+      "priority_reason": "ini-018 rank=1 + poker",
+      "assigned_forge": null
+    },
+    {
+      "id": "t-404",
+      "stage": "implementation",
+      "desc": "t-399 I4 H3: Assembly reject path + requeue + hp+5 bump + Marshal submitted-lifecycle awareness. full-reject flow (conflict unreasonable \u2192 discard branch \u2192 task status back to pending + priority_reason='assembly rejected: <reason>' + hp+5). Marshal scheduler treats submitted as not-available/not-blocking. Tests: full-reject+requeue+bump, submitted-not-scheduled. Close out I4.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-018",
+      "human_priority": null,
+      "priority_reason": "ini-018 rank=1 + poker",
+      "assigned_forge": null
     }
   ],
   "ideas": [
@@ -4062,7 +4086,7 @@
       "status": "approved",
       "budget_cap": null,
       "heats_used": 6,
-      "viewed_at": null,
+      "viewed_at": "2026-04-13T04:13:44Z",
       "rank": 1
     },
     {
@@ -4073,7 +4097,7 @@
       "status": "approved",
       "budget_cap": null,
       "heats_used": 13,
-      "viewed_at": "2026-04-12T21:16:55Z",
+      "viewed_at": "2026-04-13T04:13:41Z",
       "rank": 2,
       "intent": "Give the human a way to ensure that individual task assignments conform to the high-level intent the human has, and gives a way to identify and correct drift."
     },
@@ -4099,7 +4123,7 @@
       "rank": 4,
       "planned_start": 635,
       "planned_end": 645,
-      "viewed_at": "2026-04-12T21:07:11Z"
+      "viewed_at": "2026-04-13T04:13:36Z"
     },
     {
       "id": "ini-010",
@@ -4287,6 +4311,7 @@
     }
   ],
   "next_tasks": [
+    "t-404",
     "t-400",
     "t-401",
     "t-402"
@@ -4330,6 +4355,10 @@
         "started_at": null,
         "last_heartbeat": null
       }
-    ]
+    ],
+    "assembly": {
+      "enabled": false,
+      "last_heartbeat": null
+    }
   }
 }

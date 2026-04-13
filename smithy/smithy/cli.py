@@ -360,6 +360,53 @@ def assembly_heartbeat_cmd(ctx):
     _output({"last_heartbeat": now})
 
 
+@cli.command("assembly-rebase")
+@click.option("--forge", "forge_id", required=True)
+@click.option("--base", default="main")
+@click.pass_context
+def assembly_rebase_cmd(ctx, forge_id, base):
+    """t-399 I4 H2: Rebase forge/<id> onto base inside its worktree."""
+    from .assembly import rebase_forge_branch
+    _output(rebase_forge_branch(ctx.obj["root"], forge_id, base))
+
+
+@cli.command("assembly-continue-rebase")
+@click.option("--forge", "forge_id", required=True)
+@click.pass_context
+def assembly_continue_rebase_cmd(ctx, forge_id):
+    """t-399 I4 H2: Resume rebase after Assembly staged conflict fixes."""
+    from .assembly import continue_rebase
+    _output(continue_rebase(ctx.obj["root"], forge_id))
+
+
+@cli.command("assembly-abort-rebase")
+@click.option("--forge", "forge_id", required=True)
+@click.pass_context
+def assembly_abort_rebase_cmd(ctx, forge_id):
+    """t-399 I4 H2: Abort a rebase-in-progress in the Forge's worktree."""
+    from .assembly import abort_rebase
+    _output(abort_rebase(ctx.obj["root"], forge_id))
+
+
+@cli.command("assembly-test")
+@click.option("--forge", "forge_id", required=True)
+@click.pass_context
+def assembly_test_cmd(ctx, forge_id):
+    """t-399 I4 H2: Run pytest in Forge's worktree; return pass/fail."""
+    from .assembly import run_tests_in_worktree
+    _output(run_tests_in_worktree(ctx.obj["root"], forge_id))
+
+
+@cli.command("assembly-ff-merge")
+@click.option("--forge", "forge_id", required=True)
+@click.option("--base", default="main")
+@click.pass_context
+def assembly_ff_merge_cmd(ctx, forge_id, base):
+    """t-399 I4 H2: Fast-forward forge/<id> into base in project_dir."""
+    from .assembly import ff_merge_forge_branch
+    _output(ff_merge_forge_branch(ctx.obj["root"], forge_id, base))
+
+
 @cli.command("assembly-merge")
 @click.argument("task_id")
 @click.option("--sha", required=True, help="Merge commit SHA on main.")
