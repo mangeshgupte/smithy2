@@ -217,3 +217,13 @@ root via new `main_repo_root()` helper). `worklog.tsv` gains a trailing
 `forge_id` column; pre-t-409 rows treated as primary for backcompat.
 Unblocks lifting `halt_flag` for true N≥2 parallel execution — previously
 two Forges running heats at once would clobber each other's checkpoint.
+
+**t-399 landed (2026-04-13):** Assembly merge loop live. Design decided
+with human: branches are per-task (`<forge-id>/<task-id>`), Assembly
+rebases each submitted branch onto main, runs tests, and merges
+`--no-ff`. Mild conflicts (append-only collisions on `worklog.tsv` and
+`state.json` task-list) are auto-resolved by `try_auto_resolve`; severe
+conflicts (code overlap) reject to **Marshal**, not to the Forge —
+Marshal owns scheduling/reassignment decisions. New CLI: `smithy
+assembly-tick` drains one queue entry end-to-end. Removes the manual
+bootstrap-merge ritual we hit twice during t-407/t-409 landing.

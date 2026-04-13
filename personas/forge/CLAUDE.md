@@ -54,7 +54,15 @@ smithy start-heat <stage>    # Begins heat, writes checkpoint, marks task in_pro
 you are from the cwd's worktree. You can pass `--forge <id>` explicitly if
 needed. Primary keeps `.forge-checkpoint.json`; non-primary Forges get
 `.forge-checkpoint-<id>.json` at the main repo root so Assembly/patrol
-don't have to hop worktrees. `worklog.tsv` gains a trailing `forge_id`
+don't have to hop worktrees.
+
+**Per-task branches (t-399):** Before starting a task, create a branch
+`<forge-id>/<task-id>` off the latest `main` and check it out in your
+worktree (`git checkout -B forge-quench/t-400 main`). Commit every heat
+on that branch. When the task is complete, `end-heat` enqueues the
+branch for Assembly, which rebases it onto `main`, runs tests, and
+merges. On severe conflicts Assembly rejects the task back to Marshal
+(not to you directly). `worklog.tsv` gains a trailing `forge_id`
 column for attribution.
 
 Do the work, one task per heat. Stay focused:
