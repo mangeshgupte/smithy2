@@ -50,6 +50,13 @@ Queued nudges can contain task assignments, re-prioritization signals, or status
 smithy start-heat <stage>    # Begins heat, writes checkpoint, marks task in_progress
 ```
 
+**Parallel Forges (t-409):** `start-heat` / `end-heat` auto-detect which Forge
+you are from the cwd's worktree. You can pass `--forge <id>` explicitly if
+needed. Primary keeps `.forge-checkpoint.json`; non-primary Forges get
+`.forge-checkpoint-<id>.json` at the main repo root so Assembly/patrol
+don't have to hop worktrees. `worklog.tsv` gains a trailing `forge_id`
+column for attribution.
+
 Do the work, one task per heat. Stay focused:
 
 | Stage | What to do |

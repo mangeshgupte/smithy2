@@ -94,11 +94,17 @@ def cli(ctx, project_dir):
 @cli.command("start-heat")
 @click.argument("stage", type=click.Choice(VALID_STAGES))
 @click.option("--task", "task_id", default=None, help="Task ID to work on")
+@click.option("--forge", "forge_id", default=None,
+              help="t-409 H1: Forge id (defaults to cwd's worktree; primary if cwd is main).")
 @click.pass_context
-def start_heat(ctx, stage, task_id):
+def start_heat(ctx, stage, task_id, forge_id):
     """Start a new heat. Sets task to in_progress, writes checkpoint."""
     root = ctx.obj["root"]
     state = load_state(root)
+    # t-409 H1: resolve forge id — explicit flag wins, else detect from cwd,
+    # else fall back to primary (lets main-root smoke-runs still work).
+    if forge_id is None:
+        forge_id = detect_forge_from_cwd(root) or primary_forge_id(root)
     budget = state["budget"]
 
     # t-395 I0: Halt flag blocks new heats. In-flight heats drain via end-heat.
@@ -134,16 +140,19 @@ def start_heat(ctx, stage, task_id):
             sys.exit(1)
 
     save_state(root, state)
-    write_checkpoint(root, heat_number, stage, task_id or "generated")
+    write_checkpoint(root, heat_number, stage, task_id or "generated",
+                     forge_id=forge_id)
 
     _output({
         "heat": heat_number,
         "stage": stage,
         "task_id": task_id,
         "task_desc": task_desc,
+        "forge_id": forge_id,
         "budget_remaining": budget["total_heats"] - heat_number,
     })
-    _err(f"Heat {heat_number} [{stage}] started" + (f" — {task_desc}" if task_desc else ""))
+    _err(f"Heat {heat_number} [{stage}] started as {forge_id}"
+         + (f" — {task_desc}" if task_desc else ""))
 
 
 @cli.command("end-heat")
@@ -153,16 +162,24 @@ def start_heat(ctx, stage, task_id):
 @click.option("--outcome", type=click.Choice(VALID_OUTCOMES), default="complete")
 @click.option("--progress", type=float, default=None, help="Stage progress override (0-1)")
 @click.option("--no-nudge", is_flag=True, default=False, help="Skip auto-nudge to marshal")
+@click.option("--forge", "forge_id", default=None,
+              help="t-409 H1: Forge id (defaults to cwd's worktree; primary if cwd is main).")
 @click.pass_context
-def end_heat(ctx, value, signal, notes, outcome, progress, no_nudge):
+def end_heat(ctx, value, signal, notes, outcome, progress, no_nudge, forge_id):
     """End the current heat. Updates all counters and logs."""
     root = ctx.obj["root"]
     state = load_state(root)
 
-    # Read checkpoint
-    cp_path = root / ".forge-checkpoint.json"
+    # t-409 H1: resolve forge id the same way start-heat does so the
+    # matching per-Forge checkpoint is read.
+    if forge_id is None:
+        forge_id = detect_forge_from_cwd(root) or primary_forge_id(root)
+
+    # Read checkpoint (per-Forge, anchored at main repo root).
+    cp_path = forge_checkpoint_path(root, forge_id)
     if not cp_path.exists():
-        _output({"error": "No checkpoint found — did you start a heat?"})
+        _output({"error": f"No checkpoint found for {forge_id} at {cp_path.name}"
+                          f" — did you start a heat?"})
         sys.exit(1)
     checkpoint = json.loads(cp_path.read_text())
 
@@ -243,15 +260,17 @@ def end_heat(ctx, value, signal, notes, outcome, progress, no_nudge):
 
     # Append worklog (use effective_outcome so "submitted" lands when Assembly
     # is enabled — the second row is written later by assembly-merge/reject).
-    append_worklog(root, heat, stage, task_id, effective_outcome, value, signal, notes)
+    append_worklog(root, heat, stage, task_id, effective_outcome, value,
+                   signal, notes, forge_id=forge_id)
 
-    # Delete checkpoint
-    delete_checkpoint(root)
+    # Delete this Forge's checkpoint (t-409 H1).
+    delete_checkpoint(root, forge_id=forge_id)
 
     result = {
         "heat": heat,
         "stage": stage,
         "task_id": task_id,
+        "forge_id": forge_id,
         "outcome": effective_outcome,
         "value": value,
         "signal": signal,

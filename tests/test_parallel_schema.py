@@ -64,7 +64,7 @@ def test_default_checkpoint_path_is_legacy(tmp_path):
 
 def test_namespaced_checkpoint_for_non_default(tmp_path):
     p = forge_checkpoint_path(tmp_path, "forge-02")
-    assert p.name == ".forge-02-checkpoint.json"
+    assert p.name == ".forge-checkpoint-forge-02.json"
 
 
 def test_default_nudge_queue_path_is_legacy(tmp_path):

@@ -49,12 +49,17 @@ def rig(tmp_path):
     parallel["max_forges"] = 2
     parallel["forges"] = [
         {"id": "forge-01", "status": "idle", "current_task": None,
-         "current_heat": None, "started_at": None, "last_heartbeat": None},
+         "current_heat": None, "started_at": None, "last_heartbeat": None,
+         "worktree": ".worktrees/forge-01", "branch": "forge-01/scratch"},
         {"id": "forge-02", "status": "idle", "current_task": None,
-         "current_heat": None, "started_at": None, "last_heartbeat": None},
+         "current_heat": None, "started_at": None, "last_heartbeat": None,
+         "worktree": ".worktrees/forge-02", "branch": "forge-02/scratch"},
     ]
     parallel.setdefault("assembly", {"enabled": False, "last_heartbeat": None})
     _write_state(proj, s)
+    # t-407 patrol check #7: worktree dirs must exist.
+    (proj / ".worktrees/forge-01").mkdir(parents=True, exist_ok=True)
+    (proj / ".worktrees/forge-02").mkdir(parents=True, exist_ok=True)
     yield proj
 
 
@@ -69,7 +74,7 @@ def _set_forge(p, fid, **kwargs):
 def test_one_zombie_flags_only_itself(rig):
     # forge-01: healthy busy (fresh heartbeat). forge-02: zombie busy (stale).
     (rig / ".forge-checkpoint.json").write_text('{"task_id":"t-x"}')
-    (rig / ".forge-02-checkpoint.json").write_text('{"task_id":"t-y"}')
+    (rig / ".forge-checkpoint-forge-02.json").write_text('{"task_id":"t-y"}')
     _set_forge(rig, "forge-01", status="busy", last_heartbeat=_iso(30))
     _set_forge(rig, "forge-02", status="busy", last_heartbeat=_iso(1800))
 
@@ -81,7 +86,7 @@ def test_one_zombie_flags_only_itself(rig):
 
 def test_orphan_checkpoint_detected_and_fixable(rig):
     # forge-02 has a checkpoint but is marked idle → orphan.
-    (rig / ".forge-02-checkpoint.json").write_text('{"task_id":"t-x"}')
+    (rig / ".forge-checkpoint-forge-02.json").write_text('{"task_id":"t-x"}')
     _set_forge(rig, "forge-02", status="idle", last_heartbeat=None)
 
     rc, out, _ = _smithy(rig, "patrol")
@@ -89,7 +94,7 @@ def test_orphan_checkpoint_detected_and_fixable(rig):
     assert any("forge-02" in i and "orphan" in i for i in data["issues"])
 
     rc, out, _ = _smithy(rig, "patrol", "--fix")
-    assert not (rig / ".forge-02-checkpoint.json").exists()
+    assert not (rig / ".forge-checkpoint-forge-02.json").exists()
 
 
 def test_busy_without_checkpoint_flagged(rig):
@@ -111,7 +116,7 @@ def test_healthy_forges_are_clean(rig):
 
 
 def test_witness_check_structured_output(rig):
-    (rig / ".forge-02-checkpoint.json").write_text('{"task_id":"t-y"}')
+    (rig / ".forge-checkpoint-forge-02.json").write_text('{"task_id":"t-y"}')
     _set_forge(rig, "forge-01", status="idle", last_heartbeat=_iso(60))
     _set_forge(rig, "forge-02", status="busy", last_heartbeat=_iso(2000),
                current_task="t-y")
