@@ -1111,54 +1111,100 @@ def _persona_is_busy(root, persona):
     return False
 
 
+def _pane_agent(path):
+    """Derive agent name from a pane's cwd.
+
+    Mirrors scripts/nudge.sh, but prefers the `personas/<name>` suffix over
+    the `.worktrees/<name>/` prefix so a forge-quench pane whose cwd is
+    `.worktrees/forge-quench/personas/forge` resolves to the canonical
+    persona name "forge" (what callers of _nudge_persona pass).
+    """
+    import re
+    m = re.search(r"/personas/([^/]+)/?$", path)
+    if m:
+        return m.group(1)
+    m = re.search(r"/\.worktrees/([^/]+)(?:/|$)", path)
+    if m:
+        return m.group(1)
+    return None
+
+
 def _nudge_persona(persona, message, root=None):
-    """Send a message to a persona's window in the smithy2 tmux session.
+    """Send a message to a persona's pane in the FORGE_SESSION tmux session.
+
+    Panes are resolved by `pane_current_path` (same rule as
+    scripts/nudge.sh): we scan every pane in the session and match the
+    agent name derived from its cwd. This replaces the previous logic
+    that hardcoded session="smithy2" and window_name==persona.
 
     If the persona is mid-heat (checkpoint exists), queues the nudge to
     .smithy-nudge-queue/<persona>.jsonl instead of sending via tmux.
     """
+    import os
     import subprocess
-    target = f"smithy2:{persona}"
 
-    # If root provided, check if persona is busy — queue instead of interrupting
+    session = os.environ.get("FORGE_SESSION", "forge")
+
     if root and _persona_is_busy(root, persona):
         _queue_nudge(root, persona, message)
-        return {"nudged": False, "queued": True, "persona": persona, "target": target,
+        return {"nudged": False, "queued": True, "persona": persona,
+                "target": session,
                 "reason": "persona mid-heat, nudge queued"}
 
-    # Check smithy2 session exists
-    result = subprocess.run(
-        ["tmux", "has-session", "-t", "smithy2"],
+    chk = subprocess.run(
+        ["tmux", "has-session", "-t", session],
         capture_output=True, text=True,
     )
-    if result.returncode != 0:
-        # Session not found — queue as fallback if root available
+    if chk.returncode != 0:
         if root:
             _queue_nudge(root, persona, message)
-            return {"nudged": False, "queued": True, "persona": persona, "target": target,
-                    "reason": "smithy2 session not found, nudge queued"}
-        return {"nudged": False, "queued": False, "reason": "smithy2 session not found", "target": target}
+            return {"nudged": False, "queued": True, "persona": persona,
+                    "target": session,
+                    "reason": f"tmux session not found ('{session}'), nudge queued"}
+        return {"nudged": False, "queued": False,
+                "reason": f"tmux session not found ('{session}')",
+                "target": session}
 
-    # Check window exists
-    result = subprocess.run(
-        ["tmux", "list-windows", "-t", "smithy2", "-F", "#{window_name}"],
+    ls = subprocess.run(
+        ["tmux", "list-panes", "-t", session, "-s",
+         "-F", "#{pane_id}\t#{pane_current_path}"],
         capture_output=True, text=True,
     )
-    if result.returncode != 0 or persona not in result.stdout.strip().split("\n"):
+    pane_id = None
+    if ls.returncode == 0:
+        for line in ls.stdout.splitlines():
+            if "\t" not in line:
+                continue
+            pid, path = line.split("\t", 1)
+            if _pane_agent(path) == persona:
+                pane_id = pid
+                break
+
+    if pane_id is None:
         if root:
             _queue_nudge(root, persona, message)
-            return {"nudged": False, "queued": True, "persona": persona, "target": target,
-                    "reason": f"window '{persona}' not found, nudge queued"}
-        return {"nudged": False, "queued": False, "reason": f"window '{persona}' not found in smithy2", "target": target}
+            return {"nudged": False, "queued": True, "persona": persona,
+                    "target": session,
+                    "reason": f"no pane for persona '{persona}' in session '{session}', nudge queued"}
+        return {"nudged": False, "queued": False,
+                "reason": f"no pane for persona '{persona}' in session '{session}'",
+                "target": session}
 
-    result = subprocess.run(
-        ["tmux", "send-keys", "-t", target, message, "Enter"],
+    subprocess.run(
+        ["tmux", "send-keys", "-t", pane_id, "--", message],
         capture_output=True, text=True,
     )
-    if result.returncode != 0:
-        return {"nudged": False, "queued": False, "reason": f"send-keys failed: {result.stderr.strip()}", "target": target}
+    r = subprocess.run(
+        ["tmux", "send-keys", "-t", pane_id, "Enter"],
+        capture_output=True, text=True,
+    )
+    if r.returncode != 0:
+        return {"nudged": False, "queued": False,
+                "reason": f"send-keys failed: {r.stderr.strip()}",
+                "target": pane_id}
 
-    return {"nudged": True, "queued": False, "persona": persona, "target": target, "message": message}
+    return {"nudged": True, "queued": False, "persona": persona,
+            "target": pane_id, "message": message}
 
 
 @cli.command("queue-push")

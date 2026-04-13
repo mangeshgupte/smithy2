@@ -548,15 +548,20 @@ class TestNudgeCommand:
         assert data["nudged"] is False
         assert "session not found" in data["reason"]
 
-    def test_nudge_queues_when_window_missing(self, project, runner, monkeypatch):
-        """When tmux session exists but persona window is missing, queue the nudge."""
+    def test_nudge_queues_when_pane_missing(self, project, runner, monkeypatch):
+        """When session exists but no pane resolves to the persona, queue the nudge."""
         import subprocess as sp
 
         def fake_run(cmd, **kwargs):
             if "has-session" in cmd:
                 return sp.CompletedProcess(cmd, 0, stdout="", stderr="")
-            if "list-windows" in cmd:
-                return sp.CompletedProcess(cmd, 0, stdout="anvil\nmarshal\n", stderr="")
+            if "list-panes" in cmd:
+                # Only anvil + marshal panes present — no forge pane.
+                out = (
+                    "%1\t/repo/.worktrees/anvil/personas/anvil\n"
+                    "%2\t/repo/.worktrees/marshal/personas/marshal\n"
+                )
+                return sp.CompletedProcess(cmd, 0, stdout=out, stderr="")
             return sp.CompletedProcess(cmd, 0, stdout="", stderr="")
 
         monkeypatch.setattr(sp, "run", fake_run)
@@ -564,17 +569,21 @@ class TestNudgeCommand:
         assert result.exit_code == 0
         data = json.loads(result.output)
         assert data["queued"] is True
-        assert "window" in data["reason"]
+        assert "pane" in data["reason"]
 
     def test_nudge_sends_via_tmux(self, project, runner, monkeypatch):
-        """When session and window exist and persona is not busy, send via tmux."""
+        """When session and a matching pane exist, send via tmux."""
         import subprocess as sp
 
         def fake_run(cmd, **kwargs):
             if "has-session" in cmd:
                 return sp.CompletedProcess(cmd, 0, stdout="", stderr="")
-            if "list-windows" in cmd:
-                return sp.CompletedProcess(cmd, 0, stdout="forge\nanvil\nmarshal\n", stderr="")
+            if "list-panes" in cmd:
+                out = (
+                    "%1\t/repo/.worktrees/forge-quench/personas/forge\n"
+                    "%2\t/repo/.worktrees/anvil/personas/anvil\n"
+                )
+                return sp.CompletedProcess(cmd, 0, stdout=out, stderr="")
             if "send-keys" in cmd:
                 return sp.CompletedProcess(cmd, 0, stdout="", stderr="")
             return sp.CompletedProcess(cmd, 0, stdout="", stderr="")
