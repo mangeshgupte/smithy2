@@ -1815,6 +1815,45 @@ def patrol(ctx, fix):
                     state[cursor_name] = line_count
                     fixes.append(f"Set {cursor_name} to {line_count}")
 
+    # 6. t-401 I6: per-Forge witness. For every registered Forge in
+    # parallel.forges[], check heartbeat recency and checkpoint coherence.
+    # Tier-1 witness: heartbeat older than STALE_S while status="busy", OR
+    # checkpoint exists but forge is marked idle (orphan), OR forge is busy
+    # but checkpoint missing (lost). Healthy Forges are unaffected — each
+    # Forge is evaluated independently so one zombie doesn't mask others.
+    STALE_S = 900  # 15 min; matches t-386 witness threshold.
+    from datetime import datetime, timezone
+    parallel = state.get("parallel") or {}
+    forges = parallel.get("forges") or []
+    stuck_forges = []
+    for forge in forges:
+        fid = forge.get("id")
+        if not fid:
+            continue
+        fstatus = forge.get("status")
+        cp_exists = forge_checkpoint_path(root, fid).exists()
+        hb = forge.get("last_heartbeat")
+        age_s = None
+        if hb:
+            try:
+                age_s = (datetime.now(timezone.utc)
+                         - datetime.fromisoformat(hb)).total_seconds()
+            except Exception:
+                age_s = None
+        if fstatus == "busy" and age_s is not None and age_s > STALE_S:
+            issues.append(
+                f"{fid} heartbeat stale ({int(age_s)}s > {STALE_S}s) — zombie?"
+            )
+            stuck_forges.append(fid)
+        if fstatus == "busy" and not cp_exists:
+            issues.append(f"{fid} is busy but has no checkpoint — lost state")
+            stuck_forges.append(fid)
+        if fstatus == "idle" and cp_exists:
+            issues.append(f"{fid} is idle but has a checkpoint — orphan")
+            if fix:
+                forge_checkpoint_path(root, fid).unlink()
+                fixes.append(f"Deleted orphan checkpoint for {fid}")
+
     # Save fixes if any
     if fix and fixes:
         save_state(root, state)
@@ -1823,12 +1862,62 @@ def patrol(ctx, fix):
         "issues": issues,
         "fixes": fixes,
         "clean": len(issues) == 0,
-        "checks_run": 5,
+        "checks_run": 6,
+        "stuck_forges": sorted(set(stuck_forges)),
     })
     if issues:
         _err(f"Patrol found {len(issues)} issues" + (f", fixed {len(fixes)}" if fixes else ""))
     else:
         _err("Patrol: all clean ✓")
+
+
+@cli.command("witness-check")
+@click.option("--stale-threshold", type=int, default=900,
+              help="Heartbeat staleness threshold in seconds (default 900).")
+@click.pass_context
+def witness_check_cmd(ctx, stale_threshold):
+    """t-401 I6: Per-Forge witness report. Returns structured per-Forge
+    health (heartbeat age, checkpoint presence, stuck state) so Anvil can
+    surface a zombie Forge without eyeballing patrol output.
+
+    Each Forge is evaluated independently — a single zombie does not bleed
+    into healthy peers' status.
+    """
+    from datetime import datetime, timezone
+    root = ctx.obj["root"]
+    state = load_state(root)
+    parallel = state.get("parallel") or {}
+    now = datetime.now(timezone.utc)
+    report = []
+    for forge in (parallel.get("forges") or []):
+        fid = forge.get("id")
+        if not fid:
+            continue
+        hb = forge.get("last_heartbeat")
+        age_s = None
+        if hb:
+            try:
+                age_s = (now - datetime.fromisoformat(hb)).total_seconds()
+            except Exception:
+                age_s = None
+        cp_exists = forge_checkpoint_path(root, fid).exists()
+        fstatus = forge.get("status")
+        stuck_reasons = []
+        if fstatus == "busy" and age_s is not None and age_s > stale_threshold:
+            stuck_reasons.append(f"heartbeat stale ({int(age_s)}s)")
+        if fstatus == "busy" and not cp_exists:
+            stuck_reasons.append("no checkpoint")
+        if fstatus == "idle" and cp_exists:
+            stuck_reasons.append("orphan checkpoint")
+        report.append({
+            "forge_id": fid, "status": fstatus,
+            "last_heartbeat": hb, "heartbeat_age_s": age_s,
+            "checkpoint_present": cp_exists, "current_task": forge.get("current_task"),
+            "stuck": bool(stuck_reasons), "stuck_reasons": stuck_reasons,
+        })
+    _output({"forges": report,
+             "any_stuck": any(f["stuck"] for f in report),
+             "threshold_s": stale_threshold})
 
 
 @cli.command("handoff")
