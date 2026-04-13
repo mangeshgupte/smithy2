@@ -817,3 +817,4 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-12T21:19:08Z	816	implementation	t-404	complete	0.7	🟢	t-404 (t-399 H3): Marshal submitted-awareness verified e2e — 5 new tests (full-reject+requeue+bump, submitted-not-scheduled×3, blocked_by-doesn't-clear-on-submitted). I4 closed. 596/596 green.
 2026-04-12T21:21:15Z	817	implementation	t-400	complete	0.75	🟢	t-400 (I5): Marshal dispatch — queue-push/pop --forge flag, cross-Forge filter + preservation, 10 tests. 606/606 green.
 2026-04-12T21:23:44Z	818	implementation	t-401	complete	0.75	🟢	t-401 (I6): Per-Forge Witness — patrol check 6 + witness-check CLI, 6 tests. 612/612 green.
+2026-04-12T21:27:30Z	819	implementation	t-402	complete	0.85	🟢	t-402 (I7): ini-018 acceptance gate green — N=2 sandbox test passes end-to-end, STRATEGY+WALKTHROUGH updated, 615/615 tests. Ready to surface to Anvil.

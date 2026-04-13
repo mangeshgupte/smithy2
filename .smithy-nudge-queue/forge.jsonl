@@ -1,3 +1,9 @@
 {"message": "Queue updated. 8 tasks ready. Top: t-395 \u2014 I0: Shutdown + sentinel machinery. state.parallel.halt_flag ", "timestamp": "2026-04-12T15:13:21.698752"}
 {"message": "Queue updated. 5 tasks ready. Top: t-403 \u2014 t-399 I4 H2: Assembly smart-resolve path. rebase-then-test m", "timestamp": "2026-04-12T21:12:46.890856"}
 {"message": "Task t-404 queued. Run smithy queue-pop to start.", "timestamp": "2026-04-12T21:16:56.850271"}
+{"message": "Task t-405 queued. Run smithy queue-pop to start.", "timestamp": "2026-04-12T22:13:26.950097"}
+{"message": "Task t-406 queued. Run smithy queue-pop to start.", "timestamp": "2026-04-12T22:14:11.440951"}
+{"message": "Task t-373 queued. Run smithy queue-pop to start.", "timestamp": "2026-04-12T22:14:11.491010"}
+{"message": "Queue updated. 5 tasks ready. Top: t-407 \u2014 Enforce Assembly-only-to-main \u2014 move forge-01/Marshal/Anvil ", "timestamp": "2026-04-12T22:29:59.801421"}
+{"message": "Queue updated. 6 tasks ready. Top: t-407 \u2014 Enforce Assembly-only-to-main + Forge rename. (1) Create wor", "timestamp": "2026-04-12T22:36:51.685656"}
+{"message": "Queue updated. 7 tasks ready. Top: t-407 \u2014 Enforce Assembly-only-to-main + Forge rename. (1) Create wor", "timestamp": "2026-04-12T22:48:56.875602"}
