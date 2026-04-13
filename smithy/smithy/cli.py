@@ -3000,5 +3000,31 @@ def steering_retro(ctx, since, fmt):
     click.echo("\n".join(lines))
 
 
+@cli.command("up")
+@click.option("--force", is_flag=True, help="Kill existing tmux session and recreate.")
+@click.option("--dry-run", is_flag=True, help="Print panes that would be created and exit.")
+@click.option("--session", "session_name", default="forge",
+              help="tmux session name (default: forge). Passed via FORGE_SESSION env.")
+@click.pass_context
+def up(ctx, force, dry_run, session_name):
+    """Launch the Forge tmux rig (anvil/marshal/assembly + forges)."""
+    import os
+    import subprocess
+    root = ctx.obj["root"]
+    script = root / "scripts" / "tmux-layout.sh"
+    if not script.exists():
+        _output({"error": f"tmux-layout.sh not found at {script}"})
+        sys.exit(1)
+    cmd = [str(script)]
+    if force:
+        cmd.append("--force")
+    if dry_run:
+        cmd.append("--dry-run")
+    env = os.environ.copy()
+    env["FORGE_SESSION"] = session_name
+    result = subprocess.run(cmd, cwd=str(root), env=env)
+    sys.exit(result.returncode)
+
+
 if __name__ == "__main__":
     cli()
