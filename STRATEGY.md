@@ -172,3 +172,29 @@ _Audited at heat 777 (t-358). Prior list (PWA, teach-it-back, t-044/t-045/t-046,
 | **v0.5** | Messaging sidecar (WhatsApp) | PLANNED (deferred — build when ready) |
 | **v0.6** | Web dashboard (htmx) | PLANNED |
 | **v0.7** | Semantic memory (ChromaDB) | PLANNED |
+
+## ini-018: Parallel Forges (landed 2026-04-12)
+
+N≥2 Forges can now run concurrently against a single shared state.json.
+The acceptance gate (t-402 I7) is green end-to-end in a sandbox fixture:
+5 heats across 2 Forges, Assembly merging each, final state 5 complete
+tasks / 10 worklog rows / patrol clean / both Forges contributed.
+
+Shipped in heats 812-819 (~8 of the 12-heat guard):
+- **I0** halt/resume-rig/shutdown-status — shutdown-first sentinel machinery.
+- **I1** per-Forge checkpoint/nudge-queue namespacing (legacy paths preserved at N=1).
+- **I2** `forge-spawn` / `forge-reset` CLIs for worktree lifecycle.
+- **I3** Assembly teammate scaffold (drain-and-noop).
+- **I4** Assembly merge loop — `submitted`-status lifecycle, `assembly-merge` /
+  `assembly-reject` CLIs, git-ops primitives (rebase/continue/abort/test/ff-merge),
+  LLM-level conflict judgment in the persona.
+- **I5** Marshal dispatch across N Forges (`--forge <id>` on queue-push/pop,
+  `assigned_forge` field, cross-Forge pin preservation).
+- **I6** Per-Forge Witness (patrol check 6 + `witness-check` CLI; healthy
+  Forges unaffected by zombie peers).
+- **I7** sandbox acceptance test + docs.
+
+**Status:** sandbox-green; NOT yet flipped on the real rig. `halt_flag`
+stays cleared, `parallel.max_forges=1`, and `parallel.assembly.enabled=False`
+until Anvil explicitly signs off on N≥2 at runtime. See
+`personas/anvil/CLAUDE.md` for the N≥2 spawn discipline.

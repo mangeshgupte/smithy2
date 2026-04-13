@@ -488,3 +488,43 @@ Icons map to verbs: 📌 pinned / 📍 unpinned / ↑ priority-set / ⏸ deferre
 - Read `protocol/loop.md` if you want to know exactly how a heat executes.
 - Read `personas/anvil/CLAUDE.md`, `personas/marshal/CLAUDE.md`, `personas/forge/CLAUDE.md` to see what each agent actually knows.
 - Try it with a small project first (budget 20–30 heats). The rhythm is easier to feel at that scale.
+
+## Running N≥2 Forges (ini-018, sandbox-green)
+
+Smithy supports multiple Forges running concurrently on a single shared
+state.json. The mechanism is in place and the sandbox acceptance test
+passes, but the real rig still defaults to N=1. Turning it on is a
+deliberate, reversible step.
+
+**Pre-flight (required):**
+1. `smithy halt --reason "going N=2"` — quiesce in-flight heats.
+2. `smithy shutdown-status` — confirm `quiesced: true`.
+3. Edit `state.json`: set `parallel.max_forges` to 2 (or 3) and
+   `parallel.assembly.enabled` to `true`.
+4. `smithy forge-spawn forge-02` — creates `.worktrees/forge-02/`, registers
+   it in `parallel.forges[]`.
+5. `smithy resume-rig`.
+
+**Spawn from Anvil:** Anvil's `TeamCreate` spawns Marshal, the N Forges,
+and Assembly. Every non-`forge-01` Forge's prompt must `cd` into its
+worktree first and pass `--forge <id>` on every `smithy` command.
+Assembly is the only agent allowed to push to main.
+
+**Lifecycle (two-row worklog per task):**
+- Forge `end-heat` commits to its branch → task status `submitted`.
+- Assembly `assembly-rebase` / `assembly-test` / `assembly-ff-merge`, or
+  `assembly-merge --sha <sha>` on success → status `complete`, `✅` row.
+- On unresolvable conflict: `assembly-reject --reason` → status `pending`,
+  `human_priority += 5`, `🚫` row. Forge retries next heat.
+- Merge indicators (`✅` / `🔀` / `🚫`) are separate from Forge value signals
+  (`🟢` / `🟡` / `🔴`).
+
+**Monitoring:** `smithy witness-check` reports per-Forge health (heartbeat
+age, checkpoint presence, stuck reasons). Patrol check 6 flags zombies
+without affecting healthy peers.
+
+**Shutdown:** `smithy halt` stops new assignments; in-flight Forges drain
+via `end-heat`; Assembly drains `.assembly-queue.jsonl`; everything goes
+idle. Resume with `smithy resume-rig`.
+
+See `personas/assembly/CLAUDE.md` for Assembly's full protocol.

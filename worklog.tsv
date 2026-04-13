@@ -816,3 +816,4 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-12T21:15:21Z	815	implementation	t-403	complete	0.75	🟢	t-403 (t-399 H2): Assembly git-ops primitives — rebase/continue/abort/test/ff-merge + 5 CLI wrappers + 8 tests covering clean-merge / resolution-success / resolution-abandoned paths. 591/591 green. H3 next (reject+requeue + Marshal submitted-awareness).
 2026-04-12T21:19:08Z	816	implementation	t-404	complete	0.7	🟢	t-404 (t-399 H3): Marshal submitted-awareness verified e2e — 5 new tests (full-reject+requeue+bump, submitted-not-scheduled×3, blocked_by-doesn't-clear-on-submitted). I4 closed. 596/596 green.
 2026-04-12T21:21:15Z	817	implementation	t-400	complete	0.75	🟢	t-400 (I5): Marshal dispatch — queue-push/pop --forge flag, cross-Forge filter + preservation, 10 tests. 606/606 green.
+2026-04-12T21:23:44Z	818	implementation	t-401	complete	0.75	🟢	t-401 (I6): Per-Forge Witness — patrol check 6 + witness-check CLI, 6 tests. 612/612 green.

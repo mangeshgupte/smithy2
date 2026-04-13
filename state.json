@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1043,
-    "used": 817,
+    "used": 818,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 313,
+      "heats": 314,
       "progress": 0.98,
-      "value_ema": 0.733
+      "value_ema": 0.738
     },
     "testing": {
       "target": 0.183,
@@ -3996,19 +3996,19 @@
       "id": "t-401",
       "stage": "implementation",
       "desc": "I6: Per-Forge Witness integration. Port t-386 stuck-state detector per-Forge. Blocked_by: I4.",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-018",
       "human_priority": null,
-      "priority_reason": "ini-018 rank=1 + poker",
+      "priority_reason": null,
       "assigned_forge": null
     },
     {
       "id": "t-402",
       "stage": "testing",
       "desc": "I7: N=3 sandbox + docs. Spin 3 Forges (upgraded from N=2 per human). Risk R1 concurrency upgraded 'high likelihood at N=3' \u2014 include in I4 test matrix reference. Acceptance gate: surface to Anvil, do NOT flip halt_flag to real rig without explicit human sign-off. Blocked_by: I5, I6.",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-018",
@@ -4085,7 +4085,7 @@
       "description": "Run multiple Forge workers concurrently via per-Forge git worktrees. Dedicated Assembly teammate handles merge queue integration (conflicts, test-on-integrate, merge ordering). Unlocks parallelism (Marshal dispatches N heats simultaneously) and enforces branch hygiene. Incremental: N=2 proof before N=3+.",
       "status": "approved",
       "budget_cap": null,
-      "heats_used": 9,
+      "heats_used": 10,
       "viewed_at": "2026-04-13T04:21:36Z",
       "rank": 1
     },
@@ -4310,9 +4310,7 @@
       "created": "2026-04-11T10:44:28.678810"
     }
   ],
-  "next_tasks": [
-    "t-402"
-  ],
+  "next_tasks": [],
   "schema_version": 1,
   "intents": [
     {
