@@ -3972,13 +3972,14 @@
       "id": "t-399",
       "stage": "implementation",
       "desc": "I4: Assembly merge loop (~2h, may split). Pick branch \u2192 rebase onto main \u2192 pytest \u2192 ff-merge or abort-on-conflict (never auto-resolve). PRESERVE per-heat commits (no squash). HALT autonomous tail before this heat \u2014 nudge Anvil first. Blocked_by: I3.",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-018",
       "human_priority": null,
       "priority_reason": "ini-018 rank=1 + poker",
-      "assigned_forge": null
+      "assigned_forge": null,
+      "completed_at": "2026-04-13T08:20:00+00:00"
     },
     {
       "id": "t-400",
@@ -4044,25 +4045,27 @@
       "id": "t-405",
       "stage": "research",
       "desc": "Intent-as-primitives research REFRAME \u2014 rewrite research/intent-hierarchy.md \u2192 research/intents-as-primitives.md per team-lead's 2026-04-12 reframe. Intent is a primitive field on every unit of work (task/initiative/project), same shape everywhere, NO level concept in storage. Chain is ONE view among several (also: search-by-content, gap-audit, drift-detection). Schema: single nullable 'intent' string per unit. Auto-discovery per-unit (not per-level). Editor UX: inline-edit wherever a unit is displayed, no level switcher. Treat the prior hierarchy doc as counter-proposal to rebut/reconcile. Revise impl candidates accordingly. Seed corpus from t-384 must round-trip through the new framing.",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-017",
       "human_priority": null,
       "priority_reason": "ini-017 rank=3 + poker",
-      "assigned_forge": "forge-02"
+      "assigned_forge": "forge-02",
+      "completed_at": "2026-04-13T08:20:00+00:00"
     },
     {
       "id": "t-406",
       "stage": "implementation",
       "desc": "Cockpit/Poker vocab drift fix \u2014 Poker uses status=='in_progress' while Bellows/Cockpit use 'in_flight'. Audit all consumers, pick canonical term (recommend 'in_flight' since it matches Cockpit section naming from t-390), update all sites, add a regression test asserting consistency across Poker/Bellows/Cockpit status reads.",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-016",
       "human_priority": null,
       "priority_reason": "ini-016 rank=2 + poker",
-      "assigned_forge": "forge-03"
+      "assigned_forge": "forge-03",
+      "completed_at": "2026-04-13T08:20:00+00:00"
     },
     {
       "id": "t-407",
@@ -4081,7 +4084,7 @@
       "id": "t-408",
       "stage": "implementation",
       "desc": "scripts/tmux-layout.sh \u2014 reproducible tmux session 'forge' for The Forge rig. Idempotent POSIX shell; kill+recreate with --force, else attach. Layout: one window; left col Anvil full-height (~40%); right col split 3 rows: Marshal (top 1/3), Assembly (middle 1/3), Forges (bottom 1/3); bottom-right split horizontally into N panes from state.parallel.max_forges. Each pane cd's to its dir (personas/anvil, personas/marshal, personas/assembly, .worktrees/forge-<name>/) and launches 'claude' (command configurable via env var). Use verb-named forges from state.parallel.forges (post-rename) \u2014 do NOT hardcode forge-01/02/03. Pane titles = agent name. Document in scripts/README.md (or inline header): run, resize, scale forge count. BLOCKED BY t-407 \u2014 references post-rename worktree layout.",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": [
         "t-407"
@@ -4089,13 +4092,14 @@
       "initiative_id": "ini-018",
       "human_priority": null,
       "priority_reason": "ini-018 rank=1 + poker",
-      "assigned_forge": null
+      "assigned_forge": null,
+      "completed_at": "2026-04-13T08:20:00+00:00"
     },
     {
       "id": "t-409",
       "stage": "implementation",
       "desc": "start-heat/end-heat per-Forge routing. Current: both commands hardcode .forge-checkpoint.json at repo root and don't accept --forge \u2192 non-primary Forges (forge-temper/forge-anneal) clobber primary checkpoint + cross-contaminate heats. Scope: (1) add --forge <id> to start-heat and end-heat, or auto-detect via detect_forge_from_cwd() helper added in t-407 H2; (2) route checkpoint per Forge: .forge-checkpoint-<id>.json or .worktrees/<id>/.forge-checkpoint.json; (3) worklog append stays on main shared record but forge_id column populated per heat; (4) budget counter stays global (1 heat = 1 slot across all Forges); (5) tests: parallel start-heat from two worktrees doesn't collide. BLOCKS lifting halt_flag \u2014 without this N=3 parallel corrupts heat state.",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [
         "t-407"
@@ -4103,7 +4107,8 @@
       "initiative_id": "ini-018",
       "human_priority": null,
       "priority_reason": "ini-018 rank=1 + poker",
-      "assigned_forge": null
+      "assigned_forge": null,
+      "completed_at": "2026-04-13T08:20:00+00:00"
     }
   ],
   "ideas": [
@@ -4376,12 +4381,6 @@
     }
   ],
   "next_tasks": [
-    "t-407",
-    "t-409",
-    "t-408",
-    "t-399",
-    "t-406",
-    "t-405",
     "t-373"
   ],
   "schema_version": 1,
@@ -4448,7 +4447,7 @@
     ],
     "assembly": {
       "enabled": true,
-      "last_heartbeat": "2026-04-13T05:15:44+00:00"
+      "last_heartbeat": "2026-04-13T08:14:03+00:00"
     },
     "forge_roster": [
       "forge-quench",
