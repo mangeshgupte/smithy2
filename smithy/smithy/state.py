@@ -294,8 +294,14 @@ def validate_state(state: dict) -> list[str]:
 
 
 def append_worklog(project_dir: Path, heat: int, stage: str, task_id: str,
-                   outcome: str, value: float, signal: str, notes: str):
-    """Append a row to worklog.tsv with validation."""
+                   outcome: str, value: float, signal: str, notes: str,
+                   forge_id: Optional[str] = None):
+    """Append a row to worklog.tsv with validation.
+
+    t-409 H1: worklog.tsv is always at the MAIN repo root (shared across
+    worktrees). `forge_id` is a new trailing TSV column; historical rows
+    with no forge_id are treated as "primary" by readers for backcompat.
+    """
     if stage not in VALID_STAGES:
         raise ValueError(f"Invalid stage: {stage}")
     if signal not in VALID_SIGNALS:
@@ -305,9 +311,20 @@ def append_worklog(project_dir: Path, heat: int, stage: str, task_id: str,
     if not (0 <= value <= 1):
         raise ValueError(f"Value out of range: {value}")
 
+    root = main_repo_root(project_dir)
+    if forge_id is None:
+        forge_id = primary_forge_id(root)
     ts = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
-    row = f"{ts}\t{heat}\t{stage}\t{task_id}\t{outcome}\t{value}\t{signal}\t{notes}\n"
-    path = project_dir / "worklog.tsv"
+    row = (f"{ts}\t{heat}\t{stage}\t{task_id}\t{outcome}\t{value}\t"
+           f"{signal}\t{notes}\t{forge_id}\n")
+    path = root / "worklog.tsv"
+    # t-409 H1: if file is fresh (no header yet) seed the 9-column header.
+    # Never rewrite an existing header — readers must tolerate an 8-col
+    # header with 9-col rows (trailing forge_id).
+    if not path.exists():
+        path.write_text(
+            "timestamp\theat\tstage\ttask_id\toutcome\tvalue\tsignal\tnotes\tforge_id\n"
+        )
     with open(path, "a") as f:
         f.write(row)
 
@@ -319,6 +336,26 @@ def append_worklog(project_dir: Path, heat: int, stage: str, task_id: str,
 # DEFAULT_FORGE_ID remains as a last-resort label used only when state.json
 # is unreadable (fresh install); do not rely on it for identity checks.
 DEFAULT_FORGE_ID = "forge-01"
+
+
+def main_repo_root(project_dir: Path) -> Path:
+    """t-409 H1: Return the path of the MAIN repo root, even when
+    project_dir is a linked worktree. Uses `git rev-parse --git-common-dir`
+    and falls back to project_dir if git is unavailable.
+
+    Checkpoints, nudge queues, and worklog.tsv all live at the main repo
+    root so Assembly/patrol don't have to hop worktrees."""
+    import subprocess
+    try:
+        out = subprocess.run(
+            ["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
+            cwd=project_dir, capture_output=True, text=True, check=True,
+        ).stdout.strip()
+        if out:
+            return Path(out).parent
+    except Exception:
+        pass
+    return project_dir
 
 
 def primary_forge_id(project_dir_or_state) -> str:
@@ -375,24 +412,27 @@ def detect_forge_from_cwd(project_dir: Path, cwd: Optional[Path] = None) -> Opti
     return None
 
 
-def forge_checkpoint_path(project_dir: Path, forge_id: str | None = None) -> Path:
-    """Return the checkpoint path for a given Forge id.
+def forge_checkpoint_path(project_dir: Path, forge_id: Optional[str] = None) -> Path:
+    """Return the checkpoint path for a given Forge id, anchored at the
+    MAIN repo root (t-409 H1) so Assembly/patrol see all checkpoints
+    without hopping worktrees.
 
-    The primary Forge (parallel.forges[0]) keeps the legacy
-    `.forge-checkpoint.json` filename so N=1 behavior stays byte-identical.
-    Any non-primary forge gets the namespaced form `.<id>-checkpoint.json`.
-    `forge_id=None` resolves to the primary id."""
-    primary = primary_forge_id(project_dir)
+    Primary (parallel.forges[0]) keeps legacy `.forge-checkpoint.json`;
+    non-primary Forges use `.forge-checkpoint-<id>.json` per t-409 spec.
+    `forge_id=None` resolves to primary."""
+    root = main_repo_root(project_dir)
+    primary = primary_forge_id(root)
     if forge_id is None or forge_id == primary:
-        return project_dir / ".forge-checkpoint.json"
-    return project_dir / f".{forge_id}-checkpoint.json"
+        return root / ".forge-checkpoint.json"
+    return root / f".forge-checkpoint-{forge_id}.json"
 
 
-def forge_nudge_queue_path(project_dir: Path, forge_id: str | None = None) -> Path:
-    """Per-Forge nudge queue path. Primary uses legacy
-    `.smithy-nudge-queue/forge.jsonl`; others use `<id>.jsonl`."""
-    base = project_dir / ".smithy-nudge-queue"
-    primary = primary_forge_id(project_dir)
+def forge_nudge_queue_path(project_dir: Path, forge_id: Optional[str] = None) -> Path:
+    """Per-Forge nudge queue path, anchored at main repo root. Primary
+    uses legacy `.smithy-nudge-queue/forge.jsonl`; others use `<id>.jsonl`."""
+    root = main_repo_root(project_dir)
+    base = root / ".smithy-nudge-queue"
+    primary = primary_forge_id(root)
     if forge_id is None or forge_id == primary:
         return base / "forge.jsonl"
     return base / f"{forge_id}.jsonl"
