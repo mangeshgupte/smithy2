@@ -4109,6 +4109,19 @@
       "priority_reason": "ini-018 rank=1 + poker",
       "assigned_forge": null,
       "completed_at": "2026-04-13T08:20:00+00:00"
+    },
+    {
+      "id": "t-410",
+      "stage": "implementation",
+      "desc": "Add `smithy up` subcommand \u2014 entrypoint to launch the Forge tmux rig. Shells out to scripts/tmux-layout.sh, passing through --force and --dry-run, and a --session NAME flag wired to $FORGE_SESSION env. Resolve repo root consistent with other subcommands. Unit test covers --dry-run path (exits 0, lists panes). One-line doc near other subcommands.",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-018",
+      "human_priority": null,
+      "priority_reason": "direct Anvil dispatch",
+      "assigned_forge": "forge-quench",
+      "completed_at": "2026-04-13T00:00:00+00:00"
     }
   ],
   "ideas": [
