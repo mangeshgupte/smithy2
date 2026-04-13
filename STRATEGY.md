@@ -208,3 +208,12 @@ Worktree invariant enforced: Marshal and every Forge run from
 `.worktrees/<id>/`; only Assembly writes to `main`. `smithy patrol`
 check #7 fails the rig if the invariant is broken. Primary-Forge
 semantics switched from string match `"forge-01"` to index (`forges[0]`).
+
+**t-409 follow-on (2026-04-12, active):** Per-Forge heat routing — `smithy
+start-heat` / `end-heat` accept `--forge <id>` and auto-detect from cwd
+worktree. Primary keeps legacy `.forge-checkpoint.json`; non-primary
+Forges write `.forge-checkpoint-<id>.json` (both anchored at main repo
+root via new `main_repo_root()` helper). `worklog.tsv` gains a trailing
+`forge_id` column; pre-t-409 rows treated as primary for backcompat.
+Unblocks lifting `halt_flag` for true N≥2 parallel execution — previously
+two Forges running heats at once would clobber each other's checkpoint.

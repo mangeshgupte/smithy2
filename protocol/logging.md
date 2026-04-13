@@ -5,7 +5,7 @@ All logging is handled by `smithy end-heat`. You provide the inputs, smithy hand
 ## End a Heat
 
 ```bash
-smithy end-heat <value> <signal> "<notes>" [--outcome complete|partial|blocked]
+smithy end-heat <value> <signal> "<notes>" [--outcome complete|partial|blocked] [--forge <id>]
 ```
 
 This atomically:
@@ -13,10 +13,17 @@ This atomically:
 - Increments the stage's `heats` count
 - Computes `value_ema`: 0.7 * old + 0.3 * new
 - Updates allocator integral (with ±0.5 clamp and 0.85 decay)
-- Appends a row to `worklog.tsv`
+- Appends a row to `worklog.tsv` (trailing `forge_id` column, t-409)
 - Marks task complete (if outcome=complete)
 - Updates `overall_progress`
-- Deletes checkpoint
+- Deletes the Forge's checkpoint
+
+**Parallel Forges (t-409):** `--forge <id>` defaults to the cwd's worktree
+(auto-detected); primary keeps `.forge-checkpoint.json`, non-primary Forges
+use `.forge-checkpoint-<id>.json`. `worklog.tsv` schema is 9 columns:
+`timestamp, heat, stage, task_id, outcome, value, signal, notes, forge_id`.
+Pre-t-409 rows have an empty `forge_id` and are treated as the primary
+Forge for backcompat.
 
 ## Your Inputs
 
