@@ -98,12 +98,17 @@ def run_tests_in_worktree(project_dir: Path, forge_id: str,
 
 
 def ff_merge_forge_branch(project_dir: Path, forge_id: str,
-                          task_id: str, base: str = "main") -> dict:
+                          task_id: str, base: str = "main",
+                          delete_branch: bool = True) -> dict:
     """Merge `<forge-id>/<task-id>` into `base` in project_dir (--no-ff).
 
     After a successful rebase the branch is linear on top of base, so this
     is effectively a fast-forward-equivalent with a merge commit for
     readable history.
+
+    On success, by default also deletes the per-task branch (t-411) and
+    returns the deletion result under key "deleted". Pass
+    ``delete_branch=False`` to skip cleanup (tests, dry-runs).
     """
     branch = branch_name(forge_id, task_id)
     r = _git(project_dir, "checkout", base)
@@ -115,7 +120,62 @@ def ff_merge_forge_branch(project_dir: Path, forge_id: str,
         return {"status": "merge_failed",
                 "detail": r.stderr.strip() or r.stdout.strip()}
     head = _git(project_dir, "rev-parse", "HEAD")
-    return {"status": "merged", "sha": head.stdout.strip(), "branch": branch}
+    result = {"status": "merged", "sha": head.stdout.strip(), "branch": branch}
+    if delete_branch:
+        result["deleted"] = delete_forge_branch(
+            project_dir, forge_id, task_id, force=False,
+        )
+    return result
+
+
+def delete_forge_branch(project_dir: Path, forge_id: str, task_id: str,
+                        force: bool = False) -> dict:
+    """Delete the per-task branch `<forge-id>/<task-id>` (t-411).
+
+    Two callsites:
+      - success path (after ff_merge_forge_branch): ``force=False`` → ``-d``
+      - rejection path (after assembly-reject): ``force=True`` → ``-D``
+
+    Pre-step: if the Forge's worktree currently has the task branch checked
+    out, ``git branch -d/-D`` fails with "used by worktree". So first
+    restore the worktree to its ``<forge-id>/scratch`` branch. The worktree
+    itself is never touched — only the branch pointer.
+
+    Returns:
+      {"status": "deleted", "branch": "...", "sha": "<pre-delete sha>",
+       "mode": "-d"|"-D", "restored_worktree": bool}
+      {"status": "absent", "branch": "..."}  — branch didn't exist (idempotent)
+      {"status": "error", "detail": "..."}
+    """
+    branch = branch_name(forge_id, task_id)
+
+    exists = _git(project_dir, "rev-parse", "--verify", "--quiet", branch)
+    if exists.returncode != 0:
+        return {"status": "absent", "branch": branch}
+    sha = exists.stdout.strip()
+
+    wt = _worktree(project_dir, forge_id)
+    restored = False
+    if wt.exists():
+        cur = _git(wt, "rev-parse", "--abbrev-ref", "HEAD")
+        if cur.returncode == 0 and cur.stdout.strip() == branch:
+            scratch = f"{forge_id}/scratch"
+            r = _git(wt, "checkout", scratch)
+            if r.returncode != 0:
+                return {"status": "error",
+                        "branch": branch,
+                        "detail": f"restore worktree to {scratch}: "
+                                  f"{r.stderr.strip() or r.stdout.strip()}"}
+            restored = True
+
+    mode = "-D" if force else "-d"
+    r = _git(project_dir, "branch", mode, branch)
+    if r.returncode != 0:
+        return {"status": "error", "branch": branch, "mode": mode,
+                "restored_worktree": restored,
+                "detail": r.stderr.strip() or r.stdout.strip()}
+    return {"status": "deleted", "branch": branch, "sha": sha,
+            "mode": mode, "restored_worktree": restored}
 
 
 # --- mild-conflict auto-resolution ------------------------------------------
