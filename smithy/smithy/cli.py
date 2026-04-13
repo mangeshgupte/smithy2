@@ -266,6 +266,30 @@ def end_heat(ctx, value, signal, notes, outcome, progress, no_nudge, forge_id):
     # Delete this Forge's checkpoint (t-409 H1).
     delete_checkpoint(root, forge_id=forge_id)
 
+    # t-399 I4: when Assembly is enabled and the task was submitted, enqueue
+    # for Assembly to rebase/merge. Queue entry captures the current HEAD
+    # so Assembly merges only up to this submit boundary (not future heats).
+    if effective_outcome == "submitted":
+        import subprocess as _sub
+        wt = root / ".worktrees" / (forge_id or "")
+        cwd = wt if (wt.exists() and (wt / ".git").exists()) else root
+        head = _sub.run(["git", "rev-parse", "HEAD"], cwd=str(cwd),
+                        capture_output=True, text=True).stdout.strip()
+        branch = _sub.run(["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                          cwd=str(cwd), capture_output=True, text=True
+                          ).stdout.strip()
+        queue_path = root / ".assembly-queue.jsonl"
+        with open(queue_path, "a") as f:
+            f.write(json.dumps({
+                "forge_id": forge_id,
+                "task_id": task_id,
+                "heat": heat,
+                "branch": branch,
+                "sha": head,
+                "submitted_at": datetime.now(timezone.utc).isoformat(
+                    timespec="seconds"),
+            }) + "\n")
+
     result = {
         "heat": heat,
         "stage": stage,
@@ -419,12 +443,13 @@ def assembly_test_cmd(ctx, forge_id):
 
 @cli.command("assembly-ff-merge")
 @click.option("--forge", "forge_id", required=True)
+@click.option("--task", "task_id", required=True)
 @click.option("--base", default="main")
 @click.pass_context
-def assembly_ff_merge_cmd(ctx, forge_id, base):
-    """t-399 I4 H2: Fast-forward forge/<id> into base in project_dir."""
+def assembly_ff_merge_cmd(ctx, forge_id, task_id, base):
+    """t-399 I4: Merge `<forge>/<task>` into base in project_dir."""
     from .assembly import ff_merge_forge_branch
-    _output(ff_merge_forge_branch(ctx.obj["root"], forge_id, base))
+    _output(ff_merge_forge_branch(ctx.obj["root"], forge_id, task_id, base))
 
 
 @cli.command("assembly-merge")
@@ -434,11 +459,14 @@ def assembly_ff_merge_cmd(ctx, forge_id, base):
               help="Assembly resolved conflicts before merging.")
 @click.pass_context
 def assembly_merge_cmd(ctx, task_id, sha, resolution):
-    """t-399 I4: Assembly's successful merge. Flips submitted → complete,
-    writes the second worklog row (outcome=merged or merged-with-resolution,
-    signal=✅ or 🔀). Safe to call only after a Forge end-heat left the task
-    in `submitted` status."""
-    root = ctx.obj["root"]
+    """t-399 I4: Assembly's successful merge. Flips submitted → complete."""
+    result = _do_assembly_merge(ctx.obj["root"], task_id, sha, resolution)
+    _output(result)
+    if "error" in result:
+        sys.exit(1)
+
+
+def _do_assembly_merge(root, task_id, sha, resolution):
     state = load_state(root)
     task = None
     for t in state.get("queue", []):
@@ -446,29 +474,21 @@ def assembly_merge_cmd(ctx, task_id, sha, resolution):
             task = t
             break
     if task is None:
-        _output({"error": f"unknown task: {task_id}"})
-        sys.exit(1)
+        return {"error": f"unknown task: {task_id}"}
     if task["status"] != "submitted":
-        _output({"error": f"task {task_id} status is {task['status']!r}, "
-                          f"expected 'submitted'"})
-        sys.exit(1)
-
+        return {"error": f"task {task_id} status is {task['status']!r}, "
+                         f"expected 'submitted'"}
     task["status"] = "complete"
     task["human_priority"] = None
     task["priority_reason"] = None
-
-    # Initiative heats_used was already incremented at end-heat; do not
-    # double-count. Save state.
     save_state(root, state)
 
     outcome = "merged-with-resolution" if resolution else "merged"
     signal = "🔀" if resolution else "✅"
-    stage = "implementation"  # Assembly is stage-agnostic; record as impl.
-    # Worklog value=0 for Assembly rows — merge indicator carries the signal.
-    append_worklog(root, state["budget"]["used"], stage, task_id,
+    append_worklog(root, state["budget"]["used"], "implementation", task_id,
                    outcome, 0.0, signal, f"merge sha={sha[:12]}")
-    _output({"task_id": task_id, "status": "complete", "outcome": outcome,
-             "sha": sha})
+    return {"task_id": task_id, "status": "complete", "outcome": outcome,
+            "sha": sha}
 
 
 @cli.command("assembly-reject")
@@ -476,11 +496,14 @@ def assembly_merge_cmd(ctx, task_id, sha, resolution):
 @click.option("--reason", required=True, help="Why Assembly rejected the branch.")
 @click.pass_context
 def assembly_reject_cmd(ctx, task_id, reason):
-    """t-399 I4: Assembly rejection. Flips submitted → pending, bumps
-    human_priority by +5 (to avoid lossy re-run loops), stamps
-    priority_reason='assembly rejected: <reason>' (truncated to 40 chars),
-    and writes the second worklog row (outcome=rejected, signal=🚫)."""
-    root = ctx.obj["root"]
+    """t-399 I4: Assembly rejection. Flips submitted → pending + Marshal nudge."""
+    result = _do_assembly_reject(ctx.obj["root"], task_id, reason)
+    _output(result)
+    if "error" in result:
+        sys.exit(1)
+
+
+def _do_assembly_reject(root, task_id, reason):
     state = load_state(root)
     task = None
     for t in state.get("queue", []):
@@ -488,12 +511,10 @@ def assembly_reject_cmd(ctx, task_id, reason):
             task = t
             break
     if task is None:
-        _output({"error": f"unknown task: {task_id}"})
-        sys.exit(1)
+        return {"error": f"unknown task: {task_id}"}
     if task["status"] != "submitted":
-        _output({"error": f"task {task_id} status is {task['status']!r}, "
-                          f"expected 'submitted'"})
-        sys.exit(1)
+        return {"error": f"task {task_id} status is {task['status']!r}, "
+                         f"expected 'submitted'"}
 
     task["status"] = "pending"
     hp = task.get("human_priority") or 0
@@ -504,9 +525,135 @@ def assembly_reject_cmd(ctx, task_id, reason):
 
     append_worklog(root, state["budget"]["used"], "implementation", task_id,
                    "rejected", 0.0, "🚫", f"reason={reason[:80]}")
-    _output({"task_id": task_id, "status": "pending",
-             "human_priority": task["human_priority"],
-             "priority_reason": pr})
+    # t-399 I4 design (2026-04-13): rejection routes to Marshal (owns
+    # scheduling), not to the Forge directly.
+    nudge_msg = (f"ASSEMBLY_REJECTED: {task_id} — {reason[:80]}. "
+                 f"Task back to pending (priority +5). Decide: reassign, "
+                 f"split, or deprioritize.")
+    _queue_nudge(root, "marshal", nudge_msg)
+    return {"task_id": task_id, "status": "pending",
+            "human_priority": task["human_priority"],
+            "priority_reason": pr}
+
+
+@cli.command("assembly-tick")
+@click.option("--base", default="main", help="Integration branch.")
+@click.option("--dry-run", is_flag=True,
+              help="Report what would happen without mutating anything.")
+@click.option("--tests-cmd", default=None,
+              help="Override default pytest command (space-separated).")
+@click.pass_context
+def assembly_tick_cmd(ctx, base, dry_run, tests_cmd):
+    """t-399 I4: Drain one entry from .assembly-queue.jsonl and merge it.
+
+    Pipeline: rebase branch onto base → (try_auto_resolve if conflict) →
+    pytest → merge --no-ff. On severe conflict or test fail, abort and
+    call assembly-reject (which nudges Marshal).
+
+    Returns JSON describing the outcome. Re-invoke to process the next
+    queue item; idempotent when queue is empty.
+    """
+    from .assembly import (
+        rebase_forge_branch, continue_rebase, abort_rebase, try_auto_resolve,
+        run_tests_in_worktree, ff_merge_forge_branch, branch_name,
+    )
+    root = ctx.obj["root"]
+    qpath = root / ".assembly-queue.jsonl"
+    if not qpath.exists() or qpath.stat().st_size == 0:
+        _output({"status": "empty"})
+        return
+    lines = [ln for ln in qpath.read_text().splitlines() if ln.strip()]
+    item = json.loads(lines[0])
+    rest = lines[1:]
+
+    if dry_run:
+        _output({"status": "would_process", "item": item,
+                 "remaining": len(rest)})
+        return
+
+    forge_id = item["forge_id"]
+    task_id = item["task_id"]
+    expected_branch = branch_name(forge_id, task_id)
+
+    def _reject(reason: str) -> dict:
+        abort_rebase(root, forge_id)
+        _do_assembly_reject(root, task_id, reason)
+        _log(root, forge_id, task_id, "rejected", reason)
+        _pop_queue(qpath, rest)
+        return {"status": "rejected", "task_id": task_id, "reason": reason}
+
+    # 1. Rebase onto base
+    rb = rebase_forge_branch(root, forge_id, base)
+    if rb["status"] == "conflict":
+        res = try_auto_resolve(root, forge_id)
+        if res["status"] == "severe":
+            _output(_reject(f"severe conflict in {','.join(res['files'])}"))
+            return
+        if res["status"] == "resolved":
+            cont = continue_rebase(root, forge_id)
+            while cont["status"] == "conflict":
+                res2 = try_auto_resolve(root, forge_id)
+                if res2["status"] == "severe":
+                    _output(_reject(
+                        f"severe conflict in {','.join(res2['files'])}"))
+                    return
+                if res2["status"] == "nothing":
+                    break
+                cont = continue_rebase(root, forge_id)
+            if cont["status"] == "error":
+                _output(_reject(f"rebase error: {cont.get('detail','?')[:120]}"))
+                return
+        elif res["status"] == "nothing":
+            pass  # fall through
+    elif rb["status"] == "error":
+        _output(_reject(f"rebase error: {rb.get('detail','?')[:120]}"))
+        return
+
+    # 2. Run tests in the rebased worktree
+    cmd_override = tests_cmd.split() if tests_cmd else None
+    tst = run_tests_in_worktree(root, forge_id, cmd=cmd_override)
+    if not tst["passed"]:
+        # Don't abort rebase — it already completed. Just reject the merge.
+        # Reset the worktree branch back to origin to drop rebase artifacts.
+        tail = tst["output"].splitlines()[-3:]
+        _output(_reject(f"tests failed: {'|'.join(tail)[:120]}"))
+        return
+
+    # 3. Merge
+    mr = ff_merge_forge_branch(root, forge_id, task_id, base)
+    if mr["status"] != "merged":
+        _output(_reject(f"merge failed: {mr.get('detail','?')[:120]}"))
+        return
+
+    # 4. Record + flip task status
+    _do_assembly_merge(root, task_id, mr["sha"], resolution=False)
+    _log(root, forge_id, task_id, "merged", mr["sha"])
+    # Nudge Marshal: a task just merged, graph may have opened up.
+    _queue_nudge(root, "marshal",
+                 f"ASSEMBLY_MERGED: {task_id} merged (sha={mr['sha'][:12]}). "
+                 f"Re-prioritize downstream.")
+    _pop_queue(qpath, rest)
+    _output({"status": "merged", "task_id": task_id, "sha": mr["sha"],
+             "branch": mr["branch"]})
+
+
+def _log(root, forge_id, task_id, outcome, detail):
+    """Append an assembly-log.jsonl audit row."""
+    path = root / "assembly-log.jsonl"
+    entry = {
+        "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "forge_id": forge_id, "task_id": task_id,
+        "outcome": outcome, "detail": detail,
+    }
+    with open(path, "a") as f:
+        f.write(json.dumps(entry) + "\n")
+
+
+def _pop_queue(qpath, rest):
+    if rest:
+        qpath.write_text("\n".join(rest) + "\n")
+    else:
+        qpath.unlink(missing_ok=True)
 
 
 @cli.command("forge-spawn")
