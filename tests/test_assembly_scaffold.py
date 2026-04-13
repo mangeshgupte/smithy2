@@ -35,10 +35,9 @@ def test_assembly_persona_dir_exists():
     assert persona.exists()
     text = persona.read_text()
     assert "Assembly" in text
-    assert "SCAFFOLD" in text or "scaffold" in text.lower()
+    # t-399 I4 landed: Assembly is LIVE; merge loop is live, no longer scaffold.
     assert "rebase" in text.lower()
-    assert "ff-only" in text.lower() or "ff-merge" in text.lower() or \
-           "fast-forward" in text.lower()
+    assert "merge" in text.lower()
 
 
 def test_assembly_heartbeat_writes_timestamp(scaffolded):
