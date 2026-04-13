@@ -30,6 +30,7 @@ smithy end-heat      # Close a heat (log, update state, self-assess)
 smithy commit        # Git commit with [stage] prefix
 smithy patrol --fix  # Find and fix state inconsistencies
 smithy status        # At-a-glance project summary
+smithy up            # Launch the tmux rig (--force, --dry-run, --session NAME)
 
 # Queue & coordination
 smithy queue-push    # Add a task to the next_tasks queue
