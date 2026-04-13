@@ -15,29 +15,21 @@
 # into three equal rows: Marshal (top), Assembly (middle), and a row of
 # Forge panes (bottom) — one per entry in `state.parallel.forges[]`.
 #
-# Forge ids are pulled live from state.json, so the script scales from
-# N=1 to N=max_forges without edits. Pane titles use the verb names
-# (forge-quench, forge-temper, forge-anneal, …).
+# Anvil and Assembly both run on the main checkout (Anvil stays on main
+# read-only by discipline; Assembly is the sole main-writer). Marshal
+# and every Forge run in their own worktree under .worktrees/.
 #
 # Usage:
 #   scripts/tmux-layout.sh            # attach to existing session or create
 #   scripts/tmux-layout.sh --force    # kill existing session and recreate
 #   scripts/tmux-layout.sh --dry-run  # print panes that would be created
+#   scripts/tmux-layout.sh -h         # show usage
 #
 # Environment:
 #   FORGE_SESSION   session name (default: forge)
-#   FORGE_CLAUDE    launcher command to run in each pane (default: claude)
-#                   Set to "" to leave panes empty and start claude by hand.
+#   FORGE_CLAUDE    launcher to run in each pane (default: claude)
+#                   Set to "" to leave panes empty.
 #   FORGE_ROOT      project root (default: script's ../ — the smithy2 checkout)
-#
-# Scaling the forge count:
-#   Edit state.parallel.max_forges and add entries to state.parallel.forges[].
-#   Re-run with --force to lay out the new session.
-#
-# Resizing:
-#   Default ratios are 40/60 horizontal and 33/33/34 vertical for the right
-#   column. To rebalance, tmux hotkeys:  Prefix-M-Up/Down/Left/Right or
-#   Prefix-:  resize-pane -t <id> -[RLUD] <n>.
 
 set -euo pipefail
 
@@ -46,16 +38,36 @@ FORGE_CLAUDE="${FORGE_CLAUDE-claude}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 FORGE_ROOT="${FORGE_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 
+usage() {
+  cat <<'EOF'
+scripts/tmux-layout.sh — launch The Forge tmux rig.
+
+Usage:
+  scripts/tmux-layout.sh              attach to existing session, else create
+  scripts/tmux-layout.sh --force      kill existing session and recreate
+  scripts/tmux-layout.sh --dry-run    print planned panes and exit
+  scripts/tmux-layout.sh -h|--help    this message
+
+Env: FORGE_SESSION, FORGE_CLAUDE, FORGE_ROOT (see header).
+EOF
+}
+
 FORCE=0
 DRY_RUN=0
 for arg in "$@"; do
   case "$arg" in
     --force) FORCE=1 ;;
     --dry-run) DRY_RUN=1 ;;
-    -h|--help) sed -n '2,40p' "$0"; exit 0 ;;
-    *) echo "unknown flag: $arg" >&2; exit 2 ;;
+    -h|--help) usage; exit 0 ;;
+    *) echo "unknown flag: $arg" >&2; usage >&2; exit 2 ;;
   esac
 done
+
+# Session name must be safe as a tmux target.
+if [[ "$FORGE_SESSION" =~ [[:space:]:.] ]]; then
+  echo "invalid FORGE_SESSION '$FORGE_SESSION' (no spaces, colons, or dots)" >&2
+  exit 2
+fi
 
 # --- read forge roster from state.json -------------------------------------
 
@@ -65,7 +77,7 @@ if [[ ! -f "$FORGE_ROOT/state.json" ]]; then
 fi
 
 FORGE_IDS=$(python3 -c '
-import json, sys
+import json
 s = json.load(open("'"$FORGE_ROOT"'/state.json"))
 print(" ".join(f["id"] for f in (s.get("parallel") or {}).get("forges") or []))
 ')
@@ -74,21 +86,12 @@ if [[ -z "$FORGE_IDS" ]]; then
   exit 1
 fi
 
-# Each pane starts in `<worktree>/personas/<role>/` — this satisfies two
-# invariants at once:
-#   - worktree invariant (t-407): only Assembly writes to main; everyone else
-#     operates inside their own worktree.
-#   - persona discovery: claude loads `personas/<role>/CLAUDE.md` from cwd, so
-#     the pane must start in the persona subdirectory (not just the worktree
-#     root) to pick up the role-specific instructions.
-# Forges all share the `personas/forge/` CLAUDE.md but are isolated via
-# worktree. Assembly is the only agent on the main repo root.
-#
-# Each pane: "title|workdir"
+# Each pane: "title|workdir". Anvil and Assembly run on the main checkout;
+# Marshal and Forges run in their worktrees.
 PANES=()
-PANES+=("anvil|$FORGE_ROOT/.worktrees/anvil/personas/anvil")
+PANES+=("anvil|$FORGE_ROOT/personas/anvil")
 PANES+=("marshal|$FORGE_ROOT/.worktrees/marshal/personas/marshal")
-PANES+=("assembly|$FORGE_ROOT/personas/assembly")  # on main — the integrator
+PANES+=("assembly|$FORGE_ROOT/personas/assembly")
 for fid in $FORGE_IDS; do
   PANES+=("$fid|$FORGE_ROOT/.worktrees/$fid/personas/forge")
 done
@@ -102,57 +105,101 @@ if (( DRY_RUN )); then
   exit 0
 fi
 
+# Preflight: every workdir must exist before we start splitting.
+for entry in "${PANES[@]}"; do
+  dir="${entry##*|}"
+  if [[ ! -d "$dir" ]]; then
+    echo "missing workdir: $dir" >&2
+    echo "  (check worktrees with: git -C '$FORGE_ROOT' worktree list)" >&2
+    exit 1
+  fi
+done
+
 # --- session handling -------------------------------------------------------
+
+attach_or_switch() {
+  # Inside an existing tmux client: switch-client. Otherwise: attach.
+  if [[ -n "${TMUX:-}" ]]; then
+    exec tmux switch-client -t "$FORGE_SESSION"
+  else
+    exec tmux attach -t "$FORGE_SESSION"
+  fi
+}
 
 if tmux has-session -t "$FORGE_SESSION" 2>/dev/null; then
   if (( FORCE )); then
     tmux kill-session -t "$FORGE_SESSION"
   else
-    exec tmux attach -t "$FORGE_SESSION"
+    attach_or_switch
   fi
 fi
 
+# Clean up partial session if anything below fails.
+trap 'tmux kill-session -t "$FORGE_SESSION" 2>/dev/null || true' ERR
+
 # --- build layout ----------------------------------------------------------
 
-# Pane 0: anvil (left column). Size the window big enough that the splits
-# don't collapse if the terminal is small when the session is created.
-tmux new-session -d -s "$FORGE_SESSION" -n main \
-  -x 240 -y 64 -c "${PANES[0]##*|}"
+# Pane 0: anvil (left column). Size the window big enough that splits don't
+# collapse if the terminal is small when the session is created.
+ANVIL_ID=$(tmux new-session -d -s "$FORGE_SESSION" -n main \
+  -x 240 -y 64 -c "${PANES[0]##*|}" -P -F '#{pane_id}')
 
-# Split horizontally: create the right column. The right column gets 60%.
-tmux split-window -t "$FORGE_SESSION:0.0" -h -p 60 -c "${PANES[1]##*|}"
-# Pane 1 = Marshal (top of right column). Split it into the middle row.
-tmux split-window -t "$FORGE_SESSION:0.1" -v -p 67 -c "${PANES[2]##*|}"
-# Pane 2 = Assembly (middle). Split it into the forge row.
-tmux split-window -t "$FORGE_SESSION:0.2" -v -p 50 -c "${PANES[3]##*|}"
-# Pane 3 = first forge. Split horizontally for remaining forges.
-PANE_IDX=3
-FIRST=1
-for fid in $FORGE_IDS; do
-  if (( FIRST )); then
-    FIRST=0
-    continue
-  fi
-  # Each subsequent forge splits the right-most forge pane.
-  percent=$(( 100 - (100 / PANE_IDX) ))
-  tmux split-window -t "$FORGE_SESSION:0.$PANE_IDX" -h -p "$percent" \
-    -c "$FORGE_ROOT/.worktrees/$fid"
-  PANE_IDX=$((PANE_IDX + 1))
+# Right column (60%): Marshal at top, then split to Assembly, then forges.
+MARSHAL_ID=$(tmux split-window -t "$ANVIL_ID" -h -p 60 \
+  -c "${PANES[1]##*|}" -P -F '#{pane_id}')
+ASSEMBLY_ID=$(tmux split-window -t "$MARSHAL_ID" -v -p 67 \
+  -c "${PANES[2]##*|}" -P -F '#{pane_id}')
+
+# First forge pane: split below Assembly.
+read -r -a FORGE_ARR <<<"$FORGE_IDS"
+FIRST_FORGE="${FORGE_ARR[0]}"
+FIRST_FORGE_ID=$(tmux split-window -t "$ASSEMBLY_ID" -v -p 50 \
+  -c "$FORGE_ROOT/.worktrees/$FIRST_FORGE/personas/forge" \
+  -P -F '#{pane_id}')
+
+FORGE_PANE_IDS=("$FIRST_FORGE_ID")
+# Remaining forges: each splits off the first forge pane. We equalize widths
+# at the end rather than relying on split percentages.
+for ((i=1; i<${#FORGE_ARR[@]}; i++)); do
+  fid="${FORGE_ARR[$i]}"
+  new_id=$(tmux split-window -t "$FIRST_FORGE_ID" -h \
+    -c "$FORGE_ROOT/.worktrees/$fid/personas/forge" \
+    -P -F '#{pane_id}')
+  FORGE_PANE_IDS+=("$new_id")
 done
+
+# Equalize forge pane widths. Read the forge-row width from the first forge
+# pane's parent (i.e., current right-column width), then resize each pane
+# (except the last, which absorbs the remainder) to an equal cell count.
+N=${#FORGE_PANE_IDS[@]}
+if (( N > 1 )); then
+  WINDOW_WIDTH=$(tmux display -p -t "$FIRST_FORGE_ID" '#{window_width}')
+  # Right column is 60% of the window per the -p 60 split above.
+  ROW_WIDTH=$(( WINDOW_WIDTH * 60 / 100 ))
+  EACH=$(( ROW_WIDTH / N ))
+  for ((i=0; i<N-1; i++)); do
+    tmux resize-pane -t "${FORGE_PANE_IDS[$i]}" -x "$EACH"
+  done
+fi
 
 # --- titles + launcher ------------------------------------------------------
 
-tmux set -g pane-border-status top >/dev/null
-IDX=0
-for entry in "${PANES[@]}"; do
+# Scope pane-border-status to this window only, so we don't mutate the user's
+# global tmux config.
+tmux set-option -t "$FORGE_SESSION" -w pane-border-status top >/dev/null
+
+ALL_IDS=("$ANVIL_ID" "$MARSHAL_ID" "$ASSEMBLY_ID" "${FORGE_PANE_IDS[@]}")
+for idx in "${!PANES[@]}"; do
+  entry="${PANES[$idx]}"
   title="${entry%%|*}"
-  workdir="${entry##*|}"
-  tmux select-pane -t "$FORGE_SESSION:0.$IDX" -T "$title"
+  pid="${ALL_IDS[$idx]}"
+  tmux select-pane -t "$pid" -T "$title"
   if [[ -n "$FORGE_CLAUDE" ]]; then
-    tmux send-keys -t "$FORGE_SESSION:0.$IDX" "cd '$workdir' && $FORGE_CLAUDE" C-m
+    # Pane already started in workdir via -c; just run the launcher.
+    tmux send-keys -t "$pid" "$FORGE_CLAUDE" C-m
   fi
-  IDX=$((IDX + 1))
 done
 
-tmux select-pane -t "$FORGE_SESSION:0.0"
-exec tmux attach -t "$FORGE_SESSION"
+trap - ERR
+tmux select-pane -t "$ANVIL_ID"
+attach_or_switch
