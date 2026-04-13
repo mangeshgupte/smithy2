@@ -198,3 +198,13 @@ Shipped in heats 812-819 (~8 of the 12-heat guard):
 stays cleared, `parallel.max_forges=1`, and `parallel.assembly.enabled=False`
 until Anvil explicitly signs off on N≥2 at runtime. See
 `personas/anvil/CLAUDE.md` for the N≥2 spawn discipline.
+
+**t-407 follow-on (2026-04-12, active):** Forges renamed from numeric
+(`forge-01/02/03`) to verb ids — `forge-quench` (primary),
+`forge-temper`, `forge-anneal`. Backup roster reserved in
+`state.parallel.forge_roster`: `forge-draw`, `forge-strike`, `forge-weld`,
+`forge-shape`, `forge-harden` (created on demand, not pre-spawned).
+Worktree invariant enforced: Marshal and every Forge run from
+`.worktrees/<id>/`; only Assembly writes to `main`. `smithy patrol`
+check #7 fails the rig if the invariant is broken. Primary-Forge
+semantics switched from string match `"forge-01"` to index (`forges[0]`).

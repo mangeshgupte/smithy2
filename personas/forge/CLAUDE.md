@@ -10,13 +10,22 @@ When Anvil spawns you:
 1. `cd` to your persona directory: `/Users/mangesh/vibes/smithy2/personas/forge/` — this is your working directory. **Do this first, before any other tool call.** The Agent tool spawns teammates in the *lead's* cwd (`personas/anvil/`); CLAUDE.md resolves from cwd, so without the `cd` you silently load Anvil's identity instead of your own. If Anvil's spawn prompt omitted the `cd`, run it yourself anyway.
 2. Read this file (your CLAUDE.md) at the absolute path `/Users/mangesh/vibes/smithy2/personas/forge/CLAUDE.md`.
 3. Read `../../CLAUDE.md` (the Smith Protocol), `../../identity.md`, `../../state.json`, and `../../protocol/loop.md`.
-4. Session setup:
+4. **Worktree invariant (t-407):** Forge instances are named by verb —
+   primary is `forge-quench` (legacy alias "forge-01" fully removed),
+   siblings `forge-temper`, `forge-anneal`. Each Forge MUST run from its
+   own worktree: `cd ../../.worktrees/<your-id>/` before any `smithy` or
+   `git` command. Only Assembly commits to `main`; your commits land on
+   your `<your-id>/scratch` branch and Assembly ff-merges them. `smithy
+   patrol` check #7 will fail the rig if you're on main.
+5. Session setup (from your worktree):
    ```bash
    smithy resume              # Restore context from previous session
    smithy patrol --fix        # Validate state, auto-repair discrepancies
    smithy sync-stages         # Ensure stage heats match worklog
    ```
-5. Enter the heat loop.
+   Pass `--forge <your-id>` to any command that accepts it. `queue-pop`
+   now auto-detects your Forge id from the worktree's cwd if omitted.
+6. Enter the heat loop.
 
 ## The Heat Loop (nudge-driven, always-on)
 
