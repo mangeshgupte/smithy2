@@ -54,12 +54,16 @@ def sandbox(tmp_path):
         {"id": "forge-01", "status": "idle", "current_task": None,
          "current_heat": None, "started_at": None,
          "last_heartbeat": datetime.now(timezone.utc).isoformat(
-             timespec="seconds")},
+             timespec="seconds"),
+         "worktree": ".worktrees/forge-01", "branch": "forge-01/scratch"},
         {"id": "forge-02", "status": "idle", "current_task": None,
          "current_heat": None, "started_at": None,
          "last_heartbeat": datetime.now(timezone.utc).isoformat(
-             timespec="seconds")},
+             timespec="seconds"),
+         "worktree": ".worktrees/forge-02", "branch": "forge-02/scratch"},
     ]
+    (proj / ".worktrees/forge-01").mkdir(parents=True, exist_ok=True)
+    (proj / ".worktrees/forge-02").mkdir(parents=True, exist_ok=True)
     parallel["assembly"] = {"enabled": True,
                             "last_heartbeat": datetime.now(timezone.utc)
                                               .isoformat(timespec="seconds")}

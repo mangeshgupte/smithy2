@@ -73,7 +73,7 @@ def test_spawn_refuses_past_max(scaffolded):
 def test_reset_refuses_default(scaffolded):
     rc, out, _ = _smithy(scaffolded, "forge-reset", "forge-01")
     assert rc != 0
-    assert "default" in out.lower()
+    assert "primary" in out.lower()
 
 
 def test_reset_unknown_forge(scaffolded):
@@ -85,7 +85,7 @@ def test_reset_unknown_forge(scaffolded):
 def test_reset_clears_checkpoint(scaffolded):
     _smithy(scaffolded, "forge-spawn", "forge-02")
     # Fabricate a checkpoint for forge-02.
-    cp = scaffolded / ".forge-02-checkpoint.json"
+    cp = scaffolded / ".forge-checkpoint-forge-02.json"
     cp.write_text(json.dumps({"heat": 1, "task_id": "t-x"}))
     rc, out, _ = _smithy(scaffolded, "forge-reset", "forge-02")
     assert rc == 0
