@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1043,
-    "used": 815,
+    "used": 816,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 311,
+      "heats": 312,
       "progress": 0.98,
-      "value_ema": 0.737
+      "value_ema": 0.726
     },
     "testing": {
       "target": 0.183,
@@ -3984,7 +3984,7 @@
       "id": "t-400",
       "stage": "implementation",
       "desc": "I5: Marshal dispatch across N=3 Forges. Per-forge slot in next_tasks; avoid collision on task assignment. Blocked_by: I1.",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-018",
@@ -4032,12 +4032,12 @@
       "id": "t-404",
       "stage": "implementation",
       "desc": "t-399 I4 H3: Assembly reject path + requeue + hp+5 bump + Marshal submitted-lifecycle awareness. full-reject flow (conflict unreasonable \u2192 discard branch \u2192 task status back to pending + priority_reason='assembly rejected: <reason>' + hp+5). Marshal scheduler treats submitted as not-available/not-blocking. Tests: full-reject+requeue+bump, submitted-not-scheduled. Close out I4.",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-018",
       "human_priority": null,
-      "priority_reason": "ini-018 rank=1 + poker",
+      "priority_reason": null,
       "assigned_forge": null
     }
   ],
@@ -4085,8 +4085,8 @@
       "description": "Run multiple Forge workers concurrently via per-Forge git worktrees. Dedicated Assembly teammate handles merge queue integration (conflicts, test-on-integrate, merge ordering). Unlocks parallelism (Marshal dispatches N heats simultaneously) and enforces branch hygiene. Incremental: N=2 proof before N=3+.",
       "status": "approved",
       "budget_cap": null,
-      "heats_used": 7,
-      "viewed_at": "2026-04-13T04:16:40Z",
+      "heats_used": 8,
+      "viewed_at": "2026-04-13T04:21:10Z",
       "rank": 1
     },
     {
@@ -4097,7 +4097,7 @@
       "status": "approved",
       "budget_cap": null,
       "heats_used": 13,
-      "viewed_at": "2026-04-13T04:13:41Z",
+      "viewed_at": "2026-04-13T04:21:06Z",
       "rank": 2,
       "intent": "Give the human a way to ensure that individual task assignments conform to the high-level intent the human has, and gives a way to identify and correct drift."
     },
@@ -4311,7 +4311,6 @@
     }
   ],
   "next_tasks": [
-    "t-400",
     "t-401",
     "t-402"
   ],

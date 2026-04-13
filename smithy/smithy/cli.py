@@ -997,9 +997,16 @@ def _nudge_persona(persona, message, root=None):
 @click.option("--no-nudge", is_flag=True, default=False, help="Skip auto-nudge after push")
 @click.option("--to", "target_persona", type=click.Choice(VALID_PERSONAS), default="forge",
               help="Persona to nudge (default: forge)")
+@click.option("--forge", "assigned_forge", default=None,
+              help="t-400 I5: Pin this task to the given Forge id (assigned_forge).")
 @click.pass_context
-def queue_push(ctx, task_id, top, no_nudge, target_persona):
-    """Add a task to the next_tasks queue and nudge the target persona."""
+def queue_push(ctx, task_id, top, no_nudge, target_persona, assigned_forge):
+    """Add a task to the next_tasks queue and nudge the target persona.
+
+    `--forge <id>` stamps `assigned_forge` on the task so only that Forge
+    will pop it via `queue-pop --forge <id>`. Passing `--forge null` (or
+    empty string) clears any prior assignment.
+    """
     root = ctx.obj["root"]
     state = load_state(root)
     queue_map = {t["id"]: t for t in state.get("queue", [])}
@@ -1010,6 +1017,19 @@ def queue_push(ctx, task_id, top, no_nudge, target_persona):
     if queue_map[task_id]["status"] != "pending":
         _output({"error": f"Task {task_id} is {queue_map[task_id]['status']}, not pending"})
         sys.exit(1)
+
+    # t-400 I5: stamp assigned_forge if --forge was given.
+    if assigned_forge is not None:
+        parallel = state.get("parallel") or {}
+        forge_ids = {f.get("id") for f in (parallel.get("forges") or [])}
+        if assigned_forge in ("", "null"):
+            queue_map[task_id]["assigned_forge"] = None
+        elif assigned_forge not in forge_ids:
+            _output({"error": f"unknown forge id: {assigned_forge}",
+                     "known": sorted(fid for fid in forge_ids if fid)})
+            sys.exit(1)
+        else:
+            queue_map[task_id]["assigned_forge"] = assigned_forge
 
     next_tasks = state.get("next_tasks", [])
     # Remove if already present to avoid duplicates
@@ -1047,9 +1067,17 @@ def queue_push(ctx, task_id, top, no_nudge, target_persona):
 
 
 @cli.command("queue-pop")
+@click.option("--forge", "forge_id", default=None,
+              help="t-400 I5: Only pop tasks unassigned or assigned to this forge.")
 @click.pass_context
-def queue_pop(ctx):
-    """Remove and return the first task from the next_tasks queue."""
+def queue_pop(ctx, forge_id):
+    """Remove and return the first dispatchable task from next_tasks.
+
+    With `--forge <id>`, skips tasks whose `assigned_forge` is set and does
+    not match — so Forge-02 won't steal a task that Marshal pinned to
+    Forge-01. Skipped-but-not-matching entries stay in the queue for their
+    intended Forge; only status-stale entries are removed.
+    """
     root = ctx.obj["root"]
     state = load_state(root)
     next_tasks = state.get("next_tasks", [])
@@ -1059,34 +1087,48 @@ def queue_pop(ctx):
         _err("Queue empty")
         return
 
-    # Skip stale heads — IDs that reference already-completed, cancelled,
-    # or missing tasks. Previously queue-pop returned a just-completed task
-    # if its id lingered at the head of next_tasks.
     queue_by_id = {t["id"]: t for t in state.get("queue", [])}
-    skipped = []
+    skipped_stale: list[str] = []
+    skipped_other_forge: list[str] = []
+    preserved: list[str] = []  # tasks not matching this forge — put back.
     task = None
     task_id = None
     while next_tasks:
         candidate_id = next_tasks.pop(0)
         candidate = queue_by_id.get(candidate_id)
-        if candidate and candidate.get("status") == "pending":
-            task_id = candidate_id
-            task = candidate
-            break
-        skipped.append(candidate_id)
+        # Drop stale (missing / non-pending) entries outright.
+        if not candidate or candidate.get("status") != "pending":
+            skipped_stale.append(candidate_id)
+            continue
+        # If a --forge filter is in play, respect assigned_forge pinning.
+        if forge_id is not None:
+            af = candidate.get("assigned_forge")
+            if af is not None and af != forge_id:
+                skipped_other_forge.append(candidate_id)
+                preserved.append(candidate_id)
+                continue
+        task_id = candidate_id
+        task = candidate
+        break
 
-    state["next_tasks"] = next_tasks
+    # Put back tasks that belong to other Forges, in original order.
+    state["next_tasks"] = preserved + next_tasks
     save_state(root, state)
 
     if task is None:
-        _output({"task": None, "message": "Queue empty (all heads stale)", "skipped_stale": skipped})
-        _err(f"Queue empty after skipping {len(skipped)} stale head(s): {skipped}")
+        _output({"task": None, "message": "Queue empty (no match)",
+                 "skipped_stale": skipped_stale,
+                 "skipped_other_forge": skipped_other_forge})
+        _err(f"Queue empty — skipped stale={skipped_stale} other-forge={skipped_other_forge}")
         return
 
-    if skipped:
-        _err(f"Skipped {len(skipped)} stale head(s): {skipped}")
-    _output({"task_id": task_id, "task": task, "remaining": len(next_tasks), "skipped_stale": skipped})
-    _err(f"Popped {task_id} ({len(next_tasks)} remaining)")
+    if skipped_stale:
+        _err(f"Skipped {len(skipped_stale)} stale head(s): {skipped_stale}")
+    _output({"task_id": task_id, "task": task,
+             "remaining": len(state["next_tasks"]),
+             "skipped_stale": skipped_stale,
+             "skipped_other_forge": skipped_other_forge})
+    _err(f"Popped {task_id} ({len(state['next_tasks'])} remaining)")
 
 
 @cli.command("queue-clear")
