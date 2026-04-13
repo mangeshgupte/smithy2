@@ -1,8 +1,11 @@
 """State management — reads/writes state.json with validation."""
 
+from __future__ import annotations
+
 import json
 from pathlib import Path
 from datetime import datetime
+from typing import Optional
 
 VALID_STAGES = ["research", "planning", "implementation", "testing", "editing", "marketing"]
 # 🟢/🟡/🔴 — Forge value signal. ✅/🔀/🚫 — Assembly merge indicator
@@ -309,34 +312,97 @@ def append_worklog(project_dir: Path, heat: int, stage: str, task_id: str,
         f.write(row)
 
 
+# t-407 H2: "primary" Forge is whichever id sits at parallel.forges[0] —
+# no longer the hardcoded string "forge-01". Legacy filenames
+# (.forge-checkpoint.json, .smithy-nudge-queue/forge.jsonl) belong to the
+# primary Forge regardless of its verb name (quench, temper, etc.).
+# DEFAULT_FORGE_ID remains as a last-resort label used only when state.json
+# is unreadable (fresh install); do not rely on it for identity checks.
 DEFAULT_FORGE_ID = "forge-01"
 
 
-def forge_checkpoint_path(project_dir: Path, forge_id: str = DEFAULT_FORGE_ID) -> Path:
-    """t-396 I1: Return the checkpoint path for a given Forge id.
+def primary_forge_id(project_dir_or_state) -> str:
+    """Return the id of the primary (index 0) Forge. Falls back to
+    DEFAULT_FORGE_ID only if state is unreadable or empty (bootstrap)."""
+    try:
+        if isinstance(project_dir_or_state, dict):
+            state = project_dir_or_state
+        else:
+            state = load_state(Path(project_dir_or_state))
+        forges = (state.get("parallel") or {}).get("forges") or []
+        if forges and forges[0].get("id"):
+            return forges[0]["id"]
+    except Exception:
+        pass
+    return DEFAULT_FORGE_ID
 
-    Default forge-01 keeps the legacy `.forge-checkpoint.json` filename so N=1
-    behavior is byte-identical. Any other forge id uses the namespaced form
-    `.forge-<id>-checkpoint.json`. I2 (`forge-spawn`) will create non-default
-    Forges.
-    """
-    if forge_id == DEFAULT_FORGE_ID:
+
+def detect_forge_from_cwd(project_dir: Path, cwd: Optional[Path] = None) -> Optional[str]:
+    """t-407 H2: Return the Forge id whose worktree contains cwd, or None.
+
+    `worktree` fields in state.json are recorded relative to the *main* repo
+    root. If project_dir is itself a worktree, we locate the main repo via
+    `git rev-parse --git-common-dir` and resolve from there."""
+    import os
+    import subprocess
+    from pathlib import Path as _P
+    cwd = _P(cwd or os.getcwd()).resolve()
+    try:
+        state = load_state(project_dir)
+    except Exception:
+        return None
+    # Find main repo root (the one containing .git/ as a real dir).
+    main_root = project_dir
+    try:
+        out = subprocess.run(
+            ["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
+            cwd=project_dir, capture_output=True, text=True, check=True,
+        ).stdout.strip()
+        if out:
+            main_root = _P(out).parent  # .git/.. = main repo root
+    except Exception:
+        pass
+    for f in (state.get("parallel") or {}).get("forges") or []:
+        wt = f.get("worktree")
+        if not wt:
+            continue
+        wt_abs = (main_root / wt).resolve()
+        try:
+            cwd.relative_to(wt_abs)
+            return f.get("id")
+        except ValueError:
+            continue
+    return None
+
+
+def forge_checkpoint_path(project_dir: Path, forge_id: str | None = None) -> Path:
+    """Return the checkpoint path for a given Forge id.
+
+    The primary Forge (parallel.forges[0]) keeps the legacy
+    `.forge-checkpoint.json` filename so N=1 behavior stays byte-identical.
+    Any non-primary forge gets the namespaced form `.<id>-checkpoint.json`.
+    `forge_id=None` resolves to the primary id."""
+    primary = primary_forge_id(project_dir)
+    if forge_id is None or forge_id == primary:
         return project_dir / ".forge-checkpoint.json"
     return project_dir / f".{forge_id}-checkpoint.json"
 
 
-def forge_nudge_queue_path(project_dir: Path, forge_id: str = DEFAULT_FORGE_ID) -> Path:
-    """t-396 I1: Per-Forge nudge queue path. Default forge-01 uses legacy
-    `.smithy-nudge-queue/forge.jsonl`; others use `forge-<id>.jsonl`."""
+def forge_nudge_queue_path(project_dir: Path, forge_id: str | None = None) -> Path:
+    """Per-Forge nudge queue path. Primary uses legacy
+    `.smithy-nudge-queue/forge.jsonl`; others use `<id>.jsonl`."""
     base = project_dir / ".smithy-nudge-queue"
-    if forge_id == DEFAULT_FORGE_ID:
+    primary = primary_forge_id(project_dir)
+    if forge_id is None or forge_id == primary:
         return base / "forge.jsonl"
     return base / f"{forge_id}.jsonl"
 
 
 def write_checkpoint(project_dir: Path, heat: int, stage: str, task_id: str,
-                     forge_id: str = DEFAULT_FORGE_ID):
-    """Write forge checkpoint. Forge id defaults to 'forge-01'."""
+                     forge_id: str | None = None):
+    """Write forge checkpoint. `forge_id=None` resolves to the primary Forge."""
+    if forge_id is None:
+        forge_id = primary_forge_id(project_dir)
     import subprocess
     git_head = subprocess.run(
         ["git", "rev-parse", "HEAD"], capture_output=True, text=True, cwd=project_dir
@@ -354,8 +420,10 @@ def write_checkpoint(project_dir: Path, heat: int, stage: str, task_id: str,
     path.write_text(json.dumps(checkpoint, indent=2) + "\n")
 
 
-def delete_checkpoint(project_dir: Path, forge_id: str = DEFAULT_FORGE_ID):
-    """Delete the named Forge's checkpoint if it exists."""
+def delete_checkpoint(project_dir: Path, forge_id: str | None = None):
+    """Delete the named Forge's checkpoint if it exists. None = primary."""
+    if forge_id is None:
+        forge_id = primary_forge_id(project_dir)
     path = forge_checkpoint_path(project_dir, forge_id)
     if path.exists():
         path.unlink()
