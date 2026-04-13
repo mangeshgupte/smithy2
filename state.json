@@ -4343,32 +4343,34 @@
     "halt_flag": false,
     "forges": [
       {
-        "id": "forge-01",
+        "id": "forge-quench",
         "status": "idle",
         "current_task": null,
         "current_heat": null,
         "started_at": null,
-        "last_heartbeat": null
+        "last_heartbeat": null,
+        "worktree": ".worktrees/forge-quench",
+        "branch": "forge-quench/scratch"
       },
       {
-        "id": "forge-02",
+        "id": "forge-temper",
         "status": "idle",
         "current_task": null,
         "current_heat": null,
         "started_at": "2026-04-13T05:10:27+00:00",
         "last_heartbeat": "2026-04-13T05:10:27+00:00",
-        "worktree": ".worktrees/forge-02",
-        "branch": "forge-02/scratch"
+        "worktree": ".worktrees/forge-temper",
+        "branch": "forge-temper/scratch"
       },
       {
-        "id": "forge-03",
+        "id": "forge-anneal",
         "status": "idle",
         "current_task": null,
         "current_heat": null,
         "started_at": "2026-04-13T05:10:27+00:00",
         "last_heartbeat": "2026-04-13T05:10:27+00:00",
-        "worktree": ".worktrees/forge-03",
-        "branch": "forge-03/scratch"
+        "worktree": ".worktrees/forge-anneal",
+        "branch": "forge-anneal/scratch"
       }
     ],
     "assembly": {
