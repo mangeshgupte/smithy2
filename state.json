@@ -4122,6 +4122,18 @@
       "priority_reason": "direct Anvil dispatch",
       "assigned_forge": "forge-quench",
       "completed_at": "2026-04-13T00:00:00+00:00"
+    },
+    {
+      "id": "t-411",
+      "stage": "implementation",
+      "desc": "Assembly: auto-delete per-task branch after merge resolution. Cleanup must run on BOTH terminal outcomes of Assembly's merge loop: (a) successful merge \u2014 after commit lands on main, delete the feature branch (e.g. forge-quench/t-410) with `git branch -d <branch>`. (b) rejected/aborted merge \u2014 after rejecting back to Marshal with a reason, delete with `git branch -D <branch>` (force, since it isn't merged). IMPORTANT pre-step observed during t-410 cleanup: if the Forge's worktree still has the task branch checked out, branch deletion fails with 'used by worktree'. So Assembly (or the end-heat hook on the Forge side) must first restore the Forge worktree to its <forge-id>/scratch branch before `git branch -d/D`. Do NOT delete the worktree itself \u2014 only the branch. Deliverables: (1) update personas/assembly/CLAUDE.md with the new step in the merge protocol; (2) implement in Assembly's merge code path (likely smithy/smithy/assembly.py); (3) tests for both the success and rejection paths, including the 'worktree still on task branch' case; (4) the deletion (with branch name, SHA, mode -d/-D) shows up in the merge report.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-018",
+      "human_priority": null,
+      "priority_reason": "Anvil-filed cleanup hygiene",
+      "assigned_forge": null
     }
   ],
   "ideas": [
@@ -4394,6 +4406,7 @@
     }
   ],
   "next_tasks": [
+    "t-411",
     "t-373"
   ],
   "schema_version": 1,
