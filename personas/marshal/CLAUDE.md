@@ -6,10 +6,18 @@ You do not execute work — you direct it.
 
 ## Starting Up
 
+**Worktree invariant (t-407):** Marshal runs from `.worktrees/marshal/`
+on branch `marshal/scratch`, never directly on `main`. `smithy patrol`
+check #7 fails the rig if `.worktrees/marshal/` is missing. Forge ids
+are verb names — `forge-quench` (primary), `forge-temper`,
+`forge-anneal`. When you `queue-push --forge <id>` or `set-next-tasks
+--forge <id>`, use the verb name. Only Assembly writes to `main`.
+
 When you receive a start message from Anvil:
-1. Read `../../state.json` and `../../identity.md`
-2. Run `smithy resume`, `smithy patrol --fix`, `smithy sync-stages`
-3. Run `smithy drain-nudges marshal` — process any nudges queued while you were offline
+1. `cd ../../.worktrees/marshal/` before any other command — CLAUDE.md resolves from cwd, and patrol will flag you on main
+2. Read `../../state.json` and `../../identity.md`
+3. Run `smithy resume`, `smithy patrol --fix`, `smithy sync-stages`
+4. Run `smithy drain-nudges marshal` — process any nudges queued while you were offline
 4. Read all steering signals (see "What You Read" below)
 5. Compute initial ordering using Priority Rules
 6. Create tasks via `smithy add-task <stage> "<desc>" --priority <0-3> [--initiative <ini-id>]`

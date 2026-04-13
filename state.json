@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1043,
-    "used": 819,
+    "used": 822,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -4068,13 +4068,14 @@
       "id": "t-407",
       "stage": "implementation",
       "desc": "Enforce Assembly-only-to-main + Forge rename. (1) Create worktrees: .worktrees/forge-quench (branch forge-quench/scratch), .worktrees/forge-temper (forge-temper/scratch), .worktrees/forge-anneal (forge-anneal/scratch), .worktrees/marshal (marshal/scratch), .worktrees/anvil (anvil/scratch). (2) Rename forges in state.parallel.forges[].id: forge-01\u2192forge-quench, forge-02\u2192forge-temper, forge-03\u2192forge-anneal; set worktree+branch fields accordingly. (3) Retire stale branch heat/H819-t405 on forge-02 worktree; migrate to fresh forge-temper/scratch. (4) Backup roster (document in state.parallel.forge_roster as ordered list for future growth to N=8, do NOT create now): forge-draw, forge-strike, forge-weld, forge-shape, forge-harden. (5) Audit smithy CLI: --forge <id> accepts verb names; forge-01==main assumptions removed; CLI routes to worktree. (6) Update personas/*/CLAUDE.md, STRATEGY.md, worklog tooling for new names + invariant. (7) Add patrol check that fails if any Forge or Marshal is on main. BLOCKS t-399 (Assembly I4) until enforced. Do in ONE heat-sequence \u2014 don't migrate worktrees twice.",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-018",
       "human_priority": null,
       "priority_reason": "ini-018 rank=1 + poker",
-      "assigned_forge": null
+      "assigned_forge": null,
+      "completed_at": "2026-04-12T23:00:00+00:00"
     },
     {
       "id": "t-408",
@@ -4415,32 +4416,34 @@
     "halt_flag": true,
     "forges": [
       {
-        "id": "forge-01",
+        "id": "forge-quench",
         "status": "idle",
         "current_task": null,
         "current_heat": null,
         "started_at": null,
-        "last_heartbeat": null
+        "last_heartbeat": null,
+        "worktree": ".worktrees/forge-quench",
+        "branch": "forge-quench/scratch"
       },
       {
-        "id": "forge-02",
+        "id": "forge-temper",
         "status": "idle",
         "current_task": null,
         "current_heat": null,
         "started_at": "2026-04-13T05:10:27+00:00",
         "last_heartbeat": "2026-04-13T05:10:27+00:00",
-        "worktree": ".worktrees/forge-02",
-        "branch": "forge-02/scratch"
+        "worktree": ".worktrees/forge-temper",
+        "branch": "forge-temper/scratch"
       },
       {
-        "id": "forge-03",
+        "id": "forge-anneal",
         "status": "idle",
         "current_task": null,
         "current_heat": null,
         "started_at": "2026-04-13T05:10:27+00:00",
         "last_heartbeat": "2026-04-13T05:10:27+00:00",
-        "worktree": ".worktrees/forge-03",
-        "branch": "forge-03/scratch"
+        "worktree": ".worktrees/forge-anneal",
+        "branch": "forge-anneal/scratch"
       }
     ],
     "assembly": {

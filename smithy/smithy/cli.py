@@ -10,6 +10,7 @@ from .state import (
     find_project_root, load_state, save_state, validate_state,
     append_worklog, write_checkpoint, delete_checkpoint,
     forge_checkpoint_path, DEFAULT_FORGE_ID,
+    primary_forge_id, detect_forge_from_cwd,
     VALID_STAGES, VALID_SIGNALS, VALID_OUTCOMES,
 )
 from .task_detail import scheduler_key
@@ -559,13 +560,16 @@ def forge_reset_cmd(ctx, forge_id, remove_worktree):
     Clears its checkpoint; re-queues any in-flight task (status→pending,
     assigned_forge→null); resets the registry entry to idle. Optionally
     removes the git worktree so forge-spawn can re-create from scratch.
-    forge-01 is refused to keep the default Forge alive.
+    The primary Forge (parallel.forges[0]) is refused to keep the default
+    Forge alive. t-407 H2: identified by index, not by the literal name
+    "forge-01".
     """
     import subprocess
-    if forge_id == DEFAULT_FORGE_ID:
-        _output({"error": "refusing to reset the default forge-01"})
-        sys.exit(1)
     root = ctx.obj["root"]
+    primary = primary_forge_id(root)
+    if forge_id == primary:
+        _output({"error": f"refusing to reset the primary forge ({primary})"})
+        sys.exit(1)
     state = load_state(root)
     parallel = state.setdefault("parallel", {})
     forges = parallel.setdefault("forges", [])
@@ -1080,6 +1084,10 @@ def queue_pop(ctx, forge_id):
     """
     root = ctx.obj["root"]
     state = load_state(root)
+    # t-407 H2: default --forge from cwd's worktree if caller omitted it.
+    # Keeps queue-pop usable without every caller threading --forge through.
+    if forge_id is None:
+        forge_id = detect_forge_from_cwd(root)
     next_tasks = state.get("next_tasks", [])
 
     if not next_tasks:
@@ -1854,6 +1862,44 @@ def patrol(ctx, fix):
                 forge_checkpoint_path(root, fid).unlink()
                 fixes.append(f"Deleted orphan checkpoint for {fid}")
 
+    # 7. t-407 H2: Assembly-only-to-main invariant. Every Forge registered
+    # in parallel.forges[] must have a `worktree` field pointing under
+    # `.worktrees/`, and that path must exist. Marshal must also live in a
+    # worktree (`.worktrees/marshal`). Anvil and Assembly are allowed on main
+    # (Anvil is read-only by discipline; Assembly is the integrator).
+    # Worktree paths resolve relative to the MAIN repo root, so the check is
+    # correct whether patrol runs from main or from inside a worktree.
+    import subprocess as _sp
+    main_root = root
+    try:
+        _out = _sp.run(
+            ["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
+            cwd=root, capture_output=True, text=True, check=True,
+        ).stdout.strip()
+        if _out:
+            from pathlib import Path as _P
+            main_root = _P(_out).parent
+    except Exception:
+        pass
+    for forge in forges:
+        fid = forge.get("id") or "<unnamed>"
+        wt = forge.get("worktree")
+        if not wt:
+            issues.append(f"{fid} has no worktree — Forges must not run on main")
+            continue
+        if not wt.startswith(".worktrees/"):
+            issues.append(
+                f"{fid} worktree {wt!r} is not under .worktrees/ — "
+                f"Forges must not run on main"
+            )
+            continue
+        if not (main_root / wt).exists():
+            issues.append(f"{fid} worktree path {wt!r} does not exist")
+    if not (main_root / ".worktrees" / "marshal").exists():
+        issues.append(
+            ".worktrees/marshal does not exist — Marshal must not run on main"
+        )
+
     # Save fixes if any
     if fix and fixes:
         save_state(root, state)
@@ -1862,7 +1908,7 @@ def patrol(ctx, fix):
         "issues": issues,
         "fixes": fixes,
         "clean": len(issues) == 0,
-        "checks_run": 6,
+        "checks_run": 7,
         "stuck_forges": sorted(set(stuck_forges)),
     })
     if issues:

@@ -15,11 +15,17 @@ When the human says "Start" (or similar):
 2. Create a team with `TeamCreate`
 3. Spawn **Marshal** and **Forge** as teammates using the Agent tool.
    **Parallel Forges (N≥2, ini-018):** if `state.parallel.max_forges > 1`,
-   also spawn additional Forges (one per `parallel.forges[]` entry beyond
-   `forge-01`) and **Assembly** (see `../assembly/CLAUDE.md`). Each extra
-   Forge must be told to `cd` into its worktree at `../../.worktrees/<id>/`
-   and to pass `--forge <id>` on every `smithy` command. Assembly is the
-   only agent allowed to push to main.
+   spawn one Forge per `parallel.forges[]` entry and **Assembly** (see
+   `../assembly/CLAUDE.md`). Forge ids are verb names —
+   `forge-quench` (primary), `forge-temper`, `forge-anneal`; backup roster
+   (`forge-draw`, `forge-strike`, `forge-weld`, `forge-shape`,
+   `forge-harden`) is reserved in `state.parallel.forge_roster`.
+   **Worktree invariant (t-407):** Marshal and every Forge must `cd` into
+   its own worktree under `../../.worktrees/<id>/` before running any
+   `smithy` command, and every command must pass `--forge <id>` where
+   accepted. Anvil stays on main (read-only by discipline). **Assembly is
+   the only agent allowed to write to main.** `smithy patrol` check #7
+   fails the rig if any Forge or Marshal is missing its worktree.
 
 **CRITICAL — Persona Directory Bug:** The Agent tool spawns subagents in the *caller's* working directory (personas/anvil/). CLAUDE.md files resolve from cwd, so teammates will load Anvil's CLAUDE.md instead of their own. To fix this, every spawn prompt MUST:
 - Tell the agent to `cd` to its persona directory FIRST before doing anything

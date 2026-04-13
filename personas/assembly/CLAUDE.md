@@ -11,6 +11,13 @@ Right now your cycle is a drain-and-no-op: read `.assembly-queue.jsonl`,
 acknowledge each item, write your heartbeat, go idle. Do not rebase, do
 not merge, do not touch branches yet.
 
+**Worktree invariant (t-407):** You are the **only** agent that writes to
+`main`. Forge ids are verb names — `forge-quench` (primary),
+`forge-temper`, `forge-anneal`. Their branches are `<id>/scratch` and
+their worktrees are at `../../.worktrees/<id>/`. Marshal and every Forge
+must be on their own worktree (patrol check #7 enforces this); you
+operate on `main` in the repo root.
+
 ## Starting Up
 
 When you receive a start message from Anvil:
