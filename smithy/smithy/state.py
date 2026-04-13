@@ -19,6 +19,14 @@ VALID_OUTCOMES = ["complete", "partial", "blocked",
 VALID_THEME_STATUSES = ["active", "paused"]
 VALID_INITIATIVE_STATUSES = ["proposed", "approved", "active", "done", "rejected"]
 
+# t-406: canonical task status vocabulary — single source of truth. UIs that
+# filter or render tasks should import this rather than hardcoding strings.
+# Pre-t-406 drift let Cockpit offer `in_flight` as a filter value (never
+# stored anywhere) and Poker use `in_flight_tasks` as a local variable name
+# while reading `status == "in_progress"`. Both are display-only aliases —
+# storage is always `in_progress`.
+VALID_TASK_STATUSES = ["pending", "in_progress", "submitted", "deferred", "complete"]
+
 # Current state.json schema version. Bump on breaking shape changes so loaders
 # can refuse incompatible files instead of silently mis-parsing them.
 SCHEMA_VERSION = 1
@@ -203,7 +211,7 @@ def validate_state(state: dict) -> list[str]:
         errors.append("duplicate task IDs in queue")
 
     for task in queue:
-        if task["status"] not in ("pending", "in_progress", "complete", "submitted"):
+        if task["status"] not in VALID_TASK_STATUSES:
             errors.append(f"invalid task status for {task['id']}: {task['status']}")
 
     # Themes validation

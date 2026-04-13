@@ -144,7 +144,7 @@
             <label>status
                 <select id="f-status">
                     <option value="">any</option>
-                    {% for s in ['pending', 'in_flight', 'deferred', 'complete'] %}
+                    {% for s in ['pending', 'in_progress', 'deferred', 'complete', 'submitted'] %}
                     <option value="{{ s }}" {% if filter_status == s %}selected{% endif %}>{{ s }}</option>
                     {% endfor %}
                 </select>
@@ -319,7 +319,7 @@
         rows.forEach(r => {
             if (r.status === 'deferred') deferred.push(r);
             else if (r.status === 'complete') complete.push(r);
-            else pending.push(r);   // pending + in_flight + in_progress
+            else pending.push(r);   // pending + in_progress + submitted → Pending section
         });
         // Complete: reverse by last worklog timestamp (newest first). Server
         // order is scheduler; we re-sort just this section.
