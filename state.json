@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1043,
-    "used": 814,
+    "used": 815,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 310,
+      "heats": 311,
       "progress": 0.98,
-      "value_ema": 0.731
+      "value_ema": 0.737
     },
     "testing": {
       "target": 0.183,
@@ -4020,19 +4020,19 @@
       "id": "t-403",
       "stage": "implementation",
       "desc": "t-399 I4 H2: Assembly smart-resolve path. rebase-then-test merge loop; attempt resolution when conflict is reasonable (no semantic contradiction, small surface, tests green post-resolution); merge indicator \ud83d\udd00 merged-with-resolution. Tests: clean-merge path, resolution-success path, resolution-attempted-then-abandoned path. Builds on H1 (52b41d1).",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-018",
       "human_priority": null,
-      "priority_reason": "ini-018 rank=1 + poker",
+      "priority_reason": null,
       "assigned_forge": null
     },
     {
       "id": "t-404",
       "stage": "implementation",
       "desc": "t-399 I4 H3: Assembly reject path + requeue + hp+5 bump + Marshal submitted-lifecycle awareness. full-reject flow (conflict unreasonable \u2192 discard branch \u2192 task status back to pending + priority_reason='assembly rejected: <reason>' + hp+5). Marshal scheduler treats submitted as not-available/not-blocking. Tests: full-reject+requeue+bump, submitted-not-scheduled. Close out I4.",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-018",
@@ -4085,8 +4085,8 @@
       "description": "Run multiple Forge workers concurrently via per-Forge git worktrees. Dedicated Assembly teammate handles merge queue integration (conflicts, test-on-integrate, merge ordering). Unlocks parallelism (Marshal dispatches N heats simultaneously) and enforces branch hygiene. Incremental: N=2 proof before N=3+.",
       "status": "approved",
       "budget_cap": null,
-      "heats_used": 6,
-      "viewed_at": "2026-04-13T04:13:44Z",
+      "heats_used": 7,
+      "viewed_at": "2026-04-13T04:16:40Z",
       "rank": 1
     },
     {
@@ -4311,7 +4311,6 @@
     }
   ],
   "next_tasks": [
-    "t-404",
     "t-400",
     "t-401",
     "t-402"

@@ -157,6 +157,108 @@ def test_assembly_reject_refuses_unknown_task(scaffolded):
     assert "unknown" in out
 
 
+def test_e2e_full_reject_requeue_bump(scaffolded):
+    """End-to-end: Forge end-heat→submitted, Marshal can't pop, assembly-reject
+    flips to pending+hp+5 with priority_reason, and the task is schedulable
+    again. Closes the loop the amended I4 plan requires."""
+    s = _state(scaffolded)
+    s["parallel"]["assembly"]["enabled"] = True
+    _write_state(scaffolded, s)
+
+    # Forge runs a heat to completion under assembly-enabled flag.
+    _run_heat_complete(scaffolded)
+    task = next(t for t in _state(scaffolded)["queue"] if t["id"] == "t-aaa")
+    assert task["status"] == "submitted"
+
+    # Marshal tries to re-queue it while it's submitted — must refuse.
+    rc, out, _ = _smithy(scaffolded, "queue-push", "t-aaa", "--no-nudge")
+    assert rc != 0
+    assert "submitted" in out
+
+    # Assembly rejects it.
+    _smithy(scaffolded, "assembly-reject", "t-aaa", "--reason", "conflict mess")
+
+    task = next(t for t in _state(scaffolded)["queue"] if t["id"] == "t-aaa")
+    assert task["status"] == "pending"
+    assert task["human_priority"] == 5
+    assert task["priority_reason"].startswith("assembly rejected:")
+
+    # Now Marshal CAN re-queue it and Forge can pop it.
+    rc, _, _ = _smithy(scaffolded, "queue-push", "t-aaa", "--no-nudge")
+    assert rc == 0
+    rc, out, _ = _smithy(scaffolded, "queue-pop")
+    assert rc == 0
+    assert json.loads(out)["task_id"] == "t-aaa"
+
+
+def test_submitted_not_scheduled_by_queue_push(scaffolded):
+    """queue-push refuses submitted tasks (they're awaiting Assembly)."""
+    s = _state(scaffolded)
+    s["parallel"]["assembly"]["enabled"] = True
+    _write_state(scaffolded, s)
+    _run_heat_complete(scaffolded)
+
+    rc, out, _ = _smithy(scaffolded, "queue-push", "t-aaa", "--no-nudge")
+    assert rc != 0
+    assert "submitted" in out
+
+
+def test_submitted_not_scheduled_by_set_next_tasks(scaffolded):
+    """set-next-tasks refuses submitted tasks."""
+    s = _state(scaffolded)
+    s["parallel"]["assembly"]["enabled"] = True
+    _write_state(scaffolded, s)
+    _run_heat_complete(scaffolded)
+
+    rc, out, _ = _smithy(scaffolded, "set-next-tasks", "t-aaa", "--no-nudge")
+    assert rc != 0
+    assert "submitted" in out or "not pending" in out
+
+
+def test_submitted_skipped_by_queue_pop(scaffolded):
+    """If a submitted task id lingers in next_tasks, queue-pop skips it."""
+    s = _state(scaffolded)
+    s["parallel"]["assembly"]["enabled"] = True
+    # Stuff the id into next_tasks BEFORE flipping to submitted (simulates a
+    # race where Marshal queued it just as Forge's end-heat landed).
+    s["next_tasks"] = ["t-aaa"]
+    _write_state(scaffolded, s)
+    _run_heat_complete(scaffolded)
+
+    # queue-pop's stale-filter should drop it: empty pop, task still submitted.
+    rc, out, _ = _smithy(scaffolded, "queue-pop")
+    data = json.loads(out)
+    assert data.get("task_id") is None
+    assert "t-aaa" in data.get("skipped_stale", [])
+    task = next(t for t in _state(scaffolded)["queue"] if t["id"] == "t-aaa")
+    assert task["status"] == "submitted"
+
+
+def test_blocked_by_does_not_clear_on_submitted(scaffolded):
+    """A dependent task must NOT be treated as deps-clear while predecessor
+    is submitted — only 'complete' counts. This protects the rebase loop
+    (dependent's code doesn't see predecessor's changes until Assembly merges)."""
+    s = _state(scaffolded)
+    s["parallel"]["assembly"]["enabled"] = True
+    s["queue"].append({
+        "id": "t-bbb", "stage": "implementation", "desc": "dependent",
+        "status": "pending", "priority": 1, "blocked_by": ["t-aaa"],
+        "human_priority": None, "priority_reason": None,
+    })
+    _write_state(scaffolded, s)
+    _run_heat_complete(scaffolded)  # t-aaa → submitted
+
+    # Try to queue-push t-bbb — if blocked_by were considered clear, it would
+    # succeed and a dependent would race the pending merge. queue-push doesn't
+    # enforce blocked_by, but the priority signal should not be blocked-deps-clear.
+    from smithy.smithy.cli import _pick_priority_signal
+    state_now = _state(scaffolded)
+    tbbb = next(t for t in state_now["queue"] if t["id"] == "t-bbb")
+    sig = _pick_priority_signal(state_now, tbbb)
+    assert sig != "blocked-deps-clear", \
+        "submitted predecessor must NOT clear blocked_by — only merge does"
+
+
 def test_submitted_status_validates(scaffolded):
     """validate_state accepts 'submitted' as a task status."""
     from smithy.smithy.state import validate_state
