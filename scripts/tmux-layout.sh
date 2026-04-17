@@ -27,14 +27,15 @@
 #
 # Environment:
 #   FORGE_SESSION   session name (default: forge)
-#   FORGE_CLAUDE    launcher to run in each pane (default: claude)
+#   FORGE_CLAUDE    launcher to run in each pane
+#                   (default: claude --dangerously-skip-permissions)
 #                   Set to "" to leave panes empty.
 #   FORGE_ROOT      project root (default: script's ../ — the smithy2 checkout)
 
 set -euo pipefail
 
 FORGE_SESSION="${FORGE_SESSION:-forge}"
-FORGE_CLAUDE="${FORGE_CLAUDE-claude}"
+FORGE_CLAUDE="${FORGE_CLAUDE-claude --dangerously-skip-permissions}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 FORGE_ROOT="${FORGE_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 
@@ -157,6 +158,10 @@ FIRST_FORGE_ID=$(tmux split-window -t "$ASSEMBLY_ID" -v -p 50 \
   -c "$FORGE_ROOT/.worktrees/$FIRST_FORGE/personas/forge" \
   -P -F '#{pane_id}')
 
+# Capture the row width now, while the first forge pane still spans the full
+# right column. Once we split it horizontally below, its pane_width shrinks.
+ROW_WIDTH=$(tmux display -p -t "$FIRST_FORGE_ID" '#{pane_width}')
+
 FORGE_PANE_IDS=("$FIRST_FORGE_ID")
 # Remaining forges: each splits off the first forge pane. We equalize widths
 # at the end rather than relying on split percentages.
@@ -168,14 +173,11 @@ for ((i=1; i<${#FORGE_ARR[@]}; i++)); do
   FORGE_PANE_IDS+=("$new_id")
 done
 
-# Equalize forge pane widths. Read the forge-row width from the first forge
-# pane's parent (i.e., current right-column width), then resize each pane
-# (except the last, which absorbs the remainder) to an equal cell count.
+# Equalize forge pane widths using the row width captured before splitting.
+# Resize each pane (except the last, which absorbs the remainder) to an
+# equal cell count.
 N=${#FORGE_PANE_IDS[@]}
 if (( N > 1 )); then
-  WINDOW_WIDTH=$(tmux display -p -t "$FIRST_FORGE_ID" '#{window_width}')
-  # Right column is 60% of the window per the -p 60 split above.
-  ROW_WIDTH=$(( WINDOW_WIDTH * 60 / 100 ))
   EACH=$(( ROW_WIDTH / N ))
   for ((i=0; i<N-1; i++)); do
     tmux resize-pane -t "${FORGE_PANE_IDS[$i]}" -x "$EACH"
@@ -201,5 +203,24 @@ for idx in "${!PANES[@]}"; do
 done
 
 trap - ERR
+
+# --- boot cascade -----------------------------------------------------------
+#
+# Auto-Start every agent directly. Agents are peers (Anvil's CLAUDE.md:
+# "agents are peers in separate tmux windows; there is no SendMessage") and
+# coordinate via shared files — there is no Start cascade. tmux-layout.sh is
+# the sole injector of the initial "Start" so no chain of agent-to-agent
+# Start messages can form. Wait briefly for the Claude Code TUIs to finish
+# booting before sending, otherwise the message lands in the splash screen
+# and is swallowed.
+if [[ -n "$FORGE_CLAUDE" && "$DRY_RUN" -eq 0 ]]; then
+  ( sleep 8
+    for pid in "${ALL_IDS[@]}"; do
+      tmux send-keys -t "$pid" -- "Start" 2>/dev/null || true
+      tmux send-keys -t "$pid" Enter 2>/dev/null || true
+    done
+  ) &
+fi
+
 tmux select-pane -t "$ANVIL_ID"
 attach_or_switch
