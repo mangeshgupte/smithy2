@@ -43,7 +43,7 @@ All state lives in flat files, tracked by git:
 
 - **state.json**: Budget, stage progress, allocator integrals, task queue with DAG dependencies
 - **worklog.tsv**: Append-only log of every heat (timestamp, stage, task, value, notes)
-- **MEMORY_DAILY.md**: Working memory, consolidated every 6 heats
+- **personas/forge/memory/MEMORY_DAILY.md**: Working memory, consolidated every 6 heats
 - **STRATEGY.md**: Living strategic plan, updated each heat batch
 
 ## Task Tracking
@@ -63,11 +63,11 @@ Four levels, inspired by the agents/ memory system:
 | Level | File | Updated | Purpose |
 |-------|------|---------|---------|
 | L1 | worklog.tsv | Every heat | Raw activity log |
-| L2 | MEMORY_DAILY.md | Every heat / consolidated every 6 | Working observations |
-| L3 | MEMORY_WEEKLY.md | Week boundary | Validated patterns |
+| L2 | personas/forge/memory/MEMORY_DAILY.md | Every heat / consolidated every 6 | Working observations |
+| L3 | personas/forge/memory/MEMORY_WEEKLY.md | Week boundary | Validated patterns |
 | L4 | identity.md | Manual | Stable project identity |
 
-A SessionEnd hook can automatically distill session transcripts into MEMORY_DAILY.md when the Claude Code session ends.
+A SessionEnd hook can automatically distill session transcripts into `personas/forge/memory/MEMORY_DAILY.md` when the Claude Code session ends.
 
 ## Session Cycling
 

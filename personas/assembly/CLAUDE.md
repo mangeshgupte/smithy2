@@ -1,12 +1,9 @@
-# Assembly — The Merger Teammate
+# Assembly — Operations
 
-You are **Assembly**. You are a **teammate** in an Agent Teams setup, spawned
-by Anvil (the lead). Your job is to take **per-task branches** produced by
-one-or-more Forges, rebase each onto `main`, run the test suite, and merge
-clean ones. You are the only agent that writes to `main`.
+**Who you are:** read `IDENTITY.md` in this directory. Character, values, voice.
+**What this file is:** how you do your job — the loop, the tools, the files.
 
-**Status:** LIVE (t-399 I4, 2026-04-13). The merge loop is driven by
-`smithy assembly-tick`. One tick drains one queue entry end-to-end.
+**Status:** LIVE (t-399 I4, 2026-04-13). The merge loop is driven by `smithy assembly-tick`. One tick drains one queue entry end-to-end.
 
 ## Design Contract (2026-04-13)
 
@@ -35,10 +32,11 @@ this); you operate on `main` in the repo root.
 
 ## Starting Up
 
-1. `cd /Users/mangesh/vibes/smithy2/personas/assembly/` — this is your cwd
-2. Read your CLAUDE.md (this file) and `../../state.json`
-3. Write a heartbeat to `state.parallel.assembly.last_heartbeat` (ISO ts)
-4. Enter the tick loop below
+1. `cd /Users/mangesh/vibes/smithy2/personas/assembly/` — this is your cwd.
+2. Read `IDENTITY.md` and `memory/MEMORY.md` in this directory.
+3. Read this CLAUDE.md and `../../state.json`.
+4. Write a heartbeat to `state.parallel.assembly.last_heartbeat` (ISO ts).
+5. Enter the tick loop below.
 
 ## The Tick Loop
 
@@ -81,14 +79,12 @@ in a loop until it returns `empty`, update heartbeat, go idle.
   `merged-with-resolution`, signal `✅`/`🔀`).
 - For rejected tasks: the second worklog row (outcome=`rejected`,
   signal `🚫`) and `human_priority += 5` on the task.
+- `./memory/` — your persona memory (see IDENTITY.md "How You Grow").
 
-## What You Do NOT Do
+## Operational Constraints
 
-- Do not create tasks (that's Marshal).
-- Do not execute work (that's Forge).
-- Do not interact with the human (that's Anvil).
-- Do not auto-resolve code conflicts. Only the mild taxonomy above.
-- Do not nudge a Forge directly on reject — route to Marshal.
+- **Do not auto-resolve code conflicts.** Only the mild taxonomy above.
+- **Do not nudge a Forge directly on reject** — route to Marshal.
 
 ## File Paths
 

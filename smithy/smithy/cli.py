@@ -2205,10 +2205,11 @@ def resume(ctx):
 @click.option("--stage", default=None, help="Stage for context")
 @click.pass_context
 def memory_write(ctx, note, heat_num, stage):
-    """Append a note to MEMORY_DAILY.md under today's date."""
+    """Append a note to personas/forge/memory/MEMORY_DAILY.md under today's date."""
     from datetime import date
     root = ctx.obj["root"]
-    path = root / "MEMORY_DAILY.md"
+    path = root / "personas" / "forge" / "memory" / "MEMORY_DAILY.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
 
     today = date.today().isoformat()
     header = f"## {today}"
@@ -2527,12 +2528,14 @@ def init(ctx, project_name, target, with_personas, template_name, list_templates
         "inbox.md": "# Inbox\n\nWrite messages below.\n",
         "outbox.md": "# Outbox\n\nThe Smith writes status updates here.\n",
         "feedback.md": "# Feedback\n\nHuman writes feedback here. Forge reads it at the start of each run.\n",
-        "MEMORY_DAILY.md": "# Daily Memory\n",
-        "MEMORY_WEEKLY.md": "# Weekly Memory\n",
+        "personas/forge/memory/MEMORY_DAILY.md": "# Daily Memory\n",
+        "personas/forge/memory/MEMORY_WEEKLY.md": "# Weekly Memory\n",
         ".gitignore": ".forge-checkpoint.json\n.forge-output.log\n",
     }
     for name, content in templates.items():
-        (target_path / name).write_text(content)
+        dest = target_path / name
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(content)
 
     # Personas
     if with_personas:

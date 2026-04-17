@@ -39,7 +39,7 @@ The reporting stack has 5 layers. The human reads the lightest layer that answer
 
 ## L4: Full Log (investigation)
 
-**Format**: `worklog.tsv` + `MEMORY_DAILY.md` + `git log`
+**Format**: `worklog.tsv` + `personas/forge/memory/MEMORY_DAILY.md` + `git log`
 
 **Contents**: Every heat logged with stage, task, outcome, value, signal, notes. Full memory. Full git history.
 

@@ -52,7 +52,7 @@ One-line summary. Include self-critique: "Could improve: <what>". If nothing cou
 smithy memory-write "<insight>" --heat <N> --stage <stage>
 ```
 
-Appends to MEMORY_DAILY.md under today's date. Use for consolidated insights (every 6th heat).
+Appends to `personas/forge/memory/MEMORY_DAILY.md` under today's date. Use for consolidated insights (every 6th heat).
 
 ## Outbox
 
