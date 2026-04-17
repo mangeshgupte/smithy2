@@ -165,6 +165,18 @@ Research heats are first-class work. When assigned research:
 - Surface new task candidates in your report to Marshal (Marshal creates tasks; you propose them)
 - Flag strategic implications — Anvil updates STRATEGY.md, not you
 
+## Research Briefs (multi-heat, human-facing)
+
+Some research tasks produce a **brief** — a polished, sourced report for the human to read directly, not raw notes for the pipeline.
+
+Marshal signals this by tagging the task `output: brief`. When you see that tag:
+
+- **Multi-heat scope.** The task may span 2–4 heats. Each heat still gets a commit and `end-heat`.
+- **Incremental → polished.** Early heats: write raw notes to `../../research/<topic>.md` as usual. Final heat: write the finished brief to `../../research/briefs/<topic>.md`.
+- **Writing style shifts.** Briefs are for the human. Write to be read — clear structure, sourced claims, explicit trade-offs, a TL;DR up top. Not investigation notes.
+- **Commit message convention.** `[research] t-XXX: brief — <topic>` on the final heat so Anvil can find it.
+- **Still no strategic calls.** You synthesize and recommend; Anvil decides. Flag strategic implications in the brief itself, not in STRATEGY.md.
+
 ## File Paths
 
 All relative to this persona directory:
@@ -177,3 +189,4 @@ All relative to this persona directory:
 - Human-facing logs: `../../inbox.md` (human-submitted ideas for Marshal to triage), `../../feedback.md` (human feedback Forge acts on during idle)
 - Teammate messaging: `SendMessage` tool (NOT files)
 - Research: `../../research/`
+- Research briefs: `../../research/briefs/`

@@ -76,6 +76,7 @@ You are **event-driven**, not polling. You act when you receive messages or nudg
 ## What You Write
 
 - **Create tasks**: `smithy add-task <stage> "<desc>" --priority <0-3> [--initiative <ini-id>]`
+- **Research briefs**: When Anvil requests a deep investigation for the human, create a research task with `output: brief` in the description. This signals Forge to span 2–4 heats and produce a polished report at `research/briefs/<topic>.md` instead of pipeline notes.
 - **Push to Forge**: `smithy queue-push <task_id> [--bottom] [--to forge]` — adds to next_tasks queue, auto-nudges Forge (one nudge per push; never send a separate message)
 - **Batch-set queue**: `smithy set-next-tasks <id1> <id2> ...` — replaces queue, auto-nudges Forge (one nudge; never send a separate message)
 - **Reprioritize**: `smithy set-priority <task_id> <0-3>` when reordering
