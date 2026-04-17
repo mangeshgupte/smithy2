@@ -4134,6 +4134,52 @@
       "human_priority": null,
       "priority_reason": "Anvil-filed cleanup hygiene",
       "assigned_forge": null
+    },
+    {
+      "id": "t-412",
+      "stage": "implementation",
+      "desc": "scripts/tmux-stop.sh \u2014 graceful shutdown of forge tmux rig. Send /exit + C-m to each pane to let Claude Code sessions close cleanly, wait briefly, verify, then kill-session. Flags: --force (skip graceful, immediate kill-session), -h/--help. Respect FORGE_SESSION env var (default: forge), matching tmux-layout.sh conventions.",
+      "status": "open",
+      "priority": 1,
+      "blocked_by": [
+        "t-411"
+      ],
+      "human_priority": 1,
+      "priority_reason": "Human requested companion to tmux-layout.sh \u2014 needed for clean rig shutdown.",
+      "assigned_forge": null
+    },
+    {
+      "id": "t-413",
+      "stage": "implementation",
+      "desc": "Document scripts/nudge.sh as the up-channel for agents. (1) Add a 'Reporting up' section to personas/marshal/CLAUDE.md and personas/forge/CLAUDE.md and personas/assembly/CLAUDE.md: when an agent needs a human decision or wants to flag something interactively, call `../../scripts/nudge.sh anvil '<message>'` instead of waiting for the next pull-based status check. (2) Clarify the split: outbox.md = batch/AAR summaries (push to human, async); nudge.sh = interactive questions (push to human, sync). (3) Cross-link from protocol/reporting.md so the L0-L4 stack mentions nudge as the escalation channel above L1.",
+      "status": "open",
+      "priority": 1,
+      "blocked_by": [],
+      "human_priority": 1,
+      "priority_reason": "Anvil added scripts/nudge.sh as a bidirectional wake mechanism; other agents don't yet know they can use it to report up. Closes the loop on the nudge-mechanism work.",
+      "assigned_forge": null
+    },
+    {
+      "id": "t-414",
+      "stage": "implementation",
+      "desc": "Fix smithy auto-nudge for current tmux rig (t-408 layout).\n\nPROBLEM: smithy/smithy/cli.py::_nudge_persona was written for the old layout (session 'smithy2', one window per persona). Current rig is one window with personas as panes in session 'forge'. Every auto-nudge from queue-push/end-heat/set-next-tasks silently falls back to .smithy-nudge-queue/<persona>.jsonl with reason \"window 'forge' not found, nudge queued\". Marshal\u2192Forge handoff loop is broken; only manual scripts/nudge.sh works.\n\nFIX: rewrite _nudge_persona to resolve the target by pane_current_path (mirroring scripts/nudge.sh logic). Read session name from FORGE_SESSION env, default 'forge'. Match panes:\n  /.worktrees/<persona>/...     -> marshal, forge-quench, forge-temper, forge-anneal\n  /personas/<persona> (suffix)  -> anvil, assembly\nPreserve the existing return-dict shape (nudged/queued/persona/target/reason/message) and the busy/queue fallback path. Send message text and Enter as TWO separate send-keys calls (Claude Code TUI quirk).\n\nREFERENCE PATCH (already prototyped by Anvil on main, then reverted to respect 'only Assembly writes main' rule): see Anvil's nudge from 2026-04-13 \u2014 _resolve_pane(session, persona) helper + new _nudge_persona body.\n\nVERIFY:\n  python3 -c \"from smithy.cli import _resolve_pane; print(_resolve_pane('forge','marshal'))\"  # -> ('%XX', None)\n  smithy queue-push <some-task> --to forge  # status should show \"nudged: true\", forge-quench pane receives the message\n\nPOST-MERGE: every worktree must reinstall (`pip install -e <worktree>/smithy`) for the fix to take effect \u2014 flag this in the AAR / Marshal's next steering note so all 5 worktree installs (anvil, marshal, forge-quench, forge-temper, forge-anneal) get refreshed.",
+      "status": "open",
+      "priority": 0,
+      "blocked_by": [],
+      "human_priority": 0,
+      "priority_reason": "Auto-nudge across the rig is broken \u2014 Marshal's queue-push, Forge's end-heat, set-next-tasks all degrade to file-queue fallback. Manual scripts/nudge.sh is the only working channel until this lands.",
+      "assigned_forge": null
+    },
+    {
+      "id": "t-416",
+      "stage": "implementation",
+      "desc": "Per-worktree smithy isolation: each agent's `smithy` command must resolve to its own worktree's source, not a global pip install.\n\nPROBLEM (diagnosed 2026-04-13): `pip install -e <path>/smithy` registers a SINGLE global editable install. All panes share it. Whoever last ran `pip install -e` wins for everyone. Symptoms today:\n- Assembly tried `smithy assembly-tick` \u2192 \"No such command\" because the global install was bound to forge-quench/scratch (a branch that forked before t-399 H1 added assembly-tick).\n- forge-quench editing smithy code in its branch silently changes CLI behavior for Marshal, Assembly, Anvil \u2014 opposite of worktree isolation.\n- After Anvil reverted a smithy/cli.py edit on main, the global install still pointed at a divergent worktree, so the revert had no observable effect on any pane's `smithy`.\n\nGOAL: `which smithy` and `pip show smithy` (when run inside a worktree) should report that worktree's path. A Forge editing smithy code in .worktrees/forge-quench/ must affect ONLY the forge-quench pane, not Marshal/Assembly/Anvil.\n\nDESIGN OPTIONS:\n1. Per-worktree venv: each .worktrees/<id>/ gets a .venv/ with smithy editable-installed there. tmux-layout.sh activates the venv before launching Claude in that pane (modify -c chdir or prepend to PATH via shell init). Robust but heavyweight (5 venvs to maintain, ~50MB each).\n2. Wrapper script: replace the `smithy` entrypoint with a shell wrapper that detects the calling pane's cwd, finds the nearest .worktrees/<id>/smithy or smithy/ ancestor, and execs `python -m smithy.cli` with PYTHONPATH set to that worktree's smithy/. Lightweight, no per-worktree install, but fragile (relies on cwd inference).\n3. PYTHONPATH per pane: tmux-layout.sh launches each pane with `PYTHONPATH=<worktree>/smithy claude ...`. Then `python -m smithy.cli` resolves locally without any pip install. Simplest. The console_scripts `smithy` entrypoint becomes a thin shim: `#!/usr/bin/env python -m smithy.cli`. Recommend this.\n\nTASKS:\n- Decide between options 1/2/3 (recommend 3 \u2014 simplest, no extra tooling)\n- Modify scripts/tmux-layout.sh to set PYTHONPATH per pane based on its workdir\n- Update smithy console_scripts entrypoint or replace with a shim that respects PYTHONPATH\n- Add `smithy doctor` subcommand (or extend an existing diagnostics command) that prints the resolved smithy source path for the current pane, so future \"wrong version running\" bugs are 1-command to diagnose\n- Update README + WALKTHROUGH to remove the `pip install -e .` step (no longer needed)\n- Test: launch rig, edit smithy/cli.py inside one worktree, verify ONLY that pane's `smithy` reflects the change\n\nPOSTPONE-OK: not urgent \u2014 option (A) (rebind global install to main when needed) keeps things working. But the global install is a stealth coupling that will bite again.",
+      "status": "open",
+      "priority": 2,
+      "blocked_by": [],
+      "human_priority": 2,
+      "priority_reason": "Structural fix for stealth coupling between worktrees via global smithy install. Not urgent (rebinding works as a stopgap), but bites repeatedly during integration \u2014 diagnosed during the t-411/t-414 nudge cascade on 2026-04-13.",
+      "assigned_forge": null
     }
   ],
   "ideas": [
@@ -4181,7 +4227,7 @@
       "status": "approved",
       "budget_cap": null,
       "heats_used": 11,
-      "viewed_at": "2026-04-13T05:39:16Z",
+      "viewed_at": "2026-04-13T15:29:26Z",
       "rank": 1
     },
     {
@@ -4473,7 +4519,7 @@
     ],
     "assembly": {
       "enabled": true,
-      "last_heartbeat": "2026-04-13T08:14:03+00:00"
+      "last_heartbeat": "2026-04-13T09:10:42Z"
     },
     "forge_roster": [
       "forge-quench",
