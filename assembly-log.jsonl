@@ -1,0 +1,2 @@
+{"ts": "2026-04-13T09:19:50+00:00", "forge_id": "forge-quench", "task_id": "t-411", "outcome": "rejected", "detail": "rebase error: error: cannot rebase: You have unstaged changes.\nerror: Please commit or stash them."}
+{"ts": "2026-04-13T09:20:51+00:00", "forge_id": "forge-quench", "task_id": "t-411", "outcome": "rejected", "detail": "tests failed: FAILED smithy/tests/test_smithy.py::TestNudgeCommand::test_nudge_queues_when_pane_missing|FAILED smithy/tests/test_smith"}

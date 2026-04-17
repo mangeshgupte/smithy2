@@ -2,7 +2,6 @@
 .forge-checkpoint.json
 .forge-handoff.json
 .forge-output.log
-assembly-log.jsonl
 
 # Local workspace
 .worktrees/
