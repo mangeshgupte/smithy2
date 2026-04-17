@@ -2,3 +2,10 @@
 .forge-checkpoint.json
 .forge-handoff.json
 .forge-output.log
+assembly-log.jsonl
+
+# Local workspace
+.worktrees/
+
+# Python packaging
+smithy/smithy.egg-info/
