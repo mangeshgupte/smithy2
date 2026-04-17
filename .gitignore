@@ -1,5 +1,5 @@
-# Forge transient files
-.forge-checkpoint.json
+# Forge transient files (per-heat locks + scratch)
+.forge-checkpoint*.json
 .forge-handoff.json
 .forge-output.log
 
