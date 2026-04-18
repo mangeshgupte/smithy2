@@ -116,17 +116,26 @@ def test_assembly_tick_merge_nudges_marshal_live(proj, tmp_path, monkeypatch):
     }) + "\n")
 
     # Stub the assembly module helpers so the tick runs "clean".
+    # t-475: assembly_tick now uses rebase_task_branch + source_ref, so
+    # stubs mirror the new signatures.
     from smithy.smithy import assembly as asm_mod
-    monkeypatch.setattr(asm_mod, "rebase_forge_branch",
-                        lambda root, fid, task_id=None, base="main":
-                            {"status": "ok"})
+    monkeypatch.setattr(asm_mod, "rebase_task_branch",
+                        lambda root, fid, tid, base="main":
+                            {"status": "clean",
+                             "staging_ref": f"_merge-{tid}"})
     monkeypatch.setattr(asm_mod, "run_tests_in_worktree",
                         lambda root, fid, cmd=None: {"passed": True,
                                                      "output": ""})
     monkeypatch.setattr(asm_mod, "ff_merge_forge_branch",
-                        lambda root, fid, tid, base: {
+                        lambda root, fid, tid, base,
+                               source_ref=None, delete_branch=True,
+                               push_remote="origin", push_timeout_s=30: {
                             "status": "merged", "sha": "b" * 40,
                             "branch": "forge-01/t-under-merge",
+                        })
+    monkeypatch.setattr(asm_mod, "delete_forge_branch",
+                        lambda root, fid, tid, force=False: {
+                            "status": "deleted", "branch": f"{fid}/{tid}",
                         })
     monkeypatch.setattr(asm_mod, "branch_name",
                         lambda fid, tid: f"{fid}/{tid}")

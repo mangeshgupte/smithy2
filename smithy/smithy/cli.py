@@ -1049,9 +1049,17 @@ def assembly_tick_cmd(ctx, base, dry_run, tests_cmd):
     Returns JSON describing the outcome. Re-invoke to process the next
     queue item; idempotent when queue is empty.
     """
+    # t-475: route assembly_tick through the staging-worktree primitives
+    # introduced in t-456. Prior behaviour rebased + ran tests in the
+    # Forge's own worktree, so if the Forge had moved on to a later task
+    # by the time Assembly got to this queue entry, pytest ran against
+    # the WRONG branch contents and spuriously rejected valid submissions
+    # (observed 2026-04-18 on t-472). Staging decouples verification from
+    # whatever branch the Forge currently has checked out.
     from .assembly import (
-        rebase_forge_branch, continue_rebase, abort_rebase, try_auto_resolve,
+        continue_rebase, abort_rebase, try_auto_resolve,
         run_tests_in_worktree, ff_merge_forge_branch, branch_name,
+        rebase_task_branch, _STAGING_WORKTREE as STAGING_WORKTREE,
     )
     root = ctx.obj["root"]
     qpath = assembly_queue_path(root)
@@ -1081,7 +1089,9 @@ def assembly_tick_cmd(ctx, base, dry_run, tests_cmd):
                    .total_seconds() * 1000)
 
     def _reject(reason: str) -> dict:
-        abort_rebase(root, forge_id)
+        # t-475: abort any in-flight rebase in the STAGING worktree (not
+        # the Forge's) so our cleanup matches where we actually ran it.
+        abort_rebase(root, STAGING_WORKTREE)
         _do_assembly_reject(root, task_id, reason)
         _log(root, forge_id, task_id, "rejected", reason)
         _pop_queue(qpath, rest)
@@ -1090,26 +1100,26 @@ def assembly_tick_cmd(ctx, base, dry_run, tests_cmd):
                         latency_ms=_tick_latency_ms())
         return {"status": "rejected", "task_id": task_id, "reason": reason}
 
-    # 1. Rebase onto base — t-456: pass task_id so the forge's per-task
-    # branch is explicitly checked out first, even if the Forge has
-    # moved on to a new task in the meantime.
-    rb = rebase_forge_branch(root, forge_id, task_id=task_id, base=base)
+    # 1. Rebase onto base — t-475: use rebase_task_branch so the work
+    # happens in .worktrees/_assembly-staging/ instead of the Forge's
+    # worktree. Conflict resolution loop below now targets staging too.
+    rb = rebase_task_branch(root, forge_id, task_id, base=base)
     if rb["status"] == "conflict":
-        res = try_auto_resolve(root, forge_id)
+        res = try_auto_resolve(root, STAGING_WORKTREE)
         if res["status"] == "severe":
             _output(_reject(f"severe conflict in {','.join(res['files'])}"))
             return
         if res["status"] == "resolved":
-            cont = continue_rebase(root, forge_id)
+            cont = continue_rebase(root, STAGING_WORKTREE)
             while cont["status"] == "conflict":
-                res2 = try_auto_resolve(root, forge_id)
+                res2 = try_auto_resolve(root, STAGING_WORKTREE)
                 if res2["status"] == "severe":
                     _output(_reject(
                         f"severe conflict in {','.join(res2['files'])}"))
                     return
                 if res2["status"] == "nothing":
                     break
-                cont = continue_rebase(root, forge_id)
+                cont = continue_rebase(root, STAGING_WORKTREE)
             if cont["status"] == "error":
                 _output(_reject(f"rebase error: {cont.get('detail','?')[:120]}"))
                 return
@@ -1119,21 +1129,42 @@ def assembly_tick_cmd(ctx, base, dry_run, tests_cmd):
         _output(_reject(f"rebase error: {rb.get('detail','?')[:120]}"))
         return
 
-    # 2. Run tests in the rebased worktree
+    staging_ref = rb.get("staging_ref")
+
+    # 2. Run tests in the STAGING worktree, which has the rebased
+    # per-task branch checked out — independent of the Forge's HEAD.
     cmd_override = tests_cmd.split() if tests_cmd else None
-    tst = run_tests_in_worktree(root, forge_id, cmd=cmd_override)
+    tst = run_tests_in_worktree(root, STAGING_WORKTREE, cmd=cmd_override)
     if not tst["passed"]:
         # Don't abort rebase — it already completed. Just reject the merge.
-        # Reset the worktree branch back to origin to drop rebase artifacts.
         tail = tst["output"].splitlines()[-3:]
         _output(_reject(f"tests failed: {'|'.join(tail)[:120]}"))
         return
 
-    # 3. Merge
-    mr = ff_merge_forge_branch(root, forge_id, task_id, base)
+    # 3. Merge the rebased staging ref into base in the main repo.
+    # delete_branch=False: ff_merge's own delete uses `-d` (safe), but
+    # the original forge branch is NOT an ancestor of the merged commit
+    # (we merged the REBASED staging ref, whose SHAs differ). We force-
+    # delete below once the merge is confirmed landed — safe because
+    # the task's content is provably in main now.
+    mr = ff_merge_forge_branch(root, forge_id, task_id, base,
+                               source_ref=staging_ref,
+                               delete_branch=False)
     if mr["status"] != "merged":
         _output(_reject(f"merge failed: {mr.get('detail','?')[:120]}"))
         return
+    # t-475: now force-delete the original forge branch since its content
+    # landed via the rebased staging ref. Surface the result under the
+    # same "deleted" key ff_merge_forge_branch would have used so the
+    # existing telemetry keeps working.
+    from .assembly import delete_forge_branch
+    mr["deleted"] = delete_forge_branch(root, forge_id, task_id, force=True)
+
+    # Note: the ephemeral `_merge-<task-id>` branch stays on as staging's
+    # current HEAD — rebase_task_branch on the next tick uses `checkout
+    # -B` which resets the ref, so accumulation isn't an issue. Trying
+    # to `git branch -D` here fails anyway because the ref is checked
+    # out in the staging worktree.
 
     # 4. Record + flip task status
     _do_assembly_merge(root, task_id, mr["sha"], resolution=False)
