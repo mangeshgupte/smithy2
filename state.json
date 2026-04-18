@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1043,
-    "used": 903,
+    "used": 822,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 373,
+      "heats": 374,
       "progress": 0.98,
-      "value_ema": 0.736
+      "value_ema": 0.545
     },
     "testing": {
       "target": 0.183,
@@ -4352,7 +4352,7 @@
       "id": "t-431",
       "stage": "implementation",
       "desc": "smithy task-tree CLI: render the task DAG. Show all open tasks (status in {open, pending, in_progress, submitted}) grouped by initiative (use ini-XXX rank for initiative ordering), with blocked_by edges drawn as ASCII tree (\u251c\u2500 \u2514\u2500). For each task: id, stage emoji (\ud83d\udd2cresearch \ud83d\udcddplanning \ud83d\udd27impl \u2705testing \u270f\ufe0fediting \ud83d\udce3marketing), status emoji, priority badge, assigned_forge if set. Highlight: tasks whose blocked_by is satisfied + can be dispatched (\u2713), tasks with cycles (\u26a0). Flags: --initiative <ini-id> to filter, --json for machine output, --stuck to show only tasks blocked >24h. WHY: with N=3 forges + dependency chains, the queue is no longer linear; humans + Marshal need a visualization. Useful for hardening sprint observability. Tests: 3 fixture initiatives with cross-deps, assert ASCII output structure + cycle detection. Anvil-filed 2026-04-17 for hardening sprint v2.",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-018",
@@ -4455,6 +4455,100 @@
       "human_priority": null,
       "priority_reason": null,
       "assigned_forge": "forge-quench"
+    },
+    {
+      "id": "t-440",
+      "stage": "implementation",
+      "desc": "Multi-forge Poker \u2014 Task 1/4 (schema + defaults, ini-018). Add three fields to each state.initiatives[] entry via _apply_steerability_defaults in smithy/smithy/state.py: parallelism (serial|parallel, default parallel), affinity ([forge-id], default []), touches ([path-glob], default []). Extend smithy add-initiative / edit-initiative CLI with --parallelism, --affinity, --touches flags. Tests: existing state.json loads + round-trips unchanged; new initiatives default correctly; invalid parallelism rejected at add-time. BLOCKS Tasks 2/3/4 of multi-forge Poker. Source: plans/multi-forge-poker-plan.md \u00a7Task1. Est 1 heat.",
+      "status": "in_progress",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-018",
+      "human_priority": null,
+      "priority_reason": "ini-018 rank=1 + poker",
+      "assigned_forge": "forge-quench"
+    },
+    {
+      "id": "t-441",
+      "stage": "implementation",
+      "desc": "Multi-forge Poker \u2014 Task 2/4 (Marshal constraint walk, ini-018). Rewrite initiative-selection portion of Marshal's dispatch (today's Priority Rule #3 + code behind smithy queue-pop --forge / smithy dispatch-next). For each idle Forge, walk initiatives by rank: skip if parallelism=serial AND another in-flight task from this ini; skip if affinity non-empty AND current Forge not in list AND any listed forge idle; skip if parallelism=serial AND touches overlaps in-flight task touches; else dispatch top-priority unblocked task. Tests: 3 parallel inis + 3 idle forges \u2192 all dispatch; serial ini only one in-flight; affinity preference + fallback; touches collision serializes across inis. Update personas/marshal/CLAUDE.md Priority Rule #3. Depends on t-440. Source: plans/multi-forge-poker-plan.md \u00a7Task2. Est 2 heats.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [
+        "t-440"
+      ],
+      "initiative_id": "ini-018",
+      "human_priority": null,
+      "priority_reason": "ini-018 rank=1 + poker",
+      "assigned_forge": null
+    },
+    {
+      "id": "t-442",
+      "stage": "implementation",
+      "desc": "Multi-forge Poker \u2014 Task 3/4 (Assembly back-pressure, ini-018). In Marshal's dispatch entry points (queue-pop, set-next-tasks), add pre-flight: depth = count_lines(assembly_queue_path(root)); n_forges = len(parallel.forges); if depth >= 2*max(1,n_forges): refuse with reason 'assembly-queue backpressure (depth=N)'. Include skip reason in nudge to Forge so operator sees why no dispatch. Tests: depth<2N dispatches; depth==2N refuses with 'backpressure' in reason; depth>2N same. Patrol check #9 still runs independently. Depends on t-440. Source: plans/multi-forge-poker-plan.md \u00a7Task3. Est 1 heat.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [
+        "t-440"
+      ],
+      "initiative_id": "ini-018",
+      "human_priority": null,
+      "priority_reason": "ini-018 rank=1 + poker",
+      "assigned_forge": null
+    },
+    {
+      "id": "t-443",
+      "stage": "implementation",
+      "desc": "Multi-forge Poker \u2014 Task 4/4 (Priority Poker UI, ini-018). Extend initiative card in ui-priority-poker/app.py with three advisory fields: parallelism chip (toggle parallel|serial, green=parallel/amber=serial), affinity chip (editable comma-separated forge-id list), touches chip (editable path-glob list). Drag-to-rank unchanged. Unset cards show 'parallel \u00b7 any forge \u00b7 no contention' dim text. Tests: loaded initiative with all three shows chips; POST persists; drag-to-rank works after chip edits; Playwright smoke: set parallelism=serial, save, reload \u2192 chip color flips. Depends on t-440. Source: plans/multi-forge-poker-plan.md \u00a7Task4. Est 1-2 heats.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [
+        "t-440"
+      ],
+      "initiative_id": "ini-018",
+      "human_priority": null,
+      "priority_reason": "ini-018 rank=1 + poker",
+      "assigned_forge": null
+    },
+    {
+      "id": "t-444",
+      "stage": "research",
+      "desc": "ini-019 R1: Survey observability metrics \u2014 which lifecycle states, which failure types, which retry patterns are already inferable from worklog+rig-events+assembly-log. Output: research/ini-019-metrics-inventory.md. List every derivable metric + source column.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [],
+      "human_priority": "p1",
+      "priority_reason": "ini-019 kickoff; blocks L0/L1 design",
+      "assigned_forge": null,
+      "initiative_id": "ini-019"
+    },
+    {
+      "id": "t-445",
+      "stage": "research",
+      "desc": "ini-019 R2: Retro-annotate task\u2192initiative_id mapping. Add initiative_id field to state.queue task schema. One-time backfill: cross-reference worklog notes, commit messages, and ini descriptions to assign initiative_id to historical tasks. Output: migration script + updated state.json + schema-version bump.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [
+        "t-444"
+      ],
+      "human_priority": "p1",
+      "priority_reason": "ini-019 prerequisite; without this no initiative metrics work",
+      "assigned_forge": null,
+      "initiative_id": "ini-019"
+    },
+    {
+      "id": "t-446",
+      "stage": "planning",
+      "desc": "ini-019 P1: Design spec for the three surfaces. (a) smithy report CLI \u2014 output format, arg surface, replay-at-heat flag. (b) Bellows Forge Ops view \u2014 wireframes for 5 panels (rig strip, initiatives, drill-down, persona heatmap, Issues). (c) L2 time-series JSON schema. Output: plans/ini-019-surfaces-plan.md.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [
+        "t-444"
+      ],
+      "human_priority": "p1",
+      "priority_reason": "ini-019 design gate; must follow R1 inventory",
+      "assigned_forge": null,
+      "initiative_id": "ini-019"
     }
   ],
   "ideas": [
@@ -4504,6 +4598,17 @@
       "heats_used": 40,
       "viewed_at": "2026-04-18T09:06:15Z",
       "rank": 1
+    },
+    {
+      "id": "ini-019",
+      "theme_id": "th-002",
+      "title": "Forge Observability",
+      "description": "Read-only aggregation layer over worklog.tsv + rig-events.jsonl + assembly-log.jsonl + state.json + git log. Three surfaces: (L0) smithy report CLI \u2014 initiative burn-down, forge idle%, top failure buckets. (L1) Bellows Forge Ops dashboard \u2014 initiative panel with burn bars, task drill-down with timeline, persona heatmap, Issues view (ghost submits, test recurrence, Assembly rejects, thrash \u22653 retries), flow diagram. (L2) per-heat JSON snapshots for time-series regression analysis. Principle: no new write paths; deterministic replay from the record. Pre-req: retro-annotate task\u2192initiative_id mapping (schema gap in state.queue).",
+      "status": "approved",
+      "budget_cap": 25,
+      "heats_used": 0,
+      "viewed_at": null,
+      "rank": 2
     },
     {
       "id": "ini-016",
@@ -4726,7 +4831,9 @@
       "created": "2026-04-11T10:44:28.678810"
     }
   ],
-  "next_tasks": [],
+  "next_tasks": [
+    "t-431"
+  ],
   "schema_version": 1,
   "intents": [
     {
@@ -4802,8 +4909,6 @@
       "forge-weld",
       "forge-shape",
       "forge-harden"
-    ],
-    "halted_at": null,
-    "halt_reason": "resumed 2026-04-18 by Anvil per human directive"
+    ]
   }
 }
