@@ -82,6 +82,49 @@ def assembly_queue_path(project_dir: Path) -> Path:
     return main_repo_root(project_dir) / ".assembly-queue.jsonl"
 
 
+def normalize_human_priority(value):
+    """t-455: canonical coercion for `human_priority` values.
+
+    Accepts the three forms observed in the wild:
+      - `None` → `None` (un-pinned)
+      - `int` → same int (bool rejected — it's an int subclass and a
+        stray `True` should not silently become `hp=1`)
+      - `float` with whole value → `int(value)`
+      - `"7"` / `" 7 "` / `"p1"` / `"P1"` / `"p 1"` → the embedded int
+
+    Raises `ValueError` on any other input so callers surface the
+    mismatch rather than silently writing garbage. `_apply_steerability_defaults`
+    coerces unparseable existing entries to `None` on load so the queue
+    isn't wedged by legacy drift (observed 2026-04-18 — t-455 root cause:
+    "p1"/"p2" strings landed on t-444..t-454 via a writer that bypassed
+    the Poker UI's int-check, then `_do_assembly_reject` hit `"p1" + 5`
+    and halted the Assembly merge loop).
+    """
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        raise ValueError(
+            f"human_priority must be int or pN string, got bool {value!r}")
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        if not value.is_integer():
+            raise ValueError(
+                f"human_priority must be a whole number, got {value!r}")
+        return int(value)
+    if isinstance(value, str):
+        s = value.strip()
+        if s[:1] in ("p", "P"):
+            s = s[1:].strip()
+        if s and s.lstrip("-").isdigit():
+            return int(s)
+        raise ValueError(
+            f"human_priority string {value!r} is not a recognized form "
+            f"(expected int, 'N', or 'pN')")
+    raise ValueError(
+        f"human_priority type {type(value).__name__} not supported")
+
+
 def _apply_steerability_defaults(state: dict) -> dict:
     """Ensure steerability fields exist with null defaults on every task/initiative.
 
@@ -97,6 +140,17 @@ def _apply_steerability_defaults(state: dict) -> dict:
         # t-396 I1: assigned_forge lets Marshal pin a task to a specific Forge
         # at N≥2. Null = unassigned (any idle Forge may take it).
         task.setdefault("assigned_forge", None)
+        # t-455: coerce drifted human_priority (strings like "p1" / "p2"
+        # landed on t-444..t-454 via a writer that skipped the Poker
+        # UI's int-check) to canonical int on load so the scheduler +
+        # assembly-reject path don't explode. Unparseable garbage
+        # becomes None — the task keeps its base priority.
+        hp = task.get("human_priority")
+        if hp is not None and not isinstance(hp, int) or isinstance(hp, bool):
+            try:
+                task["human_priority"] = normalize_human_priority(hp)
+            except ValueError:
+                task["human_priority"] = None
     for ini in state.get("initiatives", []) or []:
         ini.setdefault("viewed_at", None)
         # t-440 (ini-018): multi-forge poker fields. `parallelism` gates
