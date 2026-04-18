@@ -2294,6 +2294,42 @@ def patrol(ctx, fix):
                         f"Run scripts/state-sync.sh after investigating."
                     )
 
+    # 9. t-423: stale .assembly-queue.jsonl entries. Assembly is the only
+    # thing that drains the queue; if its pane crashes or mis-handles a
+    # nudge, entries accumulate silently and the rig *looks* healthy
+    # while nothing reaches main. Flag any entry whose submitted_at is
+    # more than ASSEMBLY_STALE_S old (default 5 min). No auto-fix — the
+    # operator either restarts Assembly (which drains) or rejects the
+    # task manually.
+    ASSEMBLY_STALE_S = 300  # 5 min — loose enough that a slow test run
+                            # on a real tick doesn't false-positive.
+    q_path = assembly_queue_path(root)
+    if q_path.exists():
+        now_utc = datetime.now(timezone.utc)
+        for raw in q_path.read_text().splitlines():
+            if not raw.strip():
+                continue
+            try:
+                entry = json.loads(raw)
+            except Exception:
+                continue
+            submitted_at = entry.get("submitted_at")
+            if not submitted_at:
+                continue
+            try:
+                sub_ts = datetime.fromisoformat(submitted_at)
+            except Exception:
+                continue
+            age_s = (now_utc - sub_ts).total_seconds()
+            if age_s > ASSEMBLY_STALE_S:
+                mins = int(age_s // 60)
+                issues.append(
+                    f"STALE assembly-queue: {entry.get('task_id','?')} "
+                    f"by {entry.get('forge_id','?')} submitted {mins}m ago, "
+                    f"branch {entry.get('branch','?')}"
+                    f"@{(entry.get('sha','') or '')[:8]}"
+                )
+
     # Save fixes if any
     if fix and fixes:
         save_state(root, state)
@@ -2302,7 +2338,7 @@ def patrol(ctx, fix):
         "issues": issues,
         "fixes": fixes,
         "clean": len(issues) == 0,
-        "checks_run": 8,
+        "checks_run": 9,
         "stuck_forges": sorted(set(stuck_forges)),
     })
     if issues:
