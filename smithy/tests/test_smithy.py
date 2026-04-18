@@ -1533,28 +1533,30 @@ class TestMemoryWrite:
     """Tests for memory-write command."""
 
     def test_memory_write_creates_file(self, project, runner):
-        """memory-write creates personas/forge/memory/MEMORY_DAILY.md if missing."""
+        """memory-write creates MEMORY_DAILY.md under the caller's
+        per-forge subdir (t-458). With no multi-forge state configured
+        the fallback is the DEFAULT_FORGE_ID ("forge-01") → subdir "01"."""
         result = runner.invoke(cli, ["--dir", str(project), "memory-write", "Test note"])
         assert result.exit_code == 0
         data = json.loads(result.output)
         assert data["note"] == "Test note"
-        memory_path = project / "personas" / "forge" / "memory" / "MEMORY_DAILY.md"
+        memory_path = project / "personas" / "forge" / "memory" / "01" / "MEMORY_DAILY.md"
         assert memory_path.exists()
         content = memory_path.read_text()
         assert "Test note" in content
 
     def test_memory_write_with_heat(self, project, runner):
-        """memory-write with --heat adds prefix."""
+        """memory-write with --heat adds prefix (lands in primary subdir)."""
         result = runner.invoke(cli, ["--dir", str(project), "memory-write", "Heat note", "--heat", "42", "--stage", "testing"])
         assert result.exit_code == 0
-        content = (project / "personas" / "forge" / "memory" / "MEMORY_DAILY.md").read_text()
+        content = (project / "personas" / "forge" / "memory" / "01" / "MEMORY_DAILY.md").read_text()
         assert "[h42 testing]" in content
 
     def test_memory_write_appends(self, project, runner):
-        """Multiple writes append under same date header."""
+        """Multiple writes append under same date header in the primary subdir."""
         runner.invoke(cli, ["--dir", str(project), "memory-write", "Note 1"])
         runner.invoke(cli, ["--dir", str(project), "memory-write", "Note 2"])
-        content = (project / "personas" / "forge" / "memory" / "MEMORY_DAILY.md").read_text()
+        content = (project / "personas" / "forge" / "memory" / "01" / "MEMORY_DAILY.md").read_text()
         assert "Note 1" in content
         assert "Note 2" in content
 
