@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1043,
-    "used": 824,
+    "used": 827,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,15 +20,15 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 316,
+      "heats": 321,
       "progress": 0.98,
-      "value_ema": 0.795
+      "value_ema": 0.735
     },
     "testing": {
       "target": 0.183,
-      "heats": 141,
+      "heats": 142,
       "progress": 0.88,
-      "value_ema": 0.82
+      "value_ema": 0.814
     },
     "editing": {
       "target": 0.183,
@@ -48,7 +48,7 @@
       "research": 0.5,
       "planning": 0.5,
       "implementation": -0.5,
-      "testing": 0.023,
+      "testing": 0.03,
       "editing": -0.365,
       "marketing": 0.5
     }
@@ -3660,13 +3660,13 @@
       "id": "t-373",
       "stage": "implementation",
       "desc": "Poker initiative-title link \u2192 Bellows deep-dive",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-009",
       "human_priority": null,
-      "priority_reason": "ini-009 rank=4 + recency",
-      "assigned_forge": null
+      "priority_reason": null,
+      "assigned_forge": "forge-temper"
     },
     {
       "id": "t-374",
@@ -4139,25 +4139,25 @@
       "id": "t-412",
       "stage": "implementation",
       "desc": "scripts/tmux-stop.sh \u2014 graceful shutdown of forge tmux rig. Send /exit + C-m to each pane to let Claude Code sessions close cleanly, wait briefly, verify, then kill-session. Flags: --force (skip graceful, immediate kill-session), -h/--help. Respect FORGE_SESSION env var (default: forge), matching tmux-layout.sh conventions.",
-      "status": "open",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [
         "t-411"
       ],
-      "human_priority": 1,
-      "priority_reason": "Human requested companion to tmux-layout.sh \u2014 needed for clean rig shutdown.",
-      "assigned_forge": null
+      "human_priority": null,
+      "priority_reason": null,
+      "assigned_forge": "forge-anneal"
     },
     {
       "id": "t-413",
       "stage": "implementation",
       "desc": "Document scripts/nudge.sh as the up-channel for agents. (1) Add a 'Reporting up' section to personas/marshal/CLAUDE.md and personas/forge/CLAUDE.md and personas/assembly/CLAUDE.md: when an agent needs a human decision or wants to flag something interactively, call `../../scripts/nudge.sh anvil '<message>'` instead of waiting for the next pull-based status check. (2) Clarify the split: outbox.md = batch/AAR summaries (push to human, async); nudge.sh = interactive questions (push to human, sync). (3) Cross-link from protocol/reporting.md so the L0-L4 stack mentions nudge as the escalation channel above L1.",
-      "status": "open",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
-      "human_priority": 1,
-      "priority_reason": "Anvil added scripts/nudge.sh as a bidirectional wake mechanism; other agents don't yet know they can use it to report up. Closes the loop on the nudge-mechanism work.",
-      "assigned_forge": null
+      "human_priority": null,
+      "priority_reason": null,
+      "assigned_forge": "forge-temper"
     },
     {
       "id": "t-414",
@@ -4174,12 +4174,12 @@
       "id": "t-416",
       "stage": "implementation",
       "desc": "Per-worktree smithy isolation: each agent's `smithy` command must resolve to its own worktree's source, not a global pip install.\n\nPROBLEM (diagnosed 2026-04-13): `pip install -e <path>/smithy` registers a SINGLE global editable install. All panes share it. Whoever last ran `pip install -e` wins for everyone. Symptoms today:\n- Assembly tried `smithy assembly-tick` \u2192 \"No such command\" because the global install was bound to forge-quench/scratch (a branch that forked before t-399 H1 added assembly-tick).\n- forge-quench editing smithy code in its branch silently changes CLI behavior for Marshal, Assembly, Anvil \u2014 opposite of worktree isolation.\n- After Anvil reverted a smithy/cli.py edit on main, the global install still pointed at a divergent worktree, so the revert had no observable effect on any pane's `smithy`.\n\nGOAL: `which smithy` and `pip show smithy` (when run inside a worktree) should report that worktree's path. A Forge editing smithy code in .worktrees/forge-quench/ must affect ONLY the forge-quench pane, not Marshal/Assembly/Anvil.\n\nDESIGN OPTIONS:\n1. Per-worktree venv: each .worktrees/<id>/ gets a .venv/ with smithy editable-installed there. tmux-layout.sh activates the venv before launching Claude in that pane (modify -c chdir or prepend to PATH via shell init). Robust but heavyweight (5 venvs to maintain, ~50MB each).\n2. Wrapper script: replace the `smithy` entrypoint with a shell wrapper that detects the calling pane's cwd, finds the nearest .worktrees/<id>/smithy or smithy/ ancestor, and execs `python -m smithy.cli` with PYTHONPATH set to that worktree's smithy/. Lightweight, no per-worktree install, but fragile (relies on cwd inference).\n3. PYTHONPATH per pane: tmux-layout.sh launches each pane with `PYTHONPATH=<worktree>/smithy claude ...`. Then `python -m smithy.cli` resolves locally without any pip install. Simplest. The console_scripts `smithy` entrypoint becomes a thin shim: `#!/usr/bin/env python -m smithy.cli`. Recommend this.\n\nTASKS:\n- Decide between options 1/2/3 (recommend 3 \u2014 simplest, no extra tooling)\n- Modify scripts/tmux-layout.sh to set PYTHONPATH per pane based on its workdir\n- Update smithy console_scripts entrypoint or replace with a shim that respects PYTHONPATH\n- Add `smithy doctor` subcommand (or extend an existing diagnostics command) that prints the resolved smithy source path for the current pane, so future \"wrong version running\" bugs are 1-command to diagnose\n- Update README + WALKTHROUGH to remove the `pip install -e .` step (no longer needed)\n- Test: launch rig, edit smithy/cli.py inside one worktree, verify ONLY that pane's `smithy` reflects the change\n\nPOSTPONE-OK: not urgent \u2014 option (A) (rebind global install to main when needed) keeps things working. But the global install is a stealth coupling that will bite again.",
-      "status": "open",
+      "status": "in_progress",
       "priority": 2,
       "blocked_by": [],
       "human_priority": 2,
       "priority_reason": "Structural fix for stealth coupling between worktrees via global smithy install. Not urgent (rebinding works as a stopgap), but bites repeatedly during integration \u2014 diagnosed during the t-411/t-414 nudge cascade on 2026-04-13.",
-      "assigned_forge": null
+      "assigned_forge": "forge-temper"
     },
     {
       "id": "t-417",
@@ -4197,12 +4197,12 @@
       "id": "t-418",
       "stage": "testing",
       "desc": "Fix TestMemoryWrite regressions (3 failing tests in smithy/tests/test_smithy.py). Caused by commit 43c5f46 (persona memory refactor \u2014 split IDENTITY.md from CLAUDE.md + per-persona memory). Tests assume MEMORY_DAILY.md lives at project root; refactor likely moved it to a per-persona directory. Fix either (a) the test expectations to match the new path, or (b) the memory-write command to write to the expected location, depending on which is intended. Affected tests: TestMemoryWrite::test_memory_write_creates_file, ::test_memory_write_with_heat, ::test_memory_write_appends. 182/185 pass currently. Anvil-filed 2026-04-17 while inspecting post-t-411-merge test suite.",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": [],
       "human_priority": null,
-      "priority_reason": "p2 + stage-balance",
-      "assigned_forge": null
+      "priority_reason": null,
+      "assigned_forge": "forge-anneal"
     },
     {
       "id": "t-419",
@@ -4220,13 +4220,13 @@
       "id": "t-420",
       "stage": "implementation",
       "desc": "Enforce per-task branches in Forge start-heat flow (t-399 design). PROBLEM (observed 2026-04-17): personas/forge/CLAUDE.md:58-65 documents the per-task-branch design \u2014 create a branch <forge-id>/<task-id> off latest main before each task \u2014 but the persona prompts have no actionable step that triggers it, and Forge defaults to whatever branch the worktree was on (the long-lived <forge-id>/scratch). Result: scratch branches accumulate stacked commits across tasks (e.g. forge-quench/scratch had t-411 H1, t-411 H2, t-419 all on it), forcing Anvil-driven manual rebase + FF gymnastics on every Assembly merge. Assembly auto-delete (t-411 H1) is silently dead-code because the branch is never named <forge-id>/<task-id>. FIX: (1) Add an explicit BEFORE start-heat step to personas/forge/CLAUDE.md that runs: git checkout -B <forge-id>/<task-id> main (or fail the rig if main is not fast-forwarded). (2) Optionally bake it into smithy start-heat itself: when --task <id> is set and current branch is not <forge-id>/<task-id>, create/checkout that branch off main before writing the checkpoint. Refuse to start-heat from <forge-id>/scratch with --task <id> unless a --reuse-scratch flag is passed. (3) Update personas/assembly/CLAUDE.md to confirm post-merge state: worktree restored to <forge-id>/scratch, ready for next task to branch off main. (4) Migration: existing <forge-id>/scratch branches that match main can be left alone; ones that diverge need manual reset by Anvil. (5) Patrol check: warn if a Forge worktree HEAD is on <forge-id>/scratch with uncommitted task work older than one heat. TESTS: simulate start-heat from clean scratch, verify branch <forge-id>/<task-id> created off main; simulate the refuse-to-start case. Anvil-filed 2026-04-17 after observing the long-lived-scratch antipattern during t-411/t-419 bootstrap merges.",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-018",
       "human_priority": null,
-      "priority_reason": "ini-018 rank=1 + poker",
-      "assigned_forge": null
+      "priority_reason": null,
+      "assigned_forge": "forge-quench"
     },
     {
       "id": "t-421",
@@ -4238,6 +4238,18 @@
       "initiative_id": "ini-018",
       "human_priority": null,
       "priority_reason": null,
+      "assigned_forge": "forge-quench"
+    },
+    {
+      "id": "t-422",
+      "stage": "implementation",
+      "desc": "Wire Assembly into the loop: anchor .assembly-queue.jsonl to main + nudge Assembly on submit. ROOT CAUSE (observed 2026-04-17): two gaps keep Assembly idle while Anvil drives every merge manually. (1) end-heat (cli.py:~307) only nudges marshal with HEAT_DONE \u2014 never nudges assembly, even when effective_outcome == submitted. So Assembly has no event-driven trigger. (2) .assembly-queue.jsonl path is computed as root / .assembly-queue.jsonl where root is the worktree (cli.py:~309). t-419 anchored state.json/worklog.tsv/.smithy-nudge-queue/ to main_repo_root() but missed this one path. Result: three independent queue files at .worktrees/forge-quench/, forge-temper/, forge-anneal/, none visible to Assembly which lives in personas/assembly on main. Evidence: this session shipped t-419, t-414, t-421, t-420, t-373, t-418 \u2014 Assembly merged zero of them; Anvil hand-merged 4, t-373/t-418/t-420 still sitting submitted as of filing. FIX: (1) Route the assembly-queue path through main_repo_root() the same way state.json was \u2014 add an assembly_queue_path(project_dir) helper in state.py mirroring state_json_path. (2) Add an Assembly nudge in end-heat when effective_outcome == submitted: smithy nudge assembly with a one-liner like ASSEMBLY_QUEUE: <forge_id>/<task_id> @ <sha>. Same pattern as the marshal nudge. (3) Update personas/assembly/CLAUDE.md so the persona protocol actually says: on nudge, drain .assembly-queue.jsonl, run smithy assembly-rebase / assembly-ff-merge per entry, mark task complete (or reject + requeue on conflict). Today's CLAUDE.md doesn't describe this loop. (4) Patrol check #9: warn if .assembly-queue.jsonl entries are older than N minutes without movement (Assembly stuck). (5) Tests: simulate end-heat with outcome=submitted from a forge worktree, assert (a) main's .assembly-queue.jsonl gets the entry, (b) assembly pane gets a nudge call. (6) Migration: drain the three pre-existing per-worktree assembly-queue files into main's after the path fix, then delete the worktree copies. Anvil-filed 2026-04-17. UNBLOCKS: Anvil stops being the merge bottleneck; rig becomes truly self-sustaining at N=3.",
+      "status": "in_progress",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-018",
+      "human_priority": null,
+      "priority_reason": "ini-018 rank=1 + poker",
       "assigned_forge": "forge-quench"
     }
   ],
@@ -4285,7 +4297,7 @@
       "description": "Run multiple Forge workers concurrently via per-Forge git worktrees. Dedicated Assembly teammate handles merge queue integration (conflicts, test-on-integrate, merge ordering). Unlocks parallelism (Marshal dispatches N heats simultaneously) and enforces branch hygiene. Incremental: N=2 proof before N=3+.",
       "status": "approved",
       "budget_cap": null,
-      "heats_used": 12,
+      "heats_used": 13,
       "viewed_at": "2026-04-13T15:29:26Z",
       "rank": 1
     },
@@ -4319,7 +4331,7 @@
       "description": "Research how humans steer autonomous systems \u2014 not monitor, STEER. The core question: what controls does a human need to change direction without becoming a bottleneck? Study: (1) Real-time strategy games (StarCraft command hierarchy \u2014 strategic goals, tactical orders, unit autonomy), (2) Military C2 frameworks (mission-type orders, commander's intent, OODA), (3) Product management (OKRs, roadmap prioritization, sprint planning), (4) Air traffic control (constraints not commands), (5) Existing AI tools (Devin's chat-to-steer, Cursor's accept/reject, Claude Code hooks). For each, extract: what decisions the human makes, at what frequency, what information they need to decide, and what the feedback loop looks like. Deliverable: research/steering-patterns.md with a taxonomy of steering modes and which are worth prototyping as UIs.",
       "status": "approved",
       "budget_cap": 10,
-      "heats_used": 36,
+      "heats_used": 37,
       "rank": 4,
       "planned_start": 635,
       "planned_end": 645,
@@ -4510,10 +4522,7 @@
       "created": "2026-04-11T10:44:28.678810"
     }
   ],
-  "next_tasks": [
-    "t-373",
-    "t-420"
-  ],
+  "next_tasks": [],
   "schema_version": 1,
   "intents": [
     {
