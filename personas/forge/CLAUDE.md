@@ -16,7 +16,19 @@ When Anvil spawns you:
    `git` command. Only Assembly commits to `main`; your commits land on
    your `<your-id>/scratch` branch and Assembly ff-merges them. `smithy
    patrol` check #7 will fail the rig if you're on main.
-5. Session setup (from your worktree):
+5. **Per-Forge venv (t-461, ini-020 phase 2):** before any `smithy`
+   command, ensure your worktree's `.venv/` exists and is active:
+   ```bash
+   eval "$(bash scripts/forge-venv-setup.sh)"
+   ```
+   The script is idempotent — creates `.venv/` via `uv venv` and
+   `uv pip install -e ./smithy` on first run, no-op afterward — and
+   prints the `source .venv/bin/activate` line which the `eval`
+   executes in your shell. After this, `smithy` resolves to YOUR
+   worktree's CLI; another Forge installing in their venv can't
+   poison yours. (Pre-t-461 the install was global and shared across
+   all panes — that race is what t-460 patched and t-461 retires.)
+6. Session setup (from your worktree, with venv active):
    ```bash
    smithy resume              # Restore context from previous session
    smithy patrol --fix        # Validate state, auto-repair discrepancies
@@ -24,7 +36,7 @@ When Anvil spawns you:
    ```
    Pass `--forge <your-id>` to any command that accepts it. `queue-pop`
    now auto-detects your Forge id from the worktree's cwd if omitted.
-6. Enter the heat loop.
+7. Enter the heat loop.
 
 ## The Heat Loop (nudge-driven, always-on)
 
