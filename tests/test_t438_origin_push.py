@@ -156,7 +156,7 @@ def test_patrol_check_10_warns_on_origin_drift(tmp_path, monkeypatch):
     result = runner.invoke(cli_mod.cli, ["--dir", str(proj), "patrol"])
     assert result.exit_code == 0, result.output
     data = json.loads(result.output)
-    assert data.get("checks_run") == 11, data  # t-458 added check #11
+    assert data.get("checks_run") == 12, data  # t-458 #11, t-462 #12
     drift = [i for i in data.get("issues", [])
              if "ahead of origin/main" in i]
     assert drift, f"check #10 didn't fire; issues={data.get('issues')}"

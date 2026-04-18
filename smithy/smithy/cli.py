@@ -272,6 +272,99 @@ def _rig_events_path(root):
     return main_repo_root(root) / "rig-events.jsonl"
 
 
+def _detect_stalled_forges(root, state, stall_s):
+    """t-462: correlate queue_push events with queue_pop / forge_started
+    to find Forges that are ignoring pushes — dead-between-heats Forges
+    that look idle to patrol's heartbeat check.
+
+    Returns list of dicts: [{forge_id, task_id, pushed_at, age_s}, ...].
+
+    Algorithm:
+      1. Tail the last 500 rig events (bounded I/O, plenty of context).
+      2. For each queue_push, look up the task's assigned_forge in state
+         and record (task_id, forge_id, push_ts).
+      3. For each forge, compute the last activity timestamp from
+         queue_pop (actor=forge) or forge_started (actor=forge).
+      4. Flag a forge if it has a push newer than its last activity AND
+         that push is older than stall_s AND the forge is currently idle
+         (busy forges with stale pushes are mid-heat, not stalled).
+    """
+    path = _rig_events_path(root)
+    if not path.exists():
+        return []
+
+    try:
+        lines = path.read_text().splitlines()[-500:]
+    except OSError:
+        return []
+    events = []
+    for ln in lines:
+        if not ln.strip():
+            continue
+        try:
+            events.append(json.loads(ln))
+        except json.JSONDecodeError:
+            continue
+
+    assigned = {}
+    for t in state.get("queue") or []:
+        tid = t.get("id")
+        if tid:
+            assigned[tid] = t.get("assigned_forge")
+
+    now = datetime.now(timezone.utc)
+
+    def _parse_ts(s):
+        if not s:
+            return None
+        try:
+            dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
+            return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+        except (ValueError, AttributeError):
+            return None
+
+    last_activity = {}
+    latest_push = {}
+    for ev in events:
+        ev_type = ev.get("event")
+        ts = _parse_ts(ev.get("ts"))
+        if not ts:
+            continue
+        if ev_type == "queue_push":
+            tid = ev.get("task_id")
+            fid = assigned.get(tid)
+            if fid and (fid not in latest_push or ts > latest_push[fid]["ts"]):
+                latest_push[fid] = {"ts": ts, "task_id": tid}
+        elif ev_type in ("queue_pop", "forge_started"):
+            actor = ev.get("actor") or ev.get("forge_id")
+            if actor and (actor not in last_activity
+                          or ts > last_activity[actor]):
+                last_activity[actor] = ts
+
+    parallel = state.get("parallel") or {}
+    forges_by_id = {f.get("id"): f for f in parallel.get("forges") or []}
+
+    stalled = []
+    for fid, push in latest_push.items():
+        activity_ts = last_activity.get(fid)
+        if activity_ts and activity_ts >= push["ts"]:
+            continue
+        age_s = (now - push["ts"]).total_seconds()
+        if age_s <= stall_s:
+            continue
+        forge = forges_by_id.get(fid) or {}
+        if forge.get("status") != "idle":
+            continue
+        stalled.append({
+            "forge_id": fid,
+            "task_id": push["task_id"],
+            "pushed_at": push["ts"].isoformat(),
+            "age_s": round(age_s, 1),
+        })
+
+    return sorted(stalled, key=lambda x: x["forge_id"])
+
+
 def _emit_rig_event(root, event, **fields):
     """t-425: append one JSON line to rig-events.jsonl.
 
@@ -2719,6 +2812,23 @@ def patrol(ctx, fix):
                 f"check smithy memory-write routing (t-458 regression)"
             )
 
+    # t-462 Check #12: stalled Forges via queue_push/queue_pop correlation.
+    # The zombie check (#6) misses Forges that die between heats — status
+    # is idle and the heartbeat isn't yet stale enough, so patrol sees
+    # nothing while Marshal pushes tasks the Forge never consumes.
+    # Derived from rig-events.jsonl: if a queue_push targeting forge-X
+    # has no matching queue_pop within STALL_S seconds and forge-X is
+    # currently idle, flag it. Forges idle-poll at ~30s so 4x grace (120s)
+    # is ample; false-positive cost is one human glance.
+    STALL_S = 120
+    stalled_forges = _detect_stalled_forges(root, state, STALL_S)
+    for item in stalled_forges:
+        issues.append(
+            f"{item['forge_id']} ignored queue push "
+            f"(task {item['task_id']}) {int(item['age_s'])}s ago "
+            f"(threshold {STALL_S}s) — possibly unreachable"
+        )
+
     # Save fixes if any
     if fix and fixes:
         save_state(root, state)
@@ -2727,8 +2837,9 @@ def patrol(ctx, fix):
         "issues": issues,
         "fixes": fixes,
         "clean": len(issues) == 0,
-        "checks_run": 11,
+        "checks_run": 12,
         "stuck_forges": sorted(set(stuck_forges)),
+        "stalled_forges": stalled_forges,
     })
     if issues:
         _err(f"Patrol found {len(issues)} issues" + (f", fixed {len(fixes)}" if fixes else ""))
