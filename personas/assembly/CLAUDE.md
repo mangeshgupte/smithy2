@@ -63,8 +63,28 @@ smithy assembly-tick --tests-cmd "…"  # override pytest command
 - `{"status": "rejected", "task_id": "...", "reason": "..."}` — task back
   to pending, Marshal nudged (`ASSEMBLY_REJECTED:`)
 
-Cadence: wake on nudge, drain all queued items by calling `assembly-tick`
-in a loop until it returns `empty`, update heartbeat, go idle.
+**Event-driven trigger (t-422).** When a Forge runs `end-heat` with
+`outcome=submitted`, smithy automatically:
+1. Appends a row to `.assembly-queue.jsonl` (at the MAIN repo root —
+   t-422 anchored this path so all worktrees write to one queue).
+2. Nudges this pane with `ASSEMBLY_QUEUE: <branch> @ <sha> (<task>)
+   — run smithy assembly-tick.`
+
+On that nudge you MUST drain:
+
+```bash
+while true; do
+  out=$(smithy assembly-tick)
+  echo "$out"
+  if echo "$out" | grep -q '"status": "empty"'; then break; fi
+done
+# Update heartbeat after draining.
+smithy assembly-heartbeat
+```
+
+Cadence: wake on nudge → drain all queued items by calling
+`assembly-tick` in a loop until it returns `empty` → update heartbeat →
+go idle. Never poll.
 
 ## What You Read
 

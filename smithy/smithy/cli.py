@@ -11,6 +11,7 @@ from .state import (
     append_worklog, write_checkpoint, delete_checkpoint,
     forge_checkpoint_path, DEFAULT_FORGE_ID,
     primary_forge_id, detect_forge_from_cwd, main_repo_root,
+    assembly_queue_path,
     VALID_STAGES, VALID_SIGNALS, VALID_OUTCOMES,
 )
 from .task_detail import scheduler_key
@@ -363,29 +364,34 @@ def end_heat(ctx, value, signal, notes, outcome, progress, no_nudge, forge_id):
     # Delete this Forge's checkpoint (t-409 H1).
     delete_checkpoint(root, forge_id=forge_id)
 
-    # t-399 I4: when Assembly is enabled and the task was submitted, enqueue
-    # for Assembly to rebase/merge. Queue entry captures the current HEAD
-    # so Assembly merges only up to this submit boundary (not future heats).
+    # t-399 I4 / t-422: when Assembly is enabled and the task was submitted,
+    # enqueue for Assembly to rebase/merge. The queue entry captures the
+    # current HEAD so Assembly merges only up to this submit boundary (not
+    # future heats). The path is anchored at the MAIN repo root
+    # (t-422 — t-419 missed this one file); without that anchor every
+    # worktree wrote to its own queue and Assembly saw none of them.
+    submit_entry = None
     if effective_outcome == "submitted":
         import subprocess as _sub
-        wt = root / ".worktrees" / (forge_id or "")
+        wt = main_repo_root(root) / ".worktrees" / (forge_id or "")
         cwd = wt if (wt.exists() and (wt / ".git").exists()) else root
         head = _sub.run(["git", "rev-parse", "HEAD"], cwd=str(cwd),
                         capture_output=True, text=True).stdout.strip()
         branch = _sub.run(["git", "rev-parse", "--abbrev-ref", "HEAD"],
                           cwd=str(cwd), capture_output=True, text=True
                           ).stdout.strip()
-        queue_path = root / ".assembly-queue.jsonl"
+        queue_path = assembly_queue_path(root)
+        submit_entry = {
+            "forge_id": forge_id,
+            "task_id": task_id,
+            "heat": heat,
+            "branch": branch,
+            "sha": head,
+            "submitted_at": datetime.now(timezone.utc).isoformat(
+                timespec="seconds"),
+        }
         with open(queue_path, "a") as f:
-            f.write(json.dumps({
-                "forge_id": forge_id,
-                "task_id": task_id,
-                "heat": heat,
-                "branch": branch,
-                "sha": head,
-                "submitted_at": datetime.now(timezone.utc).isoformat(
-                    timespec="seconds"),
-            }) + "\n")
+            f.write(json.dumps(submit_entry) + "\n")
 
     result = {
         "heat": heat,
@@ -399,11 +405,19 @@ def end_heat(ctx, value, signal, notes, outcome, progress, no_nudge, forge_id):
         "budget_remaining": state["budget"]["total_heats"] - heat,
     }
 
-    # Auto-nudge marshal so it can re-prioritize and assign next task
+    # Auto-nudge marshal so it can re-prioritize and assign next task.
+    # t-422: also nudge Assembly when the task was submitted — that's what
+    # closes the merge loop without Anvil hand-driving every merge.
     if not no_nudge:
         nudge_msg = f"HEAT_DONE: {task_id} {outcome}, value={value}, signal={signal}. Re-prioritize."
         nudge_result = _nudge_persona("marshal", nudge_msg, root=root)
         result["nudge"] = nudge_result
+        if submit_entry:
+            asm_msg = (f"ASSEMBLY_QUEUE: {submit_entry['branch']} "
+                       f"@ {submit_entry['sha'][:8]} ({task_id}) — "
+                       f"run smithy assembly-tick.")
+            asm_result = _nudge_persona("assembly", asm_msg, root=root)
+            result["assembly_nudge"] = asm_result
         if nudge_result["nudged"]:
             _err(f"Heat {heat} [{stage}] {signal} — {notes[:60]} — nudged marshal")
         else:
@@ -655,7 +669,7 @@ def assembly_tick_cmd(ctx, base, dry_run, tests_cmd):
         run_tests_in_worktree, ff_merge_forge_branch, branch_name,
     )
     root = ctx.obj["root"]
-    qpath = root / ".assembly-queue.jsonl"
+    qpath = assembly_queue_path(root)
     if not qpath.exists() or qpath.stat().st_size == 0:
         _output({"status": "empty"})
         return

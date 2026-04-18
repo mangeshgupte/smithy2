@@ -67,6 +67,18 @@ def state_json_path(project_dir: Path) -> Path:
     return main_repo_root(project_dir) / "state.json"
 
 
+def assembly_queue_path(project_dir: Path) -> Path:
+    """t-422: canonical `.assembly-queue.jsonl` path — always the MAIN
+    repo's copy. Mirrors `state_json_path`. t-419 anchored state.json,
+    worklog.tsv, and nudge queues to the main repo root but missed this
+    one path, so every end-heat `submitted` row was appended to the
+    Forge's worktree-local file — three independent queues, all invisible
+    to Assembly which lives in `personas/assembly` off main. That gap is
+    why Assembly merged zero tasks and Anvil hand-merged every one of
+    t-411 / t-414 / t-419 / t-420 / t-421 (observed 2026-04-17)."""
+    return main_repo_root(project_dir) / ".assembly-queue.jsonl"
+
+
 def _apply_steerability_defaults(state: dict) -> dict:
     """Ensure steerability fields exist with null defaults on every task/initiative.
 
