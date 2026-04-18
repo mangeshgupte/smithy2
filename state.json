@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1043,
-    "used": 822,
+    "used": 823,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 315,
+      "heats": 316,
       "progress": 0.98,
-      "value_ema": 0.772
+      "value_ema": 0.795
     },
     "testing": {
       "target": 0.183,
@@ -3666,7 +3666,7 @@
       "initiative_id": "ini-009",
       "human_priority": null,
       "priority_reason": "ini-009 rank=4 + recency",
-      "assigned_forge": "forge-03"
+      "assigned_forge": null
     },
     {
       "id": "t-374",
@@ -4163,11 +4163,11 @@
       "id": "t-414",
       "stage": "implementation",
       "desc": "Fix smithy auto-nudge for current tmux rig (t-408 layout).\n\nPROBLEM: smithy/smithy/cli.py::_nudge_persona was written for the old layout (session 'smithy2', one window per persona). Current rig is one window with personas as panes in session 'forge'. Every auto-nudge from queue-push/end-heat/set-next-tasks silently falls back to .smithy-nudge-queue/<persona>.jsonl with reason \"window 'forge' not found, nudge queued\". Marshal\u2192Forge handoff loop is broken; only manual scripts/nudge.sh works.\n\nFIX: rewrite _nudge_persona to resolve the target by pane_current_path (mirroring scripts/nudge.sh logic). Read session name from FORGE_SESSION env, default 'forge'. Match panes:\n  /.worktrees/<persona>/...     -> marshal, forge-quench, forge-temper, forge-anneal\n  /personas/<persona> (suffix)  -> anvil, assembly\nPreserve the existing return-dict shape (nudged/queued/persona/target/reason/message) and the busy/queue fallback path. Send message text and Enter as TWO separate send-keys calls (Claude Code TUI quirk).\n\nREFERENCE PATCH (already prototyped by Anvil on main, then reverted to respect 'only Assembly writes main' rule): see Anvil's nudge from 2026-04-13 \u2014 _resolve_pane(session, persona) helper + new _nudge_persona body.\n\nVERIFY:\n  python3 -c \"from smithy.cli import _resolve_pane; print(_resolve_pane('forge','marshal'))\"  # -> ('%XX', None)\n  smithy queue-push <some-task> --to forge  # status should show \"nudged: true\", forge-quench pane receives the message\n\nPOST-MERGE: every worktree must reinstall (`pip install -e <worktree>/smithy`) for the fix to take effect \u2014 flag this in the AAR / Marshal's next steering note so all 5 worktree installs (anvil, marshal, forge-quench, forge-temper, forge-anneal) get refreshed.",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 0,
       "blocked_by": [],
-      "human_priority": 0,
-      "priority_reason": "Auto-nudge across the rig is broken \u2014 Marshal's queue-push, Forge's end-heat, set-next-tasks all degrade to file-queue fallback. Manual scripts/nudge.sh is the only working channel until this lands.",
+      "human_priority": null,
+      "priority_reason": null,
       "assigned_forge": "forge-quench"
     },
     {
@@ -4227,6 +4227,18 @@
       "human_priority": null,
       "priority_reason": "ini-018 rank=1 + poker",
       "assigned_forge": null
+    },
+    {
+      "id": "t-421",
+      "stage": "testing",
+      "desc": "Migrate stale nudge-related tests after t-414's _resolve_pane refactor. After t-414 (commit f92aece) replaced 'smithy2:<persona>' addressing with FORGE_SESSION + pane-resolution, 4 tests that mock the old tmux send-keys path now fail: (1) smithy/tests/test_marshal_forge_flow.py::TestQueuePushNudge::test_push_adds_to_queue_and_nudges (2) ::TestSetNextTasksNudgesForge::test_set_next_tasks_nudges_forge (3) ::TestFullDispatchCycle::test_full_cycle (4) smithy/tests/test_smithy.py::TestNudgeCommand::test_nudge_sends_via_tmux \u2014 all need to mock tmux list-panes (the new resolution path) instead of the old session+window check, plus the new return-dict shape from _resolve_pane. ALSO: smithy/test_assembly_scaffold.py::test_anvil_spawn_doc_mentions_assembly fails \u2014 likely a docs-content assertion that checks personas/anvil/CLAUDE.md or similar; verify and fix the assertion or update the doc to match. Anvil-filed 2026-04-17 immediately after merging t-414.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-018",
+      "human_priority": null,
+      "priority_reason": "ini-018 rank=1 + poker",
+      "assigned_forge": "forge-quench"
     }
   ],
   "ideas": [
@@ -4499,6 +4511,7 @@
     }
   ],
   "next_tasks": [
+    "t-421",
     "t-373",
     "t-420"
   ],
