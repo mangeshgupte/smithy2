@@ -65,7 +65,13 @@ def _iso(dt):
 
 
 def test_patrol_flags_stale_entry_only(proj):
-    """A fresh entry must not flag; one older than 5 min must."""
+    """A fresh entry must not flag; one older than 5 min must.
+
+    t-423 rework: tolerate extra unrelated patrol issues (check #7's
+    worktree-invariant scan emits issues for any Forge without a
+    registered worktree in the fixture's defaulted state), and annotate
+    every assertion so an Assembly reject carries a concrete message.
+    """
     now = datetime.now(timezone.utc)
     fresh = {
         "forge_id": "forge-01", "task_id": "t-fresh", "heat": 5,
@@ -80,28 +86,50 @@ def test_patrol_flags_stale_entry_only(proj):
     _write_queue(proj, [fresh, stale])
 
     rc, out, err = _smithy(proj, "patrol")
-    payload = json.loads(out)
+    assert out.strip(), f"patrol produced no stdout; stderr={err}"
+    try:
+        payload = json.loads(out)
+    except json.JSONDecodeError as exc:
+        pytest.fail(f"patrol stdout was not JSON: {exc}\nout={out!r}")
     issues = payload.get("issues", [])
     stale_issues = [i for i in issues if i.startswith("STALE assembly-queue")]
     assert len(stale_issues) == 1, (
-        f"expected exactly one stale flag, got: {stale_issues}"
+        f"expected exactly one stale flag, got {len(stale_issues)}: "
+        f"{stale_issues}\nall issues: {issues}"
     )
     issue = stale_issues[0]
-    # Message shape — task_id, forge_id, age-in-minutes, branch@sha8.
-    assert "t-stale" in issue
-    assert "forge-01" in issue
-    assert "10m ago" in issue, issue
-    assert "forge-01/t-stale@" in issue
-    assert "aaaaaaaa" in issue  # first 8 of the mock sha
-    # The fresh entry must not trigger a flag.
-    assert not any("t-fresh" in i for i in issues), issues
-    assert payload.get("checks_run") == 9
+    for needle, label in [
+        ("t-stale", "task id"),
+        ("forge-01", "forge id"),
+        ("10m ago", "age string"),
+        ("forge-01/t-stale@", "branch@"),
+        ("aaaaaaaa", "sha8"),
+    ]:
+        assert needle in issue, (
+            f"missing {label}={needle!r} in stale issue: {issue!r}"
+        )
+    # Fresh entry must not trigger a STALE flag (but may appear in
+    # unrelated patrol output; only check the STALE prefix).
+    assert not any("t-fresh" in i
+                   for i in issues if i.startswith("STALE")), issues
+    # t-423 added check #9 — accept "at least 9" so later additions
+    # don't break this test.
+    assert payload.get("checks_run", 0) >= 9, (
+        f"checks_run={payload.get('checks_run')}, expected >= 9"
+    )
 
 
 def test_patrol_skips_when_queue_absent(proj):
     """No queue file → no STALE flag (and no crash)."""
     rc, out, err = _smithy(proj, "patrol")
-    payload = json.loads(out)
-    assert not any(i.startswith("STALE assembly-queue")
-                   for i in payload.get("issues", []))
-    assert payload.get("checks_run") == 9
+    assert out.strip(), f"patrol produced no stdout; stderr={err}"
+    try:
+        payload = json.loads(out)
+    except json.JSONDecodeError as exc:
+        pytest.fail(f"patrol stdout was not JSON: {exc}\nout={out!r}")
+    stale_issues = [i for i in payload.get("issues", [])
+                    if i.startswith("STALE assembly-queue")]
+    assert stale_issues == [], stale_issues
+    assert payload.get("checks_run", 0) >= 9, (
+        f"checks_run={payload.get('checks_run')}, expected >= 9"
+    )
