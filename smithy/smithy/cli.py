@@ -361,7 +361,6 @@ def end_heat(ctx, value, signal, notes, outcome, progress, no_nudge, forge_id,
              skip_tests, tests_cmd):
     """End the current heat. Updates all counters and logs."""
     root = ctx.obj["root"]
-    state = load_state(root)
 
     # t-409 H1: resolve forge id the same way start-heat does so the
     # matching per-Forge checkpoint is read.
@@ -380,46 +379,22 @@ def end_heat(ctx, value, signal, notes, outcome, progress, no_nudge, forge_id,
     stage = checkpoint["stage"]
     task_id = checkpoint["task_id"]
 
-    # Update budget
-    state["budget"]["used"] = heat
-
-    # Update stage stats
-    s = state["stages"][stage]
-    s["heats"] = s.get("heats", 0) + 1
-    if progress is not None:
-        s["progress"] = max(0, min(1, progress))
-    s["value_ema"] = round(0.7 * s.get("value_ema", 0.5) + 0.3 * value, 3)
-
-    # Update allocator integral
-    total_heats = sum(st["heats"] for st in state["stages"].values()) or 1
-    actual_frac = s["heats"] / total_heats
-    target = s.get("target", 0.16)
-    error = target - actual_frac
-    integral = state["allocator"]["integral"].get(stage, 0)
-    integral = integral * 0.85 + error
-    integral = max(-0.5, min(0.5, integral))
-    state["allocator"]["integral"][stage] = round(integral, 3)
-
     # t-399 I4: two-row lifecycle gate. When Assembly is enabled, a
-    # "complete" end-heat is really a "submitted" hand-off — Forge committed
-    # to its branch and the task awaits Assembly's merge. Assembly flips
-    # status to "complete" via `assembly-merge` (or back to "pending" via
-    # `assembly-reject"). Default (enabled=False) preserves legacy N=1 flow.
+    # "complete" end-heat is really a "submitted" hand-off. Read the
+    # config OUTSIDE the state lock — it doesn't change during a heat.
+    state_peek = load_state(root)
     assembly_enabled = (
-        (state.get("parallel") or {}).get("assembly", {}).get("enabled", False)
+        (state_peek.get("parallel") or {}).get("assembly", {}).get("enabled", False)
     )
+
     effective_outcome = outcome
     if assembly_enabled and outcome == "complete" and task_id != "generated":
         effective_outcome = "submitted"
 
-    # t-427: pre-submit pytest gate. Run the project's test suite in the
-    # Forge's worktree BEFORE the submit side-effects (assembly-queue
-    # row, assembly nudge, status flip). A red suite downgrades the
-    # outcome to "partial" — the task stays in_progress → Forge
-    # re-iterates next heat instead of burning an Assembly rebase cycle
-    # (the 2026-04-17 t-425/t-423 scenario). Skip for prose-heavy stages
-    # (research / planning / marketing) or when the operator passes
-    # --skip-tests.
+    # t-427: pre-submit pytest gate runs OUTSIDE the lock (t-426) — the
+    # test suite can take minutes and blocking every other Forge's
+    # state transition on it would defeat the point of N>1. The gate
+    # reads code/disk but never writes state.json.
     test_gate = None
     if (effective_outcome == "submitted"
             and not skip_tests
@@ -442,54 +417,82 @@ def end_heat(ctx, value, signal, notes, outcome, progress, no_nudge, forge_id,
             _err(head)
             _err("--- end ---")
 
-    # Mark task status based on effective outcome.
+    # t-426: all state.json mutations happen inside the lock. Re-load
+    # state fresh so we see any sibling's updates (e.g. a concurrent
+    # start-heat's budget.used bump) and don't clobber them.
     completed_task = None
-    if effective_outcome == "complete" and task_id != "generated":
-        for task in state.get("queue", []):
-            if task["id"] == task_id:
-                task["status"] = "complete"
-                # Auto-clear sticky human priority on complete (t-312).
-                task["human_priority"] = None
-                task["priority_reason"] = None
-                completed_task = task
-                break
-    elif effective_outcome == "submitted" and task_id != "generated":
-        for task in state.get("queue", []):
-            if task["id"] == task_id:
-                task["status"] = "submitted"
-                completed_task = task
-                break
-    elif (test_gate is not None and not test_gate["passed"]
-          and task_id != "generated"):
-        # t-427: pre-submit test-fail downgrade — flip status back to
-        # pending so the Forge can start the next heat on the same
-        # task without tripping start-heat's "not pending" guard. The
-        # per-task branch stays intact; the Forge just iterates.
-        for task in state.get("queue", []):
-            if task["id"] == task_id:
-                task["status"] = "pending"
-                break
+    with state_lock(root):
+        state = load_state(root)
 
-    # Increment initiative heats_used
-    ini_id = completed_task.get("initiative_id") if completed_task else None
-    if ini_id:
-        for ini in state.get("initiatives", []):
-            if ini["id"] == ini_id:
-                ini["heats_used"] = ini.get("heats_used", 0) + 1
-                if ini.get("budget_cap") and ini["heats_used"] >= ini["budget_cap"]:
-                    # Append warning to outbox
-                    outbox_path = root / "outbox.md"
-                    if outbox_path.exists():
-                        warning = f"\n\n**⚠️ Initiative {ini_id} ({ini['title']}) has reached its budget cap ({ini['budget_cap']} heats).**\n"
-                        outbox_path.write_text(outbox_path.read_text() + warning)
-                break
+        # t-426: budget.used is bumped by start-heat now. end-heat used
+        # to re-set state["budget"]["used"] = heat here — that was the
+        # lost-update race: if another Forge had bumped to heat+1
+        # while we were working, resetting to heat lost their update.
 
-    # Update overall progress
-    progresses = [st.get("progress", 0) for st in state["stages"].values()]
-    state["overall_progress"] = round(sum(progresses) / len(progresses), 2)
+        # Update stage stats
+        s = state["stages"][stage]
+        s["heats"] = s.get("heats", 0) + 1
+        if progress is not None:
+            s["progress"] = max(0, min(1, progress))
+        s["value_ema"] = round(0.7 * s.get("value_ema", 0.5) + 0.3 * value, 3)
 
-    # Save state
-    save_state(root, state)
+        # Update allocator integral
+        total_heats = sum(st["heats"] for st in state["stages"].values()) or 1
+        actual_frac = s["heats"] / total_heats
+        target = s.get("target", 0.16)
+        error = target - actual_frac
+        integral = state["allocator"]["integral"].get(stage, 0)
+        integral = integral * 0.85 + error
+        integral = max(-0.5, min(0.5, integral))
+        state["allocator"]["integral"][stage] = round(integral, 3)
+
+        # Mark task status based on effective outcome.
+        if effective_outcome == "complete" and task_id != "generated":
+            for task in state.get("queue", []):
+                if task["id"] == task_id:
+                    task["status"] = "complete"
+                    # Auto-clear sticky human priority on complete (t-312).
+                    task["human_priority"] = None
+                    task["priority_reason"] = None
+                    completed_task = task
+                    break
+        elif effective_outcome == "submitted" and task_id != "generated":
+            for task in state.get("queue", []):
+                if task["id"] == task_id:
+                    task["status"] = "submitted"
+                    completed_task = task
+                    break
+        elif (test_gate is not None and not test_gate["passed"]
+              and task_id != "generated"):
+            # t-427: pre-submit test-fail downgrade — flip status back to
+            # pending so the Forge can start the next heat on the same
+            # task without tripping start-heat's "not pending" guard.
+            # The per-task branch stays intact; the Forge just iterates.
+            for task in state.get("queue", []):
+                if task["id"] == task_id:
+                    task["status"] = "pending"
+                    break
+
+        # Increment initiative heats_used
+        ini_id = completed_task.get("initiative_id") if completed_task else None
+        if ini_id:
+            for ini in state.get("initiatives", []):
+                if ini["id"] == ini_id:
+                    ini["heats_used"] = ini.get("heats_used", 0) + 1
+                    if ini.get("budget_cap") and ini["heats_used"] >= ini["budget_cap"]:
+                        # Append warning to outbox
+                        outbox_path = root / "outbox.md"
+                        if outbox_path.exists():
+                            warning = f"\n\n**⚠️ Initiative {ini_id} ({ini['title']}) has reached its budget cap ({ini['budget_cap']} heats).**\n"
+                            outbox_path.write_text(outbox_path.read_text() + warning)
+                    break
+
+        # Update overall progress
+        progresses = [st.get("progress", 0) for st in state["stages"].values()]
+        state["overall_progress"] = round(sum(progresses) / len(progresses), 2)
+
+        # Save state
+        save_state(root, state)
 
     # Append worklog (use effective_outcome so "submitted" lands when Assembly
     # is enabled — the second row is written later by assembly-merge/reject).
