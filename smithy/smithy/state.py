@@ -99,6 +99,14 @@ def _apply_steerability_defaults(state: dict) -> dict:
         task.setdefault("assigned_forge", None)
     for ini in state.get("initiatives", []) or []:
         ini.setdefault("viewed_at", None)
+        # t-440 (ini-018): multi-forge poker fields. `parallelism` gates
+        # whether Marshal may dispatch two tasks from this initiative at
+        # once; `affinity` pins to specific Forge ids (empty = any);
+        # `touches` enumerates path-globs this initiative writes, used
+        # for cross-initiative contention checks in Marshal's walk.
+        ini.setdefault("parallelism", "parallel")
+        ini.setdefault("affinity", [])
+        ini.setdefault("touches", [])
     # t-396 I1: seed the parallel registry. Default is one idle Forge so
     # existing code paths see `parallel.forges[0].id == "forge-01"` without
     # a migration step. halt_flag from I0 lives under the same umbrella.

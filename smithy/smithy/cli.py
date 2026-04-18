@@ -2884,13 +2884,22 @@ def activate_theme(ctx, theme_id):
     sys.exit(1)
 
 
+PARALLELISM_CHOICES = ("serial", "parallel")
+
+
 @cli.command("propose")
 @click.argument("theme_id")
 @click.argument("title")
 @click.argument("description")
 @click.option("--budget-cap", type=int, default=None, help="Max heats for this initiative")
+@click.option("--parallelism", type=click.Choice(PARALLELISM_CHOICES), default="parallel",
+              help="t-440: serial → Marshal dispatches at most one task from this initiative at a time.")
+@click.option("--affinity", multiple=True,
+              help="t-440: pin tasks to specific Forge ids (repeatable). Empty = any Forge.")
+@click.option("--touches", multiple=True,
+              help="t-440: path-globs this initiative writes (repeatable), for cross-initiative contention checks.")
 @click.pass_context
-def propose(ctx, theme_id, title, description, budget_cap):
+def propose(ctx, theme_id, title, description, budget_cap, parallelism, affinity, touches):
     """Propose a new initiative under a theme."""
     root = ctx.obj["root"]
     state = load_state(root)
@@ -2919,12 +2928,51 @@ def propose(ctx, theme_id, title, description, budget_cap):
         "status": "proposed",
         "budget_cap": budget_cap,
         "heats_used": 0,
+        "parallelism": parallelism,
+        "affinity": list(affinity),
+        "touches": list(touches),
     }
     initiatives.append(initiative)
     save_state(root, state)
 
     _output({"initiative": initiative})
     _err(f"Proposed {new_id}: {title}")
+
+
+@cli.command("edit-initiative")
+@click.argument("initiative_id")
+@click.option("--parallelism", type=click.Choice(PARALLELISM_CHOICES), default=None,
+              help="t-440: update parallelism (serial|parallel).")
+@click.option("--affinity", default=None,
+              help="t-440: comma-separated Forge ids (empty string clears).")
+@click.option("--touches", default=None,
+              help="t-440: comma-separated path-globs (empty string clears).")
+@click.pass_context
+def edit_initiative(ctx, initiative_id, parallelism, affinity, touches):
+    """Edit multi-forge poker fields on an existing initiative (t-440).
+
+    Each flag is independent — omitted flags leave the field unchanged.
+    For --affinity and --touches, pass a comma-separated list; an empty
+    string clears the list.
+    """
+    root = ctx.obj["root"]
+    state = load_state(root)
+
+    ini = next((i for i in state.get("initiatives", []) if i["id"] == initiative_id), None)
+    if ini is None:
+        _output({"error": f"Initiative {initiative_id} not found"})
+        sys.exit(1)
+
+    if parallelism is not None:
+        ini["parallelism"] = parallelism
+    if affinity is not None:
+        ini["affinity"] = [s.strip() for s in affinity.split(",") if s.strip()]
+    if touches is not None:
+        ini["touches"] = [s.strip() for s in touches.split(",") if s.strip()]
+
+    save_state(root, state)
+    _output({"initiative": ini})
+    _err(f"Edited {initiative_id}")
 
 
 @cli.command("approve")
