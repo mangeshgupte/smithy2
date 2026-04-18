@@ -4,4 +4,4 @@ Index of durable learnings. One line per entry. Keep under 200 lines.
 
 Entry types: `feedback`, `project`. Entries live alongside this file with frontmatter.
 
-- [forge-anneal stale smithy 2026-04-18](project_forge_anneal_stale_binary.md) — nudge without queue row + `/scratch` branch = stale binary; no task to chase
+- [Ghost ASSEMBLY_QUEUE nudges](project_forge_ghost_nudge_stale_smithy.md) — nudge + no queue row + `/scratch` branch = stale pre-t-420/t-422 Forge binary; ignore the task, flag for rebind

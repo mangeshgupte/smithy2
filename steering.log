@@ -4,3 +4,7 @@ timestamp	heat	actor	task_id	field	before	after	source
 2026-04-12T21:27:55Z	797	bellows-poker	t-091	human_priority	0	1	poker-drawer
 2026-04-12T21:27:56Z	797	bellows-poker	t-091	human_priority	1	2	poker-drawer
 2026-04-12T21:27:57Z	797	bellows-poker	t-091	human_priority	2	3	poker-drawer
+2026-04-18T09:09:16Z	822	bellows-poker	t-430	human_priority	null	1	poker-drawer
+2026-04-18T09:09:19Z	822	bellows-poker	t-430	human_priority	1	2	poker-drawer
+2026-04-18T09:09:21Z	822	bellows-poker	t-430	human_priority	2	1	poker-drawer
+2026-04-18T09:09:22Z	822	bellows-poker	t-430	human_priority	1	2	poker-drawer

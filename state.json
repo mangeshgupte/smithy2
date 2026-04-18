@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1043,
-    "used": 822,
+    "used": 892,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,21 +20,21 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 360,
+      "heats": 366,
       "progress": 0.98,
-      "value_ema": 0.811
+      "value_ema": 0.837
     },
     "testing": {
       "target": 0.183,
-      "heats": 147,
+      "heats": 148,
       "progress": 0.88,
-      "value_ema": 0.759
+      "value_ema": 0.681
     },
     "editing": {
       "target": 0.183,
-      "heats": 189,
+      "heats": 190,
       "progress": 0.88,
-      "value_ema": 0.669
+      "value_ema": 0.618
     },
     "marketing": {
       "target": 0.219,
@@ -48,8 +48,8 @@
       "research": 0.5,
       "planning": 0.5,
       "implementation": -0.5,
-      "testing": 0.049,
-      "editing": -0.336,
+      "testing": 0.056,
+      "editing": -0.319,
       "marketing": 0.5
     }
   },
@@ -4174,7 +4174,7 @@
       "id": "t-416",
       "stage": "implementation",
       "desc": "Per-worktree smithy isolation: each agent's `smithy` command must resolve to its own worktree's source, not a global pip install.\n\nPROBLEM (diagnosed 2026-04-13): `pip install -e <path>/smithy` registers a SINGLE global editable install. All panes share it. Whoever last ran `pip install -e` wins for everyone. Symptoms today:\n- Assembly tried `smithy assembly-tick` \u2192 \"No such command\" because the global install was bound to forge-quench/scratch (a branch that forked before t-399 H1 added assembly-tick).\n- forge-quench editing smithy code in its branch silently changes CLI behavior for Marshal, Assembly, Anvil \u2014 opposite of worktree isolation.\n- After Anvil reverted a smithy/cli.py edit on main, the global install still pointed at a divergent worktree, so the revert had no observable effect on any pane's `smithy`.\n\nGOAL: `which smithy` and `pip show smithy` (when run inside a worktree) should report that worktree's path. A Forge editing smithy code in .worktrees/forge-quench/ must affect ONLY the forge-quench pane, not Marshal/Assembly/Anvil.\n\nDESIGN OPTIONS:\n1. Per-worktree venv: each .worktrees/<id>/ gets a .venv/ with smithy editable-installed there. tmux-layout.sh activates the venv before launching Claude in that pane (modify -c chdir or prepend to PATH via shell init). Robust but heavyweight (5 venvs to maintain, ~50MB each).\n2. Wrapper script: replace the `smithy` entrypoint with a shell wrapper that detects the calling pane's cwd, finds the nearest .worktrees/<id>/smithy or smithy/ ancestor, and execs `python -m smithy.cli` with PYTHONPATH set to that worktree's smithy/. Lightweight, no per-worktree install, but fragile (relies on cwd inference).\n3. PYTHONPATH per pane: tmux-layout.sh launches each pane with `PYTHONPATH=<worktree>/smithy claude ...`. Then `python -m smithy.cli` resolves locally without any pip install. Simplest. The console_scripts `smithy` entrypoint becomes a thin shim: `#!/usr/bin/env python -m smithy.cli`. Recommend this.\n\nTASKS:\n- Decide between options 1/2/3 (recommend 3 \u2014 simplest, no extra tooling)\n- Modify scripts/tmux-layout.sh to set PYTHONPATH per pane based on its workdir\n- Update smithy console_scripts entrypoint or replace with a shim that respects PYTHONPATH\n- Add `smithy doctor` subcommand (or extend an existing diagnostics command) that prints the resolved smithy source path for the current pane, so future \"wrong version running\" bugs are 1-command to diagnose\n- Update README + WALKTHROUGH to remove the `pip install -e .` step (no longer needed)\n- Test: launch rig, edit smithy/cli.py inside one worktree, verify ONLY that pane's `smithy` reflects the change\n\nPOSTPONE-OK: not urgent \u2014 option (A) (rebind global install to main when needed) keeps things working. But the global install is a stealth coupling that will bite again.",
-      "status": "pending",
+      "status": "submitted",
       "priority": 2,
       "blocked_by": [],
       "human_priority": 2,
@@ -4292,12 +4292,12 @@
       "id": "t-426",
       "stage": "implementation",
       "desc": "Heat-counter race in start-heat/end-heat under parallel Forges. EVIDENCE (2026-04-17 heat ~828-830): forge-anneal worked on t-423 for ~25 minutes, then reported its heat was 'clobbered by another forge's start-heat during the ~25m I was working' \u2014 its commit bb69f95 is on forge-anneal/scratch but never reached .assembly-queue.jsonl because end-heat saw an unexpected counter and bailed/silently misrouted. Marshal then reassigned t-423 to forge-quench, which is now redoing the same work on forge-quench/t-423. Wasted Forge time + orphan commit. ROOT CAUSE: state.json's heat counter is read-modified-written without locking. Two Forges calling start-heat or end-heat in the same window race on save_state. t-419 added atomic write (temp + os.replace) but that only prevents torn reads \u2014 it does not prevent lost-update (forge-A reads heat=N, forge-B reads heat=N, both write heat=N+1, one update lost). FIX OPTIONS (pick one): (A) flock on state.json for the duration of read-modify-write in start-heat, end-heat, queue-pop, queue-push, set-priority \u2014 anything that mutates state under contention. fcntl.flock(LOCK_EX) on the file handle, hold across the read+modify+write, release on close. Cross-platform on POSIX. (B) Per-forge heat counters + a global next-heat allocator that does a single atomic increment (file_lock on a tiny .heat-counter file). Each forge gets its own monotonic per-forge heat number; the global is just for ordering. More invasive but cleaner concurrency. (C) Optimistic concurrency: read state with mtime/sha, only commit if mtime/sha unchanged, retry on conflict (5 attempts). Good for low-contention cases (true here at N=3). RECOMMEND A or C. TESTS: simulate two forges calling start-heat concurrently with threading or two subprocesses; assert both succeed AND heat counter advanced by exactly 2 (no lost updates). Repeat with end-heat. Repeat across queue-pop. ACCEPTANCE: at N=3 sustained for 30+ heats, no 'heat clobbered' reports in worklog or pane buffers. Anvil-filed 2026-04-17 after observing the race during hardening sprint.",
-      "status": "pending",
+      "status": "complete",
       "priority": 0,
       "blocked_by": [],
       "initiative_id": "ini-018",
-      "human_priority": 25,
-      "priority_reason": "assembly rejected: tests failed: FAILED ",
+      "human_priority": null,
+      "priority_reason": null,
       "assigned_forge": "forge-anneal"
     },
     {
@@ -4344,21 +4344,21 @@
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-018",
-      "human_priority": null,
-      "priority_reason": "ini-018 rank=1 + poker",
+      "human_priority": 2,
+      "priority_reason": "you:p1",
       "assigned_forge": "forge-anneal"
     },
     {
       "id": "t-431",
       "stage": "implementation",
       "desc": "smithy task-tree CLI: render the task DAG. Show all open tasks (status in {open, pending, in_progress, submitted}) grouped by initiative (use ini-XXX rank for initiative ordering), with blocked_by edges drawn as ASCII tree (\u251c\u2500 \u2514\u2500). For each task: id, stage emoji (\ud83d\udd2cresearch \ud83d\udcddplanning \ud83d\udd27impl \u2705testing \u270f\ufe0fediting \ud83d\udce3marketing), status emoji, priority badge, assigned_forge if set. Highlight: tasks whose blocked_by is satisfied + can be dispatched (\u2713), tasks with cycles (\u26a0). Flags: --initiative <ini-id> to filter, --json for machine output, --stuck to show only tasks blocked >24h. WHY: with N=3 forges + dependency chains, the queue is no longer linear; humans + Marshal need a visualization. Useful for hardening sprint observability. Tests: 3 fixture initiatives with cross-deps, assert ASCII output structure + cycle detection. Anvil-filed 2026-04-17 for hardening sprint v2.",
-      "status": "submitted",
-      "priority": 1,
+      "status": "pending",
+      "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-018",
-      "human_priority": 10,
+      "human_priority": 20,
       "priority_reason": "assembly rejected: tests failed: FAILED ",
-      "assigned_forge": "forge-quench"
+      "assigned_forge": "forge-anneal"
     },
     {
       "id": "t-432",
@@ -4376,12 +4376,12 @@
       "id": "t-433",
       "stage": "testing",
       "desc": "Coverage gap fill: smithy/state.py. Current state.py has main_repo_root, state_json_path, load_state, save_state, save_state_checked, append_worklog, etc. Audit what's NOT covered by existing tests (use python3 -m pytest --cov=smithy.state to get gaps), then add focused tests for the uncovered branches. Targets: (1) main_repo_root from a non-worktree cwd should return cwd; (2) state_json_path resolution when .git/common-dir is missing; (3) save_state_checked atomic-write retry path; (4) append_worklog with concurrent writers (file locking from t-426); (5) load_state on a malformed state.json (clear error vs silent failure). Add tests/test_state_coverage.py with one TestClass per area. Goal: lift state.py coverage above 90%. Anvil-filed 2026-04-17 for hardening sprint v2.",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-018",
       "human_priority": null,
-      "priority_reason": "ini-018 rank=1 + poker",
+      "priority_reason": null,
       "assigned_forge": "forge-temper"
     },
     {
@@ -4412,7 +4412,7 @@
       "id": "t-436",
       "stage": "editing",
       "desc": "Priority Poker UI: remove the \u2715 reject button. Human-decided 2026-04-17: drag-into-kill-zone is sufficient UX for rejecting an initiative; the redundant \u2715 button just adds clutter and risks accidental clicks. WHAT: remove the two \u2715 buttons in ui-priority-poker/templates/index.html (line 139 on approved cards + line 162 on proposed cards \u2014 both '<button class=kill-btn onclick=rejectCard...>\u2715</button>'). KEEP: the rejectCard() JS function (still used by the kill-zone drop handler) AND the kill-zone div + 'Drop here to reject' label. CSS: ui-priority-poker/static/style.css \u2014 audit .kill-btn rules; if no other element uses the class, remove the rules. If kept (e.g. used by approve-btn neighbor styling), leave a comment noting the button was removed. TESTS: if any tests assert presence of .kill-btn or 'Reject' button text in the rendered template, update or remove those assertions (likely in tests/test_steering_uis.py or similar). VERIFY: load the Poker UI in a browser, confirm cards show no \u2715, drag-to-kill-zone still rejects (calls /api/reject), proposed cards still have the \u2713 Approve button. Anvil-filed 2026-04-17 \u2014 small UI cleanup, ~1 heat.",
-      "status": "pending",
+      "status": "submitted",
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-016",
@@ -4424,12 +4424,36 @@
       "id": "t-437",
       "stage": "implementation",
       "desc": "Orphan reap on Marshal's live loop (not only at startup). GAP (observed 2026-04-18): Marshal runs smithy patrol --fix only at startup (per personas/marshal/CLAUDE.md step 4). Between restarts, tasks can leak into status=in_progress without a matching .forge-checkpoint*.json file on disk \u2014 e.g. when a Forge crashes mid-heat, when a dispatch fails at the end-heat boundary, or when Marshal reassigns a task after a Forge reports trouble but the stale state isn't cleared. Observed today: t-416 and t-433 both sat as in_progress on forge-temper for hours while forge-temper was idle with no checkpoint. Patrol caught them (checks 6/7 detect the no-checkpoint case), but no agent ran it during the session, so Marshal happily kept the queue believing those tasks were live and next_tasks stayed blocked. Manual Anvil intervention via smithy patrol --fix was the unblocker. WHAT: add a reap pass to Marshal's on-nudge re-prioritize cycle. personas/marshal/CLAUDE.md \u2014 'On nudge from Forge' step between drain-nudges and re-read steering signals, call smithy patrol --fix (cheap: check 6/7 iterate forges \u00d7 tasks, no heavy I/O). If fixes were applied, log a single-line note to the pane output so the human can see it. SCOPE: just wire the call into Marshal's loop. The patrol detector already exists. Do NOT move patrol into smithy core's dispatch path \u2014 Marshal should own this orchestration. ALTERNATIVE (heavier): add a new smithy reap-orphans command that only does the orphan check, faster than the full patrol. Probably not worth it at current scale. TESTS: simulate Marshal-in-loop receiving a nudge with two orphaned in_progress tasks; assert after nudge handling both are reset to pending. Anvil-filed 2026-04-18 after the forge-temper orphan incident; low priority since manual patrol is a working workaround.",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-018",
       "human_priority": null,
-      "priority_reason": "ini-018 rank=1 + poker",
+      "priority_reason": null,
+      "assigned_forge": "forge-quench"
+    },
+    {
+      "id": "t-438",
+      "stage": "implementation",
+      "desc": "Assembly pushes to origin after each successful merge (best-effort) + patrol check for divergence. PROBLEM (2026-04-18): local main accumulates commits with no publication to origin. At the time of filing, main was 144 commits ahead of origin/main \u2014 the whole dogfood session's work lived only on Mangesh's laptop. A disk failure or accidental repo wipe would erase it. Manual Anvil-driven push is the current workaround but relies on a human remembering. WHAT: (1) ASSEMBLY PUSH. In smithy/smithy/assembly.py::try_ff_merge (or whatever the ff-merge primitive ends up called post-refactor), after the merge commit lands on main AND before returning success, call git push origin main with a 30-second timeout. Best-effort: if push fails for ANY reason (network, non-fast-forward, auth, remote unavailable), log the failure to assembly-log.jsonl as {outcome: push_failed, reason: <stderr tail>, local_sha: <main HEAD>, when: <ts>} and return success anyway. Never fail the merge because the push failed. The local ref remains authoritative; push retries naturally on the next successful merge. Also emit a rig-events.jsonl line (push_ok / push_failed) for observability. (2) PATROL CHECK #10. In smithy/smithy/cli.py patrol function, add a check that reads git rev-list --count origin/main..main. Warn at >=5 commits (indicates recent push failures), red at >=20 (sustained failure \u2014 origin is effectively abandoned). Print one line per threshold. Include in patrol's checks_run count, NO auto-fix (pushing is a decision, not a repair). (3) SHUTDOWN SEQUENCE. In Anvil's shutdown plan, step 5a is git push origin main before tmux-stop.sh \u2014 belt-and-braces for the 'Assembly has been down but session is ending' case. Update personas/anvil/CLAUDE.md if there's a shutdown section; otherwise document in outbox.md. (4) FIRST-TIME SAFETY. If origin is not reachable (git ls-remote origin times out) on Anvil's session start, surface a warning to the human \u2014 the session will accumulate work that can't auto-publish. Not a hard block, just a flag. TESTS: mock subprocess.run for git push; assert merge still returns success when push fails, assembly-log.jsonl gets the push_failed row, assembly-log.jsonl gets the push_ok row on success. Separate test for patrol check #10 with simulated divergence. Anvil-filed 2026-04-18 after the 144-commit unpushed backlog.",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-018",
+      "human_priority": null,
+      "priority_reason": null,
+      "assigned_forge": "forge-quench"
+    },
+    {
+      "id": "t-439",
+      "stage": "implementation",
+      "desc": "Clean Forge worktree on heat-reject so WIP pollution does not compound. ROOT CAUSE (verified 2026-04-18): when pre-submit pytest gate (t-427) rejects, Forge does not commit (correct), but working-tree modifications stay on disk. Next heat starts: start-heat creates a new per-task branch off main, but pending modifications from the rejected heat PROPAGATE (git checkout does not discard modified-but-unstaged files). pytest on the new task runs against stale code, fails, rejects again, pollution compounds. Observed across t-425, t-426, t-431 \u2014 3-4 consecutive rejects each, each against a progressively more polluted worktree. Fresh /tmp worktree reproduction passed because zero pollution. WHAT: heat-reject path must leave the worktree clean. Three candidate designs: (A) Reset-on-reject \u2014 end-heats reject branch calls git reset --hard <branch-point> + git clean -fdx before returning. Simplest. (B) Stash-before-tests \u2014 pre-submit gate stashes, runs pytest, pops on pass or drops on reject. Heavier. (C) Reset-on-start \u2014 start-heat asserts clean working tree and resets if not. RECOMMEND A plus a start-heat assertion that warns + resets if working tree is not clean. TESTS: simulate rejected heat, assert worktree clean after reject. ACCEPTANCE: t-425/t-426/t-431 retried on this fix must not repro the thrash. Anvil-filed 2026-04-18 after manual reset of 3 forge worktrees unblocked the hardening sprint.",
+      "status": "complete",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-018",
+      "human_priority": null,
+      "priority_reason": null,
       "assigned_forge": "forge-quench"
     }
   ],
@@ -4477,8 +4501,8 @@
       "description": "Run multiple Forge workers concurrently via per-Forge git worktrees. Dedicated Assembly teammate handles merge queue integration (conflicts, test-on-integrate, merge ordering). Unlocks parallelism (Marshal dispatches N heats simultaneously) and enforces branch hygiene. Incremental: N=2 proof before N=3+.",
       "status": "approved",
       "budget_cap": null,
-      "heats_used": 33,
-      "viewed_at": "2026-04-18T08:51:18Z",
+      "heats_used": 38,
+      "viewed_at": "2026-04-18T09:06:15Z",
       "rank": 1
     },
     {
@@ -4488,8 +4512,8 @@
       "description": "Primary UI surface for steering per-task prioritization. Live view of the actual task queue synced to state.json, showing every task with Marshal priority, human priority, stage, status, priority reason, initiative tag. Human downranks/promotes/pins/defers from this surface. Poker remains for initiative-level steering; this is the per-task master cockpit.",
       "status": "approved",
       "budget_cap": null,
-      "heats_used": 13,
-      "viewed_at": "2026-04-13T04:21:06Z",
+      "heats_used": 14,
+      "viewed_at": "2026-04-18T09:06:18Z",
       "rank": 2,
       "intent": "Give the human a way to ensure that individual task assignments conform to the high-level intent the human has, and gives a way to identify and correct drift."
     },
@@ -4703,12 +4727,8 @@
     }
   ],
   "next_tasks": [
-    "t-433",
-    "t-432",
-    "t-416",
     "t-435",
-    "t-436",
-    "t-437"
+    "t-432"
   ],
   "schema_version": 1,
   "intents": [
@@ -4774,7 +4794,7 @@
     ],
     "assembly": {
       "enabled": true,
-      "last_heartbeat": "2026-04-18T04:42:09+00:00"
+      "last_heartbeat": "2026-04-18T09:18:27+00:00"
     },
     "forge_roster": [
       "forge-quench",
