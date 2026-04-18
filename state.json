@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 321,
+      "heats": 322,
       "progress": 0.98,
-      "value_ema": 0.735
+      "value_ema": 0.769
     },
     "testing": {
       "target": 0.183,
@@ -4244,12 +4244,12 @@
       "id": "t-422",
       "stage": "implementation",
       "desc": "Wire Assembly into the loop: anchor .assembly-queue.jsonl to main + nudge Assembly on submit. ROOT CAUSE (observed 2026-04-17): two gaps keep Assembly idle while Anvil drives every merge manually. (1) end-heat (cli.py:~307) only nudges marshal with HEAT_DONE \u2014 never nudges assembly, even when effective_outcome == submitted. So Assembly has no event-driven trigger. (2) .assembly-queue.jsonl path is computed as root / .assembly-queue.jsonl where root is the worktree (cli.py:~309). t-419 anchored state.json/worklog.tsv/.smithy-nudge-queue/ to main_repo_root() but missed this one path. Result: three independent queue files at .worktrees/forge-quench/, forge-temper/, forge-anneal/, none visible to Assembly which lives in personas/assembly on main. Evidence: this session shipped t-419, t-414, t-421, t-420, t-373, t-418 \u2014 Assembly merged zero of them; Anvil hand-merged 4, t-373/t-418/t-420 still sitting submitted as of filing. FIX: (1) Route the assembly-queue path through main_repo_root() the same way state.json was \u2014 add an assembly_queue_path(project_dir) helper in state.py mirroring state_json_path. (2) Add an Assembly nudge in end-heat when effective_outcome == submitted: smithy nudge assembly with a one-liner like ASSEMBLY_QUEUE: <forge_id>/<task_id> @ <sha>. Same pattern as the marshal nudge. (3) Update personas/assembly/CLAUDE.md so the persona protocol actually says: on nudge, drain .assembly-queue.jsonl, run smithy assembly-rebase / assembly-ff-merge per entry, mark task complete (or reject + requeue on conflict). Today's CLAUDE.md doesn't describe this loop. (4) Patrol check #9: warn if .assembly-queue.jsonl entries are older than N minutes without movement (Assembly stuck). (5) Tests: simulate end-heat with outcome=submitted from a forge worktree, assert (a) main's .assembly-queue.jsonl gets the entry, (b) assembly pane gets a nudge call. (6) Migration: drain the three pre-existing per-worktree assembly-queue files into main's after the path fix, then delete the worktree copies. Anvil-filed 2026-04-17. UNBLOCKS: Anvil stops being the merge bottleneck; rig becomes truly self-sustaining at N=3.",
-      "status": "in_progress",
+      "status": "complete",
       "priority": 0,
       "blocked_by": [],
       "initiative_id": "ini-018",
       "human_priority": null,
-      "priority_reason": "ini-018 rank=1 + poker",
+      "priority_reason": null,
       "assigned_forge": "forge-quench"
     }
   ],
@@ -4297,7 +4297,7 @@
       "description": "Run multiple Forge workers concurrently via per-Forge git worktrees. Dedicated Assembly teammate handles merge queue integration (conflicts, test-on-integrate, merge ordering). Unlocks parallelism (Marshal dispatches N heats simultaneously) and enforces branch hygiene. Incremental: N=2 proof before N=3+.",
       "status": "approved",
       "budget_cap": null,
-      "heats_used": 13,
+      "heats_used": 14,
       "viewed_at": "2026-04-13T15:29:26Z",
       "rank": 1
     },
