@@ -402,6 +402,127 @@ class TestInitiatives:
         assert result.exit_code != 0
 
 
+class TestInitiativePokerFields:
+    """t-440: multi-forge Poker schema — parallelism / affinity / touches."""
+
+    def test_defaults_on_new_initiative(self, project, runner):
+        runner.invoke(cli, ["--dir", str(project), "add-theme", "T"])
+        result = runner.invoke(cli, ["--dir", str(project), "propose", "th-001", "I", "D"])
+        data = json.loads(result.output)
+        ini = data["initiative"]
+        assert ini["parallelism"] == "parallel"
+        assert ini["affinity"] == []
+        assert ini["touches"] == []
+
+    def test_existing_state_roundtrips_with_defaults(self, project, runner):
+        # Simulate a legacy initiative without the new fields.
+        state = json.loads((project / "state.json").read_text())
+        state["themes"] = [{"id": "th-001", "name": "T", "status": "active"}]
+        state["initiatives"] = [{
+            "id": "ini-001", "theme_id": "th-001", "title": "Legacy", "description": "old",
+            "status": "approved", "budget_cap": None, "heats_used": 0,
+        }]
+        (project / "state.json").write_text(json.dumps(state))
+
+        result = runner.invoke(cli, ["--dir", str(project), "list-initiatives"])
+        data = json.loads(result.output)
+        ini = data["initiatives"][0]
+        assert ini["parallelism"] == "parallel"
+        assert ini["affinity"] == []
+        assert ini["touches"] == []
+
+        # Round-trip: after a mutating command, disk has the backfilled fields
+        # (save_state calls _apply_steerability_defaults before serializing).
+        runner.invoke(cli, ["--dir", str(project), "edit-initiative", "ini-001", "--parallelism", "parallel"])
+        on_disk = json.loads((project / "state.json").read_text())
+        assert on_disk["initiatives"][0]["parallelism"] == "parallel"
+        assert on_disk["initiatives"][0]["affinity"] == []
+        assert on_disk["initiatives"][0]["touches"] == []
+        # Legacy fields preserved.
+        assert on_disk["initiatives"][0]["title"] == "Legacy"
+
+    def test_propose_sets_fields(self, project, runner):
+        runner.invoke(cli, ["--dir", str(project), "add-theme", "T"])
+        result = runner.invoke(cli, [
+            "--dir", str(project), "propose", "th-001", "I", "D",
+            "--parallelism", "serial",
+            "--affinity", "forge-quench", "--affinity", "forge-anneal",
+            "--touches", "smithy/cli.py", "--touches", "tests/",
+        ])
+        ini = json.loads(result.output)["initiative"]
+        assert ini["parallelism"] == "serial"
+        assert ini["affinity"] == ["forge-quench", "forge-anneal"]
+        assert ini["touches"] == ["smithy/cli.py", "tests/"]
+
+    def test_propose_rejects_invalid_parallelism(self, project, runner):
+        runner.invoke(cli, ["--dir", str(project), "add-theme", "T"])
+        result = runner.invoke(cli, [
+            "--dir", str(project), "propose", "th-001", "I", "D",
+            "--parallelism", "sequential",
+        ])
+        assert result.exit_code != 0
+
+    def test_edit_initiative_updates_fields(self, project, runner):
+        runner.invoke(cli, ["--dir", str(project), "add-theme", "T"])
+        runner.invoke(cli, ["--dir", str(project), "propose", "th-001", "I", "D"])
+
+        result = runner.invoke(cli, [
+            "--dir", str(project), "edit-initiative", "ini-001",
+            "--parallelism", "serial",
+            "--affinity", "forge-quench,forge-temper",
+            "--touches", "smithy/cli.py",
+        ])
+        ini = json.loads(result.output)["initiative"]
+        assert ini["parallelism"] == "serial"
+        assert ini["affinity"] == ["forge-quench", "forge-temper"]
+        assert ini["touches"] == ["smithy/cli.py"]
+
+    def test_edit_initiative_clears_lists(self, project, runner):
+        runner.invoke(cli, ["--dir", str(project), "add-theme", "T"])
+        runner.invoke(cli, [
+            "--dir", str(project), "propose", "th-001", "I", "D",
+            "--affinity", "forge-quench", "--touches", "p/",
+        ])
+        result = runner.invoke(cli, [
+            "--dir", str(project), "edit-initiative", "ini-001",
+            "--affinity", "", "--touches", "",
+        ])
+        ini = json.loads(result.output)["initiative"]
+        assert ini["affinity"] == []
+        assert ini["touches"] == []
+
+    def test_edit_initiative_partial_leaves_others(self, project, runner):
+        runner.invoke(cli, ["--dir", str(project), "add-theme", "T"])
+        runner.invoke(cli, [
+            "--dir", str(project), "propose", "th-001", "I", "D",
+            "--parallelism", "serial", "--affinity", "forge-quench",
+        ])
+        result = runner.invoke(cli, [
+            "--dir", str(project), "edit-initiative", "ini-001",
+            "--touches", "smithy/",
+        ])
+        ini = json.loads(result.output)["initiative"]
+        assert ini["parallelism"] == "serial"
+        assert ini["affinity"] == ["forge-quench"]
+        assert ini["touches"] == ["smithy/"]
+
+    def test_edit_initiative_rejects_invalid_parallelism(self, project, runner):
+        runner.invoke(cli, ["--dir", str(project), "add-theme", "T"])
+        runner.invoke(cli, ["--dir", str(project), "propose", "th-001", "I", "D"])
+        result = runner.invoke(cli, [
+            "--dir", str(project), "edit-initiative", "ini-001",
+            "--parallelism", "nope",
+        ])
+        assert result.exit_code != 0
+
+    def test_edit_initiative_missing_id_fails(self, project, runner):
+        result = runner.invoke(cli, [
+            "--dir", str(project), "edit-initiative", "ini-999",
+            "--parallelism", "serial",
+        ])
+        assert result.exit_code != 0
+
+
 class TestNextTask:
     def test_empty_next_tasks(self, project, runner):
         result = runner.invoke(cli, ["--dir", str(project), "next-task"])
