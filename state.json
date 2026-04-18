@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1543,
-    "used": 833,
+    "used": 835,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -4890,25 +4890,25 @@
     {
       "id": "t-457",
       "stage": "implementation",
-      "desc": "FOLLOW-UP to t-456: complete the staging-worktree decoupling. Current t-456 fix (rebase_forge_branch does checkout+stash in Forge worktree) is partial \u2014 eliminates the wrong-branch class but still races with active Forges in the same worktree (observed 2026-04-18 drain: 2 unstaged-changes rejects on t-443/t-442 and 2 pytest-collection errors on t-447/t-456 first attempt, all race symptoms). Real fix: Assembly operates in its OWN worktree .worktrees/_assembly-staging, never touches Forge worktrees. Per the original t-456 design: (a) ensure_staging_worktree(project_dir) creates/reuses the Assembly worktree, (b) snapshot the task branch into _merge-<task-id> via checkout -B, (c) rebase + run tests in staging, (d) ff-merge from the staging ref in project_dir, (e) cleanup temp ref + delete source task branch. Keep the existing rebase_forge_branch for back-compat; add rebase_task_branch as the new primary. Update assembly_tick callers. Tests: concurrent case (Forge writing to its worktree while Assembly merges), clean case, conflict case, stale-branch case. Expected result: zero rebase/test races regardless of Forge activity.",
-      "status": "pending",
+      "desc": "FOLLOW-UP to t-456: complete the staging-worktree decoupling. Current t-456 fix (rebase_forge_branch does checkout+stash in Forge worktree) is partial \u2014 eliminates the wrong-branch class but still races with active Forges when Forge writes fresh files between stash and rebase. Observed 2026-04-18 drain: 2 unstaged-changes rejects on t-443 and t-442 (both forge-anneal submits whose Forge was mid-heat at drain time). Real fix: Assembly operates in its OWN worktree .worktrees/_assembly-staging, never touches Forge worktrees. Per the original t-456 design: (a) ensure_staging_worktree(project_dir) creates/reuses the Assembly worktree, (b) snapshot the task branch into _merge-<task-id> via checkout -B, (c) rebase + run tests in staging, (d) ff-merge from the staging ref in project_dir, (e) cleanup temp ref + delete source task branch. Keep the existing rebase_forge_branch for back-compat; add rebase_task_branch as the new primary. Update assembly_tick callers. Tests: concurrent case (Forge writing to its worktree while Assembly merges), clean case, conflict case, stale-branch case.",
+      "status": "in_progress",
       "priority": 0,
       "blocked_by": [],
       "human_priority": 0,
-      "priority_reason": "eliminates the race class that caused 4/7 rejects in today drain; blocks reliable parallel operation at N=3+",
-      "assigned_forge": null,
+      "priority_reason": "eliminates the Assembly-Forge worktree race class (2 of 6 drain rejects)",
+      "assigned_forge": "forge-quench",
       "initiative_id": "ini-018"
     },
     {
       "id": "t-458",
       "stage": "implementation",
       "desc": "Eliminate MEMORY.md merge conflicts between parallel Forges. Current: personas/forge/memory/MEMORY.md is shared by all 3 Forges; concurrent edits on separate per-task branches produce severe conflicts Assembly rejects (3 rejects in 2026-04-18 drain: t-431\u00d72 and t-441). Design options: (a) per-forge memory subdirs personas/forge/memory/quench/ temper/ anneal/ \u2014 eliminates collision, each Forge writes its own file; OR (b) append-only memory log with forge-id + timestamp per entry, later consolidation job. Recommend (a) \u2014 simpler, clear ownership, natural git semantics. Migration: move existing personas/forge/memory/*.md into quench/ subdir (most recent edits), leave others empty, update forge CLAUDE.md path references. Add patrol check that flags divergence between subdirs to catch drift.",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 0,
       "blocked_by": [],
       "human_priority": 0,
       "priority_reason": "blocks parallel Forge memory writes; caused 3 of 7 rejects in today drain",
-      "assigned_forge": null,
+      "assigned_forge": "forge-temper",
       "initiative_id": "ini-018"
     },
     {
@@ -4922,6 +4922,18 @@
       ],
       "human_priority": 2,
       "priority_reason": "regression guard for staging-worktree invariant",
+      "assigned_forge": null,
+      "initiative_id": "ini-018"
+    },
+    {
+      "id": "t-460",
+      "stage": "implementation",
+      "desc": "Pin smithy editable install to main, never a worktree. Root cause observed 2026-04-18: the global editable install (pip install -e smithy/) had been last run from a worktree (forge-quench/smithy/), so every pane imported from that stale tree. When Assembly ran pytest inside any worktree, collection of tests imported from main (e.g., test_t455_normalize_hp.py requiring normalize_human_priority) failed because the stale install lacked the symbol. 3 rejects hit this pattern (t-447 + two earlier transients). Assembly unstuck by re-binding to main. Fix: (a) add post-Assembly-merge hook that runs pip install -e from main-repo smithy/ whenever smithy code changes (detect via merge-commit paths); OR (b) guard in smithy startup that warns if __file__ is inside .worktrees/; OR (c) refactor so every pane uses a PYTHONPATH prepend to main-repo smithy/ and editable install is frozen to main. Recommend (a)+(b) \u2014 automated rebind post-merge, plus a loud warning when detection fails. Tests: regression test for module path invariant; e2e smoke that a merge touching smithy/ triggers rebind.",
+      "status": "pending",
+      "priority": 0,
+      "blocked_by": [],
+      "human_priority": 0,
+      "priority_reason": "stale-binary induced rejects; Assembly had to manually rebind; systemic hazard",
       "assigned_forge": null,
       "initiative_id": "ini-018"
     }
