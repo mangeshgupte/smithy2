@@ -428,6 +428,28 @@ def start_heat(ctx, stage, task_id, forge_id, reuse_scratch):
     if forge_id is None:
         forge_id = detect_forge_from_cwd(root) or primary_forge_id(root)
 
+    # t-473: reject ghost-submit-producing invocations. A `start-heat`
+    # without `--task` from within a Forge worktree writes
+    # task_id="generated" into the checkpoint; end-heat then has no
+    # per-task branch to submit (t-420 enforcement), silently consumes
+    # a budget heat, and fires a spurious HEAT_DONE nudge. Root-cause
+    # of the 15+ "task_id=generated" events seen on 2026-04-18. Main-
+    # repo smoke runs (tests, one-offs) are left alone — they have no
+    # Forge worktree and never trip the ghost path. `--reuse-scratch`
+    # is the explicit opt-out for the rare stack-on-scratch case.
+    if task_id is None and not reuse_scratch:
+        main_root = main_repo_root(root)
+        if root.resolve() != main_root.resolve():
+            _output({
+                "error": "start-heat without --task in a Forge worktree "
+                         "would ghost-submit (no per-task branch). "
+                         "Run `smithy queue-pop` first, or pass "
+                         "`--reuse-scratch` for the rare stack-on-scratch case.",
+                "forge_id": forge_id,
+                "cwd_worktree": str(root),
+            })
+            sys.exit(1)
+
     # t-420: per-task branch enforcement runs BEFORE the lock so a slow
     # git checkout never blocks a sibling Forge's heat transition. The
     # branch op only touches filesystem, not state.json.
