@@ -11,3 +11,7 @@ rig-events.jsonl
 
 # Python packaging
 smithy/smithy.egg-info/
+
+# t-461 (ini-020 phase 2): per-Forge / per-worktree uv venvs
+.venv/
+**/.venv/
