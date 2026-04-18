@@ -3896,9 +3896,9 @@ def up(ctx, force, dry_run, session_name):
     import os
     import subprocess
     root = ctx.obj["root"]
-    script = root / "scripts" / "tmux-layout.sh"
+    script = root / "scripts" / "start-smithy.sh"
     if not script.exists():
-        _output({"error": f"tmux-layout.sh not found at {script}"})
+        _output({"error": f"start-smithy.sh not found at {script}"})
         sys.exit(1)
     cmd = [str(script)]
     if force:

@@ -28,7 +28,7 @@ tasks, then the next. With three Forges, a strict total order
 **serializes work that could legitimately run in parallel**.
 
 *Example (2026-04-17 hardening sprint):* ini-018 (parallel Forges)
-produced a burst of mutually-independent tasks — scripts/tmux-stop.sh
+produced a burst of mutually-independent tasks — scripts/stop-smithy.sh
 (t-412), scripts/nudge.sh docs (t-413), patrol check #9 (t-423), check
 #10 (t-424). These touch disjoint files. A lane-aware dispatcher would
 have put three of them in flight simultaneously; today's Marshal walked

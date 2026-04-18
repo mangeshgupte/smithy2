@@ -1,9 +1,9 @@
-"""t-468: tmux-stop.sh handles the `ui` window with SIGINT pre-step.
+"""t-468: stop-smithy.sh handles the `ui` window with SIGINT pre-step.
 
 Two contracts:
   (a) `--help` lists the new `--ui-only` flag and the FORGE_UI_WINDOW env.
   (b) Live behaviour: when a tmux session has a `ui` window with a
-      python process running a socket server, `tmux-stop.sh --ui-only`
+      python process running a socket server, `stop-smithy.sh --ui-only`
       sends SIGINT (uvicorn-style graceful), the process exits and the
       port is freed within UI_GRACE_S + a small slack — fast (<5s).
 
@@ -30,7 +30,7 @@ import pytest
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-TMUX_STOP = REPO_ROOT / "scripts" / "tmux-stop.sh"
+TMUX_STOP = REPO_ROOT / "scripts" / "stop-smithy.sh"
 
 
 # --- (a) --help / static-shape contracts ----------------------------------

@@ -2,7 +2,7 @@
 
 Reproducible session + workflow helpers for The Forge rig.
 
-## tmux-layout.sh
+## start-smithy.sh
 
 Lays out a tmux session named `forge` with one pane per agent:
 Anvil (left, full height), then Marshal / Assembly / Forges stacked in the
@@ -10,9 +10,9 @@ right column. Forge panes scale automatically from
 `state.parallel.forges[]`.
 
 ```bash
-scripts/tmux-layout.sh             # attach or create
-scripts/tmux-layout.sh --force     # kill existing and recreate
-scripts/tmux-layout.sh --dry-run   # print panes that would be created
+scripts/start-smithy.sh             # attach or create
+scripts/start-smithy.sh --force     # kill existing and recreate
+scripts/start-smithy.sh --dry-run   # print panes that would be created
 ```
 
 Each pane starts in `<worktree>/personas/<role>/` so claude picks up the

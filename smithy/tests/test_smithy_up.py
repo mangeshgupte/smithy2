@@ -13,10 +13,10 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _find_layout_script():
-    """Locate scripts/tmux-layout.sh — try this checkout, then walk up for a
+    """Locate scripts/start-smithy.sh — try this checkout, then walk up for a
     sibling worktree that has it (the script lives on main, not on every
     feature branch)."""
-    here = REPO_ROOT / "scripts" / "tmux-layout.sh"
+    here = REPO_ROOT / "scripts" / "start-smithy.sh"
     if here.exists():
         return here
     p = REPO_ROOT
@@ -24,10 +24,10 @@ def _find_layout_script():
         wt = p / ".worktrees"
         if wt.is_dir():
             for child in wt.iterdir():
-                cand = child / "scripts" / "tmux-layout.sh"
+                cand = child / "scripts" / "start-smithy.sh"
                 if cand.exists():
                     return cand
-        cand2 = p / "scripts" / "tmux-layout.sh"
+        cand2 = p / "scripts" / "start-smithy.sh"
         if cand2.exists():
             return cand2
         p = p.parent
@@ -39,7 +39,7 @@ REAL_SCRIPT = _find_layout_script()
 
 @pytest.fixture
 def rig(tmp_path):
-    """Minimal project with state.parallel.forges + the real tmux-layout.sh."""
+    """Minimal project with state.parallel.forges + the real start-smithy.sh."""
     forges = [
         {"id": "forge-quench"},
         {"id": "forge-temper"},
@@ -56,9 +56,9 @@ def rig(tmp_path):
     scripts = tmp_path / "scripts"
     scripts.mkdir()
     if REAL_SCRIPT is None:
-        pytest.skip("tmux-layout.sh not findable in repo")
-    shutil.copy(REAL_SCRIPT, scripts / "tmux-layout.sh")
-    (scripts / "tmux-layout.sh").chmod(0o755)
+        pytest.skip("start-smithy.sh not findable in repo")
+    shutil.copy(REAL_SCRIPT, scripts / "start-smithy.sh")
+    (scripts / "start-smithy.sh").chmod(0o755)
     return tmp_path
 
 
@@ -87,4 +87,4 @@ def test_up_missing_script_errors(tmp_path):
         capture_output=True, text=True,
     )
     assert result.returncode == 1
-    assert "tmux-layout.sh not found" in result.stdout
+    assert "start-smithy.sh not found" in result.stdout

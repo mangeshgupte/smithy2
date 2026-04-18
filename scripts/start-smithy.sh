@@ -20,10 +20,10 @@
 # and every Forge run in their own worktree under .worktrees/.
 #
 # Usage:
-#   scripts/tmux-layout.sh            # attach to existing session or create
-#   scripts/tmux-layout.sh --force    # kill existing session and recreate
-#   scripts/tmux-layout.sh --dry-run  # print panes that would be created
-#   scripts/tmux-layout.sh -h         # show usage
+#   scripts/start-smithy.sh            # attach to existing session or create
+#   scripts/start-smithy.sh --force    # kill existing session and recreate
+#   scripts/start-smithy.sh --dry-run  # print panes that would be created
+#   scripts/start-smithy.sh -h         # show usage
 #
 # Environment:
 #   FORGE_SESSION   session name (default: forge)
@@ -41,13 +41,13 @@ FORGE_ROOT="${FORGE_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 
 usage() {
   cat <<'EOF'
-scripts/tmux-layout.sh — launch The Forge tmux rig.
+scripts/start-smithy.sh — launch The Forge tmux rig.
 
 Usage:
-  scripts/tmux-layout.sh              attach to existing session, else create
-  scripts/tmux-layout.sh --force      kill existing session and recreate
-  scripts/tmux-layout.sh --dry-run    print planned panes and exit
-  scripts/tmux-layout.sh -h|--help    this message
+  scripts/start-smithy.sh              attach to existing session, else create
+  scripts/start-smithy.sh --force      kill existing session and recreate
+  scripts/start-smithy.sh --dry-run    print planned panes and exit
+  scripts/start-smithy.sh -h|--help    this message
 
 Env: FORGE_SESSION, FORGE_CLAUDE, FORGE_ROOT (see header).
 EOF
@@ -208,7 +208,7 @@ trap - ERR
 #
 # Auto-Start every agent directly. Agents are peers (Anvil's CLAUDE.md:
 # "agents are peers in separate tmux windows; there is no SendMessage") and
-# coordinate via shared files — there is no Start cascade. tmux-layout.sh is
+# coordinate via shared files — there is no Start cascade. start-smithy.sh is
 # the sole injector of the initial "Start" so no chain of agent-to-agent
 # Start messages can form. Wait briefly for the Claude Code TUIs to finish
 # booting before sending, otherwise the message lands in the splash screen
