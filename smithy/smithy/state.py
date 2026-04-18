@@ -82,6 +82,25 @@ def assembly_queue_path(project_dir: Path) -> Path:
     return main_repo_root(project_dir) / ".assembly-queue.jsonl"
 
 
+def worklog_path(project_dir: Path) -> Path:
+    """t-454: canonical `worklog.tsv` path — always the MAIN repo's copy.
+
+    Writes (end-heat row append) were already routed through
+    `main_repo_root` (t-419 era), but several READ sites — `sync-stages`,
+    `patrol` check #1, `stats`, `resume`, `steering-retro` — still used
+    `ctx.obj["root"] / "worklog.tsv"` which resolves to the WORKTREE's
+    tracked-but-stale snapshot. When sync-stages or patrol --fix ran
+    from a worktree, they'd compare main's `state.json.budget.used`
+    (canonical, current) against the worktree's worklog count (stale,
+    smaller), then "fix" budget.used downward to the stale count.
+    Observed 2026-04-18: 892 → 824 in under an hour with no rollback.
+    Anchoring the read to main matches the write side and closes the
+    last asymmetric path. Mirrors `state_json_path` /
+    `assembly_queue_path`.
+    """
+    return main_repo_root(project_dir) / "worklog.tsv"
+
+
 def normalize_human_priority(value):
     """t-455: canonical coercion for `human_priority` values.
 

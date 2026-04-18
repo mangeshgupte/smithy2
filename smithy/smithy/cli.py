@@ -11,7 +11,7 @@ from .state import (
     append_worklog, write_checkpoint, delete_checkpoint,
     forge_checkpoint_path, DEFAULT_FORGE_ID,
     primary_forge_id, detect_forge_from_cwd, main_repo_root,
-    assembly_queue_path, state_lock, normalize_human_priority,
+    assembly_queue_path, worklog_path, state_lock, normalize_human_priority,
     VALID_STAGES, VALID_SIGNALS, VALID_OUTCOMES,
 )
 from .task_detail import scheduler_key
@@ -1396,11 +1396,12 @@ def stats(ctx):
     root = ctx.obj["root"]
     state = load_state(root)
 
-    # Read worklog for time-based stats
-    worklog_path = root / "worklog.tsv"
+    # Read worklog for time-based stats — t-454: anchor to main repo so a
+    # stale worktree-local copy doesn't skew the read.
+    wl_path = worklog_path(root)
     heats = []
-    if worklog_path.exists():
-        for line in worklog_path.read_text().strip().split("\n")[1:]:  # skip header
+    if wl_path.exists():
+        for line in wl_path.read_text().strip().split("\n")[1:]:  # skip header
             parts = line.split("\t")
             if len(parts) >= 8:
                 heats.append({
@@ -2612,20 +2613,29 @@ def process_inbox(ctx):
 
 
 @cli.command("sync-stages")
+@click.option("--force-down", is_flag=True,
+              help="t-454: allow budget.used to decrease (default: monotonic). "
+                   "Without this, sync-stages only ever raises budget.used to "
+                   "match the worklog count — guards against stale-worklog drift.")
 @click.pass_context
-def sync_stages(ctx):
+def sync_stages(ctx, force_down):
     """Recalculate stage heats from worklog.tsv to fix drift."""
     root = ctx.obj["root"]
     state = load_state(root)
-    worklog_path = root / "worklog.tsv"
+    # t-454: anchor the read to the MAIN repo's worklog.tsv. Reading
+    # from `root / "worklog.tsv"` resolves to the worktree's
+    # tracked-but-stale copy (the source of the 2026-04-18 budget
+    # drift); writes are already routed through main_repo_root so this
+    # closes the asymmetry.
+    wl_path = worklog_path(root)
 
-    if not worklog_path.exists():
+    if not wl_path.exists():
         _output({"error": "No worklog.tsv found"})
         sys.exit(1)
 
     # Count heats per stage from worklog
     stage_counts = {s: 0 for s in VALID_STAGES}
-    lines = worklog_path.read_text().strip().split("\n")
+    lines = wl_path.read_text().strip().split("\n")
     for line in lines[1:]:  # skip header
         parts = line.split("\t")
         if len(parts) >= 3:
@@ -2639,16 +2649,25 @@ def sync_stages(ctx):
         old_counts[stage] = state["stages"][stage].get("heats", 0)
         state["stages"][stage]["heats"] = stage_counts[stage]
 
-    # Update budget.used to match worklog
+    # t-454: monotonic guard. Budget.used should never decrease as a
+    # side effect of recomputation — that's how we lost 79 heats on
+    # 2026-04-18. The anchored read above prevents the original drift,
+    # but keep this as defense-in-depth: if some future worklog read
+    # path regresses, the worst case becomes "no change" rather than
+    # "silently lose work." Operators wanting a true downward override
+    # use `--force-down` (rare; explicit).
     total_heats = len(lines) - 1
     old_used = state["budget"]["used"]
-    state["budget"]["used"] = total_heats
+    state["budget"]["used"] = (
+        total_heats if force_down else max(old_used, total_heats)
+    )
+    new_used = state["budget"]["used"]
 
     save_state(root, state)
 
     _output({
         "old_used": old_used,
-        "new_used": total_heats,
+        "new_used": new_used,
         "stage_changes": {s: {"old": old_counts[s], "new": stage_counts[s]}
                           for s in VALID_STAGES if old_counts[s] != stage_counts[s]},
         "total_worklog_entries": total_heats,
@@ -2666,15 +2685,21 @@ def patrol(ctx, fix):
     issues = []
     fixes = []
 
-    # 1. Check worklog heat count matches budget.used
-    worklog_path = root / "worklog.tsv"
-    if worklog_path.exists():
-        lines = worklog_path.read_text().strip().split("\n")
+    # 1. Check worklog heat count matches budget.used.
+    # t-454: anchor the read to MAIN's worklog and only auto-fix UPWARD.
+    # Pre-fix this check would set budget.used = worklog_heats from a
+    # worktree's stale snapshot, silently losing recently-recorded heats
+    # (892 → 824 on 2026-04-18). Downward correction is now an issue
+    # surfaced for the operator (no auto-fix); upward correction stays
+    # as before.
+    wl_path = worklog_path(root)
+    if wl_path.exists():
+        lines = wl_path.read_text().strip().split("\n")
         worklog_heats = len(lines) - 1  # minus header
         budget_used = state["budget"]["used"]
         if worklog_heats != budget_used:
             issues.append(f"worklog has {worklog_heats} entries but budget.used is {budget_used}")
-            if fix:
+            if fix and worklog_heats > budget_used:
                 state["budget"]["used"] = worklog_heats
                 fixes.append(f"Set budget.used to {worklog_heats}")
 
@@ -3017,11 +3042,11 @@ def handoff(ctx, notes, next_steps):
     root = ctx.obj["root"]
     state = load_state(root)
 
-    # Read last few worklog entries for context
-    worklog_path = root / "worklog.tsv"
+    # Read last few worklog entries for context — t-454: anchor to main.
+    wl_path = worklog_path(root)
     recent_heats = []
-    if worklog_path.exists():
-        lines = worklog_path.read_text().strip().split("\n")
+    if wl_path.exists():
+        lines = wl_path.read_text().strip().split("\n")
         for line in lines[-5:]:
             parts = line.split("\t")
             if len(parts) >= 8:
@@ -4078,10 +4103,10 @@ def steering_retro(ctx, since, fmt):
                 if row.get("timestamp", "") >= cutoff:
                     steering_rows.append(row)
 
-    worklog_path = root / "worklog.tsv"
+    wl_path = worklog_path(root)  # t-454: anchor to main repo
     worklog_rows = []
-    if worklog_path.exists():
-        with open(worklog_path) as f:
+    if wl_path.exists():
+        with open(wl_path) as f:
             for row in csv.DictReader(f, delimiter="\t"):
                 if row.get("timestamp", "") >= cutoff:
                     worklog_rows.append(row)
