@@ -2,15 +2,15 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1543,
-    "used": 840,
+    "used": 842,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
     "research": {
       "target": 0.156,
-      "heats": 54,
+      "heats": 55,
       "progress": 0.9,
-      "value_ema": 0.698
+      "value_ema": 0.744
     },
     "planning": {
       "target": 0.21,
@@ -4777,11 +4777,11 @@
       "id": "t-448",
       "stage": "research",
       "desc": "ini-020 R1: Study Gas Town Refinery batch+bisect pattern \u2014 read their merge-queue impl, document the state machine (collect \u2192 integrate \u2192 test \u2192 merge/bisect), note any adaptations needed for smithy (single-main repo, per-task branches already enforced, pre-submit pytest gate already runs per-forge). Output: research/ini-020-gas-town-study.md.",
-      "status": "submitted",
+      "status": "pending",
       "priority": 2,
       "blocked_by": [],
-      "human_priority": 6,
-      "priority_reason": "assembly rejected: tests failed: ERROR t",
+      "human_priority": 11,
+      "priority_reason": "assembly rejected: tests failed: FAILED ",
       "assigned_forge": "forge-temper",
       "initiative_id": "ini-020"
     },
@@ -4789,11 +4789,11 @@
       "id": "t-449",
       "stage": "research",
       "desc": "ini-020 R2: Analyze current assembly.py merge path. Inventory: rebase steps, test invocation, reject paths, state.json interactions, nudge-back-to-forge. Output: research/ini-020-assembly-current-path.md with annotated line refs. Identifies where to inject batching.",
-      "status": "in_progress",
+      "status": "pending",
       "priority": 2,
       "blocked_by": [],
-      "human_priority": 1,
-      "priority_reason": "ini-020 parallel research to R1; independent",
+      "human_priority": 6,
+      "priority_reason": "assembly rejected: tests failed: FAILED ",
       "assigned_forge": "forge-anneal",
       "initiative_id": "ini-020"
     },
@@ -4903,11 +4903,11 @@
       "id": "t-458",
       "stage": "implementation",
       "desc": "Eliminate MEMORY.md merge conflicts between parallel Forges. Current: personas/forge/memory/MEMORY.md is shared by all 3 Forges; concurrent edits on separate per-task branches produce severe conflicts Assembly rejects (3 rejects in 2026-04-18 drain: t-431\u00d72 and t-441). Design options: (a) per-forge memory subdirs personas/forge/memory/quench/ temper/ anneal/ \u2014 eliminates collision, each Forge writes its own file; OR (b) append-only memory log with forge-id + timestamp per entry, later consolidation job. Recommend (a) \u2014 simpler, clear ownership, natural git semantics. Migration: move existing personas/forge/memory/*.md into quench/ subdir (most recent edits), leave others empty, update forge CLAUDE.md path references. Add patrol check that flags divergence between subdirs to catch drift.",
-      "status": "submitted",
+      "status": "complete",
       "priority": 0,
       "blocked_by": [],
-      "human_priority": 0,
-      "priority_reason": "blocks parallel Forge memory writes; caused 3 of 7 rejects in today drain",
+      "human_priority": null,
+      "priority_reason": null,
       "assigned_forge": "forge-temper",
       "initiative_id": "ini-018"
     },
@@ -4929,11 +4929,11 @@
       "id": "t-460",
       "stage": "implementation",
       "desc": "Replace the global editable-install model with a uv-scoped venv for Assembly. Root cause of all observed install-poison incidents (2026-04-18: t-447, t-448, t-456 first attempt, t-457 first attempt): ONE global editable install shared across all panes; \"whoever last ran pip install -e wins\"; every prior fix was patching symptoms (pin-to-main, rebind, sys.path.insert) rather than the root. Structural fix: Assembly creates .worktrees/_assembly-staging/.venv via `uv venv`, runs `uv pip install -e ./smithy` inside it, runs tests via `uv run pytest`. All Python imports during Assembly work resolve through that scoped venv. Global Python is never touched. Other panes unaffected no matter what Assembly installs. Chicken-and-egg dissolves (venv has the branch code during staging). Implementation: (a) helper ensure_assembly_venv(staging_path) creates venv if missing, reuses if present, recreates if smithy/ files newer than last install; (b) replace run_tests_in_worktree to use `uv run pytest` with cwd=staging; (c) remove the proposed pin-to-main + auto-rebind hook entirely; (d) loud warning if global smithy is ever invoked by Assembly (detect __file__ path). Tests: venv lifecycle, re-install on smithy/ changes, test discovery inside venv. Follow-up task to extend venv pattern to Forges queued separately (t-461).",
-      "status": "submitted",
+      "status": "complete",
       "priority": -1,
       "blocked_by": [],
-      "human_priority": 5,
-      "priority_reason": "closes install-poison hazard class structurally; unblocks ini-020 test invocation",
+      "human_priority": null,
+      "priority_reason": null,
       "assigned_forge": "forge-anneal",
       "initiative_id": "ini-020"
     },
@@ -4941,27 +4941,39 @@
       "id": "t-461",
       "stage": "implementation",
       "desc": "Phase 2: Extend uv-scoped venv pattern to Forges. After t-460 lands Assembly-side venv isolation, each Forge worktree should have its own .venv via uv. smithy commands invoked by the Forge run via uv run (or auto-activated venv). Eliminates the last remaining \"global install\" surface \u2014 Forges running pip install -e in their worktree no longer affects any other pane. Protocol updates: (a) Forge start-up creates its venv if missing, (b) smithy CLI commands work transparently under uv run, (c) CLAUDE.md + loop.md document the per-Forge venv expectation, (d) memory entry project_worktree_editable_installs.md updated or retired. Blocked by t-460 (Assembly needs its venv working first so we can validate the pattern). Requires coordinated update across all Forge panes (staggered, one at a time).",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 1,
       "blocked_by": [
         "t-460"
       ],
       "human_priority": 1,
       "priority_reason": "ini-020 phase 2 \u2014 full venv isolation across all agents",
-      "assigned_forge": null,
+      "assigned_forge": "forge-anneal",
       "initiative_id": "ini-020"
     },
     {
       "id": "t-462",
       "stage": "implementation",
       "desc": "Add patrol check for stalled Forges via queue-push/queue-pop correlation. Current patrol (cli.py:2489-2520) only catches zombies with status=busy AND stale heartbeat >900s. Gap: a Forge that dies between heats has status=idle and a stale-but-valid heartbeat \u2014 patrol sees nothing wrong while Marshal pushes tasks into a queue that the Forge never consumes. Observed 2026-04-18: forge-quench wedged at an interactive Claude prompt looking idle while nudges piled up. Fix: add patrol check #11 that reads rig-events.jsonl, finds the latest queue_pushed event per forge, correlates with the most recent queue_popped/heat_started event. If a queue_pushed has no matching pop within N seconds (start with 120s; Forges idle-poll at 30s so 4x grace), emit a message like \"forge-X ignored queue push at TS \u2014 Ys stale; possibly unreachable\". Requires: (a) scanning rig-events.jsonl tail (most recent 500 events is plenty), (b) per-forge push/pop bookkeeping, (c) ignore if the Forge has since transitioned to busy (the pop event naturally resolves). Output in patrol JSON under stalled_forges alongside existing stuck_forges. Complements ini-019 observability \u2014 this is the first derived-from-events check.",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 1,
       "blocked_by": [],
       "human_priority": 1,
       "priority_reason": "ini-019 observability \u2014 closes the idle-but-unreachable detection gap",
-      "assigned_forge": null,
+      "assigned_forge": "forge-temper",
       "initiative_id": "ini-019"
+    },
+    {
+      "id": "t-463",
+      "stage": "implementation",
+      "desc": "Add Bellows to the tmux rig as a managed tmux window (no pane split needed). Observed 2026-04-18: current running Bellows processes (ports 8001/8003/8004) are stale \u2014 they pre-date the /project/{name}/initiative/{id} routes (bellows/app.py:498) which landed via t-363/t-364 but were never picked up because nobody restarts Bellows on merges touching bellows/. Three separate Bellows processes are running with different titles (Poker, Intent Editor, Timeline) \u2014 unclear how they came to be; lifecycle is unmanaged. Requirements: (a) dedicated tmux window (smithy2:bellows or similar; one window, no pane split) launched at rig startup; (b) runs uvicorn with --reload so bellows/ edits are picked up without manual restart; (c) stable port pinned in config (pick one canonical port, document it); (d) scripts/launch-rig.sh (or whatever starts the rig) includes Bellows; (e) Anvil startup protocol updated: \"expected roster\" check adds a Bellows window; (f) patrol health check: verify the Bellows port is listening and /openapi.json responds; (g) CLAUDE.md + the Anvil IDENTITY.md updated to describe Bellows as a rig member. Side concern to note (not block): the three existing Bellows processes on 8001/8003/8004 may be legacy experiments \u2014 if so, the launcher should kill stale instances before starting the canonical one. Test: kill Bellows, launch rig, verify window appears, verify /project/the-smithy/initiative/ini-020 loads. Protocol principle: any long-running rig service lives in tmux, is lifecycle-managed, patrol-checked.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "human_priority": 1,
+      "priority_reason": "rig hygiene \u2014 stale Bellows blocks initiative detail page; pattern of un-managed services recurs",
+      "assigned_forge": null,
+      "initiative_id": "ini-018"
     }
   ],
   "ideas": [
@@ -5009,7 +5021,7 @@
       "status": "approved",
       "budget_cap": null,
       "heats_used": 51,
-      "viewed_at": "2026-04-18T09:06:15Z",
+      "viewed_at": "2026-04-18T20:55:38Z",
       "rank": 1,
       "parallelism": "parallel",
       "affinity": [],
@@ -5023,7 +5035,7 @@
       "status": "approved",
       "budget_cap": 25,
       "heats_used": 4,
-      "viewed_at": null,
+      "viewed_at": "2026-04-18T20:56:19Z",
       "rank": 2,
       "parallelism": "parallel",
       "affinity": [],
@@ -5036,8 +5048,8 @@
       "description": "Architectural consolidation of Assembly: (1) Assembly owns a dedicated workspace .worktrees/_assembly-staging \u2014 never touches Forge worktrees, eliminating the Assembly-Forge concurrent-write race class. (2) Within that workspace, Assembly maintains a uv-scoped venv (.venv) \u2014 all pip install -e and pytest runs happen inside it, never in the global Python. Structurally eliminates the stale-install hazard (no global install to poison) and the sys.path.insert chicken-and-egg (venv installs whatever branch is staged). (3) Merge-into-staging batch model: Assembly creates/resets staging branch from main, git-merges N pending task branches into it (order-independent for non-overlapping changes), installs current code into venv, runs full test suite ONCE, then ff-merges staging to main on green or bisects to isolate breaker on red. Amortizes test cost across parallel submissions; log2(N) fault isolation. Does NOT solve: MEMORY.md collisions (t-458, per-forge dirs), which are orthogonal to merge strategy. Supersedes ini-018/t-457 (staging-worktree decoupling folded in here), t-460 prior pin+rebind framing (replaced by venv isolation).",
       "status": "approved",
       "budget_cap": 30,
-      "heats_used": 2,
-      "viewed_at": null,
+      "heats_used": 3,
+      "viewed_at": "2026-04-18T20:57:35Z",
       "rank": 3,
       "parallelism": "parallel",
       "affinity": [],
@@ -5080,7 +5092,7 @@
       "status": "approved",
       "budget_cap": null,
       "heats_used": 2,
-      "viewed_at": "2026-04-18T03:47:11Z",
+      "viewed_at": "2026-04-18T20:57:30Z",
       "rank": 3,
       "parallelism": "parallel",
       "affinity": [],
@@ -5330,7 +5342,10 @@
     }
   ],
   "next_tasks": [
-    "t-431"
+    "t-431",
+    "t-442",
+    "t-443",
+    "t-447"
   ],
   "schema_version": 2,
   "intents": [
@@ -5396,7 +5411,7 @@
     ],
     "assembly": {
       "enabled": true,
-      "last_heartbeat": "2026-04-18T20:50:23+00:00"
+      "last_heartbeat": "2026-04-18T20:58:28+00:00"
     },
     "forge_roster": [
       "forge-quench",
