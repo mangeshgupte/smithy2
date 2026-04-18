@@ -5022,6 +5022,18 @@
       "priority_reason": "strengthens t-461 coverage on rig startup; eliminates \"Claude hasnt read CLAUDE.md yet\" race",
       "assigned_forge": null,
       "initiative_id": "ini-018"
+    },
+    {
+      "id": "t-468",
+      "stage": "implementation",
+      "desc": "Extend scripts/tmux-stop.sh to cleanly stop the ui window (uvicorn UIs). Context: 2026-04-18 a new \"ui\" tmux window was added to the forge session with 4 panes running uvicorn (bellows 8080, ui-priority-poker 8001, ui-intent-editor 8003, ui-timeline 8004). Current tmux-stop.sh sends /exit + Enter to every pane in the session and kill-sessions. For the Claude panes (Marshal/Forges/Assembly/Anvil) /exit works. For the uvicorn panes /exit is a no-op keystroke; kill-session then SIGKILLs the processes abruptly, which may leave ports in TIME_WAIT. Fix: identify the ui window panes and send C-c (SIGINT) to them BEFORE the /exit fan-out \u2014 uvicorn handles SIGINT gracefully (closes sockets, exits). Detection: list-panes -t forge:ui. If window exists, loop over its panes sending C-c, wait ~2s for graceful shutdown, then continue the existing /exit flow for Claude panes. Window gets removed via the eventual kill-session. Add a tmux-stop-ui-only mode (or --ui-only flag) for the common \"just restart the UIs\" case without tearing down the Claude rig. Tests: start uvicorn in a throwaway tmux window, run stop, confirm process gone and port freed in <5s. Update the header comment to document the ui-window handling.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [],
+      "human_priority": 2,
+      "priority_reason": "completes rig-stop coverage for the new ui window; symmetry with tmux-layout.sh (eventually t-463)",
+      "assigned_forge": null,
+      "initiative_id": "ini-018"
     }
   ],
   "ideas": [
