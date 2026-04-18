@@ -4127,12 +4127,12 @@
       "id": "t-411",
       "stage": "implementation",
       "desc": "Assembly: auto-delete per-task branch after merge resolution. Cleanup must run on BOTH terminal outcomes of Assembly's merge loop: (a) successful merge \u2014 after commit lands on main, delete the feature branch (e.g. forge-quench/t-410) with `git branch -d <branch>`. (b) rejected/aborted merge \u2014 after rejecting back to Marshal with a reason, delete with `git branch -D <branch>` (force, since it isn't merged). IMPORTANT pre-step observed during t-410 cleanup: if the Forge's worktree still has the task branch checked out, branch deletion fails with 'used by worktree'. So Assembly (or the end-heat hook on the Forge side) must first restore the Forge worktree to its <forge-id>/scratch branch before `git branch -d/D`. Do NOT delete the worktree itself \u2014 only the branch. Deliverables: (1) update personas/assembly/CLAUDE.md with the new step in the merge protocol; (2) implement in Assembly's merge code path (likely smithy/smithy/assembly.py); (3) tests for both the success and rejection paths, including the 'worktree still on task branch' case; (4) the deletion (with branch name, SHA, mode -d/-D) shows up in the merge report.",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-018",
       "human_priority": null,
-      "priority_reason": "Anvil-filed cleanup hygiene",
+      "priority_reason": null,
       "assigned_forge": null
     },
     {
@@ -4163,12 +4163,12 @@
       "id": "t-414",
       "stage": "implementation",
       "desc": "Fix smithy auto-nudge for current tmux rig (t-408 layout).\n\nPROBLEM: smithy/smithy/cli.py::_nudge_persona was written for the old layout (session 'smithy2', one window per persona). Current rig is one window with personas as panes in session 'forge'. Every auto-nudge from queue-push/end-heat/set-next-tasks silently falls back to .smithy-nudge-queue/<persona>.jsonl with reason \"window 'forge' not found, nudge queued\". Marshal\u2192Forge handoff loop is broken; only manual scripts/nudge.sh works.\n\nFIX: rewrite _nudge_persona to resolve the target by pane_current_path (mirroring scripts/nudge.sh logic). Read session name from FORGE_SESSION env, default 'forge'. Match panes:\n  /.worktrees/<persona>/...     -> marshal, forge-quench, forge-temper, forge-anneal\n  /personas/<persona> (suffix)  -> anvil, assembly\nPreserve the existing return-dict shape (nudged/queued/persona/target/reason/message) and the busy/queue fallback path. Send message text and Enter as TWO separate send-keys calls (Claude Code TUI quirk).\n\nREFERENCE PATCH (already prototyped by Anvil on main, then reverted to respect 'only Assembly writes main' rule): see Anvil's nudge from 2026-04-13 \u2014 _resolve_pane(session, persona) helper + new _nudge_persona body.\n\nVERIFY:\n  python3 -c \"from smithy.cli import _resolve_pane; print(_resolve_pane('forge','marshal'))\"  # -> ('%XX', None)\n  smithy queue-push <some-task> --to forge  # status should show \"nudged: true\", forge-quench pane receives the message\n\nPOST-MERGE: every worktree must reinstall (`pip install -e <worktree>/smithy`) for the fix to take effect \u2014 flag this in the AAR / Marshal's next steering note so all 5 worktree installs (anvil, marshal, forge-quench, forge-temper, forge-anneal) get refreshed.",
-      "status": "open",
+      "status": "pending",
       "priority": 0,
       "blocked_by": [],
       "human_priority": 0,
       "priority_reason": "Auto-nudge across the rig is broken \u2014 Marshal's queue-push, Forge's end-heat, set-next-tasks all degrade to file-queue fallback. Manual scripts/nudge.sh is the only working channel until this lands.",
-      "assigned_forge": null
+      "assigned_forge": "forge-quench"
     },
     {
       "id": "t-416",
@@ -4180,6 +4180,41 @@
       "human_priority": 2,
       "priority_reason": "Structural fix for stealth coupling between worktrees via global smithy install. Not urgent (rebinding works as a stopgap), but bites repeatedly during integration \u2014 diagnosed during the t-411/t-414 nudge cascade on 2026-04-13.",
       "assigned_forge": null
+    },
+    {
+      "id": "t-417",
+      "stage": "implementation",
+      "desc": "Per-forge nudge routing + dynamic VALID_PERSONAS. After t-411's _nudge_persona fix, auto-nudges still miss because callers pass generic 'forge' and VALID_PERSONAS lacks forge-quench/temper/anneal + assembly. (1) Expand VALID_PERSONAS (or replace with dynamic check that reads state.parallel.forges[].id plus fixed set {marshal, anvil, assembly, chisel}). (2) queue-push/set-next-tasks/end-heat must nudge the SPECIFIC forge id \u2014 when a task has assigned_forge, nudge that id; when popping for a specific forge, end-heat nudges marshal (already correct), and queue-push/set-next-tasks should honor the --to flag with the full set. (3) Fix remaining stale 'smithy2:<persona>' references still in cli.py at lines 1647/1663/1751/1768/1783/1799 (smithy up / start-all / similar). (4) Tests that simulate a heat round-trip: forge-temper end-heat nudges marshal; marshal queue-push --forge forge-anneal nudges forge-anneal (not forge-quench). (5) Delete or reconcile .smithy-nudge-queue/forge.jsonl writers \u2014 if routing is now per-id, the generic 'forge' queue file should go away in favor of per-id queues (or callers should always specify). Anvil-filed 2026-04-17 after root-cause analysis of pre-halt deadlock.",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-018",
+      "human_priority": null,
+      "priority_reason": null,
+      "assigned_forge": "forge-quench"
+    },
+    {
+      "id": "t-418",
+      "stage": "testing",
+      "desc": "Fix TestMemoryWrite regressions (3 failing tests in smithy/tests/test_smithy.py). Caused by commit 43c5f46 (persona memory refactor \u2014 split IDENTITY.md from CLAUDE.md + per-persona memory). Tests assume MEMORY_DAILY.md lives at project root; refactor likely moved it to a per-persona directory. Fix either (a) the test expectations to match the new path, or (b) the memory-write command to write to the expected location, depending on which is intended. Affected tests: TestMemoryWrite::test_memory_write_creates_file, ::test_memory_write_with_heat, ::test_memory_write_appends. 182/185 pass currently. Anvil-filed 2026-04-17 while inspecting post-t-411-merge test suite.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [],
+      "human_priority": null,
+      "priority_reason": "p2 + stage-balance",
+      "assigned_forge": null
+    },
+    {
+      "id": "t-419",
+      "stage": "implementation",
+      "desc": "state.json sync \u2014 single source of truth across worktrees. ROOT CAUSE (2026-04-17): state.json is a git-tracked file, so every worktree has its own independent working copy. Marshal's queue-push writes to .worktrees/marshal/state.json; Forge's queue-pop reads from .worktrees/forge-quench/state.json; neither ever sees the other. Main's state.json drifts from all four worktrees. Evidence: on 2026-04-17 forge-quench saw only t-373 in next_tasks while main had [t-417, t-411, t-373]; marshal worktree had its own separate next_tasks entirely; forge-temper/anneal had empty next_tasks. Combined with the _nudge_persona bug (t-411, now fixed), this is why the rig has been effectively deadlocked since 2026-04-12. APPROACHES (pick one, recommend A): (A) RESOLVE IN SMITHY: smithy CLI detects when cwd is inside a worktree and resolves state.json / worklog.tsv / .smithy-nudge-queue/ to the MAIN repo root (git worktree list to find the main checkout). All agents then mutate the same files regardless of which worktree they run from. Pros: no git workflow changes, works with existing branches. Cons: concurrency (need file locking \u2014 flock on state.json during read-modify-write cycles). (B) SYMLINK APPROACH: git rm --cached state.json; add to .gitignore; seed each worktree with a symlink to <main>/state.json. Pros: transparent to smithy CLI. Cons: loses state.json git history; needs alternate archival strategy (periodic snapshot commit of state.json content to a tracked archive file). (C) MOVE OUT OF TREE: relocate state.json to .smithy/state.json (new dir), gitignore it, keep a periodic tracked snapshot. Larger refactor. DO BOTH IMMEDIATELY: (1) the main resolution mechanism (A preferred), (2) add scripts/state-sync.sh as an emergency recovery tool that copies main's state.json into all worktrees (what Anvil did manually 2026-04-17), (3) patrol check that flags divergence between main and any worktree's state.json. TESTS: simulate Marshal-in-worktree queue-push \u2192 Forge-in-different-worktree queue-pop sees the task; simulate concurrent writes with locking. Anvil-filed 2026-04-17 after discovering the deadlock root cause while unblocking forge-quench for t-417.",
+      "status": "complete",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-018",
+      "human_priority": null,
+      "priority_reason": null,
+      "assigned_forge": "forge-quench"
     }
   ],
   "ideas": [
@@ -4452,7 +4487,8 @@
     }
   ],
   "next_tasks": [
-    "t-411",
+    "t-419",
+    "t-414",
     "t-373"
   ],
   "schema_version": 1,
@@ -4484,7 +4520,7 @@
   ],
   "parallel": {
     "max_forges": 3,
-    "halt_flag": true,
+    "halt_flag": false,
     "forges": [
       {
         "id": "forge-quench",
@@ -4519,7 +4555,7 @@
     ],
     "assembly": {
       "enabled": true,
-      "last_heartbeat": "2026-04-13T09:10:42Z"
+      "last_heartbeat": "2026-04-17T22:21:52Z"
     },
     "forge_roster": [
       "forge-quench",
