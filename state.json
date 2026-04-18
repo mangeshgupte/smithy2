@@ -1,16 +1,16 @@
 {
   "project": "the-smithy",
   "budget": {
-    "total_heats": 1043,
-    "used": 822,
+    "total_heats": 1543,
+    "used": 824,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
     "research": {
       "target": 0.156,
-      "heats": 50,
+      "heats": 51,
       "progress": 0.9,
-      "value_ema": 0.765
+      "value_ema": 0.76
     },
     "planning": {
       "target": 0.21,
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 375,
+      "heats": 376,
       "progress": 0.98,
-      "value_ema": 0.621
+      "value_ema": 0.675
     },
     "testing": {
       "target": 0.183,
@@ -4500,7 +4500,7 @@
       "id": "t-443",
       "stage": "implementation",
       "desc": "Multi-forge Poker \u2014 Task 4/4 (Priority Poker UI, ini-018). Extend initiative card in ui-priority-poker/app.py with three advisory fields: parallelism chip (toggle parallel|serial, green=parallel/amber=serial), affinity chip (editable comma-separated forge-id list), touches chip (editable path-glob list). Drag-to-rank unchanged. Unset cards show 'parallel \u00b7 any forge \u00b7 no contention' dim text. Tests: loaded initiative with all three shows chips; POST persists; drag-to-rank works after chip edits; Playwright smoke: set parallelism=serial, save, reload \u2192 chip color flips. Depends on t-440. Source: plans/multi-forge-poker-plan.md \u00a7Task4. Est 1-2 heats.",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 1,
       "blocked_by": [
         "t-440"
@@ -4526,7 +4526,7 @@
       "id": "t-445",
       "stage": "research",
       "desc": "ini-019 R2: Retro-annotate task\u2192initiative_id mapping. Add initiative_id field to state.queue task schema. One-time backfill: cross-reference worklog notes, commit messages, and ini descriptions to assign initiative_id to historical tasks. Output: migration script + updated state.json + schema-version bump.",
-      "status": "pending",
+      "status": "submitted",
       "priority": 2,
       "blocked_by": [
         "t-444"
@@ -4554,14 +4554,14 @@
       "id": "t-447",
       "stage": "implementation",
       "desc": "ini-019 I0: Retro-populate initiative_id for all existing state.queue tasks (~400 entries). Cross-reference each task against initiatives list using: task desc keywords, worklog.tsv notes, merge-commit messages, ini description overlap, and heat-proximity to ini approval window. Produce a proposed mapping as a reviewable dry-run diff first (plans/ini-019-retro-map.md), then apply in a single state.json edit. Flag ambiguous cases (multiple plausible ini) rather than guess. Tests: every mapped task has a valid ini_id from initiatives list.",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 2,
       "blocked_by": [
         "t-445"
       ],
       "human_priority": "p1",
       "priority_reason": "ini-019 backfill; once schema lands, without this retro-pop no historical metrics work",
-      "assigned_forge": null,
+      "assigned_forge": "forge-temper",
       "initiative_id": "ini-019"
     },
     {
@@ -4701,7 +4701,7 @@
       "description": "Read-only aggregation layer over worklog.tsv + rig-events.jsonl + assembly-log.jsonl + state.json + git log. Three surfaces: (L0) smithy report CLI \u2014 initiative burn-down, forge idle%, top failure buckets. (L1) Bellows Forge Ops dashboard \u2014 initiative panel with burn bars, task drill-down with timeline, persona heatmap, Issues view (ghost submits, test recurrence, Assembly rejects, thrash \u22653 retries), flow diagram. (L2) per-heat JSON snapshots for time-series regression analysis. Principle: no new write paths; deterministic replay from the record. Pre-req: retro-annotate task\u2192initiative_id mapping (schema gap in state.queue).",
       "status": "approved",
       "budget_cap": 25,
-      "heats_used": 2,
+      "heats_used": 3,
       "viewed_at": null,
       "rank": 2,
       "parallelism": "parallel",
@@ -5006,7 +5006,6 @@
     }
   ],
   "next_tasks": [
-    "t-443",
     "t-448",
     "t-449",
     "t-441",
