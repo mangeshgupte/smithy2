@@ -6,6 +6,4 @@ Entry types: `feedback`, `project`, `reference`. Entries live alongside this fil
 
 Operational rollups live in `MEMORY_DAILY.md` and `MEMORY_WEEKLY.md` (same directory); typed entries go here.
 
-<!-- Example entry line (delete when real entries land):
-- [pytest collect hangs on .worktrees](project_pytest_worktree.md) — exclude via --ignore; otherwise 30s+ collection time
--->
+- [Non-primary checkpoint recovery](project_checkpoint_missing_recovery.md) — if end-heat reports missing `.forge-checkpoint-<id>.json` despite successful start-heat, reconstruct the file manually with heat/stage/task_id/git_head/timestamp; flag as bug
