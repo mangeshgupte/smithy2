@@ -220,6 +220,52 @@ def _ensure_task_branch(root, forge_id, task_id):
     return {"branch": expected, "created": True, "from": cur}
 
 
+def _rebind_smithy_install(root, sha):
+    """t-460: post-merge hook — re-run `pip install -e` from the MAIN
+    repo's smithy/ if the merged commit touched smithy code.
+
+    The editable install is global (one .pth file shared across all
+    panes). Whichever pane last ran `pip install -e` wins. After
+    Assembly merges new smithy/ code into main, we proactively rebind
+    the install to main so all panes (including Assembly's own next
+    pytest run) import the freshly merged code, not whatever stale
+    worktree the .pth currently points at.
+
+    Best-effort: never raises. Skipped when the merge didn't touch
+    smithy/ paths, or when SMITHY_SKIP_INSTALL_REBIND=1 is set (CI /
+    test fixtures don't want a real pip call)."""
+    import os
+    import subprocess
+    if os.environ.get("SMITHY_SKIP_INSTALL_REBIND"):
+        return {"rebound": False, "reason": "SMITHY_SKIP_INSTALL_REBIND set"}
+    main_root = main_repo_root(root)
+    smithy_pkg = main_root / "smithy"
+    if not (smithy_pkg / "pyproject.toml").exists():
+        return {"rebound": False, "reason": "no main smithy/pyproject.toml"}
+    try:
+        diff = subprocess.run(
+            ["git", "show", "--stat", "--name-only", "--format=", sha],
+            cwd=str(main_root), capture_output=True, text=True, timeout=10,
+        )
+    except Exception as exc:
+        return {"rebound": False, "reason": f"git show failed: {exc}"}
+    touched = [ln.strip() for ln in diff.stdout.splitlines() if ln.strip()]
+    if not any(p.startswith("smithy/") for p in touched):
+        return {"rebound": False, "reason": "merge didn't touch smithy/"}
+    try:
+        result = subprocess.run(
+            [sys.executable, "-m", "pip", "install", "-e", str(smithy_pkg),
+             "--user", "--quiet"],
+            capture_output=True, text=True, timeout=60,
+        )
+    except Exception as exc:
+        return {"rebound": False, "reason": f"pip install failed: {exc}"}
+    if result.returncode != 0:
+        return {"rebound": False,
+                "reason": f"pip rc={result.returncode}: {result.stderr[:120]}"}
+    return {"rebound": True, "target": str(smithy_pkg), "sha": sha[:12]}
+
+
 def _rig_events_path(root):
     """t-425: canonical rig-events.jsonl path — append-only telemetry at
     the MAIN repo root. Gitignored."""
@@ -803,8 +849,15 @@ def _do_assembly_merge(root, task_id, sha, resolution):
     signal = "🔀" if resolution else "✅"
     append_worklog(root, state["budget"]["used"], "implementation", task_id,
                    outcome, 0.0, signal, f"merge sha={sha[:12]}")
+
+    # t-460: rebind the global editable smithy install to MAIN whenever
+    # a merge touches smithy/* code. Prevents stale-binary rejects where
+    # Assembly's pytest collects against a worktree's old smithy package
+    # because some other pane's `pip install -e` left the .pth pointing
+    # there. Best-effort and quiet — failures don't block the merge.
+    rebind = _rebind_smithy_install(root, sha)
     return {"task_id": task_id, "status": "complete", "outcome": outcome,
-            "sha": sha}
+            "sha": sha, "rebind": rebind}
 
 
 @cli.command("assembly-reject")
