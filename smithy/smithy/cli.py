@@ -196,6 +196,35 @@ def _ensure_task_branch(root, forge_id, task_id):
     return {"branch": expected, "created": True, "from": cur}
 
 
+def _rig_events_path(root):
+    """t-425: canonical rig-events.jsonl path — append-only telemetry at
+    the MAIN repo root. Gitignored."""
+    return main_repo_root(root) / "rig-events.jsonl"
+
+
+def _emit_rig_event(root, event, **fields):
+    """t-425: append one JSON line to rig-events.jsonl.
+
+    Never raises into callers — telemetry must not break heat execution.
+    Each row: `{"ts": ISO8601, "event": str, ...fields}`. Consumers
+    (rig-replay, future dashboards) tolerate unknown fields so new
+    emitters can add their own without a schema bump."""
+    try:
+        entry = {
+            "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "event": event,
+        }
+        for k, v in fields.items():
+            if v is not None:
+                entry[k] = v
+        path = _rig_events_path(root)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "a") as f:
+            f.write(json.dumps(entry) + "\n")
+    except Exception:
+        pass
+
+
 def _output(data: dict):
     """Print JSON to stdout (for LLM consumption)."""
     click.echo(json.dumps(data, indent=2))
@@ -296,6 +325,8 @@ def start_heat(ctx, stage, task_id, forge_id, reuse_scratch):
     }
     if branch_change:
         result["branch"] = branch_change
+    _emit_rig_event(root, "forge_started", actor=forge_id, forge_id=forge_id,
+                    task_id=task_id, stage=stage, heat=heat_number)
     _output(result)
     _err(f"Heat {heat_number} [{stage}] started as {forge_id}"
          + (f" — {task_desc}" if task_desc else ""))
@@ -510,6 +541,12 @@ def end_heat(ctx, value, signal, notes, outcome, progress, no_nudge, forge_id,
         if not test_gate["passed"]:
             result["test_gate"]["returncode"] = test_gate.get("returncode")
 
+    # t-425: emit forge_ended event regardless of nudge outcome — this is
+    # the authoritative "heat is closed" timestamp for replay/latency work.
+    _emit_rig_event(root, f"forge_ended_{effective_outcome}",
+                    actor=forge_id, forge_id=forge_id, task_id=task_id,
+                    stage=stage, heat=heat, value=value, signal=signal)
+
     # Auto-nudge marshal so it can re-prioritize and assign next task.
     # t-422: also nudge Assembly when the task was submitted — that's what
     # closes the merge loop without Anvil hand-driving every merge.
@@ -517,12 +554,20 @@ def end_heat(ctx, value, signal, notes, outcome, progress, no_nudge, forge_id,
         nudge_msg = f"HEAT_DONE: {task_id} {outcome}, value={value}, signal={signal}. Re-prioritize."
         nudge_result = _nudge_persona("marshal", nudge_msg, root=root)
         result["nudge"] = nudge_result
+        _emit_rig_event(root, "marshal_nudged", actor=forge_id,
+                        target="marshal", task_id=task_id,
+                        nudged=nudge_result.get("nudged"))
         if submit_entry:
             asm_msg = (f"ASSEMBLY_QUEUE: {submit_entry['branch']} "
                        f"@ {submit_entry['sha'][:8]} ({task_id}) — "
                        f"run smithy assembly-tick.")
             asm_result = _nudge_persona("assembly", asm_msg, root=root)
             result["assembly_nudge"] = asm_result
+            _emit_rig_event(root, "assembly_nudged", actor=forge_id,
+                            target="assembly", task_id=task_id,
+                            branch=submit_entry["branch"],
+                            sha=submit_entry["sha"],
+                            nudged=asm_result.get("nudged"))
         if nudge_result["nudged"]:
             _err(f"Heat {heat} [{stage}] {signal} — {notes[:60]} — nudged marshal")
         else:
@@ -796,12 +841,24 @@ def assembly_tick_cmd(ctx, base, dry_run, tests_cmd):
     forge_id = item["forge_id"]
     task_id = item["task_id"]
     expected_branch = branch_name(forge_id, task_id)
+    # t-425: telemetry. Start a timer so we can report latency_ms on exit.
+    _tick_started_at = datetime.now(timezone.utc)
+    _emit_rig_event(root, "assembly_tick_begin", actor="assembly",
+                    forge_id=forge_id, task_id=task_id,
+                    branch=expected_branch, sha=item.get("sha"))
+
+    def _tick_latency_ms():
+        return int((datetime.now(timezone.utc) - _tick_started_at)
+                   .total_seconds() * 1000)
 
     def _reject(reason: str) -> dict:
         abort_rebase(root, forge_id)
         _do_assembly_reject(root, task_id, reason)
         _log(root, forge_id, task_id, "rejected", reason)
         _pop_queue(qpath, rest)
+        _emit_rig_event(root, "assembly_tick_rejected", actor="assembly",
+                        forge_id=forge_id, task_id=task_id, reason=reason,
+                        latency_ms=_tick_latency_ms())
         return {"status": "rejected", "task_id": task_id, "reason": reason}
 
     # 1. Rebase onto base
@@ -858,6 +915,10 @@ def assembly_tick_cmd(ctx, base, dry_run, tests_cmd):
     _queue_nudge(root, "marshal", merged_msg)
     _nudge_persona("marshal", merged_msg, root=root)
     _pop_queue(qpath, rest)
+    _emit_rig_event(root, "assembly_tick_merged", actor="assembly",
+                    forge_id=forge_id, task_id=task_id,
+                    branch=mr["branch"], sha=mr["sha"],
+                    latency_ms=_tick_latency_ms())
     _output({"status": "merged", "task_id": task_id, "sha": mr["sha"],
              "branch": mr["branch"]})
 
@@ -1255,6 +1316,8 @@ def set_next_tasks(ctx, task_ids, no_nudge):
     save_state(root, state)
 
     result = {"next_tasks": ordered, "count": len(ordered)}
+    _emit_rig_event(root, "queue_set", actor="marshal",
+                    task_ids=ordered, count=len(ordered))
 
     # Auto-nudge the Forge assigned to the top task (t-414 per-forge routing).
     # Fall back to the primary Forge when assigned_forge is unset.
@@ -1265,6 +1328,9 @@ def set_next_tasks(ctx, task_ids, no_nudge):
         target = top_task.get("assigned_forge") or primary_forge_id(state)
         nudge_result = _nudge_persona(target, nudge_msg, root=root)
         result["nudge"] = nudge_result
+        _emit_rig_event(root, "nudge_sent", actor="marshal", target=target,
+                        task_id=ordered[0],
+                        nudged=nudge_result.get("nudged"))
         if nudge_result["nudged"]:
             _err(f"Set {len(ordered)} next tasks: {', '.join(ordered)} — nudged {target}")
         else:
@@ -1515,6 +1581,8 @@ def queue_push(ctx, task_id, top, no_nudge, target_persona, assigned_forge):
 
     position = "top" if top else "bottom"
     result = {"task_id": task_id, "position": position, "queue_size": len(next_tasks)}
+    _emit_rig_event(root, "queue_push", actor="marshal", task_id=task_id,
+                    position=position, queue_size=len(next_tasks))
 
     # Auto-nudge unless --no-nudge. Under t-414 routing, a generic "forge"
     # target resolves to the task's assigned_forge (if any) or the primary
@@ -1529,6 +1597,9 @@ def queue_push(ctx, task_id, top, no_nudge, target_persona, assigned_forge):
         nudge_msg = f"Task {task_id} queued. Run smithy queue-pop to start."
         nudge_result = _nudge_persona(target, nudge_msg, root=root)
         result["nudge"] = nudge_result
+        _emit_rig_event(root, "nudge_sent", actor="marshal", target=target,
+                        task_id=task_id,
+                        nudged=nudge_result.get("nudged"))
         if nudge_result["nudged"]:
             _err(f"Pushed {task_id} to {position} of queue ({len(next_tasks)} total) — nudged {target}")
         else:
@@ -1602,6 +1673,9 @@ def queue_pop(ctx, forge_id):
 
     if skipped_stale:
         _err(f"Skipped {len(skipped_stale)} stale head(s): {skipped_stale}")
+    _emit_rig_event(root, "queue_pop", actor=forge_id or "queue",
+                    task_id=task_id, forge_id=forge_id,
+                    remaining=len(state["next_tasks"]))
     _output({"task_id": task_id, "task": task,
              "remaining": len(state["next_tasks"]),
              "skipped_stale": skipped_stale,
@@ -3381,6 +3455,56 @@ def steering_retro(ctx, since, fmt):
         lines.append("")
 
     click.echo("\n".join(lines))
+
+
+@cli.command("rig-replay")
+@click.option("--since", "since", default=50, type=int,
+              help="Print the last N events (default 50). Pass 0 for all.")
+@click.option("--event", "event_filter", default=None,
+              help="Only show events whose name contains this substring.")
+@click.option("--json", "as_json", is_flag=True, default=False,
+              help="Emit raw JSONL instead of the pretty single-line format.")
+@click.pass_context
+def rig_replay(ctx, since, event_filter, as_json):
+    """t-425: pretty-print recent rig-events.jsonl entries.
+
+    Append-only telemetry is useless if nobody reads it — this is the
+    zero-dep viewer. Format per row: `<ts>  <event>  actor=<x>
+    task=<y>  [detail]`. Use `--since 0` to read the whole file, or
+    `--event assembly` to filter to a single class of events.
+    """
+    path = _rig_events_path(ctx.obj["root"])
+    if not path.exists():
+        _err(f"No rig-events.jsonl at {path}")
+        return
+    lines = [ln for ln in path.read_text().splitlines() if ln.strip()]
+    if event_filter:
+        lines = [ln for ln in lines if event_filter in ln]
+    if since > 0:
+        lines = lines[-since:]
+    if as_json:
+        for ln in lines:
+            click.echo(ln)
+        return
+    for ln in lines:
+        try:
+            e = json.loads(ln)
+        except json.JSONDecodeError:
+            click.echo(f"?? {ln}")
+            continue
+        extras = []
+        for k in ("forge_id", "task_id", "stage", "branch", "sha",
+                  "latency_ms", "nudged", "reason", "target", "value",
+                  "signal", "heat", "position", "queue_size", "count",
+                  "task_ids"):
+            if k in e:
+                v = e[k]
+                if k == "sha" and isinstance(v, str):
+                    v = v[:8]
+                extras.append(f"{k}={v}")
+        click.echo(f"{e.get('ts','?')}  {e.get('event','?'):<26}"
+                   f"  actor={e.get('actor','?'):<14}  "
+                   f"{'  '.join(extras)}")
 
 
 @cli.command("up")
