@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1543,
-    "used": 844,
+    "used": 845,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -4955,11 +4955,11 @@
       "id": "t-462",
       "stage": "implementation",
       "desc": "Add patrol check for stalled Forges via queue-push/queue-pop correlation. Current patrol (cli.py:2489-2520) only catches zombies with status=busy AND stale heartbeat >900s. Gap: a Forge that dies between heats has status=idle and a stale-but-valid heartbeat \u2014 patrol sees nothing wrong while Marshal pushes tasks into a queue that the Forge never consumes. Observed 2026-04-18: forge-quench wedged at an interactive Claude prompt looking idle while nudges piled up. Fix: add patrol check #11 that reads rig-events.jsonl, finds the latest queue_pushed event per forge, correlates with the most recent queue_popped/heat_started event. If a queue_pushed has no matching pop within N seconds (start with 120s; Forges idle-poll at 30s so 4x grace), emit a message like \"forge-X ignored queue push at TS \u2014 Ys stale; possibly unreachable\". Requires: (a) scanning rig-events.jsonl tail (most recent 500 events is plenty), (b) per-forge push/pop bookkeeping, (c) ignore if the Forge has since transitioned to busy (the pop event naturally resolves). Output in patrol JSON under stalled_forges alongside existing stuck_forges. Complements ini-019 observability \u2014 this is the first derived-from-events check.",
-      "status": "submitted",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
-      "human_priority": 1,
-      "priority_reason": "ini-019 observability \u2014 closes the idle-but-unreachable detection gap",
+      "human_priority": null,
+      "priority_reason": null,
       "assigned_forge": "forge-temper",
       "initiative_id": "ini-019"
     },
@@ -4991,11 +4991,23 @@
       "id": "t-465",
       "stage": "implementation",
       "desc": "Fix Bellows 500 on home page: TypeError in read_project when a worklog row has signal=None. Location: bellows/forge_reader.py:223. Current code: s = h.get('signal', '\ud83d\udfe2'); if '\ud83d\udd34' in s: ...  dict.get(key, default) returns the default only when key is MISSING, not when value is None. Some worklog rows have signal=None (observed 2026-04-18 blocking the whole home page). Fix: s = h.get('signal') or '\ud83d\udfe2'  (coalesces both missing-key and None-value). Apply same defensive pattern to any other dict.get(..., default) reads in that file where None is a real possibility in the data. Test: add a unit test that read_project handles a worklog with a None signal field without raising.",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 1,
       "blocked_by": [],
       "human_priority": 1,
       "priority_reason": "bellows home page 500s; small fix; blocks Bellows UX",
+      "assigned_forge": "forge-temper",
+      "initiative_id": "ini-018"
+    },
+    {
+      "id": "t-466",
+      "stage": "implementation",
+      "desc": "Add initiative rank management CLI + patrol invariant. Background: rank is an ordering field on initiatives but no code owns its invariants \u2014 today 2026-04-18 Anvil hand-edited ini-020.rank=2 + ini-019.rank=3 while ini-016 and ini-017 (both rejected, inactive) were already sitting at ranks 2 and 3 respectively. Result: collisions. Root cause: rank is loose metadata with no uniqueness check, no shift-on-insert, no cleanup on status change. Deliverable: (a) CLI: `smithy initiative rank <id> <N>` \u2014 set absolute, cascade-shift all others >=N;     `smithy initiative uprank <id>` / `downrank <id>` \u2014 swap adjacent;     `smithy initiative mv <id> --before <other>` \u2014 relative insert. (b) Invariant enforcement: only approved initiatives participate in ranking; rejected/complete/    abandoned get rank=null. On any rank change, renumber contiguously 1..N. Atomic under state_lock. (c) Patrol check: ranks of approved initiatives must be unique, contiguous from 1, non-null.     Flags manual-edit drift (no auto-fix \u2014 surface for operator). (d) One-time cleanup migration: scan current state.json, null-out ranks on non-approved     initiatives, renumber the approved ones contiguously. (e) Update Anvil memory / CLAUDE.md: prefer CLI over hand-editing state.json for rank ops. Tests: insert in middle shifts correctly; uprank at rank 1 is a no-op; downrank at last is a no-op; swapping an approved with a rejected should reject (rejected has no rank); patrol flags synthetic collision.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [],
+      "human_priority": 2,
+      "priority_reason": "coordination hygiene; prevents recurrence of today rank-collision; low effort, clear scope",
       "assigned_forge": null,
       "initiative_id": "ini-018"
     }
