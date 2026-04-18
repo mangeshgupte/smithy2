@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 402,
+      "heats": 403,
       "progress": 0.98,
-      "value_ema": 0.472
+      "value_ema": 0.585
     },
     "testing": {
       "target": 0.183,
@@ -4973,7 +4973,7 @@
       "human_priority": 1,
       "priority_reason": "rig hygiene \u2014 stale Bellows blocks initiative detail page; pattern of un-managed services recurs",
       "assigned_forge": "forge-anneal",
-      "initiative_id": "ini-018"
+      "initiative_id": "ini-022"
     },
     {
       "id": "t-464",
@@ -5003,7 +5003,7 @@
       "id": "t-466",
       "stage": "implementation",
       "desc": "Add initiative rank management CLI + patrol invariant. Background: rank is an ordering field on initiatives but no code owns its invariants \u2014 today 2026-04-18 Anvil hand-edited ini-020.rank=2 + ini-019.rank=3 while ini-016 and ini-017 (both rejected, inactive) were already sitting at ranks 2 and 3 respectively. Result: collisions. Root cause: rank is loose metadata with no uniqueness check, no shift-on-insert, no cleanup on status change. Deliverable: (a) CLI: `smithy initiative rank <id> <N>` \u2014 set absolute, cascade-shift all others >=N;     `smithy initiative uprank <id>` / `downrank <id>` \u2014 swap adjacent;     `smithy initiative mv <id> --before <other>` \u2014 relative insert. (b) Invariant enforcement: only approved initiatives participate in ranking; rejected/complete/    abandoned get rank=null. On any rank change, renumber contiguously 1..N. Atomic under state_lock. (c) Patrol check: ranks of approved initiatives must be unique, contiguous from 1, non-null.     Flags manual-edit drift (no auto-fix \u2014 surface for operator). (d) One-time cleanup migration: scan current state.json, null-out ranks on non-approved     initiatives, renumber the approved ones contiguously. (e) Update Anvil memory / CLAUDE.md: prefer CLI over hand-editing state.json for rank ops. Tests: insert in middle shifts correctly; uprank at rank 1 is a no-op; downrank at last is a no-op; swapping an approved with a rejected should reject (rejected has no rank); patrol flags synthetic collision.",
-      "status": "in_progress",
+      "status": "submitted",
       "priority": 2,
       "blocked_by": [],
       "human_priority": 2,
@@ -5021,7 +5021,7 @@
       "human_priority": 2,
       "priority_reason": "strengthens t-461 coverage on rig startup; eliminates \"Claude hasnt read CLAUDE.md yet\" race",
       "assigned_forge": null,
-      "initiative_id": "ini-018"
+      "initiative_id": "ini-022"
     },
     {
       "id": "t-468",
@@ -5032,8 +5032,8 @@
       "blocked_by": [],
       "human_priority": 2,
       "priority_reason": "completes rig-stop coverage for the new ui window; symmetry with tmux-layout.sh (eventually t-463)",
-      "assigned_forge": null,
-      "initiative_id": "ini-018"
+      "assigned_forge": "forge-anneal",
+      "initiative_id": "ini-022"
     }
   ],
   "ideas": [
@@ -5080,7 +5080,7 @@
       "description": "Run multiple Forge workers concurrently via per-Forge git worktrees. Dedicated Assembly teammate handles merge queue integration (conflicts, test-on-integrate, merge ordering). Unlocks parallelism (Marshal dispatches N heats simultaneously) and enforces branch hygiene. Incremental: N=2 proof before N=3+.",
       "status": "approved",
       "budget_cap": null,
-      "heats_used": 53,
+      "heats_used": 54,
       "viewed_at": "2026-04-18T21:20:43Z",
       "rank": 1,
       "parallelism": "parallel",
@@ -5124,7 +5124,7 @@
       "budget_cap": 15,
       "heats_used": 0,
       "viewed_at": null,
-      "rank": 4,
+      "rank": 5,
       "parallelism": "parallel",
       "affinity": [],
       "touches": []
@@ -5373,6 +5373,17 @@
       "parallelism": "parallel",
       "affinity": [],
       "touches": []
+    },
+    {
+      "id": "ini-022",
+      "theme_id": "th-002",
+      "title": "Rig Startup & Lifecycle",
+      "description": "Make scripts/tmux-layout.sh and scripts/tmux-stop.sh the canonical, complete entry points for starting and stopping The Forge. Today a fresh rig launch covers Claude panes for Marshal/Forges/Assembly but: (a) UIs (bellows + 3 ui-* webapps) are launched ad hoc, (b) per-Forge venvs (t-461) depend on Claude reading CLAUDE.md after launch rather than being bootstrapped first, (c) stop sends /exit to every pane \u2014 a no-op for uvicorn panes, leaving graceful server shutdown to kill-session SIGKILL. Goals: (1) every rig member launches through tmux-layout.sh \u2014 no manual steps, no orphan processes, no startup-order races; (2) each agent pane is bootstrapped (venv created + activated, state verified) BEFORE its Claude session starts, not after; (3) stop is graceful (SIGINT for uvicorn, /exit for Claude, port freed before script returns) and complete (all tmux windows gone); (4) a smoke test validates start\u2192stop cycles leave zero orphan processes and zero bound ports; (5) operators never need to kill uvicorns or hand-compose tmux commands. Folds in existing tasks: t-463 (Bellows/UI as managed tmux windows), t-467 (venv pre-run), t-468 (stop handles UI window).",
+      "status": "approved",
+      "budget_cap": 12,
+      "heats_used": 0,
+      "viewed_at": null,
+      "rank": 4
     }
   ],
   "feedback_cursor": 26,
@@ -5403,7 +5414,8 @@
   ],
   "next_tasks": [
     "t-431",
-    "t-447"
+    "t-447",
+    "t-468"
   ],
   "schema_version": 2,
   "intents": [
