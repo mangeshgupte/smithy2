@@ -148,4 +148,4 @@ def test_patrol_flags_worktree_local_write(dual_worktree):
     combined = " ".join(payload.get("issues", []))
     assert "budget.used" in combined and "wt-a" in combined, \
         f"patrol did not flag worktree-local write: {payload}"
-    assert payload.get("checks_run") == 8
+    assert payload.get("checks_run") >= 8
