@@ -103,7 +103,7 @@ def test_n2_sandbox_five_heats_end_to_end(sandbox):
         assert rc == 0
         rc, _, _ = _smithy(sandbox, "end-heat", "0.7", "🟢",
                            f"sandbox work for {tid}",
-                           "--outcome", "complete", "--no-nudge")
+                           "--outcome", "complete", "--no-nudge", "--skip-tests")
         assert rc == 0
         # Task should now be submitted (assembly.enabled=True).
         task = next(t for t in _state(sandbox)["queue"] if t["id"] == tid)
@@ -151,7 +151,7 @@ def test_patrol_clean_after_sandbox_run(sandbox):
         tid = json.loads(out)["task_id"]
         _smithy(sandbox, "start-heat", "implementation", "--task", tid)
         _smithy(sandbox, "end-heat", "0.7", "🟢", "ok",
-                "--outcome", "complete", "--no-nudge")
+                "--outcome", "complete", "--no-nudge", "--skip-tests")
         _smithy(sandbox, "assembly-merge", tid, "--sha", f"sha{i:02d}" + "0" * 36)
 
     rc, out, _ = _smithy(sandbox, "patrol")
@@ -171,7 +171,7 @@ def test_cross_forge_rejection_requeues_and_reassigns(sandbox):
     _smithy(sandbox, "queue-pop", "--forge", "forge-01")
     _smithy(sandbox, "start-heat", "implementation", "--task", "t-s1")
     _smithy(sandbox, "end-heat", "0.7", "🟢", "first attempt",
-            "--outcome", "complete", "--no-nudge")
+            "--outcome", "complete", "--no-nudge", "--skip-tests")
     # Assembly rejects.
     _smithy(sandbox, "assembly-reject", "t-s1", "--reason", "semantic drift")
 

@@ -98,6 +98,54 @@ def _build_priority_reason(state: dict, task: dict) -> str:
     return reason[:40]
 
 
+def _run_presubmit_tests(root, forge_id, tests_cmd=None, timeout_s=600):
+    """t-427: run the project's pytest suite in the Forge's worktree,
+    returning `{"passed": bool, "output": str}`. Used as a hard gate in
+    end-heat before a task is handed off to Assembly — a Forge that
+    submits red tests used to burn an Assembly rebase + rerun cycle
+    (observed with t-425 and t-423 on 2026-04-17). Now the Forge sees
+    the red locally and re-iterates the next heat.
+
+    Command precedence: explicit --tests-cmd > SMITHY_TESTS_CMD env >
+    the shipped default `python3 -m pytest -q smithy/tests/ tests/`,
+    which catches BOTH legacy test paths in this repo. Subprocess runs
+    from inside the Forge's worktree so it exercises the rebased tree,
+    not main's working copy.
+    """
+    import os
+    import shlex
+    import subprocess
+    cmd = tests_cmd or os.environ.get(
+        "SMITHY_TESTS_CMD",
+        "python3 -m pytest -q smithy/tests/ tests/",
+    )
+    wt = main_repo_root(root) / ".worktrees" / (forge_id or "")
+    cwd = wt if (forge_id and wt.exists() and (wt / ".git").exists()) else root
+    try:
+        r = subprocess.run(
+            shlex.split(cmd), cwd=str(cwd),
+            capture_output=True, text=True, timeout=timeout_s,
+        )
+    except subprocess.TimeoutExpired:
+        return {"passed": False, "returncode": None,
+                "output": f"tests timed out after {timeout_s}s",
+                "cmd": cmd, "cwd": str(cwd)}
+    return {
+        "passed": r.returncode == 0,
+        "returncode": r.returncode,
+        "output": (r.stdout + r.stderr),
+        "cmd": cmd,
+        "cwd": str(cwd),
+    }
+
+
+# t-427: stages where end-heat skips the pre-submit gate. Research /
+# planning / marketing heats produce prose + notes, not code, so
+# pytest on them would be pure overhead. Testing / implementation /
+# editing all touch code and must go through the gate.
+_NO_GATE_STAGES = {"research", "planning", "marketing"}
+
+
 def _ensure_task_branch(root, forge_id, task_id):
     """t-420: checkout `<forge_id>/<task_id>` off main if not already there.
 
@@ -262,8 +310,16 @@ def start_heat(ctx, stage, task_id, forge_id, reuse_scratch):
 @click.option("--no-nudge", is_flag=True, default=False, help="Skip auto-nudge to marshal")
 @click.option("--forge", "forge_id", default=None,
               help="t-409 H1: Forge id (defaults to cwd's worktree; primary if cwd is main).")
+@click.option("--skip-tests", "skip_tests", is_flag=True, default=False,
+              help="t-427: bypass the pre-submit pytest gate. Use only when "
+                   "you've already run tests or the heat genuinely didn't "
+                   "touch code.")
+@click.option("--tests-cmd", "tests_cmd", default=None,
+              help="t-427: override the pre-submit test command (default "
+                   "`python3 -m pytest -q smithy/tests/ tests/`).")
 @click.pass_context
-def end_heat(ctx, value, signal, notes, outcome, progress, no_nudge, forge_id):
+def end_heat(ctx, value, signal, notes, outcome, progress, no_nudge, forge_id,
+             skip_tests, tests_cmd):
     """End the current heat. Updates all counters and logs."""
     root = ctx.obj["root"]
     state = load_state(root)
@@ -317,6 +373,36 @@ def end_heat(ctx, value, signal, notes, outcome, progress, no_nudge, forge_id):
     if assembly_enabled and outcome == "complete" and task_id != "generated":
         effective_outcome = "submitted"
 
+    # t-427: pre-submit pytest gate. Run the project's test suite in the
+    # Forge's worktree BEFORE the submit side-effects (assembly-queue
+    # row, assembly nudge, status flip). A red suite downgrades the
+    # outcome to "partial" — the task stays in_progress → Forge
+    # re-iterates next heat instead of burning an Assembly rebase cycle
+    # (the 2026-04-17 t-425/t-423 scenario). Skip for prose-heavy stages
+    # (research / planning / marketing) or when the operator passes
+    # --skip-tests.
+    test_gate = None
+    if (effective_outcome == "submitted"
+            and not skip_tests
+            and stage not in _NO_GATE_STAGES
+            and task_id != "generated"):
+        test_gate = _run_presubmit_tests(root, forge_id, tests_cmd=tests_cmd)
+        if not test_gate["passed"]:
+            # Downgrade — don't let this task reach Assembly.
+            effective_outcome = "partial"
+            # Flag in the caller's notes so the worklog row and Marshal's
+            # nudge both carry the context.
+            tail_lines = test_gate["output"].splitlines()[-3:]
+            tail = " | ".join(tail_lines)[:200]
+            notes = f"{notes} | PRE-SUBMIT TESTS FAILED: {tail}"
+            # Print the most relevant slice to the Forge's stderr so the
+            # human reading the pane sees it immediately. 30 lines is
+            # enough for a pytest summary block without drowning the pane.
+            head = "\n".join(test_gate["output"].splitlines()[:30])
+            _err("--- pre-submit test failure (first 30 lines) ---")
+            _err(head)
+            _err("--- end ---")
+
     # Mark task status based on effective outcome.
     completed_task = None
     if effective_outcome == "complete" and task_id != "generated":
@@ -333,6 +419,16 @@ def end_heat(ctx, value, signal, notes, outcome, progress, no_nudge, forge_id):
             if task["id"] == task_id:
                 task["status"] = "submitted"
                 completed_task = task
+                break
+    elif (test_gate is not None and not test_gate["passed"]
+          and task_id != "generated"):
+        # t-427: pre-submit test-fail downgrade — flip status back to
+        # pending so the Forge can start the next heat on the same
+        # task without tripping start-heat's "not pending" guard. The
+        # per-task branch stays intact; the Forge just iterates.
+        for task in state.get("queue", []):
+            if task["id"] == task_id:
+                task["status"] = "pending"
                 break
 
     # Increment initiative heats_used
@@ -404,6 +500,15 @@ def end_heat(ctx, value, signal, notes, outcome, progress, no_nudge, forge_id):
         "overall_progress": state["overall_progress"],
         "budget_remaining": state["budget"]["total_heats"] - heat,
     }
+    if test_gate is not None:
+        # t-427: surface gate result so the Forge pane (and rig-events
+        # consumers) can see exactly what happened.
+        result["test_gate"] = {
+            "passed": test_gate["passed"],
+            "cmd": test_gate.get("cmd"),
+        }
+        if not test_gate["passed"]:
+            result["test_gate"]["returncode"] = test_gate.get("returncode")
 
     # Auto-nudge marshal so it can re-prioritize and assign next task.
     # t-422: also nudge Assembly when the task was submitted — that's what

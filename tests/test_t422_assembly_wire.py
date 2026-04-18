@@ -94,7 +94,10 @@ def test_end_heat_submitted_writes_to_main_queue(rig):
                          "--reuse-scratch")
     assert rc == 0, err
     rc, _, err = _smithy(wt, "end-heat", "0.7", "🟢", "did the thing",
-                         "--forge", "forge-01", "--no-nudge")
+                         "--forge", "forge-01", "--no-nudge",
+                         "--skip-tests")  # t-427: bypass pre-submit
+                                          # gate, we're testing the
+                                          # assembly-queue wiring only.
     assert rc == 0, err
 
     main_queue = proj / ".assembly-queue.jsonl"
@@ -132,7 +135,9 @@ def test_end_heat_submitted_nudges_assembly(rig):
         runner = CliRunner(mix_stderr=False)
         result = runner.invoke(
             cli, ["--dir", str(proj), "end-heat", "0.7", "🟢",
-                  "asm-nudge test", "--forge", "forge-01"],
+                  "asm-nudge test", "--forge", "forge-01",
+                  "--skip-tests"],  # t-427: this test is only about
+                                    # the assembly nudge wiring.
         )
         assert result.exit_code == 0, result.output
         personas_nudged = [c.args[0] for c in mock_nudge.call_args_list]

@@ -50,7 +50,12 @@ def _run_heat_complete(proj, task_id="t-aaa"):
     _smithy(proj, "queue-push", task_id)
     _smithy(proj, "start-heat", "implementation", "--task", task_id)
     return _smithy(proj, "end-heat", "0.7", "🟢", "did work",
-                   "--outcome", "complete", "--no-nudge")
+                   "--outcome", "complete", "--no-nudge",
+                   # t-427: tests here don't exercise the pre-submit
+                   # gate, just the submit lifecycle — bypass the gate
+                   # so an empty tmp_path doesn't trip a false pytest
+                   # failure.
+                   "--skip-tests")
 
 
 def test_assembly_disabled_preserves_legacy_complete(scaffolded):
