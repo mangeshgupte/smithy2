@@ -637,11 +637,17 @@ def _do_assembly_reject(root, task_id, reason):
     append_worklog(root, state["budget"]["used"], "implementation", task_id,
                    "rejected", 0.0, "🚫", f"reason={reason[:80]}")
     # t-399 I4 design (2026-04-13): rejection routes to Marshal (owns
-    # scheduling), not to the Forge directly.
+    # scheduling), not to the Forge directly. t-424: fire BOTH a live
+    # tmux send-keys via _nudge_persona AND a file-queue row via
+    # _queue_nudge — the live event is what wakes a running Marshal
+    # pane, and the file row is a durable audit trail Marshal can drain
+    # if it was offline when the event fired. _nudge_persona alone
+    # skips the file on success; we want the record either way.
     nudge_msg = (f"ASSEMBLY_REJECTED: {task_id} — {reason[:80]}. "
                  f"Task back to pending (priority +5). Decide: reassign, "
                  f"split, or deprioritize.")
     _queue_nudge(root, "marshal", nudge_msg)
+    _nudge_persona("marshal", nudge_msg, root=root)
     return {"task_id": task_id, "status": "pending",
             "human_priority": task["human_priority"],
             "priority_reason": pr}
@@ -740,9 +746,12 @@ def assembly_tick_cmd(ctx, base, dry_run, tests_cmd):
     _do_assembly_merge(root, task_id, mr["sha"], resolution=False)
     _log(root, forge_id, task_id, "merged", mr["sha"])
     # Nudge Marshal: a task just merged, graph may have opened up.
-    _queue_nudge(root, "marshal",
-                 f"ASSEMBLY_MERGED: {task_id} merged (sha={mr['sha'][:12]}). "
-                 f"Re-prioritize downstream.")
+    # t-424: fire BOTH a durable file-queue row and a live tmux event
+    # (see _do_assembly_reject above for the reasoning).
+    merged_msg = (f"ASSEMBLY_MERGED: {task_id} merged on {base} "
+                  f"(sha={mr['sha'][:12]}). Re-prioritize downstream.")
+    _queue_nudge(root, "marshal", merged_msg)
+    _nudge_persona("marshal", merged_msg, root=root)
     _pop_queue(qpath, rest)
     _output({"status": "merged", "task_id": task_id, "sha": mr["sha"],
              "branch": mr["branch"]})
