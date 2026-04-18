@@ -118,7 +118,8 @@ def test_assembly_tick_merge_nudges_marshal_live(proj, tmp_path, monkeypatch):
     # Stub the assembly module helpers so the tick runs "clean".
     from smithy.smithy import assembly as asm_mod
     monkeypatch.setattr(asm_mod, "rebase_forge_branch",
-                        lambda root, fid, base: {"status": "ok"})
+                        lambda root, fid, task_id=None, base="main":
+                            {"status": "ok"})
     monkeypatch.setattr(asm_mod, "run_tests_in_worktree",
                         lambda root, fid, cmd=None: {"passed": True,
                                                      "output": ""})

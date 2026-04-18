@@ -37,26 +37,82 @@ def branch_name(forge_id: str, task_id: str) -> str:
     return f"{forge_id}/{task_id}"
 
 
+_STASH_LABEL = "assembly-rebase-autostash"
+
+
 def rebase_forge_branch(project_dir: Path, forge_id: str,
+                        task_id: str | None = None,
                         base: str = "main") -> dict:
-    """Rebase the Forge's currently-checked-out branch onto `base`.
+    """Rebase `<forge-id>/<task-id>` onto `base` inside the Forge's worktree.
+
+    t-456: prior behaviour rebased whatever the worktree had currently
+    checked out, which broke when the Forge had already moved on to a
+    new task between submit and merge (rebase ran on the wrong branch
+    and collided with in-progress working-tree changes). This now
+    explicitly checks out the per-task branch first, stashing
+    uncommitted worktree changes under a sentinel label if needed, then
+    rebases.
+
+    ``task_id`` is optional for backward compatibility with the legacy
+    one-branch world, but callers (assembly_tick, assembly-rebase CLI)
+    MUST pass it in. When absent, the function falls back to the old
+    behaviour and rebases whatever branch is currently checked out.
 
     Returns:
-      {"status": "clean"}                   — ready to merge
-      {"status": "conflict", "files": [...]} — rebase paused on conflicts
-      {"status": "error", "detail": "..."}  — unexpected git failure
+      {"status": "clean"}                     — ready to merge
+      {"status": "conflict", "files": [...]}  — rebase paused on conflicts
+      {"status": "error", "detail": "..."}    — unexpected git failure
+      Additional key "stash_ref" is present when the function stashed
+      uncommitted changes to free the checkout; callers may surface this
+      so the Forge knows to `git stash pop` if it wants them back.
     """
     wt = _worktree(project_dir, forge_id)
     if not wt.exists():
         return {"status": "error", "detail": f"worktree missing: {wt}"}
+
+    stash_ref: str | None = None
+    if task_id is not None:
+        target = branch_name(forge_id, task_id)
+        cur = _git(wt, "rev-parse", "--abbrev-ref", "HEAD")
+        on_target = (cur.returncode == 0 and cur.stdout.strip() == target)
+        if not on_target:
+            # If the worktree has uncommitted changes, stash them so
+            # checkout doesn't refuse. The sentinel label lets the Forge
+            # find the stash later if it wants to restore.
+            st = _git(wt, "status", "--porcelain")
+            if st.returncode == 0 and st.stdout.strip():
+                sp = _git(wt, "stash", "push", "--include-untracked",
+                          "-m", f"{_STASH_LABEL}:{forge_id}:{target}")
+                if sp.returncode == 0:
+                    # Capture the stash ref so callers can report it.
+                    lst = _git(wt, "stash", "list", "-n", "1")
+                    if lst.returncode == 0 and lst.stdout:
+                        stash_ref = lst.stdout.splitlines()[0].split(":", 1)[0]
+                else:
+                    return {"status": "error",
+                            "detail": f"stash failed before checkout: "
+                                      f"{sp.stderr.strip() or sp.stdout.strip()}"}
+            co = _git(wt, "checkout", target)
+            if co.returncode != 0:
+                return {"status": "error",
+                        "detail": f"checkout {target}: "
+                                  f"{co.stderr.strip() or co.stdout.strip()}"}
+
     r = _git(wt, "rebase", base)
+    result: dict = {}
     if r.returncode == 0:
-        return {"status": "clean"}
-    files = conflicted_files(wt)
-    if files or (wt / ".git" / "rebase-merge").exists() or \
-            (wt / ".git" / "rebase-apply").exists():
-        return {"status": "conflict", "files": files}
-    return {"status": "error", "detail": r.stderr.strip() or r.stdout.strip()}
+        result = {"status": "clean"}
+    else:
+        files = conflicted_files(wt)
+        if files or (wt / ".git" / "rebase-merge").exists() or \
+                (wt / ".git" / "rebase-apply").exists():
+            result = {"status": "conflict", "files": files}
+        else:
+            result = {"status": "error",
+                      "detail": r.stderr.strip() or r.stdout.strip()}
+    if stash_ref:
+        result["stash_ref"] = stash_ref
+    return result
 
 
 def continue_rebase(project_dir: Path, forge_id: str) -> dict:
