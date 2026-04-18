@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1543,
-    "used": 835,
+    "used": 837,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 386,
+      "heats": 390,
       "progress": 0.98,
-      "value_ema": 0.45
+      "value_ema": 0.785
     },
     "testing": {
       "target": 0.183,
@@ -4891,11 +4891,11 @@
       "id": "t-457",
       "stage": "implementation",
       "desc": "FOLLOW-UP to t-456: complete the staging-worktree decoupling. Current t-456 fix (rebase_forge_branch does checkout+stash in Forge worktree) is partial \u2014 eliminates the wrong-branch class but still races with active Forges when Forge writes fresh files between stash and rebase. Observed 2026-04-18 drain: 2 unstaged-changes rejects on t-443 and t-442 (both forge-anneal submits whose Forge was mid-heat at drain time). Real fix: Assembly operates in its OWN worktree .worktrees/_assembly-staging, never touches Forge worktrees. Per the original t-456 design: (a) ensure_staging_worktree(project_dir) creates/reuses the Assembly worktree, (b) snapshot the task branch into _merge-<task-id> via checkout -B, (c) rebase + run tests in staging, (d) ff-merge from the staging ref in project_dir, (e) cleanup temp ref + delete source task branch. Keep the existing rebase_forge_branch for back-compat; add rebase_task_branch as the new primary. Update assembly_tick callers. Tests: concurrent case (Forge writing to its worktree while Assembly merges), clean case, conflict case, stale-branch case.",
-      "status": "in_progress",
+      "status": "pending",
       "priority": 0,
       "blocked_by": [],
-      "human_priority": 0,
-      "priority_reason": "eliminates the Assembly-Forge worktree race class (2 of 6 drain rejects)",
+      "human_priority": 5,
+      "priority_reason": "assembly rejected: tests failed: ERROR t",
       "assigned_forge": "forge-quench",
       "initiative_id": "ini-018"
     },
@@ -4929,12 +4929,12 @@
       "id": "t-460",
       "stage": "implementation",
       "desc": "Pin smithy editable install to main, never a worktree. Root cause observed 2026-04-18: the global editable install (pip install -e smithy/) had been last run from a worktree (forge-quench/smithy/), so every pane imported from that stale tree. When Assembly ran pytest inside any worktree, collection of tests imported from main (e.g., test_t455_normalize_hp.py requiring normalize_human_priority) failed because the stale install lacked the symbol. 3 rejects hit this pattern (t-447 + two earlier transients). Assembly unstuck by re-binding to main. Fix: (a) add post-Assembly-merge hook that runs pip install -e from main-repo smithy/ whenever smithy code changes (detect via merge-commit paths); OR (b) guard in smithy startup that warns if __file__ is inside .worktrees/; OR (c) refactor so every pane uses a PYTHONPATH prepend to main-repo smithy/ and editable install is frozen to main. Recommend (a)+(b) \u2014 automated rebind post-merge, plus a loud warning when detection fails. Tests: regression test for module path invariant; e2e smoke that a merge touching smithy/ triggers rebind.",
-      "status": "pending",
-      "priority": 0,
+      "status": "submitted",
+      "priority": -1,
       "blocked_by": [],
       "human_priority": 0,
-      "priority_reason": "stale-binary induced rejects; Assembly had to manually rebind; systemic hazard",
-      "assigned_forge": null,
+      "priority_reason": "MUST land before t-457/t-458 retry \u2014 closes stale-install hazard that Assembly keeps rebinding manually",
+      "assigned_forge": "forge-anneal",
       "initiative_id": "ini-018"
     }
   ],
@@ -4982,7 +4982,7 @@
       "description": "Run multiple Forge workers concurrently via per-Forge git worktrees. Dedicated Assembly teammate handles merge queue integration (conflicts, test-on-integrate, merge ordering). Unlocks parallelism (Marshal dispatches N heats simultaneously) and enforces branch hygiene. Incremental: N=2 proof before N=3+.",
       "status": "approved",
       "budget_cap": null,
-      "heats_used": 47,
+      "heats_used": 49,
       "viewed_at": "2026-04-18T09:06:15Z",
       "rank": 1,
       "parallelism": "parallel",
@@ -5371,7 +5371,7 @@
     ],
     "assembly": {
       "enabled": true,
-      "last_heartbeat": "2026-04-18T19:49:15+00:00"
+      "last_heartbeat": "2026-04-18T20:00:16+00:00"
     },
     "forge_roster": [
       "forge-quench",
