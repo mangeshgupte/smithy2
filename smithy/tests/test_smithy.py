@@ -573,7 +573,14 @@ class TestNudgeCommand:
         assert "pane" in data["reason"]
 
     def test_nudge_sends_via_tmux(self, project, runner, monkeypatch):
-        """When session and a matching pane exist, send via tmux."""
+        """When session and a matching pane exist, send via tmux.
+
+        t-421: under the new _pane_agent rule (t-414), worktree match
+        wins over /personas/<name> suffix, so
+        `.worktrees/forge-quench/personas/forge` resolves to
+        "forge-quench" rather than "forge". Target the real verb name —
+        that's the addressing convention Marshal and end-heat now use.
+        """
         import subprocess as sp
 
         def fake_run(cmd, **kwargs):
@@ -590,8 +597,19 @@ class TestNudgeCommand:
             return sp.CompletedProcess(cmd, 0, stdout="", stderr="")
 
         monkeypatch.setattr(sp, "run", fake_run)
-        result = runner.invoke(cli, ["--dir", str(project), "nudge", "forge", "new task"])
-        assert result.exit_code == 0
+        # Register forge-quench so _validate_persona accepts it.
+        state = json.loads((project / "state.json").read_text())
+        state.setdefault("parallel", {}).setdefault("forges", []).append({
+            "id": "forge-quench", "status": "idle", "current_task": None,
+            "current_heat": None, "started_at": None, "last_heartbeat": None,
+            "worktree": ".worktrees/forge-quench", "branch": "forge-quench/scratch",
+        })
+        (project / "state.json").write_text(json.dumps(state))
+
+        result = runner.invoke(
+            cli, ["--dir", str(project), "nudge", "forge-quench", "new task"]
+        )
+        assert result.exit_code == 0, result.output
         data = json.loads(result.output)
         assert data["nudged"] is True
         assert data["queued"] is False

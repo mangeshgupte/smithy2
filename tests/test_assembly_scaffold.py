@@ -60,7 +60,12 @@ def test_assembly_heartbeat_is_idempotent(scaffolded):
 
 
 def test_anvil_spawn_doc_mentions_assembly():
+    # t-421: the old assertion looked for the literal string
+    # "assembly/CLAUDE.md" — a specific file reference that was removed
+    # when anvil's doc was rewritten around the tmux-window roster. What
+    # the test really cares about is that the doc establishes Assembly's
+    # role in the rig, so check for the sole-integrator rule instead.
     anvil = REPO_ROOT / "personas" / "anvil" / "CLAUDE.md"
     text = anvil.read_text()
     assert "Assembly" in text
-    assert "assembly/CLAUDE.md" in text
+    assert "write to main" in text

@@ -63,14 +63,19 @@ class TestQueuePushNudge:
 
     @patch("smithy.cli._nudge_persona")
     def test_push_adds_to_queue_and_nudges(self, mock_nudge, project, runner):
-        mock_nudge.return_value = {"nudged": True, "queued": False, "persona": "forge", "target": "smithy2:forge"}
+        # t-421: after t-414 the generic "forge" target auto-resolves to the
+        # task's assigned_forge (if set) else primary_forge_id(state). The
+        # test fixture doesn't seed parallel.forges, so _apply_steerability_
+        # defaults supplies the legacy bootstrap forge "forge-01" as primary.
+        mock_nudge.return_value = {"nudged": True, "queued": False,
+                                   "persona": "forge-01", "target": "%1"}
         result = runner.invoke(cli, ["--dir", str(project), "queue-push", "t-001"])
         data = json.loads(result.output)
         assert data["task_id"] == "t-001"
         assert data["queue_size"] == 1
         mock_nudge.assert_called_once()
         call_args = mock_nudge.call_args
-        assert call_args[0][0] == "forge"  # persona
+        assert call_args[0][0] == "forge-01"  # resolved primary forge id
         assert "t-001" in call_args[0][1]  # message mentions task
 
     @patch("smithy.cli._nudge_persona")
@@ -196,14 +201,17 @@ class TestSetNextTasksNudgesForge:
 
     @patch("smithy.cli._nudge_persona")
     def test_set_next_tasks_nudges_forge(self, mock_nudge, project, runner):
-        mock_nudge.return_value = {"nudged": True, "queued": False, "persona": "forge", "target": "smithy2:forge"}
+        # t-421: set-next-tasks resolves the target to the top task's
+        # assigned_forge or primary_forge_id(state). See test_push above.
+        mock_nudge.return_value = {"nudged": True, "queued": False,
+                                   "persona": "forge-01", "target": "%1"}
         result = runner.invoke(cli, ["--dir", str(project), "set-next-tasks", "t-001", "t-002"])
         data = json.loads(result.output)
         assert data["next_tasks"] == ["t-001", "t-002"]
         assert data["nudge"]["nudged"] is True
         mock_nudge.assert_called_once()
         call_args = mock_nudge.call_args
-        assert call_args[0][0] == "forge"
+        assert call_args[0][0] == "forge-01"
         assert "t-001" in call_args[0][1]
 
     @patch("smithy.cli._nudge_persona")
@@ -284,17 +292,21 @@ class TestFullDispatchCycle:
     @patch("smithy.cli._nudge_persona")
     def test_full_cycle(self, mock_nudge, project, runner):
         """Simulate Marshal→Forge→Marshal cycle."""
-        mock_nudge.return_value = {"nudged": True, "queued": False, "persona": "forge", "target": "smithy2:forge"}
+        # t-421: generic "forge" target now resolves to primary_forge_id;
+        # fixture's defaulted parallel.forges supplies "forge-01".
+        mock_nudge.return_value = {"nudged": True, "queued": False,
+                                   "persona": "forge-01", "target": "%1"}
 
         # Step 1: Marshal sets next tasks (like set-next-tasks does)
         r = runner.invoke(cli, ["--dir", str(project), "set-next-tasks", "t-001", "t-002"])
         assert json.loads(r.output)["count"] == 2
-        # Verify forge was nudged
-        assert mock_nudge.call_args[0][0] == "forge"
+        # Verify the resolved forge was nudged.
+        assert mock_nudge.call_args[0][0] == "forge-01"
         mock_nudge.reset_mock()
 
         # Step 2: Forge pops task
-        mock_nudge.return_value = {"nudged": True, "queued": False, "persona": "marshal", "target": "smithy2:marshal"}
+        mock_nudge.return_value = {"nudged": True, "queued": False,
+                                   "persona": "marshal", "target": "%2"}
         r = runner.invoke(cli, ["--dir", str(project), "queue-pop"])
         data = json.loads(r.output)
         assert data["task_id"] == "t-001"
