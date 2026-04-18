@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 404,
+      "heats": 405,
       "progress": 0.98,
-      "value_ema": 0.649
+      "value_ema": 0.694
     },
     "testing": {
       "target": 0.183,
@@ -5003,11 +5003,11 @@
       "id": "t-466",
       "stage": "implementation",
       "desc": "Add initiative rank management CLI + patrol invariant. Background: rank is an ordering field on initiatives but no code owns its invariants \u2014 today 2026-04-18 Anvil hand-edited ini-020.rank=2 + ini-019.rank=3 while ini-016 and ini-017 (both rejected, inactive) were already sitting at ranks 2 and 3 respectively. Result: collisions. Root cause: rank is loose metadata with no uniqueness check, no shift-on-insert, no cleanup on status change. Deliverable: (a) CLI: `smithy initiative rank <id> <N>` \u2014 set absolute, cascade-shift all others >=N;     `smithy initiative uprank <id>` / `downrank <id>` \u2014 swap adjacent;     `smithy initiative mv <id> --before <other>` \u2014 relative insert. (b) Invariant enforcement: only approved initiatives participate in ranking; rejected/complete/    abandoned get rank=null. On any rank change, renumber contiguously 1..N. Atomic under state_lock. (c) Patrol check: ranks of approved initiatives must be unique, contiguous from 1, non-null.     Flags manual-edit drift (no auto-fix \u2014 surface for operator). (d) One-time cleanup migration: scan current state.json, null-out ranks on non-approved     initiatives, renumber the approved ones contiguously. (e) Update Anvil memory / CLAUDE.md: prefer CLI over hand-editing state.json for rank ops. Tests: insert in middle shifts correctly; uprank at rank 1 is a no-op; downrank at last is a no-op; swapping an approved with a rejected should reject (rejected has no rank); patrol flags synthetic collision.",
-      "status": "submitted",
+      "status": "pending",
       "priority": 2,
       "blocked_by": [],
-      "human_priority": 2,
-      "priority_reason": "coordination hygiene; prevents recurrence of today rank-collision; low effort, clear scope",
+      "human_priority": 7,
+      "priority_reason": "assembly rejected: severe conflict in pe",
       "assigned_forge": "forge-temper",
       "initiative_id": "ini-018"
     },
@@ -5027,13 +5027,25 @@
       "id": "t-468",
       "stage": "implementation",
       "desc": "Extend scripts/tmux-stop.sh to cleanly stop the ui window (uvicorn UIs). Context: 2026-04-18 a new \"ui\" tmux window was added to the forge session with 4 panes running uvicorn (bellows 8080, ui-priority-poker 8001, ui-intent-editor 8003, ui-timeline 8004). Current tmux-stop.sh sends /exit + Enter to every pane in the session and kill-sessions. For the Claude panes (Marshal/Forges/Assembly/Anvil) /exit works. For the uvicorn panes /exit is a no-op keystroke; kill-session then SIGKILLs the processes abruptly, which may leave ports in TIME_WAIT. Fix: identify the ui window panes and send C-c (SIGINT) to them BEFORE the /exit fan-out \u2014 uvicorn handles SIGINT gracefully (closes sockets, exits). Detection: list-panes -t forge:ui. If window exists, loop over its panes sending C-c, wait ~2s for graceful shutdown, then continue the existing /exit flow for Claude panes. Window gets removed via the eventual kill-session. Add a tmux-stop-ui-only mode (or --ui-only flag) for the common \"just restart the UIs\" case without tearing down the Claude rig. Tests: start uvicorn in a throwaway tmux window, run stop, confirm process gone and port freed in <5s. Update the header comment to document the ui-window handling.",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": [],
-      "human_priority": 2,
-      "priority_reason": "completes rig-stop coverage for the new ui window; symmetry with tmux-layout.sh (eventually t-463)",
+      "human_priority": null,
+      "priority_reason": null,
       "assigned_forge": "forge-anneal",
       "initiative_id": "ini-022"
+    },
+    {
+      "id": "t-469",
+      "stage": "implementation",
+      "desc": "Make Assembly stash main working tree before merge, pop after. Observed 2026-04-18: state.json and worklog.tsv are tracked in git but continuously written during normal rig operation (Marshal patrol --fix every cycle, Forge end-heat appends, Anvil coordination edits). Main worktree is effectively never clean; any git merge racing a write fails with \"local changes would be overwritten by merge\" and Assembly blocks. Today this stopped t-466 and would have stopped t-463 next. Fix: in ff_merge_forge_branch (and/or cli.py assembly_tick), wrap the main-side checkout+merge sequence with stash-push before and stash-pop after. Use a sentinel label like \"assembly-main-autostash\" so the stash is identifiable. Handle all paths: success (stash-pop), conflict (abort merge then stash-pop), unexpected error (best-effort stash-pop before bubbling error). Mirror the pattern t-456 used for Forge worktrees. Symptom patch \u2014 ini-020 (Assembly in its own staging worktree) structurally eliminates this because the final ff-merge into main happens with a freshly-checked-out main (Assembly having verified everything in staging). Ship this to unblock normal drain; ini-020 supersedes later. Tests: dirty main working tree (M state.json), merge succeeds with stash-pop restoring; dirty main + rebase conflict, stash-pop still fires; stash ref collected even when merge aborted. Coordinate with t-457/ini-020 implementation so this code path is cleanly removed post-staging.",
+      "status": "pending",
+      "priority": 0,
+      "blocked_by": [],
+      "human_priority": 0,
+      "priority_reason": "blocks normal drain \u2014 any merge racing state.json/worklog.tsv writes fails; every Assembly tick is at risk",
+      "assigned_forge": null,
+      "initiative_id": "ini-018"
     }
   ],
   "ideas": [
@@ -5381,7 +5393,7 @@
       "description": "Make scripts/tmux-layout.sh and scripts/tmux-stop.sh the canonical, complete entry points for starting and stopping The Forge. Today a fresh rig launch covers Claude panes for Marshal/Forges/Assembly but: (a) UIs (bellows + 3 ui-* webapps) are launched ad hoc, (b) per-Forge venvs (t-461) depend on Claude reading CLAUDE.md after launch rather than being bootstrapped first, (c) stop sends /exit to every pane \u2014 a no-op for uvicorn panes, leaving graceful server shutdown to kill-session SIGKILL. Goals: (1) every rig member launches through tmux-layout.sh \u2014 no manual steps, no orphan processes, no startup-order races; (2) each agent pane is bootstrapped (venv created + activated, state verified) BEFORE its Claude session starts, not after; (3) stop is graceful (SIGINT for uvicorn, /exit for Claude, port freed before script returns) and complete (all tmux windows gone); (4) a smoke test validates start\u2192stop cycles leave zero orphan processes and zero bound ports; (5) operators never need to kill uvicorns or hand-compose tmux commands. Folds in existing tasks: t-463 (Bellows/UI as managed tmux windows), t-467 (venv pre-run), t-468 (stop handles UI window).",
       "status": "approved",
       "budget_cap": 12,
-      "heats_used": 1,
+      "heats_used": 2,
       "viewed_at": null,
       "rank": 4,
       "parallelism": "parallel",
@@ -5416,8 +5428,8 @@
     }
   ],
   "next_tasks": [
+    "t-466",
     "t-431",
-    "t-468",
     "t-467"
   ],
   "schema_version": 2,
@@ -5449,7 +5461,7 @@
   ],
   "parallel": {
     "max_forges": 3,
-    "halt_flag": false,
+    "halt_flag": true,
     "forges": [
       {
         "id": "forge-quench",
@@ -5484,7 +5496,7 @@
     ],
     "assembly": {
       "enabled": true,
-      "last_heartbeat": "2026-04-18T21:21:36+00:00"
+      "last_heartbeat": "2026-04-18T21:33:17+00:00"
     },
     "forge_roster": [
       "forge-quench",
@@ -5495,6 +5507,8 @@
       "forge-weld",
       "forge-shape",
       "forge-harden"
-    ]
+    ],
+    "halted_at": "2026-04-18T21:33:34.890723+00:00",
+    "halt_reason": "orderly drain for session restart \u2014 queue t-469 for main-stash fix; Assembly cleanup in progress"
   }
 }
