@@ -1,193 +1,271 @@
 # The Smithy
 
-An autonomous AI worker that runs inside Claude Code. Give it a budget, point it at a project, walk away. It works.
+An autonomous AI worker rig that runs inside Claude Code. A small team of
+Claude agents (Marshal, one or more Forges, Assembly, with Anvil as the
+human's interface) coordinate through flat files and a shared tmux session
+to pick up tasks, run "heats" of focused work, merge to `main`, and
+self-assess — no external orchestrator, no polling.
 
-**New here?** → [QUICKSTART.md](QUICKSTART.md) (5 min) · [WALKTHROUGH.md](WALKTHROUGH.md) (narrative) · [STEERING.md](STEERING.md) (UIs)
+**New here?**
+[QUICKSTART.md](QUICKSTART.md) (5 min) ·
+[WALKTHROUGH.md](WALKTHROUGH.md) (narrative) ·
+[STEERING.md](STEERING.md) (steering UIs)
 
-```
+```bash
 cd my-project
 claude
-> Run 20 heats.
+> Start
 ```
 
-The Smith operates in bounded 5-minute units called "heats." Each heat: pick a stage, do one task, commit, log, repeat. No orchestrator. No Python wrapper. Just prose protocol files that Claude Code follows.
+---
 
-## What It Does
+## Architecture
 
-The Smith self-directs across six stages — research, planning, implementation, testing, editing, marketing — using a **wavefront allocator** that moves effort through the pipeline like a wave. Early heats are heavy on research. As understanding builds, effort flows to planning, then implementation, then testing. No hardcoded phase transitions.
+The rig is a **single tmux session** (`forge` by default, overridable via
+`FORGE_SESSION`) with one pane per agent. Every agent is a Claude Code
+session — they coordinate through files (`state.json`, `worklog.tsv`,
+`.assembly-queue.jsonl`, `.smithy-nudge-queue/`), never through direct
+RPC.
 
-You communicate asynchronously. Drop ideas in `inbox.md`. Read status in `outbox.md`. Edit `feedback.md` to steer quality. The Smith processes all of it at the top of each heat.
+| Agent | Role | Where it lives |
+|---|---|---|
+| **Anvil** | The human's interface. Explains state, brainstorms strategy, steers the rig. Spawns nothing — peer agent, read-only on `main` by discipline. | `personas/anvil/` on `main` |
+| **Marshal** | The allocator. Computes priorities, orders `next_tasks`, assigns work to a specific Forge (`assigned_forge`). | `.worktrees/marshal/` |
+| **Forge** | The executor. One or more. Named by verb: `forge-quench` (primary), `forge-temper`, `forge-anneal`. Pops tasks, runs heats, commits on a per-task branch. | `.worktrees/<forge-id>/` |
+| **Assembly** | The integrator. The **only** agent allowed to write to `main`. Rebases each Forge's per-task branch onto `main`, runs the full test suite, merges `--no-ff`, or rejects back to Marshal on severe conflict. | `personas/assembly/` on `main` |
 
-## The Smithy CLI
+### Heat lifecycle
 
-All bookkeeping goes through `smithy`, a Python CLI that keeps state deterministic:
+1. Marshal writes tasks to `state.next_tasks`, pinning each to an
+   `assigned_forge`.
+2. A nudge fires to that Forge's tmux pane.
+3. Forge runs `smithy queue-pop` → `smithy start-heat --task <id>` (which
+   auto-checks out `<forge-id>/<task-id>` off the latest `main`) → does
+   the work → `git commit` → `smithy end-heat`.
+4. `end-heat` runs the **pre-submit pytest gate** (t-427): if tests are
+   red, the heat is downgraded to `partial` and the task bounces back
+   to `pending`. If green, the task is marked `submitted`, a row goes
+   into `.assembly-queue.jsonl`, and Assembly is nudged.
+5. Assembly ticks: rebase → tests → `--no-ff` merge → task → `complete`.
+   On a severe conflict it calls `assembly-reject`, which flips the
+   task back to `pending` with `human_priority += 5` and nudges Marshal.
 
-```
-smithy init          # Scaffold a new project (see --template=<shape>)
-smithy start-heat    # Begin a heat (update counters, read feeds)
-smithy allocate      # Wavefront allocator recommends a stage
-smithy end-heat      # Close a heat (log, update state, self-assess)
-smithy commit        # Git commit with [stage] prefix
-smithy patrol --fix  # Find and fix state inconsistencies
-smithy status        # At-a-glance project summary
-smithy up            # Launch the tmux rig (--force, --dry-run, --session NAME)
+A task's status walks through:
+`pending → in_progress → submitted → {complete | rejected → pending}`.
 
-# Queue & coordination
-smithy queue-push    # Add a task to the next_tasks queue
-smithy queue-pop     # Claim the next task from the queue
-smithy set-next-tasks # Set ordered task list (Marshal → Forge)
-smithy list-tasks    # List tasks with filters (status, stage, limit)
+### Worktree invariant
 
-# Attribution & retros
-smithy steering-retro      # Weekly digest: pins, ships, pin→ship lag, by-actor
-                           #   --since=7d|24h|ISO, --format=markdown|json
+`main` is sacred. Anvil and Assembly work on it; nobody else. Every
+Forge runs from `.worktrees/<forge-id>/`, commits on a per-task branch
+(`<forge-id>/<task-id>`), and never touches `main` directly. Marshal
+lives in its own worktree too. `smithy patrol` enforces this — a Forge
+that's accidentally on `main` fails check #7.
 
-# Session management
-smithy start-all     # Launch smithy2 tmux session with all personas
-smithy stop-all      # Gracefully stop all persona sessions
-smithy sessions      # List active persona windows
-smithy nudge         # Send a message to a persona (queues if busy)
-smithy drain-nudges  # Read and clear queued nudges for a persona
-```
-
-30+ commands total. Install: `pip install -e smithy/`
-
-## Bellows
-
-A FastAPI dashboard for managing Forge projects from a browser. Morning briefings, decision queues, initiative board, activity sparklines, direct commands.
-
-```
-cd bellows && uv run uvicorn app:app --port 8080
-```
-
-## Steering UIs
-
-Three standalone FastAPI apps for directing Forge — each a different steering metaphor. All read/write `state.json` directly; Forge picks up changes on the next heat. See [STEERING.md](STEERING.md) for full documentation.
-
-```bash
-# Start all 3 (each in its own terminal or tmux pane):
-cd ui-priority-poker   && uvicorn app:app --port 8001
-cd ui-intent-editor    && uvicorn app:app --port 8003
-cd ui-timeline         && uvicorn app:app --port 8004
-```
-
-| UI | Port | What it does |
-|----|------|-------------|
-| **Priority Poker** | 8001 | Drag-to-reorder initiative cards. Rank determines what Forge works on next. Weight badges show budget allocation. Proposed initiatives appear in a separate section for approval/rejection. |
-| **Intent Editor** | 8003 | Write natural-language outcomes. The system decomposes them into themes and initiatives. Select which to create, apply to state. History of past intents preserved. |
-| **Timeline View** | 8004 | Gantt-style bars for each initiative. Drag endpoints to allocate budget across heats. Overlap detection shows parallel work. Range slider for viewport control. |
-
-### How they connect
-
-Each UI sets `FORGE_PROJECT_DIR` to locate the project's `state.json`. Default: the parent of the UI directory.
-
-```
-state.json ←→ Steering UIs (read/write initiatives, themes)
-     ↓
-  Forge (reads on next heat via smithy queue-pop)
-```
-
-All UIs include:
-- **SSE live updates** (`/events`) — pages refresh when `state.json` changes
-- **JSON API** (`/api/state`) — structured data for programmatic access
-- **Refresh button** — manual reload in the header
-- **Cross-UI nav bar** — links to all 3 UIs + Bellows, with active page highlighted
-
-### Cross-UI navigation
-
-The nav bar uses environment variables for URLs (useful when running on non-default ports):
-
-```bash
-export URL_POKER=http://localhost:8001
-export URL_INTENT=http://localhost:8003
-export URL_TIMELINE=http://localhost:8004
-export URL_BELLOWS=http://localhost:8080
-```
-
-### Tests
-
-Tests across all 3 UIs in `tests/test_steering_uis.py`:
-
-```bash
-python3 -m pytest tests/test_steering_uis.py -v
-```
-
-## Personas (Agent Teams)
-
-Three personas coordinated via Claude Code Agent Teams — no dispatch files, no polling:
-
-| Persona | Role |
-|---------|------|
-| **Anvil** | Your interface. Explains state, brainstorms strategy, sets direction. Spawns Marshal and Forge as teammates. |
-| **Marshal** | The allocator. Computes priorities, orders the task queue, assigns work to Forge. |
-| **Forge** | The autonomous worker. Pops tasks from the queue, runs heats, commits code, writes logs. |
-
-Anvil spawns Marshal and Forge as Agent Teams teammates. Marshal uses `smithy set-next-tasks` to fill the queue. Forge uses `smithy queue-pop` to claim work. When a persona is mid-heat, nudges queue to `.smithy-nudge-queue/` and drain on next idle.
+---
 
 ## Getting Started
 
 ```bash
 # From the Smithy repo:
 pip install -e smithy/
+
+# Scaffold a new project (blank):
 smithy init my-project --target ~/projects/my-project --with-personas
 
-# Seed from a template shape (skip if you want a blank scaffold):
-smithy init --list-templates           # see available shapes
+# Or pre-fill with a template (cli | lib | web | data-pipe | mobile | research):
+smithy init --list-templates
 smithy init my-project --target ~/projects/my-project --with-personas \
-    --template cli                     # lib | cli | web | data-pipe | mobile | research
+    --template cli
 
-# Describe your project (templates pre-fill intent bullets + themes/initiatives):
-vim ~/projects/my-project/identity.md
-
-# Start all personas in tmux:
+# Describe what you're building:
 cd ~/projects/my-project
-smithy start-all
+vim identity.md
 
-# Or start manually:
-cd ~/projects/my-project/personas/anvil
-claude
+# Bring up the rig — creates worktrees + tmux panes + starts Claude in each:
+smithy up
+
+# In Anvil's pane, tell it to start:
 > Start
 ```
 
-`smithy start-all` creates a `smithy2` tmux session with anvil, forge, and marshal windows, each running Claude Code. Tell Anvil "Start" and it spawns the other two as teammates.
+You're now in a running rig. Anvil will confirm the team is up, Marshal
+will compute the first queue, and whichever Forge gets pinned the top
+task will pick up `queue-pop` and begin heat 1. Watch `rig-events.jsonl`
+or the tmux panes to see the cycle live.
 
-## Intent Templates
+---
 
-`smithy init --template=<shape>` pre-fills `identity.md` and `state.json` with sensible starting themes + initiatives for 6 common project shapes. Each template encodes the highest-risk failure mode for that shape as theme 1 (auth for web, schema for pipelines, offline for mobile).
+## The Heat Loop
 
-| Template | For | Top theme |
-|----------|-----|-----------|
-| `lib` | Library / SDK | API Surface |
-| `cli` | CLI tool | Command UX |
-| `web` | Web app (product) | Golden-path flow |
-| `data-pipe` | Data pipeline | Ingest & Schema |
-| `mobile` | Mobile app | Offline & Sync |
-| `research` | Exploratory research | Core Questions |
+Each heat is ~5 minutes of focused work by a single Forge on a single
+task. The canonical sequence (Forge's perspective):
 
-See `research/intent-template-library.md` for intent bullets + value-thesis per shape. Omit `--template` for a blank scaffold (backwards-compatible).
+```bash
+smithy queue-pop                            # Claim the next pinned task
+smithy start-heat <stage> --task <task-id>  # Writes checkpoint, auto-branches
+# ... do the work, git add, git commit ...
+smithy end-heat <value> <signal> "<notes>"  # Gate + log + nudge
+```
 
-## Steering Attribution
+`end-heat` self-assessment values (used by the allocator):
 
-Every human steering event (Poker priority flip, Bellows pin/reorder, Timeline tweak) writes a row to a per-project `steering.log` with `timestamp · heat · actor · task_id · field · before→after · source`. Three surfaces consume it:
+| Value | Meaning |
+|---|---|
+| 0.9–1.0 | Major breakthrough |
+| 0.7–0.8 | Solid progress |
+| 0.5–0.6 | Some friction |
+| 0.3–0.4 | Mostly setup |
+| 0.1–0.2 | Stuck |
 
-- **Timeline UI** renders markers on the heat lane — hover for the attribution row
-- **`GET /api/project/<name>/steering-log`** on Bellows returns rows filtered by `task_id` / `actor` / `since`
-- **`smithy steering-retro --since=7d`** emits a weekly markdown digest: pins made, tasks shipped post-pin, avg pin→ship lag in heats, pure-allocator heats, by-actor breakdown
+Signal: 🟢 normal · 🟡 below-target or stalled · 🔴 rollback or regression.
 
-Pass `X-Actor: <name>` on any Bellows/Poker mutation request to override the default UI actor (useful for scripted or multi-agent pins).
+### Outcomes
+
+| Outcome | Written by | Meaning |
+|---|---|---|
+| `complete` | end-heat | Legacy N=1 path. Task done, worklog row emitted. |
+| `submitted` | end-heat (Assembly enabled) | Forge committed to its branch; Assembly owns the merge. |
+| `merged` / `merged-with-resolution` | Assembly | Integrated into `main`. Second worklog row (✅/🔀). |
+| `rejected` | Assembly | Severe conflict or test fail; task flipped back to `pending`, `human_priority += 5`, Marshal nudged (🚫). |
+| `partial` | end-heat | Pre-submit pytest gate tripped; task back to `pending`, Forge re-iterates next heat. |
+
+---
+
+## Common Operations
+
+### Bring the rig up / down
+
+```bash
+smithy up                      # Create tmux session + worktrees + start Claude
+smithy up --force              # Kill existing session and recreate
+smithy up --dry-run            # Print panes that would be created
+scripts/tmux-layout.sh         # Re-tile panes in the running session
+scripts/tmux-stop.sh           # Graceful shutdown
+```
+
+### Peek at state
+
+```bash
+smithy status                  # At-a-glance: heats, stages, budget
+smithy queue                   # Current next_tasks with priority + stage
+smithy task-tree               # Open-task DAG grouped by initiative
+smithy task-tree --stuck       #   …only blocked-by-unmet tasks
+smithy task-tree --json        #   …structured output
+smithy list-tasks --status pending --stage testing
+smithy sessions                # tmux panes in the rig
+```
+
+### Coordinate
+
+```bash
+smithy queue-push <task-id> --forge forge-quench   # Marshal assigns work
+smithy queue-pop --forge forge-quench              # Forge claims work
+smithy set-next-tasks <id1> <id2> ...              # Marshal re-orders queue
+smithy nudge <persona> "<message>"                 # Live tmux send
+scripts/nudge.sh <persona> "<message>"             # Same, via shell
+```
+
+### Debug
+
+```bash
+smithy patrol --fix                   # Validate state, auto-repair (9 checks)
+smithy rig-replay --since 100         # Pretty-print recent rig events
+smithy rig-replay --event assembly    #   …filter to assembly_tick_*
+smithy witness-check                  # Per-Forge health + heartbeat staleness
+smithy stats                          # Heat rate, stage heat distribution
+smithy steering-retro --since=7d      # Weekly digest: pins, ships, pin→ship lag
+```
+
+---
+
+## Files & State
+
+Everything the rig knows is on disk. Inspect with `cat`, edit with `vim`,
+audit with `git log`.
+
+| File | Role | Written by |
+|---|---|---|
+| `state.json` | Queue, next_tasks, stages, allocator integral, parallel.forges registry, initiatives, themes | Every `smithy` state-mutating command, under an exclusive flock (`state_lock`, t-426) |
+| `worklog.tsv` | Append-only heat log. One row per `end-heat`; a second row per Assembly outcome. Columns: `timestamp, heat, stage, task_id, outcome, value, signal, notes, forge_id` | `end-heat`, `assembly-merge`, `assembly-reject` |
+| `.assembly-queue.jsonl` | FIFO of `{forge_id, task_id, branch, sha, submitted_at}` rows for Assembly to drain | `end-heat` when outcome=submitted |
+| `rig-events.jsonl` | Append-only telemetry: `forge_started`, `forge_ended_*`, `assembly_tick_*` (with `latency_ms`), `queue_push/pop`, nudges (t-425) | All CLI commands that cause a state transition |
+| `.smithy-nudge-queue/<persona>.jsonl` | File-queue fallback for nudges that couldn't reach a tmux pane | `nudge`, auto-fallback in `_nudge_persona` |
+| `assembly-log.jsonl` | Assembly's per-merge audit log | `assembly-tick` |
+| `inbox.md` | Human drops ideas here; Marshal triages | Human |
+| `feedback.md` | Human steers quality (Forge reads on idle) | Human |
+| `outbox.md` | End-of-run digests + periodic status reports | Anvil, Forge |
+| `steering.log` | Every human steering event (pins, reorders) — used by `steering-retro` | Poker / Bellows / Timeline UIs |
+
+All agent-shared files are anchored at the MAIN repo root. `smithy`
+resolves paths via `main_repo_root()` so every worktree reads and
+writes the same file (t-419 / t-422).
+
+---
+
+## Bellows
+
+A FastAPI dashboard for managing Forge projects from a browser: morning
+briefings, decision queues, initiative board, activity sparklines, direct
+commands.
+
+```bash
+cd bellows && uv run uvicorn app:app --port 8080
+```
+
+## Steering UIs
+
+Three standalone FastAPI apps, each a different steering metaphor.
+
+```bash
+cd ui-priority-poker && uvicorn app:app --port 8001
+cd ui-intent-editor  && uvicorn app:app --port 8003
+cd ui-timeline       && uvicorn app:app --port 8004
+```
+
+| UI | Port | What it does |
+|---|---|---|
+| **Priority Poker** | 8001 | Drag-to-reorder initiative cards. Rank determines what Forge works on next. |
+| **Intent Editor** | 8003 | Write natural-language outcomes. System decomposes into themes + initiatives. |
+| **Timeline View** | 8004 | Gantt-style bars for each initiative; drag to allocate budget. |
+
+All three include SSE live updates, a JSON API (`/api/state`), and a
+cross-UI nav bar (URLs configurable via `URL_POKER` / `URL_INTENT` /
+`URL_TIMELINE` / `URL_BELLOWS` env). Full docs: [STEERING.md](STEERING.md).
+
+### Steering attribution
+
+Every human steering event writes a row to `steering.log`
+(`timestamp · heat · actor · task_id · field · before→after · source`).
+`smithy steering-retro --since=7d --format=markdown` emits a weekly
+digest: pins made, tasks shipped post-pin, avg pin→ship lag in heats,
+by-actor breakdown. Pass `X-Actor: <name>` on Bellows/Poker mutations
+to override the default UI actor.
+
+---
 
 ## Built With The Smithy
 
-The Smithy dogfoods itself. Over 700 heats, it built:
+The Smithy dogfoods itself. Over 800 heats it has built:
 
-- **The Smithy protocol** — the system you're reading about
-- **AI Tutor** — 5 subjects (Python, Math, English, Logic, Creative Writing), user sessions, PWA offline, SM-2 spaced repetition, teach-it-back, 111 tests
-- **Bellows** — project dashboard with initiative board, live run indicator, stage-colored activity feeds, segmented budget bars, tap-to-decide
+- **The Smithy protocol** itself — the system you're reading about.
+- **Parallel Forges at N=3** — `forge-quench`, `forge-temper`,
+  `forge-anneal` run concurrently with Assembly as sole integrator.
+- **AI Tutor** — 5 subjects, PWA offline, SM-2 spaced repetition, 111
+  tests.
+- **Bellows** — project dashboard with initiative board, live run
+  indicator, stage-colored activity feeds, segmented budget bars.
 
 ## Design Principles
 
 - **Prose is the orchestrator.** CLAUDE.md + protocol files. No framework.
 - **Flat files.** state.json, worklog.tsv, markdown. Inspect with `cat`.
-- **Git is the substrate.** Every heat commits. The record is sacred.
+- **Git is the substrate.** Every heat commits; Assembly is the only
+  writer to `main`. The record is sacred.
 - **Budget-bounded.** Never exceeds allocated heats. Say "Run N" to extend.
-- **Self-directed.** Generates its own tasks when the queue runs dry.
+- **Single source of truth.** Every agent-shared file (state.json,
+  worklog.tsv, queues, telemetry) lives at the MAIN repo root and is
+  mutated under an exclusive flock. Worktree-local copies are stale
+  snapshots; `smithy` always resolves to main.
+- **Self-directed.** Marshal computes priorities, Forge iterates,
+  Assembly integrates. The human intervenes via steering UIs, inbox
+  drops, or `scripts/nudge.sh anvil '<msg>'` for a sync escalation.
