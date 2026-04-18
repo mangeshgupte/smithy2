@@ -260,58 +260,66 @@ def cli(ctx, project_dir):
 def start_heat(ctx, stage, task_id, forge_id, reuse_scratch):
     """Start a new heat. Sets task to in_progress, writes checkpoint."""
     root = ctx.obj["root"]
-    state = load_state(root)
     # t-409 H1: resolve forge id — explicit flag wins, else detect from cwd,
     # else fall back to primary (lets main-root smoke-runs still work).
     if forge_id is None:
         forge_id = detect_forge_from_cwd(root) or primary_forge_id(root)
-    budget = state["budget"]
 
-    # t-395 I0: Halt flag blocks new heats. In-flight heats drain via end-heat.
-    parallel = state.get("parallel") or {}
-    if parallel.get("halt_flag"):
-        _output({
-            "error": "Rig is halted — new heats blocked",
-            "halted_at": parallel.get("halted_at"),
-            "reason": parallel.get("halt_reason"),
-            "hint": "smithy resume-rig to clear",
-        })
-        sys.exit(1)
-
-    if budget["used"] >= budget["total_heats"]:
-        _output({"error": "Budget exhausted", "used": budget["used"], "total": budget["total_heats"]})
-        sys.exit(1)
-
-    heat_number = budget["used"] + 1
-
-    # t-420: per-task branch enforcement. The t-399 design says each task
-    # gets its own `<forge-id>/<task-id>` branch off the latest main, so
-    # Assembly can rebase-merge-delete cleanly and stacked scratches don't
-    # force Anvil into manual ff gymnastics. Enforce it here (the human-
-    # authored CLAUDE.md step was easy to forget). Skip when we're on the
-    # main repo (smoke runs) or when caller passed --reuse-scratch.
+    # t-420: per-task branch enforcement runs BEFORE the lock so a slow
+    # git checkout never blocks a sibling Forge's heat transition. The
+    # branch op only touches filesystem, not state.json.
     branch_change = None
     if task_id and not reuse_scratch:
         main_root = main_repo_root(root)
         if root.resolve() != main_root.resolve():
             branch_change = _ensure_task_branch(root, forge_id, task_id)
 
-    # Set task to in_progress if specified
+    # t-426: bump budget.used INSIDE the lock so two concurrent
+    # start-heats don't both compute heat=N+1 from the same snapshot
+    # and collide on the checkpoint. Used to happen at end-heat, which
+    # was the lost-update race (see task description evidence).
     task_desc = None
-    if task_id:
-        for task in state.get("queue", []):
-            if task["id"] == task_id:
-                if task["status"] != "pending":
-                    _output({"error": f"Task {task_id} is {task['status']}, not pending"})
-                    sys.exit(1)
-                task["status"] = "in_progress"
-                task_desc = task["desc"]
-                break
-        else:
-            _output({"error": f"Task {task_id} not found in queue"})
+    with state_lock(root):
+        state = load_state(root)
+        budget = state["budget"]
+
+        # t-395 I0: halt flag checked inside the lock so a concurrent
+        # halt-rig either sees this start-heat or we see the halt.
+        parallel = state.get("parallel") or {}
+        if parallel.get("halt_flag"):
+            _output({
+                "error": "Rig is halted — new heats blocked",
+                "halted_at": parallel.get("halted_at"),
+                "reason": parallel.get("halt_reason"),
+                "hint": "smithy resume-rig to clear",
+            })
             sys.exit(1)
 
-    save_state(root, state)
+        if budget["used"] >= budget["total_heats"]:
+            _output({"error": "Budget exhausted", "used": budget["used"],
+                     "total": budget["total_heats"]})
+            sys.exit(1)
+
+        heat_number = budget["used"] + 1
+        budget["used"] = heat_number  # t-426: atomic bump.
+
+        # Set task to in_progress if specified
+        if task_id:
+            for task in state.get("queue", []):
+                if task["id"] == task_id:
+                    if task["status"] != "pending":
+                        _output({"error": f"Task {task_id} is {task['status']}, not pending"})
+                        sys.exit(1)
+                    task["status"] = "in_progress"
+                    task_desc = task["desc"]
+                    break
+            else:
+                _output({"error": f"Task {task_id} not found in queue"})
+                sys.exit(1)
+
+        save_state(root, state)
+        total_heats = budget["total_heats"]
+
     write_checkpoint(root, heat_number, stage, task_id or "generated",
                      forge_id=forge_id)
 
@@ -321,7 +329,7 @@ def start_heat(ctx, stage, task_id, forge_id, reuse_scratch):
         "task_id": task_id,
         "task_desc": task_desc,
         "forge_id": forge_id,
-        "budget_remaining": budget["total_heats"] - heat_number,
+        "budget_remaining": total_heats - heat_number,
     }
     if branch_change:
         result["branch"] = branch_change
