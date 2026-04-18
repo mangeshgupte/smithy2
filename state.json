@@ -4494,7 +4494,7 @@
       "initiative_id": "ini-018",
       "human_priority": null,
       "priority_reason": "ini-018 rank=1 + blocked-deps-clear",
-      "assigned_forge": "forge-quench"
+      "assigned_forge": "forge-anneal"
     },
     {
       "id": "t-443",
@@ -4641,6 +4641,18 @@
       "priority_reason": "ini-021 design gate",
       "assigned_forge": null,
       "initiative_id": "ini-021"
+    },
+    {
+      "id": "t-454",
+      "stage": "research",
+      "desc": "Investigate budget.used non-monotonic drift. Observed 2026-04-18: Anvil reconciled budget.used from 892 \u2192 903 (worklog truth, commit 64eedda). Within an hour, state.json showed used=824 \u2014 a 79-heat decrease without any rollback directive. Suspects: (a) smithy sync-stages recomputing used from stage-heat sums (sums were 892 pre-reconcile), (b) a Forge worktree writing stale snapshot back despite t-419, (c) patrol --fix reversing the reconcile, (d) Marshal session writing cached in-memory value. Method: bisect the git log for state.json writes between commits 64eedda and 1c7f84f, cross-ref with rig-events.jsonl and nudge-queue timestamps to identify the writer. Output: research/budget-drift-rca.md with reproduction steps + recommended fix (likely: make budget.used monotonic-or-explicit-override in state code; or remove any recomputation path that competes with worklog-as-truth).",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "human_priority": "p1",
+      "priority_reason": "trust-in-record bug; drifting budget undermines every downstream metric (ini-019 depends on this being fixed)",
+      "assigned_forge": null,
+      "initiative_id": "ini-019"
     }
   ],
   "ideas": [
@@ -5006,10 +5018,10 @@
     }
   ],
   "next_tasks": [
+    "t-442",
     "t-448",
     "t-449",
-    "t-441",
-    "t-442"
+    "t-441"
   ],
   "schema_version": 1,
   "intents": [
