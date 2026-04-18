@@ -712,12 +712,22 @@ def assembly_heartbeat_cmd(ctx):
 
 @cli.command("assembly-rebase")
 @click.option("--forge", "forge_id", required=True)
+@click.option("--task", "task_id", default=None,
+              help="Per-task branch id (t-456). Omit for legacy "
+                   "rebase-current-branch behaviour.")
 @click.option("--base", default="main")
 @click.pass_context
-def assembly_rebase_cmd(ctx, forge_id, base):
-    """t-399 I4 H2: Rebase forge/<id> onto base inside its worktree."""
+def assembly_rebase_cmd(ctx, forge_id, task_id, base):
+    """t-399 I4 H2: Rebase the Forge's per-task branch onto base.
+
+    t-456: pass ``--task <task-id>`` so rebase_forge_branch explicitly
+    checks out ``<forge-id>/<task-id>`` before rebasing. Without it the
+    function falls back to rebasing whatever branch is currently checked
+    out in the worktree (risky when the Forge has moved on).
+    """
     from .assembly import rebase_forge_branch
-    _output(rebase_forge_branch(ctx.obj["root"], forge_id, base))
+    _output(rebase_forge_branch(ctx.obj["root"], forge_id,
+                                task_id=task_id, base=base))
 
 
 @cli.command("assembly-continue-rebase")
@@ -912,8 +922,10 @@ def assembly_tick_cmd(ctx, base, dry_run, tests_cmd):
                         latency_ms=_tick_latency_ms())
         return {"status": "rejected", "task_id": task_id, "reason": reason}
 
-    # 1. Rebase onto base
-    rb = rebase_forge_branch(root, forge_id, base)
+    # 1. Rebase onto base — t-456: pass task_id so the forge's per-task
+    # branch is explicitly checked out first, even if the Forge has
+    # moved on to a new task in the meantime.
+    rb = rebase_forge_branch(root, forge_id, task_id=task_id, base=base)
     if rb["status"] == "conflict":
         res = try_auto_resolve(root, forge_id)
         if res["status"] == "severe":
