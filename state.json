@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1543,
-    "used": 819,
+    "used": 820,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 403,
+      "heats": 404,
       "progress": 0.98,
-      "value_ema": 0.585
+      "value_ema": 0.649
     },
     "testing": {
       "target": 0.183,
@@ -4763,7 +4763,7 @@
       "id": "t-447",
       "stage": "implementation",
       "desc": "ini-019 I0: Retro-populate initiative_id for all existing state.queue tasks (~400 entries). Cross-reference each task against initiatives list using: task desc keywords, worklog.tsv notes, merge-commit messages, ini description overlap, and heat-proximity to ini approval window. Produce a proposed mapping as a reviewable dry-run diff first (plans/ini-019-retro-map.md), then apply in a single state.json edit. Flag ambiguous cases (multiple plausible ini) rather than guess. Tests: every mapped task has a valid ini_id from initiatives list.",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 2,
       "blocked_by": [
         "t-445"
@@ -4967,7 +4967,7 @@
       "id": "t-463",
       "stage": "implementation",
       "desc": "Add Bellows to the tmux rig as a managed tmux window (no pane split needed). Observed 2026-04-18: current running Bellows processes (ports 8001/8003/8004) are stale \u2014 they pre-date the /project/{name}/initiative/{id} routes (bellows/app.py:498) which landed via t-363/t-364 but were never picked up because nobody restarts Bellows on merges touching bellows/. Three separate Bellows processes are running with different titles (Poker, Intent Editor, Timeline) \u2014 unclear how they came to be; lifecycle is unmanaged. Requirements: (a) dedicated tmux window (smithy2:bellows or similar; one window, no pane split) launched at rig startup; (b) runs uvicorn with --reload so bellows/ edits are picked up without manual restart; (c) stable port pinned in config (pick one canonical port, document it); (d) scripts/launch-rig.sh (or whatever starts the rig) includes Bellows; (e) Anvil startup protocol updated: \"expected roster\" check adds a Bellows window; (f) patrol health check: verify the Bellows port is listening and /openapi.json responds; (g) CLAUDE.md + the Anvil IDENTITY.md updated to describe Bellows as a rig member. Side concern to note (not block): the three existing Bellows processes on 8001/8003/8004 may be legacy experiments \u2014 if so, the launcher should kill stale instances before starting the canonical one. Test: kill Bellows, launch rig, verify window appears, verify /project/the-smithy/initiative/ini-020 loads. Protocol principle: any long-running rig service lives in tmux, is lifecycle-managed, patrol-checked.",
-      "status": "in_progress",
+      "status": "submitted",
       "priority": 1,
       "blocked_by": [],
       "human_priority": 1,
@@ -5020,7 +5020,7 @@
       "blocked_by": [],
       "human_priority": 2,
       "priority_reason": "strengthens t-461 coverage on rig startup; eliminates \"Claude hasnt read CLAUDE.md yet\" race",
-      "assigned_forge": null,
+      "assigned_forge": "forge-temper",
       "initiative_id": "ini-022"
     },
     {
@@ -5381,9 +5381,12 @@
       "description": "Make scripts/tmux-layout.sh and scripts/tmux-stop.sh the canonical, complete entry points for starting and stopping The Forge. Today a fresh rig launch covers Claude panes for Marshal/Forges/Assembly but: (a) UIs (bellows + 3 ui-* webapps) are launched ad hoc, (b) per-Forge venvs (t-461) depend on Claude reading CLAUDE.md after launch rather than being bootstrapped first, (c) stop sends /exit to every pane \u2014 a no-op for uvicorn panes, leaving graceful server shutdown to kill-session SIGKILL. Goals: (1) every rig member launches through tmux-layout.sh \u2014 no manual steps, no orphan processes, no startup-order races; (2) each agent pane is bootstrapped (venv created + activated, state verified) BEFORE its Claude session starts, not after; (3) stop is graceful (SIGINT for uvicorn, /exit for Claude, port freed before script returns) and complete (all tmux windows gone); (4) a smoke test validates start\u2192stop cycles leave zero orphan processes and zero bound ports; (5) operators never need to kill uvicorns or hand-compose tmux commands. Folds in existing tasks: t-463 (Bellows/UI as managed tmux windows), t-467 (venv pre-run), t-468 (stop handles UI window).",
       "status": "approved",
       "budget_cap": 12,
-      "heats_used": 0,
+      "heats_used": 1,
       "viewed_at": null,
-      "rank": 4
+      "rank": 4,
+      "parallelism": "parallel",
+      "affinity": [],
+      "touches": []
     }
   ],
   "feedback_cursor": 26,
@@ -5414,8 +5417,8 @@
   ],
   "next_tasks": [
     "t-431",
-    "t-447",
-    "t-468"
+    "t-468",
+    "t-467"
   ],
   "schema_version": 2,
   "intents": [
