@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1543,
-    "used": 845,
+    "used": 904,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -4681,7 +4681,7 @@
       "id": "t-441",
       "stage": "implementation",
       "desc": "Multi-forge Poker \u2014 Task 2/4 (Marshal constraint walk, ini-018). Rewrite initiative-selection portion of Marshal's dispatch (today's Priority Rule #3 + code behind smithy queue-pop --forge / smithy dispatch-next). For each idle Forge, walk initiatives by rank: skip if parallelism=serial AND another in-flight task from this ini; skip if affinity non-empty AND current Forge not in list AND any listed forge idle; skip if parallelism=serial AND touches overlaps in-flight task touches; else dispatch top-priority unblocked task. Tests: 3 parallel inis + 3 idle forges \u2192 all dispatch; serial ini only one in-flight; affinity preference + fallback; touches collision serializes across inis. Update personas/marshal/CLAUDE.md Priority Rule #3. Depends on t-440. Source: plans/multi-forge-poker-plan.md \u00a7Task2. Est 2 heats.",
-      "status": "in_progress",
+      "status": "pending",
       "priority": 1,
       "blocked_by": [
         "t-440"
@@ -4879,7 +4879,7 @@
       "id": "t-456",
       "stage": "implementation",
       "desc": "BLOCKER \u2014 decouple Assembly rebase from the Forge worktree. Current bug: rebase_forge_branch (smithy/smithy/assembly.py:40-59) runs `git rebase` in the Forge's worktree, which rebases WHATEVER branch is currently checked out there \u2014 not the per-task branch being merged. Fails when Forge has moved on to a new task, and fails 'unstaged changes' when Forge is mid-heat with dirty worktree. The right architecture: Assembly must operate in its OWN workspace and reference branches by name, not by worktree checkout. Design: (a) Add ensure_staging_worktree(project_dir) that creates/reuses .worktrees/_assembly-staging. (b) Replace rebase_forge_branch(project_dir, forge_id) with rebase_task_branch(project_dir, forge_id, task_id) that does: `git -C staging checkout -B _merge-<task-id> <forge-id>/<task-id>` (snapshot ref), then `git -C staging rebase main`. Returns the staging ref name on clean, or conflict/error dict as today. (c) Update ff_merge_forge_branch to accept a source_ref parameter (defaults to <forge-id>/<task-id> for back-compat), so Assembly merges FROM the rebased staging ref into main in project_dir as before. (d) On success, cleanup the original <forge-id>/<task-id> branch (Forge has moved on \u2014 already validated by t-420 per-task branches). (e) Update all cli.py callers (assembly_tick, any test harness) to pass task_id. Properties to preserve: Forge NEVER waits for Assembly \u2014 once it submits, it's free to queue-pop the next task. Branch refs in git worktree setups are shared across worktrees, so the staging approach works without additional sync. Tests: (1) Forge on the branch clean, (2) Forge on a DIFFERENT branch clean, (3) Forge on different branch DIRTY, (4) concurrent: Forge commits t-460 while Assembly merges t-455, (5) rebase conflict path still returns {status:conflict, files:[...]}. Reverts the earlier bad 'Forge stays on branch' workaround \u2014 the whole point is Forge throughput must not block on Assembly.",
-      "status": "in_progress",
+      "status": "pending",
       "priority": 0,
       "blocked_by": [],
       "human_priority": 5,
@@ -4946,8 +4946,8 @@
       "blocked_by": [
         "t-460"
       ],
-      "human_priority": 6,
-      "priority_reason": "assembly rejected: rebase error: error: ",
+      "human_priority": 1,
+      "priority_reason": "un-cooldown: prior reject caused by bug 2 gap (t-464 now merged); ready to retry. closes re-poison class by giving Forges their own venvs.",
       "assigned_forge": "forge-anneal",
       "initiative_id": "ini-020"
     },
@@ -4979,11 +4979,11 @@
       "id": "t-464",
       "stage": "implementation",
       "desc": "t-456 follow-up: close the on-target-but-dirty gap in rebase_forge_branch. Current behavior (smithy/smithy/assembly.py:43-115): stash logic only fires inside the \"if not on_target\" branch. When the Forge is already on the per-task branch but the worktree is dirty (e.g., modified state.json from scripts/state-sync.sh, which happens frequently), stash is skipped, then \"git rebase main\" refuses with \"unstaged changes\" and Assembly rejects. Observed 2026-04-18 on t-461 reject. Fix: move the status --porcelain check + stash-push + stash_ref capture OUTSIDE the on_target conditional \u2014 stash unconditionally when dirty, regardless of branch state. Keep the checkout inside the not-on-target branch. Tests: (1) on-target + clean (no stash, no checkout, clean rebase), (2) on-target + dirty (stash, no checkout, rebase, stash_ref reported), (3) different-branch + clean (no stash, checkout, rebase), (4) different-branch + dirty (stash, checkout, rebase, stash_ref reported). Note: this is still a symptom patch \u2014 the real fix is ini-020 (Assembly in its own staging worktree, so Forge worktree dirtiness is irrelevant). Ship this to unblock current drain, ini-020 supersedes it later.",
-      "status": "submitted",
+      "status": "complete",
       "priority": 0,
       "blocked_by": [],
-      "human_priority": 0,
-      "priority_reason": "blocks Assembly drain on any dirty-worktree-on-branch case (common due to state-sync); bandaid until ini-020",
+      "human_priority": null,
+      "priority_reason": null,
       "assigned_forge": "forge-anneal",
       "initiative_id": "ini-018"
     },
@@ -5008,7 +5008,7 @@
       "blocked_by": [],
       "human_priority": 2,
       "priority_reason": "coordination hygiene; prevents recurrence of today rank-collision; low effort, clear scope",
-      "assigned_forge": null,
+      "assigned_forge": "forge-temper",
       "initiative_id": "ini-018"
     }
   ],
@@ -5378,10 +5378,11 @@
     }
   ],
   "next_tasks": [
-    "t-431",
     "t-442",
+    "t-431",
     "t-443",
-    "t-447"
+    "t-447",
+    "t-466"
   ],
   "schema_version": 2,
   "intents": [
@@ -5447,7 +5448,7 @@
     ],
     "assembly": {
       "enabled": true,
-      "last_heartbeat": "2026-04-18T21:02:56+00:00"
+      "last_heartbeat": "2026-04-18T21:10:30+00:00"
     },
     "forge_roster": [
       "forge-quench",
