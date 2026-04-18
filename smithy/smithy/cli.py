@@ -98,6 +98,30 @@ def _build_priority_reason(state: dict, task: dict) -> str:
     return reason[:40]
 
 
+def _reset_worktree_on_reject(root, forge_id):
+    """t-439: discard uncommitted WIP in the Forge's worktree after the
+    pre-submit gate rejects. Runs `git reset --hard HEAD` + `git clean
+    -fdx` in the worktree. Never raises into end-heat — reject-path
+    cleanup must not mask the original test failure.
+
+    Ignores `.forge-checkpoint*.json` at main repo root (they don't
+    live in the worktree) and anything that isn't a git repo (e.g.
+    when run during smoke tests or from main itself)."""
+    import subprocess
+    wt = main_repo_root(root) / ".worktrees" / (forge_id or "")
+    cwd = wt if (forge_id and wt.exists() and (wt / ".git").exists()) else root
+    try:
+        subprocess.run(["git", "reset", "--hard", "HEAD"],
+                       cwd=str(cwd), capture_output=True, text=True,
+                       timeout=30)
+        subprocess.run(["git", "clean", "-fdx"],
+                       cwd=str(cwd), capture_output=True, text=True,
+                       timeout=30)
+        _err(f"worktree reset to HEAD + cleaned (t-439 reject-cleanup)")
+    except Exception as exc:
+        _err(f"worktree reset failed ({exc}); inspect manually")
+
+
 def _run_presubmit_tests(root, forge_id, tests_cmd=None, timeout_s=600):
     """t-427: run the project's pytest suite in the Forge's worktree,
     returning `{"passed": bool, "output": str}`. Used as a hard gate in
@@ -416,6 +440,16 @@ def end_heat(ctx, value, signal, notes, outcome, progress, no_nudge, forge_id,
             _err("--- pre-submit test failure (first 30 lines) ---")
             _err(head)
             _err("--- end ---")
+            # t-439: reset-on-reject. Uncommitted WIP from a rejected
+            # heat used to survive into the next heat's branch checkout
+            # (`git checkout -B` preserves modified files), so the next
+            # pytest ran against stale code, failed again, and the
+            # pollution compounded across 3–4 consecutive rejects
+            # (observed on t-425, t-426, t-431 across this session's
+            # hardening sprint). Reset the worktree to HEAD and
+            # `git clean -fdx` here so the next heat starts from a
+            # clean slate; the per-task branch ref is unaffected.
+            _reset_worktree_on_reject(root, forge_id)
 
     # t-426: all state.json mutations happen inside the lock. Re-load
     # state fresh so we see any sibling's updates (e.g. a concurrent
