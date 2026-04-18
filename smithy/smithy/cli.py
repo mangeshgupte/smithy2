@@ -11,7 +11,7 @@ from .state import (
     append_worklog, write_checkpoint, delete_checkpoint,
     forge_checkpoint_path, DEFAULT_FORGE_ID,
     primary_forge_id, detect_forge_from_cwd, main_repo_root,
-    assembly_queue_path, state_lock,
+    assembly_queue_path, state_lock, normalize_human_priority,
     VALID_STAGES, VALID_SIGNALS, VALID_OUTCOMES,
 )
 from .task_detail import scheduler_key
@@ -823,8 +823,14 @@ def _do_assembly_reject(root, task_id, reason):
                          f"expected 'submitted'"}
 
     task["status"] = "pending"
-    hp = task.get("human_priority") or 0
-    task["human_priority"] = hp + 5
+    # t-455: normalize before arithmetic — was `hp or 0; hp + 5` which
+    # crashed on `"p1"`-style strings, halting the Assembly merge loop.
+    # Unparseable drift coerces to 0 so reject still bumps visibility.
+    try:
+        base_hp = normalize_human_priority(task.get("human_priority")) or 0
+    except ValueError:
+        base_hp = 0
+    task["human_priority"] = base_hp + 5
     pr = f"assembly rejected: {reason}"[:40]
     task["priority_reason"] = pr
     save_state(root, state)
