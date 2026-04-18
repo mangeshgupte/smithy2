@@ -1365,27 +1365,28 @@ class TestMemoryWrite:
     """Tests for memory-write command."""
 
     def test_memory_write_creates_file(self, project, runner):
-        """memory-write creates MEMORY_DAILY.md if missing."""
+        """memory-write creates personas/forge/memory/MEMORY_DAILY.md if missing."""
         result = runner.invoke(cli, ["--dir", str(project), "memory-write", "Test note"])
         assert result.exit_code == 0
         data = json.loads(result.output)
         assert data["note"] == "Test note"
-        assert (project / "MEMORY_DAILY.md").exists()
-        content = (project / "MEMORY_DAILY.md").read_text()
+        memory_path = project / "personas" / "forge" / "memory" / "MEMORY_DAILY.md"
+        assert memory_path.exists()
+        content = memory_path.read_text()
         assert "Test note" in content
 
     def test_memory_write_with_heat(self, project, runner):
         """memory-write with --heat adds prefix."""
         result = runner.invoke(cli, ["--dir", str(project), "memory-write", "Heat note", "--heat", "42", "--stage", "testing"])
         assert result.exit_code == 0
-        content = (project / "MEMORY_DAILY.md").read_text()
+        content = (project / "personas" / "forge" / "memory" / "MEMORY_DAILY.md").read_text()
         assert "[h42 testing]" in content
 
     def test_memory_write_appends(self, project, runner):
         """Multiple writes append under same date header."""
         runner.invoke(cli, ["--dir", str(project), "memory-write", "Note 1"])
         runner.invoke(cli, ["--dir", str(project), "memory-write", "Note 2"])
-        content = (project / "MEMORY_DAILY.md").read_text()
+        content = (project / "personas" / "forge" / "memory" / "MEMORY_DAILY.md").read_text()
         assert "Note 1" in content
         assert "Note 2" in content
 
