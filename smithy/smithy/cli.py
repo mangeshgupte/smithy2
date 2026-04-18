@@ -11,7 +11,7 @@ from .state import (
     append_worklog, write_checkpoint, delete_checkpoint,
     forge_checkpoint_path, DEFAULT_FORGE_ID,
     primary_forge_id, detect_forge_from_cwd, main_repo_root,
-    assembly_queue_path,
+    assembly_queue_path, state_lock,
     VALID_STAGES, VALID_SIGNALS, VALID_OUTCOMES,
 )
 from .task_detail import scheduler_key

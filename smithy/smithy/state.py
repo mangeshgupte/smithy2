@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import contextlib
+import fcntl
 import json
+import time
 from pathlib import Path
 from datetime import datetime
 from typing import Optional
@@ -157,6 +160,47 @@ def load_state_with_mtime(project_dir: Path) -> tuple[dict, float]:
         raise FileNotFoundError(f"state.json not found at {path}")
     mtime = path.stat().st_mtime
     return _apply_steerability_defaults(json.loads(path.read_text())), mtime
+
+
+@contextlib.contextmanager
+def state_lock(project_dir: Path, timeout_s: float = 30.0):
+    """t-426: exclusive lock for state.json read-modify-write sequences.
+
+    Two Forges calling start-heat/end-heat/queue-pop simultaneously used
+    to race: both read heat=N, both write heat=N+1, one write was lost.
+    t-419's atomic rename prevents torn READS; it does not prevent lost
+    UPDATES. This lock plugs that hole.
+
+    Held on a sibling sentinel `<main-root>/.state.json.lock` so
+    inspectors that `cat state.json` are never blocked by mutators —
+    save_state's atomic rename handles reader consistency on its own.
+
+    Non-blocking flock retry with a timeout so a wedged holder surfaces
+    as a TimeoutError rather than hanging a Forge forever. Not reentrant
+    — callers must not acquire twice from the same process.
+    """
+    path = main_repo_root(project_dir) / ".state.json.lock"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    deadline = time.monotonic() + timeout_s
+    with open(path, "a+") as fh:
+        while True:
+            try:
+                fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                if time.monotonic() >= deadline:
+                    raise TimeoutError(
+                        f"state_lock timed out after {timeout_s}s "
+                        f"waiting on {path}"
+                    )
+                time.sleep(0.05)
+        try:
+            yield
+        finally:
+            try:
+                fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
+            except Exception:
+                pass
 
 
 def save_state(project_dir: Path, state: dict):
