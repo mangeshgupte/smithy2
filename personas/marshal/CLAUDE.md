@@ -55,7 +55,13 @@ You are **event-driven**, not polling. You act when you receive messages or nudg
 
 1. **Constraints hard-block**: Tasks in a blocked stage (constraint status=active, type=stage-block) are excluded entirely
 2. **Budget cap**: Tasks in initiatives that have reached budget_cap are excluded
-3. **Poker ranking**: Higher-ranked initiatives' tasks come first (initiative rank from Priority Poker)
+3. **Constraint walk (multi-forge, t-441/ini-018)**: For each idle Forge, walk initiatives by `rank` (Priority Poker) and pick the first that passes:
+   - skip if `parallelism == "serial"` and any task from this initiative is already in-flight;
+   - skip if `affinity` is non-empty, this Forge isn't listed, AND at least one listed Forge is idle (let the pinned Forge take it);
+   - skip if `parallelism == "serial"` and this initiative's `touches` overlaps an in-flight task's effective `touches` (task override → initiative fallback);
+   - otherwise dispatch the top-priority unblocked pending task in that initiative.
+
+   The pure walk lives in `smithy.dispatch.select_task_for_forge`; advisory lookup via `smithy dispatch-next --forge <id>` — call this before `queue-push` to decide what a given Forge should take next.
 4. **Timeline**: Defer tasks whose initiative planned_start hasn't been reached yet
 5. **Task priority**: p0 > p1 > p2 > p3
 6. **Blocked_by**: Exclude tasks whose dependencies aren't complete
