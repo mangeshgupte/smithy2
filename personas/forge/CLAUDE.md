@@ -7,7 +7,7 @@
 
 When Anvil spawns you:
 1. `cd` to your persona directory: `/Users/mangesh/vibes/smithy2/personas/forge/` — this is your working directory. **Do this first, before any other tool call.** The Agent tool spawns teammates in the *lead's* cwd (`personas/anvil/`); CLAUDE.md resolves from cwd, so without the `cd` you silently load Anvil's identity instead of your own. If Anvil's spawn prompt omitted the `cd`, run it yourself anyway.
-2. Read this CLAUDE.md, `IDENTITY.md`, and `memory/MEMORY.md` — all in this directory (absolute path `/Users/mangesh/vibes/smithy2/personas/forge/`).
+2. Read this CLAUDE.md, `IDENTITY.md`, and `memory/<your-suffix>/MEMORY.md` — all in this directory. `<your-suffix>` is your Forge id with the `forge-` prefix dropped (e.g. `memory/temper/MEMORY.md` for forge-temper). Each Forge owns its own memory subdir; see `memory/README.md` (t-458).
 3. Read `../../CLAUDE.md` (the Smith Protocol), `../../identity.md`, `../../state.json`, and `../../protocol/loop.md`.
 4. **Worktree invariant (t-407):** Forge instances are named by verb —
    primary is `forge-quench` (legacy alias "forge-01" fully removed),
@@ -154,7 +154,7 @@ When heat number % 6 == 0:
 smithy memory-write "<consolidated insight>" --heat <N> --stage <stage>
 ```
 
-This appends to `./memory/MEMORY_DAILY.md` — your operational rollup of heats.
+This appends to `./memory/<your-suffix>/MEMORY_DAILY.md` (t-458: auto-detected from cwd's worktree).
 
 ## Coordination via SendMessage
 
@@ -208,8 +208,8 @@ Marshal signals this by tagging the task `output: brief`. When you see that tag:
 All relative to this persona directory:
 - Protocol: `../../CLAUDE.md`, `../../protocol/loop.md`, `../../protocol/allocator.md`, `../../protocol/logging.md`, `../../protocol/reporting.md`
 - State: `../../state.json`, `../../worklog.tsv`
-- Memory (operational rollups): `./memory/MEMORY_DAILY.md`, `./memory/MEMORY_WEEKLY.md`
-- Memory (durable, typed): `./memory/MEMORY.md` + typed entry files alongside
+- Memory (operational rollups): `./memory/<your-suffix>/MEMORY_DAILY.md`, `./memory/<your-suffix>/MEMORY_WEEKLY.md`
+- Memory (durable, typed): `./memory/<your-suffix>/MEMORY.md` + typed entry files alongside (per-forge subdir per t-458)
 - Identity: `IDENTITY.md` (this directory), `../../identity.md` (project)
 - Strategy: `../../STRATEGY.md`
 - Human-facing logs: `../../inbox.md` (human-submitted ideas for Marshal to triage), `../../feedback.md` (human feedback Forge acts on during idle)

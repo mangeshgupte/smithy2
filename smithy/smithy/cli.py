@@ -2706,6 +2706,19 @@ def patrol(ctx, fix):
     except Exception:
         pass  # no remote configured, no network — silent skip.
 
+    # t-458 Check #11: per-forge memory layout drift. After the migration
+    # the root `personas/forge/memory/` must not contain the legacy shared
+    # files — their reappearance means a regression routed a memory write
+    # to the old path, re-opening the MEMORY.md merge-conflict class.
+    mem_root = root / "personas" / "forge" / "memory"
+    for legacy in ("MEMORY.md", "MEMORY_DAILY.md", "MEMORY_WEEKLY.md"):
+        if (mem_root / legacy).exists():
+            issues.append(
+                f"legacy shared memory file at personas/forge/memory/{legacy} — "
+                f"move into the per-forge subdir (quench/temper/anneal) or "
+                f"check smithy memory-write routing (t-458 regression)"
+            )
+
     # Save fixes if any
     if fix and fixes:
         save_state(root, state)
@@ -2714,7 +2727,7 @@ def patrol(ctx, fix):
         "issues": issues,
         "fixes": fixes,
         "clean": len(issues) == 0,
-        "checks_run": 10,
+        "checks_run": 11,
         "stuck_forges": sorted(set(stuck_forges)),
     })
     if issues:
@@ -2845,10 +2858,18 @@ def resume(ctx):
 @click.option("--stage", default=None, help="Stage for context")
 @click.pass_context
 def memory_write(ctx, note, heat_num, stage):
-    """Append a note to personas/forge/memory/MEMORY_DAILY.md under today's date."""
+    """Append a note to personas/forge/memory/<forge-suffix>/MEMORY_DAILY.md.
+
+    t-458: each Forge writes to its own subdir (quench/temper/anneal)
+    to eliminate MEMORY.md merge conflicts between parallel Forges. The
+    subdir is the forge-id with the `forge-` prefix dropped, detected
+    from the cwd's worktree at runtime.
+    """
     from datetime import date
     root = ctx.obj["root"]
-    path = root / "personas" / "forge" / "memory" / "MEMORY_DAILY.md"
+    forge_id = detect_forge_from_cwd(root) or primary_forge_id(root)
+    subdir = forge_id.removeprefix("forge-") if forge_id else "quench"
+    path = root / "personas" / "forge" / "memory" / subdir / "MEMORY_DAILY.md"
     path.parent.mkdir(parents=True, exist_ok=True)
 
     today = date.today().isoformat()
@@ -3216,8 +3237,15 @@ def init(ctx, project_name, target, with_personas, template_name, list_templates
         "inbox.md": "# Inbox\n\nWrite messages below.\n",
         "outbox.md": "# Outbox\n\nThe Smith writes status updates here.\n",
         "feedback.md": "# Feedback\n\nHuman writes feedback here. Forge reads it at the start of each run.\n",
-        "personas/forge/memory/MEMORY_DAILY.md": "# Daily Memory\n",
-        "personas/forge/memory/MEMORY_WEEKLY.md": "# Weekly Memory\n",
+        # t-458: per-forge memory subdirs (quench/temper/anneal) eliminate
+        # MEMORY.md merge conflicts between parallel Forges. Init seeds all
+        # three even if parallelism is off today — cheap, forward-compatible.
+        "personas/forge/memory/quench/MEMORY_DAILY.md": "# Daily Memory\n",
+        "personas/forge/memory/quench/MEMORY_WEEKLY.md": "# Weekly Memory\n",
+        "personas/forge/memory/temper/MEMORY_DAILY.md": "# Daily Memory\n",
+        "personas/forge/memory/temper/MEMORY_WEEKLY.md": "# Weekly Memory\n",
+        "personas/forge/memory/anneal/MEMORY_DAILY.md": "# Daily Memory\n",
+        "personas/forge/memory/anneal/MEMORY_WEEKLY.md": "# Weekly Memory\n",
         ".gitignore": ".forge-checkpoint.json\n.forge-output.log\n",
     }
     for name, content in templates.items():
