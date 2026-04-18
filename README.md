@@ -139,8 +139,8 @@ Signal: 🟢 normal · 🟡 below-target or stalled · 🔴 rollback or regressi
 smithy up                      # Create tmux session + worktrees + start Claude
 smithy up --force              # Kill existing session and recreate
 smithy up --dry-run            # Print panes that would be created
-scripts/tmux-layout.sh         # Re-tile panes in the running session
-scripts/tmux-stop.sh           # Graceful shutdown
+scripts/start-smithy.sh        # Re-tile panes in the running session
+scripts/stop-smithy.sh         # Graceful shutdown
 ```
 
 ### Peek at state

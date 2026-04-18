@@ -15,15 +15,15 @@
 # closes sockets and exits cleanly within ~2s.
 #
 # Usage:
-#   scripts/tmux-stop.sh            # graceful /exit, then kill-session
-#   scripts/tmux-stop.sh --force    # immediate kill-session (no /exit)
-#   scripts/tmux-stop.sh --ui-only  # SIGINT only the ui window; leave
+#   scripts/stop-smithy.sh            # graceful /exit, then kill-session
+#   scripts/stop-smithy.sh --force    # immediate kill-session (no /exit)
+#   scripts/stop-smithy.sh --ui-only  # SIGINT only the ui window; leave
 #                                   #   Claude rig running (common case
 #                                   #   when restarting just the UIs)
-#   scripts/tmux-stop.sh -h         # show usage
+#   scripts/stop-smithy.sh -h         # show usage
 #
 # Environment:
-#   FORGE_SESSION    session name (default: forge) — matches tmux-layout.sh
+#   FORGE_SESSION    session name (default: forge) — matches start-smithy.sh
 #   FORGE_STOP_WAIT  seconds to wait after /exit before kill (default: 5)
 #   FORGE_UI_WINDOW  ui-window name (default: ui) — set to "" to disable
 #                    the SIGINT pre-step entirely
@@ -37,14 +37,14 @@ UI_GRACE_S=2
 
 usage() {
   cat <<'EOF'
-scripts/tmux-stop.sh — shut down The Forge tmux rig.
+scripts/stop-smithy.sh — shut down The Forge tmux rig.
 
 Usage:
-  scripts/tmux-stop.sh             send /exit to every pane, wait, kill-session
+  scripts/stop-smithy.sh             send /exit to every pane, wait, kill-session
                                     (also SIGINTs the ui window first if present)
-  scripts/tmux-stop.sh --force     skip /exit, kill-session immediately
-  scripts/tmux-stop.sh --ui-only   SIGINT only the ui window; leave Claude rig up
-  scripts/tmux-stop.sh -h|--help   this message
+  scripts/stop-smithy.sh --force     skip /exit, kill-session immediately
+  scripts/stop-smithy.sh --ui-only   SIGINT only the ui window; leave Claude rig up
+  scripts/stop-smithy.sh -h|--help   this message
 
 Env: FORGE_SESSION (default: forge), FORGE_STOP_WAIT seconds (default: 5),
      FORGE_UI_WINDOW (default: ui; set to "" to disable SIGINT pre-step).
