@@ -2,15 +2,15 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1543,
-    "used": 838,
+    "used": 840,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
     "research": {
       "target": 0.156,
-      "heats": 53,
+      "heats": 54,
       "progress": 0.9,
-      "value_ema": 0.675
+      "value_ema": 0.698
     },
     "planning": {
       "target": 0.21,
@@ -4777,7 +4777,7 @@
       "id": "t-448",
       "stage": "research",
       "desc": "ini-020 R1: Study Gas Town Refinery batch+bisect pattern \u2014 read their merge-queue impl, document the state machine (collect \u2192 integrate \u2192 test \u2192 merge/bisect), note any adaptations needed for smithy (single-main repo, per-task branches already enforced, pre-submit pytest gate already runs per-forge). Output: research/ini-020-gas-town-study.md.",
-      "status": "pending",
+      "status": "submitted",
       "priority": 2,
       "blocked_by": [],
       "human_priority": 6,
@@ -4789,7 +4789,7 @@
       "id": "t-449",
       "stage": "research",
       "desc": "ini-020 R2: Analyze current assembly.py merge path. Inventory: rebase steps, test invocation, reject paths, state.json interactions, nudge-back-to-forge. Output: research/ini-020-assembly-current-path.md with annotated line refs. Identifies where to inject batching.",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 2,
       "blocked_by": [],
       "human_priority": 1,
@@ -4950,6 +4950,18 @@
       "priority_reason": "ini-020 phase 2 \u2014 full venv isolation across all agents",
       "assigned_forge": null,
       "initiative_id": "ini-020"
+    },
+    {
+      "id": "t-462",
+      "stage": "implementation",
+      "desc": "Add patrol check for stalled Forges via queue-push/queue-pop correlation. Current patrol (cli.py:2489-2520) only catches zombies with status=busy AND stale heartbeat >900s. Gap: a Forge that dies between heats has status=idle and a stale-but-valid heartbeat \u2014 patrol sees nothing wrong while Marshal pushes tasks into a queue that the Forge never consumes. Observed 2026-04-18: forge-quench wedged at an interactive Claude prompt looking idle while nudges piled up. Fix: add patrol check #11 that reads rig-events.jsonl, finds the latest queue_pushed event per forge, correlates with the most recent queue_popped/heat_started event. If a queue_pushed has no matching pop within N seconds (start with 120s; Forges idle-poll at 30s so 4x grace), emit a message like \"forge-X ignored queue push at TS \u2014 Ys stale; possibly unreachable\". Requires: (a) scanning rig-events.jsonl tail (most recent 500 events is plenty), (b) per-forge push/pop bookkeeping, (c) ignore if the Forge has since transitioned to busy (the pop event naturally resolves). Output in patrol JSON under stalled_forges alongside existing stuck_forges. Complements ini-019 observability \u2014 this is the first derived-from-events check.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "human_priority": 1,
+      "priority_reason": "ini-019 observability \u2014 closes the idle-but-unreachable detection gap",
+      "assigned_forge": null,
+      "initiative_id": "ini-019"
     }
   ],
   "ideas": [
@@ -5024,7 +5036,7 @@
       "description": "Architectural consolidation of Assembly: (1) Assembly owns a dedicated workspace .worktrees/_assembly-staging \u2014 never touches Forge worktrees, eliminating the Assembly-Forge concurrent-write race class. (2) Within that workspace, Assembly maintains a uv-scoped venv (.venv) \u2014 all pip install -e and pytest runs happen inside it, never in the global Python. Structurally eliminates the stale-install hazard (no global install to poison) and the sys.path.insert chicken-and-egg (venv installs whatever branch is staged). (3) Merge-into-staging batch model: Assembly creates/resets staging branch from main, git-merges N pending task branches into it (order-independent for non-overlapping changes), installs current code into venv, runs full test suite ONCE, then ff-merges staging to main on green or bisects to isolate breaker on red. Amortizes test cost across parallel submissions; log2(N) fault isolation. Does NOT solve: MEMORY.md collisions (t-458, per-forge dirs), which are orthogonal to merge strategy. Supersedes ini-018/t-457 (staging-worktree decoupling folded in here), t-460 prior pin+rebind framing (replaced by venv isolation).",
       "status": "approved",
       "budget_cap": 30,
-      "heats_used": 1,
+      "heats_used": 2,
       "viewed_at": null,
       "rank": 3,
       "parallelism": "parallel",
@@ -5053,7 +5065,7 @@
       "status": "approved",
       "budget_cap": null,
       "heats_used": 15,
-      "viewed_at": "2026-04-18T09:06:18Z",
+      "viewed_at": "2026-04-18T20:48:42Z",
       "rank": 2,
       "intent": "Give the human a way to ensure that individual task assignments conform to the high-level intent the human has, and gives a way to identify and correct drift.",
       "parallelism": "parallel",
@@ -5318,7 +5330,6 @@
     }
   ],
   "next_tasks": [
-    "t-449",
     "t-431"
   ],
   "schema_version": 2,
@@ -5385,7 +5396,7 @@
     ],
     "assembly": {
       "enabled": true,
-      "last_heartbeat": "2026-04-18T20:04:23+00:00"
+      "last_heartbeat": "2026-04-18T20:50:23+00:00"
     },
     "forge_roster": [
       "forge-quench",
