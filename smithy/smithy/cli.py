@@ -2879,6 +2879,14 @@ def patrol(ctx, fix):
             f"(threshold {STALL_S}s) — possibly unreachable"
         )
 
+    # 13. t-466: initiative rank invariants. Approved/active initiatives
+    # must carry contiguous ranks 1..N; everything else must carry
+    # rank=null. Surface violations only — operator runs
+    # `smithy initiative renumber` to repair, since hand-edits often
+    # carry intent we shouldn't auto-clobber.
+    for issue in _validate_ranks(state):
+        issues.append(f"initiative rank: {issue}")
+
     # Save fixes if any
     if fix and fixes:
         save_state(root, state)
@@ -2887,7 +2895,7 @@ def patrol(ctx, fix):
         "issues": issues,
         "fixes": fixes,
         "clean": len(issues) == 0,
-        "checks_run": 12,
+        "checks_run": 13,
         "stuck_forges": sorted(set(stuck_forges)),
         "stalled_forges": stalled_forges,
     })
@@ -3320,6 +3328,282 @@ def list_initiatives(ctx, theme_filter):
         })
 
     _output({"initiatives": result, "count": len(result)})
+
+
+# ---------------------------------------------------------------------------
+# t-466: initiative rank management.
+#
+# `rank` is the cross-initiative ordering field. It only applies to
+# initiatives the rig is actively scheduling against; everything else
+# carries `rank=null`. The CLI below owns three invariants so Anvil
+# never has to hand-edit state.json again:
+#
+#   1. Membership: only RANKABLE_INI_STATUSES = {"approved", "active"}
+#      participate. Other statuses are forced to `rank=null` on every
+#      mutation.
+#   2. Uniqueness + contiguity: rankable ranks form 1..N exactly; no
+#      gaps, no duplicates.
+#   3. Atomicity: every mutation runs inside `state_lock` and renumbers
+#      contiguously before save, so observers never see a half-applied
+#      state.
+#
+# A patrol check (#13) flags drift but does not auto-fix — the operator
+# runs `smithy initiative renumber` once they understand the cause.
+
+RANKABLE_INI_STATUSES = {"approved", "active"}
+
+
+def _rank_sort_key(ini):
+    """Sort key for rankable initiatives. Existing ranks first (in order),
+    then unranked (None) by id, so `renumber` is stable for already-ranked
+    inputs and deterministic for newly-promoted ones."""
+    rank = ini.get("rank")
+    return (0, rank) if isinstance(rank, int) else (1, ini.get("id", ""))
+
+
+def _renumber_ranks(state):
+    """In-place: assign rank 1..N to rankable initiatives in current
+    order; null-out rank on every non-rankable initiative.
+
+    Returns (count_rankable, count_nulled) so callers can report.
+    """
+    inis = state.get("initiatives", [])
+    rankable = [i for i in inis if i.get("status") in RANKABLE_INI_STATUSES]
+    rankable.sort(key=_rank_sort_key)
+    nulled = 0
+    for i in inis:
+        if i.get("status") not in RANKABLE_INI_STATUSES:
+            if i.get("rank") is not None:
+                nulled += 1
+            i["rank"] = None
+    for n, i in enumerate(rankable, start=1):
+        i["rank"] = n
+    return len(rankable), nulled
+
+
+def _rankable_sorted(state):
+    """Return rankable initiatives sorted by current rank (ascending)."""
+    rs = [i for i in state.get("initiatives", [])
+          if i.get("status") in RANKABLE_INI_STATUSES]
+    rs.sort(key=_rank_sort_key)
+    return rs
+
+
+def _validate_ranks(state):
+    """Return list of issue strings. No mutation."""
+    issues = []
+    rankable = [i for i in state.get("initiatives", [])
+                if i.get("status") in RANKABLE_INI_STATUSES]
+    null_inis = [i for i in state.get("initiatives", [])
+                 if i.get("status") not in RANKABLE_INI_STATUSES
+                 and i.get("rank") is not None]
+    for i in null_inis:
+        issues.append(f"initiative {i['id']} status={i['status']} carries "
+                      f"rank={i['rank']} (should be null)")
+    seen = {}
+    for i in rankable:
+        if i.get("rank") is None:
+            issues.append(f"initiative {i['id']} ({i['status']}) missing rank")
+            continue
+        if not isinstance(i["rank"], int):
+            issues.append(f"initiative {i['id']} rank is "
+                          f"{type(i['rank']).__name__}, expected int")
+            continue
+        seen.setdefault(i["rank"], []).append(i["id"])
+    expected = set(range(1, len(rankable) + 1))
+    actual = set(seen.keys())
+    if actual != expected:
+        missing = sorted(expected - actual)
+        extra = sorted(actual - expected)
+        if missing:
+            issues.append(f"initiative ranks not contiguous 1..{len(rankable)}: "
+                          f"missing {missing}")
+        if extra:
+            issues.append(f"initiative ranks out of range 1..{len(rankable)}: "
+                          f"extra {extra}")
+    for r, ids in sorted(seen.items()):
+        if len(ids) > 1:
+            issues.append(f"initiative rank {r} collision: {sorted(ids)}")
+    return issues
+
+
+def _find_ini_or_die(state, ini_id):
+    for i in state.get("initiatives", []):
+        if i["id"] == ini_id:
+            return i
+    _output({"error": f"Initiative {ini_id} not found"})
+    sys.exit(1)
+
+
+def _require_rankable(ini):
+    if ini.get("status") not in RANKABLE_INI_STATUSES:
+        _output({"error": f"Initiative {ini['id']} status is "
+                          f"{ini['status']!r} — only "
+                          f"{sorted(RANKABLE_INI_STATUSES)} are rankable"})
+        sys.exit(1)
+
+
+@cli.group("initiative")
+def initiative_group():
+    """t-466: initiative rank management subcommands."""
+
+
+@initiative_group.command("rank")
+@click.argument("initiative_id")
+@click.argument("position", type=int)
+@click.pass_context
+def initiative_rank_cmd(ctx, initiative_id, position):
+    """Set absolute rank; cascade-shifts others to keep 1..N contiguous."""
+    root = ctx.obj["root"]
+    with state_lock(root):
+        state = load_state(root)
+        target = _find_ini_or_die(state, initiative_id)
+        _require_rankable(target)
+        ranked = _rankable_sorted(state)
+        # Remove target then insert at the requested position (1-indexed,
+        # clamped). Renumber takes care of the final 1..N stamping.
+        ranked = [i for i in ranked if i["id"] != target["id"]]
+        idx = max(0, min(len(ranked), position - 1))
+        ranked.insert(idx, target)
+        for n, i in enumerate(ranked, start=1):
+            i["rank"] = n
+        _renumber_ranks(state)  # also nulls non-rankables
+        save_state(root, state)
+    _output({"initiative": target,
+             "ranked": [{"id": i["id"], "rank": i["rank"]} for i in ranked]})
+    _err(f"{initiative_id} ranked at {target['rank']}")
+
+
+@initiative_group.command("uprank")
+@click.argument("initiative_id")
+@click.pass_context
+def initiative_uprank_cmd(ctx, initiative_id):
+    """Swap with the rank-1 neighbor; no-op at rank 1."""
+    root = ctx.obj["root"]
+    with state_lock(root):
+        state = load_state(root)
+        target = _find_ini_or_die(state, initiative_id)
+        _require_rankable(target)
+        ranked = _rankable_sorted(state)
+        idx = next((n for n, i in enumerate(ranked) if i["id"] == target["id"]),
+                   None)
+        if idx is None:
+            _output({"error": f"{initiative_id} not in rankable list"})
+            sys.exit(1)
+        moved = False
+        if idx > 0:
+            ranked[idx], ranked[idx - 1] = ranked[idx - 1], ranked[idx]
+            moved = True
+        for n, i in enumerate(ranked, start=1):
+            i["rank"] = n
+        _renumber_ranks(state)
+        save_state(root, state)
+    _output({"initiative": target, "moved": moved,
+             "rank": target["rank"]})
+    _err(f"{initiative_id} uprank → rank {target['rank']}"
+         + ("" if moved else " (no-op, already at top)"))
+
+
+@initiative_group.command("downrank")
+@click.argument("initiative_id")
+@click.pass_context
+def initiative_downrank_cmd(ctx, initiative_id):
+    """Swap with the rank+1 neighbor; no-op at last."""
+    root = ctx.obj["root"]
+    with state_lock(root):
+        state = load_state(root)
+        target = _find_ini_or_die(state, initiative_id)
+        _require_rankable(target)
+        ranked = _rankable_sorted(state)
+        idx = next((n for n, i in enumerate(ranked) if i["id"] == target["id"]),
+                   None)
+        if idx is None:
+            _output({"error": f"{initiative_id} not in rankable list"})
+            sys.exit(1)
+        moved = False
+        if idx < len(ranked) - 1:
+            ranked[idx], ranked[idx + 1] = ranked[idx + 1], ranked[idx]
+            moved = True
+        for n, i in enumerate(ranked, start=1):
+            i["rank"] = n
+        _renumber_ranks(state)
+        save_state(root, state)
+    _output({"initiative": target, "moved": moved,
+             "rank": target["rank"]})
+    _err(f"{initiative_id} downrank → rank {target['rank']}"
+         + ("" if moved else " (no-op, already at bottom)"))
+
+
+@initiative_group.command("mv")
+@click.argument("initiative_id")
+@click.option("--before", "before_id", default=None,
+              help="Move target to immediately before this initiative.")
+@click.option("--after", "after_id", default=None,
+              help="Move target to immediately after this initiative.")
+@click.pass_context
+def initiative_mv_cmd(ctx, initiative_id, before_id, after_id):
+    """Relative-position move. --before and --after are mutually exclusive."""
+    if (before_id is None) == (after_id is None):
+        _output({"error": "exactly one of --before or --after is required"})
+        sys.exit(2)
+    anchor_id = before_id or after_id
+    if anchor_id == initiative_id:
+        _output({"error": "cannot move an initiative relative to itself"})
+        sys.exit(1)
+    root = ctx.obj["root"]
+    with state_lock(root):
+        state = load_state(root)
+        target = _find_ini_or_die(state, initiative_id)
+        anchor = _find_ini_or_die(state, anchor_id)
+        _require_rankable(target)
+        _require_rankable(anchor)
+        ranked = _rankable_sorted(state)
+        ranked = [i for i in ranked if i["id"] != target["id"]]
+        anchor_idx = next((n for n, i in enumerate(ranked)
+                           if i["id"] == anchor["id"]), None)
+        if anchor_idx is None:
+            _output({"error": f"anchor {anchor_id} not in rankable list"})
+            sys.exit(1)
+        insert_at = anchor_idx if before_id else anchor_idx + 1
+        ranked.insert(insert_at, target)
+        for n, i in enumerate(ranked, start=1):
+            i["rank"] = n
+        _renumber_ranks(state)
+        save_state(root, state)
+    _output({"initiative": target,
+             "anchor": {"id": anchor["id"], "rank": anchor["rank"]},
+             "mode": "before" if before_id else "after"})
+    _err(f"{initiative_id} moved {'before' if before_id else 'after'} "
+         f"{anchor_id} → rank {target['rank']}")
+
+
+@initiative_group.command("renumber")
+@click.pass_context
+def initiative_renumber_cmd(ctx):
+    """Null-out ranks on non-rankable initiatives; renumber the rest 1..N
+    in their current rank order. Idempotent — safe to run repeatedly.
+    Also serves as the one-time t-466 cleanup migration."""
+    root = ctx.obj["root"]
+    with state_lock(root):
+        state = load_state(root)
+        n_rankable, n_nulled = _renumber_ranks(state)
+        save_state(root, state)
+    _output({"rankable_renumbered": n_rankable, "nulled": n_nulled})
+    _err(f"Renumbered {n_rankable} rankable initiative(s); "
+         f"nulled {n_nulled} stray rank(s).")
+
+
+@initiative_group.command("validate-ranks")
+@click.pass_context
+def initiative_validate_ranks_cmd(ctx):
+    """Report rank invariant violations (no mutation). Exit 0 if clean,
+    exit 1 if any issues."""
+    root = ctx.obj["root"]
+    state = load_state(root)
+    issues = _validate_ranks(state)
+    _output({"issues": issues, "clean": len(issues) == 0})
+    if issues:
+        sys.exit(1)
 
 
 @cli.command("init")
