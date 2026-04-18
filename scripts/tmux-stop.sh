@@ -1,25 +1,39 @@
 #!/usr/bin/env bash
 #
 # t-412: Graceful shutdown of The Forge tmux rig.
+# t-468: Adds graceful handling for the `ui` window (uvicorn UIs).
 #
-# For each pane in the session, send "/exit" + Enter so the running Claude
-# Code TUI can shut down cleanly, wait briefly for processes to exit, then
-# kill the session. With --force, skip the graceful step and go straight to
-# kill-session.
+# For each Claude pane, send "/exit" + Enter so the TUI can shut down
+# cleanly, wait briefly, then kill the session. With --force, skip the
+# graceful step and go straight to kill-session.
+#
+# t-468: Panes in the `ui` tmux window run uvicorn (bellows on 8080,
+# ui-priority-poker 8001, ui-intent-editor 8003, ui-timeline 8004).
+# `/exit` is a no-op keystroke for them — the kill-session that follows
+# would SIGKILL them and leave ports in TIME_WAIT. Before the /exit
+# fan-out, we send C-c (SIGINT) to every pane in `forge:ui`; uvicorn
+# closes sockets and exits cleanly within ~2s.
 #
 # Usage:
 #   scripts/tmux-stop.sh            # graceful /exit, then kill-session
 #   scripts/tmux-stop.sh --force    # immediate kill-session (no /exit)
+#   scripts/tmux-stop.sh --ui-only  # SIGINT only the ui window; leave
+#                                   #   Claude rig running (common case
+#                                   #   when restarting just the UIs)
 #   scripts/tmux-stop.sh -h         # show usage
 #
 # Environment:
 #   FORGE_SESSION    session name (default: forge) — matches tmux-layout.sh
 #   FORGE_STOP_WAIT  seconds to wait after /exit before kill (default: 5)
+#   FORGE_UI_WINDOW  ui-window name (default: ui) — set to "" to disable
+#                    the SIGINT pre-step entirely
 
 set -euo pipefail
 
 FORGE_SESSION="${FORGE_SESSION:-forge}"
 FORGE_STOP_WAIT="${FORGE_STOP_WAIT:-5}"
+FORGE_UI_WINDOW="${FORGE_UI_WINDOW-ui}"
+UI_GRACE_S=2
 
 usage() {
   cat <<'EOF'
@@ -27,21 +41,33 @@ scripts/tmux-stop.sh — shut down The Forge tmux rig.
 
 Usage:
   scripts/tmux-stop.sh             send /exit to every pane, wait, kill-session
+                                    (also SIGINTs the ui window first if present)
   scripts/tmux-stop.sh --force     skip /exit, kill-session immediately
+  scripts/tmux-stop.sh --ui-only   SIGINT only the ui window; leave Claude rig up
   scripts/tmux-stop.sh -h|--help   this message
 
-Env: FORGE_SESSION (default: forge), FORGE_STOP_WAIT seconds (default: 5).
+Env: FORGE_SESSION (default: forge), FORGE_STOP_WAIT seconds (default: 5),
+     FORGE_UI_WINDOW (default: ui; set to "" to disable SIGINT pre-step).
 EOF
 }
 
 FORCE=0
+UI_ONLY=0
 for arg in "$@"; do
   case "$arg" in
     --force) FORCE=1 ;;
+    --ui-only) UI_ONLY=1 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "unknown flag: $arg" >&2; usage >&2; exit 2 ;;
   esac
 done
+
+# t-468: --force and --ui-only are mutually exclusive — --force means
+# kill the whole session immediately, which makes "ui only" meaningless.
+if (( FORCE && UI_ONLY )); then
+  echo "--force and --ui-only are mutually exclusive" >&2
+  exit 2
+fi
 
 if [[ "$FORGE_SESSION" =~ [[:space:]:.] ]]; then
   echo "invalid FORGE_SESSION '$FORGE_SESSION' (no spaces, colons, or dots)" >&2
@@ -58,6 +84,48 @@ if (( FORCE )); then
   echo "killed session '$FORGE_SESSION' (--force)"
   exit 0
 fi
+
+# t-468: SIGINT every pane in the ui window so uvicorn shuts down
+# cleanly (closes sockets, releases ports). Skipped silently if
+# FORGE_UI_WINDOW is empty or the window doesn't exist. Returns the
+# count of panes signaled so the caller can decide what to do next.
+sigint_ui_window() {
+  local count=0
+  if [[ -z "$FORGE_UI_WINDOW" ]]; then
+    return 0
+  fi
+  if ! tmux list-windows -t "$FORGE_SESSION" -F '#{window_name}' \
+       2>/dev/null | grep -qx -- "$FORGE_UI_WINDOW"; then
+    return 0
+  fi
+  while IFS= read -r pid; do
+    [[ -n "$pid" ]] || continue
+    tmux send-keys -t "$pid" C-c 2>/dev/null || true
+    count=$((count + 1))
+  done < <(tmux list-panes -t "${FORGE_SESSION}:${FORGE_UI_WINDOW}" \
+           -F '#{pane_id}' 2>/dev/null)
+  if (( count > 0 )); then
+    echo "sent SIGINT to $count pane(s) in '${FORGE_SESSION}:${FORGE_UI_WINDOW}'"
+    sleep "$UI_GRACE_S"
+  fi
+}
+
+# t-468 --ui-only: stop the ui window but leave the rest of the rig alone.
+# Useful for "just restart the UIs" without tearing down Claude panes.
+if (( UI_ONLY )); then
+  sigint_ui_window
+  if tmux list-windows -t "$FORGE_SESSION" -F '#{window_name}' \
+     2>/dev/null | grep -qx -- "$FORGE_UI_WINDOW"; then
+    tmux kill-window -t "${FORGE_SESSION}:${FORGE_UI_WINDOW}"
+    echo "killed window '${FORGE_SESSION}:${FORGE_UI_WINDOW}'"
+  fi
+  exit 0
+fi
+
+# Pre-step: SIGINT the uvicorn panes BEFORE the /exit fan-out so they
+# release ports cleanly. Doing this before /exit also keeps the Claude
+# rig's shutdown path unchanged for everyone else.
+sigint_ui_window
 
 # Collect every pane id in the session (across all windows). Use a
 # while-read loop instead of mapfile so the script works under macOS's
