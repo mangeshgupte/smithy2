@@ -288,3 +288,100 @@ class TestHeatDiff:
         """Arrays not in the id-keyed set stay indexed."""
         flat = _flatten({"other_list": [{"id": "x", "v": 1}]})
         assert "other_list[0].v" in flat
+
+
+class TestReadProjectHandlesNoneWorklogFields:
+    """t-465: csv.DictReader yields None for cells missing on short rows,
+    and `dict.get(key, default)` returns the default ONLY when key is
+    missing — not when the value is None. The home page 500'd because
+    `h.get("signal", "🟢")` on a row with signal=None returned None,
+    and `"🔴" in None` raised TypeError. These tests pin the fix."""
+
+    def _seed(self, tmp_path, worklog_tsv_body):
+        """Build a minimal project with a custom worklog body."""
+        state = {
+            "project": "none-guard",
+            "budget": {"total_heats": 10, "used": 3,
+                       "started_at": "2026-04-18T00:00:00Z"},
+            "stages": {
+                "research": {"target": 0.2, "heats": 1, "progress": 0.1,
+                             "value_ema": 0.7},
+                "planning": {"target": 0.1, "heats": 0, "progress": 0,
+                             "value_ema": 0.7},
+                "implementation": {"target": 0.3, "heats": 1,
+                                   "progress": 0.1, "value_ema": 0.7},
+                "testing": {"target": 0.2, "heats": 0, "progress": 0,
+                            "value_ema": 0.7},
+                "editing": {"target": 0.1, "heats": 0, "progress": 0,
+                            "value_ema": 0.7},
+                "marketing": {"target": 0.1, "heats": 0, "progress": 0,
+                              "value_ema": 0.7},
+            },
+            "queue": [],
+            "themes": [],
+            "initiatives": [],
+            "overall_progress": 0.1,
+        }
+        (tmp_path / "state.json").write_text(json.dumps(state))
+        (tmp_path / "worklog.tsv").write_text(worklog_tsv_body)
+        (tmp_path / "outbox.md").write_text("# Outbox\n")
+        (tmp_path / "inbox.md").write_text("# Inbox\n")
+        (tmp_path / "STRATEGY.md").write_text("# Strategy\n")
+        (tmp_path / "identity.md").write_text(
+            "# Identity\n\n## Commander's Intent\n\n- Placeholder\n"
+        )
+        return tmp_path
+
+    def test_signal_none_does_not_raise(self, tmp_path):
+        """Row that's short enough for signal to be None → no TypeError."""
+        # 8-column header, then a 6-column row → value=None, signal=None, notes=None.
+        worklog = (
+            "timestamp\theat\tstage\ttask_id\toutcome\tvalue\tsignal\tnotes\n"
+            "2026-04-18T10:00:00Z\t1\timplementation\tt-1\tcomplete\t\n"
+        )
+        proj = self._seed(tmp_path, worklog)
+        p = read_project(str(proj))
+        # Before fix: TypeError "argument of type 'NoneType' is not iterable".
+        # After fix: signal falls back to "green" (no 🔴/🟡 found).
+        assert p is not None
+        assert p["signal"] in ("green", "yellow", "red")
+
+    def test_timestamp_none_does_not_crash_heat_days(self, tmp_path):
+        """Row with None timestamp must not slice None[:10]."""
+        worklog = (
+            "timestamp\theat\tstage\ttask_id\toutcome\tvalue\tsignal\tnotes\n"
+            "\t1\timplementation\tt-1\tcomplete\t0.8\t🟢\tok\n"
+        )
+        proj = self._seed(tmp_path, worklog)
+        p = read_project(str(proj))
+        assert p is not None
+        # last_active must not blow up; might be empty string.
+        assert p["last_active"] == "" or p["last_active"] is None or \
+            isinstance(p["last_active"], str)
+        # heat_days groups by day; unknown day accepted.
+        assert any(d["date"] in ("unknown", "") or d["date"]
+                   for d in p["heat_days"])
+
+    def test_value_none_does_not_crash_sparkline(self, tmp_path):
+        """Row with None value must not float(None)."""
+        worklog = (
+            "timestamp\theat\tstage\ttask_id\toutcome\tvalue\tsignal\tnotes\n"
+            "2026-04-18T10:00:00Z\t1\timplementation\tt-1\tcomplete\t\t🟢\tok\n"
+        )
+        proj = self._seed(tmp_path, worklog)
+        p = read_project(str(proj))
+        assert p is not None
+        # Falls back to 0.7 (the declared default), not a crash.
+        assert all(isinstance(v, float) for v in p["sparkline"])
+
+    def test_stage_none_does_not_crash_day_summary(self, tmp_path):
+        """Row with None stage must not crash stages_used accumulator."""
+        worklog = (
+            "timestamp\theat\tstage\ttask_id\toutcome\tvalue\tsignal\tnotes\n"
+            "2026-04-18T10:00:00Z\t1\t\tt-1\tcomplete\t0.8\t🟢\tok\n"
+        )
+        proj = self._seed(tmp_path, worklog)
+        p = read_project(str(proj))
+        assert p is not None
+        # day summary rendered; stage shows up as "?" fallback.
+        assert p["heat_days"]

@@ -220,7 +220,7 @@ def read_project(project_dir: str) -> dict:
     recent_heats = worklog[-5:] if worklog else []
     signal = "green"
     for h in recent_heats:
-        s = h.get("signal", "🟢")
+        s = h.get("signal") or "🟢"  # coalesce None, not just missing key
         if "🔴" in s:
             signal = "red"
             break
@@ -258,12 +258,12 @@ def read_project(project_dir: str) -> dict:
     if worklog:
         last = worklog[-1]
         current_activity = (last.get("notes") or "").split(". Could improve")[0]
-        last_active = last.get("timestamp", "")[:16]  # YYYY-MM-DDTHH:MM
+        last_active = (last.get("timestamp") or "")[:16]  # YYYY-MM-DDTHH:MM
 
     # Group heats by day for activity feed
     days = {}
     for h in worklog:
-        ts = h.get("timestamp", "")
+        ts = h.get("timestamp") or ""
         day = ts[:10] if len(ts) >= 10 else "unknown"
         if day not in days:
             days[day] = []
@@ -277,9 +277,9 @@ def read_project(project_dir: str) -> dict:
         stages_used = {}
         signals = {"🟢": 0, "🟡": 0, "🔴": 0}
         for h in day_heats:
-            st = h.get("stage", "?")
+            st = h.get("stage") or "?"
             stages_used[st] = stages_used.get(st, 0) + 1
-            sig = h.get("signal", "🟢")
+            sig = h.get("signal") or "🟢"
             for s in signals:
                 if s in sig:
                     signals[s] += 1
@@ -303,7 +303,7 @@ def read_project(project_dir: str) -> dict:
         "budget": state.get("budget", {}),
         "stages": state.get("stages", {}),
         "recent_heats": recent_heats[-10:],
-        "sparkline": [float(h.get("value", 0.7)) for h in worklog[-20:]],
+        "sparkline": [float(h.get("value") or 0.7) for h in worklog[-20:]],
         "heat_days": heat_days,
         "decisions": decisions,
         "whats_missing": whats_missing[:5],
