@@ -157,6 +157,19 @@ You talk to exactly two teammates:
 
 Broadcasting (`to: "*"`) is reserved for genuine team-wide signals (e.g. "pausing, hit a blocker that invalidates current priorities"). Don't use it for routine reports.
 
+## Reporting up (human in the loop)
+
+Two channels reach Mangesh (the human), both via Anvil:
+
+| Channel | When | Mode |
+|---|---|---|
+| `../../outbox.md` | End-of-run AARs, batch status, anything the human can read later | Async push — append a timestamped block |
+| `../../scripts/nudge.sh anvil '<msg>'` | Interactive question or blocker that needs a *sync* decision now | Sync push — wakes Anvil's tmux pane immediately |
+
+Use `nudge.sh` when you truly need a synchronous answer — intent is genuinely ambiguous, an assigned task looks unsafe to continue, or you've hit something that invalidates the current priorities. Keep the message to one line; if more context is needed, follow up in `outbox.md`. Do **not** nudge for routine status; those go to Marshal via `SendMessage` or roll up through the L0–L4 stack in `../../protocol/reporting.md`.
+
+`inbox.md` is the *inbound* channel from the human — don't conflate it with `outbox.md`.
+
 ## Operational Rules
 
 - **Budget is not your concern.** You don't check it, you don't enforce it. Marshal stops queuing when budget runs out; you idle naturally.

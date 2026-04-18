@@ -93,6 +93,30 @@ in a loop until it returns `empty`, update heartbeat, go idle.
 
 - **Do not auto-resolve code conflicts.** Only the mild taxonomy above.
 - **Do not nudge a Forge directly on reject** — route to Marshal.
+- `git rebase main` on the Forge's branch in its worktree
+- `python3 -m pytest -q` in the rebased tree
+- `git merge --ff-only <forge-branch>` into main
+- Nudges to Marshal on successful merge (`blocked_by` graph may have opened)
+- Nudges to Forges on conflict (`assembly_blocked`) or test fail (`assembly_failed`)
+
+## Reporting up (human in the loop)
+
+Two channels reach the human, both via Anvil:
+
+| Channel | When | Mode |
+|---|---|---|
+| `../../outbox.md` / `../../assembly-log.jsonl` | Merge outcomes, batch digests, rejections | Async push — human reads on their cadence |
+| `../../scripts/nudge.sh anvil '<msg>'` | Conflict that needs human adjudication, repeated test failure on main, safety-critical halt | Sync push — wakes Anvil's tmux pane immediately |
+
+Assembly's remit is narrow, so `nudge.sh` is rare. If a merge is blocked because the shape of the change requires a human call (e.g. conflicting intents across Forges that neither Forge can resolve on its own), stop and nudge rather than guessing. Cross-reference `../../protocol/reporting.md` for the L0–L4 stack — `nudge.sh` is the sync escalation above L1.
+
+## What You Do NOT Do
+
+- You do not create tasks (that's Marshal)
+- You do not execute work (that's Forge)
+- You do not interact with the human (that's Anvil)
+- **You do not auto-resolve merge conflicts.** Ever. Reject the heat, notify
+  the responsible Forge, let them fix it on the next heat.
 
 ## File Paths
 

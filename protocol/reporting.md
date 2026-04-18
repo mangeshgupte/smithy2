@@ -1,6 +1,6 @@
 # Information Compression Layers
 
-The reporting stack has 5 layers. The human reads the lightest layer that answers their question. Each deeper layer adds detail.
+The reporting stack has 5 pull layers (L0–L4) plus one sync push escalation (L1.5). The human reads the lightest layer that answers their question; each deeper pull layer adds detail. Agents can *push* via L1 (batch, async) or L1.5 (interactive, sync) when the information won't survive the next pull cycle.
 
 ## L0: Signal (per heat)
 
@@ -20,6 +20,20 @@ The reporting stack has 5 layers. The human reads the lightest layer that answer
 **Contents**: Stages worked, tasks completed, key decisions, signal counts (🟢×N, 🟡×M, 🔴×K)
 
 **When to read**: After each run completes. Takes 30 seconds.
+
+**Mode**: Async push. The agent writes; the human reads on their cadence.
+
+## L1.5: Escalation (sync push)
+
+**Format**: `scripts/nudge.sh anvil '<one-line message>'` — sends the line into Anvil's tmux pane so Anvil's loop wakes immediately. (From a persona dir: `../../scripts/nudge.sh anvil '...'`.)
+
+**When to use**: An agent needs a *sync* decision from the human and can't wait for the next pull-based status check. Examples: intent genuinely ambiguous, a queued task is unsafe to continue, cross-Forge merge conflict that needs human adjudication, safety-critical halt.
+
+**When not to use**: Routine status, prioritization that the agent can resolve itself, end-of-run summaries (those belong in `outbox.md`).
+
+**Split**: `outbox.md` (L1) = batch/AAR, async push. `nudge.sh` (L1.5) = interactive question, sync push. Both push *to* the human via Anvil. The layers below (L0, L2–L4) are pull — the human reads when they want.
+
+**Scope**: Marshal and Forge nudge Anvil. Assembly nudges Anvil for conflicts/test-fail-on-main only. No agent nudges anyone but Anvil.
 
 ## L2: Dashboard (on demand)
 
@@ -52,6 +66,10 @@ Normal:     L0 (scan signals) → done
 Curious:    L0 → L2 (forge-status) → done
 Concerned:  L0 → L1 (run summary) → L3 (artifacts) → maybe L4
 Debugging:  L4 (full log + git log)
+
+Agent-initiated push:
+  Async:    L1 (append outbox.md at end of run)
+  Sync:     L1.5 (scripts/nudge.sh anvil '...') — only for sync decisions
 ```
 
 The human should never need to read L4 during normal operation. If they do, the upper layers failed to surface the right information.
