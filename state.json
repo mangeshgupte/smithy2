@@ -8,9 +8,9 @@
   "stages": {
     "research": {
       "target": 0.156,
-      "heats": 49,
+      "heats": 50,
       "progress": 0.9,
-      "value_ema": 0.75
+      "value_ema": 0.765
     },
     "planning": {
       "target": 0.21,
@@ -4514,12 +4514,12 @@
       "id": "t-444",
       "stage": "research",
       "desc": "ini-019 R1: Survey observability metrics \u2014 which lifecycle states, which failure types, which retry patterns are already inferable from worklog+rig-events+assembly-log. Output: research/ini-019-metrics-inventory.md. List every derivable metric + source column.",
-      "status": "pending",
+      "status": "submitted",
       "priority": 2,
       "blocked_by": [],
       "human_priority": "p1",
       "priority_reason": "ini-019 kickoff; blocks L0/L1 design",
-      "assigned_forge": null,
+      "assigned_forge": "forge-temper",
       "initiative_id": "ini-019"
     },
     {
@@ -4533,7 +4533,7 @@
       ],
       "human_priority": "p1",
       "priority_reason": "ini-019 prerequisite; without this no initiative metrics work",
-      "assigned_forge": null,
+      "assigned_forge": "forge-temper",
       "initiative_id": "ini-019"
     },
     {
@@ -4547,7 +4547,7 @@
       ],
       "human_priority": "p1",
       "priority_reason": "ini-019 design gate; must follow R1 inventory",
-      "assigned_forge": null,
+      "assigned_forge": "forge-anneal",
       "initiative_id": "ini-019"
     },
     {
@@ -4563,6 +4563,45 @@
       "priority_reason": "ini-019 backfill; once schema lands, without this retro-pop no historical metrics work",
       "assigned_forge": null,
       "initiative_id": "ini-019"
+    },
+    {
+      "id": "t-448",
+      "stage": "research",
+      "desc": "ini-020 R1: Study Gas Town Refinery batch+bisect pattern \u2014 read their merge-queue impl, document the state machine (collect \u2192 integrate \u2192 test \u2192 merge/bisect), note any adaptations needed for smithy (single-main repo, per-task branches already enforced, pre-submit pytest gate already runs per-forge). Output: research/ini-020-gas-town-study.md.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [],
+      "human_priority": "p1",
+      "priority_reason": "ini-020 kickoff",
+      "assigned_forge": null,
+      "initiative_id": "ini-020"
+    },
+    {
+      "id": "t-449",
+      "stage": "research",
+      "desc": "ini-020 R2: Analyze current assembly.py merge path. Inventory: rebase steps, test invocation, reject paths, state.json interactions, nudge-back-to-forge. Output: research/ini-020-assembly-current-path.md with annotated line refs. Identifies where to inject batching.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [],
+      "human_priority": "p1",
+      "priority_reason": "ini-020 parallel research to R1; independent",
+      "assigned_forge": null,
+      "initiative_id": "ini-020"
+    },
+    {
+      "id": "t-450",
+      "stage": "planning",
+      "desc": "ini-020 P1: Design spec for batched Assembly. (a) batch window policy (>=2 submits OR 60s timer). (b) integration branch strategy (ephemeral or persistent). (c) bisect invocation (git bisect run + shim script). (d) partial-merge protocol when bisect splits batch into green-prefix + bad + suffix. (e) rollback path if bisect itself fails. (f) nudge semantics per-forge on partial merge. (g) metric hooks (batch_size, bisect_invoked, narrowed_to). Output: plans/ini-020-batched-assembly.md.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [
+        "t-448",
+        "t-449"
+      ],
+      "human_priority": "p1",
+      "priority_reason": "ini-020 design gate",
+      "assigned_forge": null,
+      "initiative_id": "ini-020"
     }
   ],
   "ideas": [
@@ -4623,12 +4662,23 @@
       "description": "Read-only aggregation layer over worklog.tsv + rig-events.jsonl + assembly-log.jsonl + state.json + git log. Three surfaces: (L0) smithy report CLI \u2014 initiative burn-down, forge idle%, top failure buckets. (L1) Bellows Forge Ops dashboard \u2014 initiative panel with burn bars, task drill-down with timeline, persona heatmap, Issues view (ghost submits, test recurrence, Assembly rejects, thrash \u22653 retries), flow diagram. (L2) per-heat JSON snapshots for time-series regression analysis. Principle: no new write paths; deterministic replay from the record. Pre-req: retro-annotate task\u2192initiative_id mapping (schema gap in state.queue).",
       "status": "approved",
       "budget_cap": 25,
-      "heats_used": 0,
+      "heats_used": 1,
       "viewed_at": null,
       "rank": 2,
       "parallelism": "parallel",
       "affinity": [],
       "touches": []
+    },
+    {
+      "id": "ini-020",
+      "theme_id": "th-002",
+      "title": "Batched Assembly with Bisect-on-Fail",
+      "description": "Gas Town Refinery pattern adapted for Assembly: batch N pending submissions into one integration branch, run full test suite ONCE, fast-forward-merge all on green, git-bisect to isolate breaker on red. Amortizes test cost across parallel submissions; log2(N) fault isolation replaces whole-batch rejection. Data (2026-04-18): current Assembly merge latency median 1.0min/p90 1.12min \u2014 merge speed is not the issue. Real cost is rejection thrash: 50%% reject rate (16/32 events), concentrated in 4 tasks, 14/16 from test failures. Batch+bisect pays off at N>=3 concurrent submits. Does NOT address Assembly-env bug (t-431/t-426 class) \u2014 orthogonal fix needed. v1 scope: count-or-time batch window (>=2 submits OR 60s), sequential rebase within batch, standard git bisect run with smithy test shim.",
+      "status": "approved",
+      "budget_cap": 20,
+      "heats_used": 0,
+      "viewed_at": null,
+      "rank": 3
     },
     {
       "id": "ini-016",
@@ -4903,6 +4953,7 @@
     }
   ],
   "next_tasks": [
+    "t-440",
     "t-431"
   ],
   "schema_version": 1,
