@@ -76,7 +76,6 @@ header h1 { font-size: 24px; letter-spacing: -0.5px; }
     .card-meta { flex-wrap: wrap; gap: 6px; }
     .card-rank { width: 36px; font-size: 14px; }
     .card-body { padding: 10px 12px; }
-    .kill-btn { width: 32px; }
 }
 
 .poker-card.status-proposed { border-left-color: var(--yellow); }
@@ -135,19 +134,6 @@ header h1 { font-size: 24px; letter-spacing: -0.5px; }
 .task-status-dot { width: 16px; text-align: center; }
 .task-stage { color: var(--blue); font-size: 11px; width: 36px; }
 .task-desc { flex: 1; color: var(--text-muted); }
-
-.kill-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    cursor: pointer;
-    font-size: 16px;
-}
-.kill-btn:hover { color: var(--red); }
 
 .approve-btn {
     display: flex; align-items: center; justify-content: center;
