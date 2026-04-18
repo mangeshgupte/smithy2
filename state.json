@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1543,
-    "used": 837,
+    "used": 838,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 391,
+      "heats": 392,
       "progress": 0.98,
-      "value_ema": 0.804
+      "value_ema": 0.773
     },
     "testing": {
       "target": 0.183,
@@ -4800,7 +4800,7 @@
     {
       "id": "t-450",
       "stage": "planning",
-      "desc": "ini-020 P1: Design spec for batched Assembly. (a) batch window policy (>=2 submits OR 60s timer). (b) integration branch strategy (ephemeral or persistent). (c) bisect invocation (git bisect run + shim script). (d) partial-merge protocol when bisect splits batch into green-prefix + bad + suffix. (e) rollback path if bisect itself fails. (f) nudge semantics per-forge on partial merge. (g) metric hooks (batch_size, bisect_invoked, narrowed_to). Output: plans/ini-020-batched-assembly.md.",
+      "desc": "ini-020 P1 (revised): Design spec for batched-staging Assembly. Cover: (a) staging workspace layout (.worktrees/_assembly-staging + .venv via uv); (b) venv lifecycle (create on first use, recreate on smithy/ changes, reuse otherwise); (c) batch window policy (count >=2 OR time <=60s, whichever first; N=1 fallback merges directly without batch overhead); (d) merge-into-staging algorithm (reset staging=main, merge each task branch in order of arrival, collect conflicts as you go); (e) conflict classification (trivial auto-resolve vs severe single-task reject); (f) test invocation (uv run pytest inside staging venv); (g) on-green flow (ff-merge staging to main, push, cleanup); (h) on-red flow (git bisect across the N merge commits with a test shim, reject the isolated breaker, re-merge the green subset); (i) failure modes + rollback (staging reset, venv recreation); (j) metric hooks (batch_size, bisect_invoked, narrowed_to, venv_recreate_count). Output: plans/ini-020-staging-merge-design.md.",
       "status": "pending",
       "priority": 2,
       "blocked_by": [
@@ -4808,7 +4808,7 @@
         "t-449"
       ],
       "human_priority": 1,
-      "priority_reason": "ini-020 design gate",
+      "priority_reason": "ini-020 design gate \u2014 new merge-into-staging + uv-venv architecture",
       "assigned_forge": null,
       "initiative_id": "ini-020"
     },
@@ -4890,12 +4890,12 @@
     {
       "id": "t-457",
       "stage": "implementation",
-      "desc": "FOLLOW-UP to t-456: complete the staging-worktree decoupling. Current t-456 fix (rebase_forge_branch does checkout+stash in Forge worktree) is partial \u2014 eliminates the wrong-branch class but still races with active Forges when Forge writes fresh files between stash and rebase. Observed 2026-04-18 drain: 2 unstaged-changes rejects on t-443 and t-442 (both forge-anneal submits whose Forge was mid-heat at drain time). Real fix: Assembly operates in its OWN worktree .worktrees/_assembly-staging, never touches Forge worktrees. Per the original t-456 design: (a) ensure_staging_worktree(project_dir) creates/reuses the Assembly worktree, (b) snapshot the task branch into _merge-<task-id> via checkout -B, (c) rebase + run tests in staging, (d) ff-merge from the staging ref in project_dir, (e) cleanup temp ref + delete source task branch. Keep the existing rebase_forge_branch for back-compat; add rebase_task_branch as the new primary. Update assembly_tick callers. Tests: concurrent case (Forge writing to its worktree while Assembly merges), clean case, conflict case, stale-branch case.",
-      "status": "pending",
+      "desc": "[SUPERSEDED BY ini-020] Original intent (full staging-worktree decoupling) is now the baseline architecture for ini-020 alongside uv-venv isolation. See ini-020 P1 (t-450) for the consolidated design. Any code already committed on forge-quench/t-457 (d53df8) should be treated as an early prototype; ini-020 implementation will rewrite cleanly.",
+      "status": "complete",
       "priority": 0,
       "blocked_by": [],
       "human_priority": 5,
-      "priority_reason": "assembly rejected: tests failed: ERROR t",
+      "priority_reason": "superseded \u2014 see ini-020",
       "assigned_forge": "forge-quench",
       "initiative_id": "ini-018"
     },
@@ -4928,14 +4928,28 @@
     {
       "id": "t-460",
       "stage": "implementation",
-      "desc": "Pin smithy editable install to main, never a worktree. Root cause observed 2026-04-18: the global editable install (pip install -e smithy/) had been last run from a worktree (forge-quench/smithy/), so every pane imported from that stale tree. When Assembly ran pytest inside any worktree, collection of tests imported from main (e.g., test_t455_normalize_hp.py requiring normalize_human_priority) failed because the stale install lacked the symbol. 3 rejects hit this pattern (t-447 + two earlier transients). Assembly unstuck by re-binding to main. Fix: (a) add post-Assembly-merge hook that runs pip install -e from main-repo smithy/ whenever smithy code changes (detect via merge-commit paths); OR (b) guard in smithy startup that warns if __file__ is inside .worktrees/; OR (c) refactor so every pane uses a PYTHONPATH prepend to main-repo smithy/ and editable install is frozen to main. Recommend (a)+(b) \u2014 automated rebind post-merge, plus a loud warning when detection fails. Tests: regression test for module path invariant; e2e smoke that a merge touching smithy/ triggers rebind. FOLLOW-UP (2026-04-18 Assembly reject): test_t460_install_pinning.py did \"from smithy.cli import _rebind_smithy_install\". When the smithy editable install is pinned to main (the correct state at Assembly merge time), the symbol doesn't exist there yet \u2014 only on the branch \u2014 so ImportError on test collection. PATCH THE TEST like test_t455_normalize_hp.py does: prepend the branch's local smithy/ source to sys.path BEFORE the import (sys.path.insert(0, ...)). This makes the test robust whether the editable install points at main or elsewhere. Commit the patch on forge-anneal/t-460 and end-heat to resubmit. One small test-only change.",
-      "status": "pending",
+      "desc": "Replace the global editable-install model with a uv-scoped venv for Assembly. Root cause of all observed install-poison incidents (2026-04-18: t-447, t-448, t-456 first attempt, t-457 first attempt): ONE global editable install shared across all panes; \"whoever last ran pip install -e wins\"; every prior fix was patching symptoms (pin-to-main, rebind, sys.path.insert) rather than the root. Structural fix: Assembly creates .worktrees/_assembly-staging/.venv via `uv venv`, runs `uv pip install -e ./smithy` inside it, runs tests via `uv run pytest`. All Python imports during Assembly work resolve through that scoped venv. Global Python is never touched. Other panes unaffected no matter what Assembly installs. Chicken-and-egg dissolves (venv has the branch code during staging). Implementation: (a) helper ensure_assembly_venv(staging_path) creates venv if missing, reuses if present, recreates if smithy/ files newer than last install; (b) replace run_tests_in_worktree to use `uv run pytest` with cwd=staging; (c) remove the proposed pin-to-main + auto-rebind hook entirely; (d) loud warning if global smithy is ever invoked by Assembly (detect __file__ path). Tests: venv lifecycle, re-install on smithy/ changes, test discovery inside venv. Follow-up task to extend venv pattern to Forges queued separately (t-461).",
+      "status": "submitted",
       "priority": -1,
       "blocked_by": [],
       "human_priority": 5,
-      "priority_reason": "MUST land before t-457/t-458 retry \u2014 closes stale-install hazard (test-patch followup)",
+      "priority_reason": "closes install-poison hazard class structurally; unblocks ini-020 test invocation",
       "assigned_forge": "forge-anneal",
-      "initiative_id": "ini-018"
+      "initiative_id": "ini-020"
+    },
+    {
+      "id": "t-461",
+      "stage": "implementation",
+      "desc": "Phase 2: Extend uv-scoped venv pattern to Forges. After t-460 lands Assembly-side venv isolation, each Forge worktree should have its own .venv via uv. smithy commands invoked by the Forge run via uv run (or auto-activated venv). Eliminates the last remaining \"global install\" surface \u2014 Forges running pip install -e in their worktree no longer affects any other pane. Protocol updates: (a) Forge start-up creates its venv if missing, (b) smithy CLI commands work transparently under uv run, (c) CLAUDE.md + loop.md document the per-Forge venv expectation, (d) memory entry project_worktree_editable_installs.md updated or retired. Blocked by t-460 (Assembly needs its venv working first so we can validate the pattern). Requires coordinated update across all Forge panes (staggered, one at a time).",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [
+        "t-460"
+      ],
+      "human_priority": 1,
+      "priority_reason": "ini-020 phase 2 \u2014 full venv isolation across all agents",
+      "assigned_forge": null,
+      "initiative_id": "ini-020"
     }
   ],
   "ideas": [
@@ -4982,7 +4996,7 @@
       "description": "Run multiple Forge workers concurrently via per-Forge git worktrees. Dedicated Assembly teammate handles merge queue integration (conflicts, test-on-integrate, merge ordering). Unlocks parallelism (Marshal dispatches N heats simultaneously) and enforces branch hygiene. Incremental: N=2 proof before N=3+.",
       "status": "approved",
       "budget_cap": null,
-      "heats_used": 50,
+      "heats_used": 51,
       "viewed_at": "2026-04-18T09:06:15Z",
       "rank": 1,
       "parallelism": "parallel",
@@ -5006,10 +5020,10 @@
     {
       "id": "ini-020",
       "theme_id": "th-002",
-      "title": "Batched Assembly with Bisect-on-Fail",
-      "description": "Gas Town Refinery pattern adapted for Assembly: batch N pending submissions into one integration branch, run full test suite ONCE, fast-forward-merge all on green, git-bisect to isolate breaker on red. Amortizes test cost across parallel submissions; log2(N) fault isolation replaces whole-batch rejection. Data (2026-04-18): current Assembly merge latency median 1.0min/p90 1.12min \u2014 merge speed is not the issue. Real cost is rejection thrash: 50%% reject rate (16/32 events), concentrated in 4 tasks, 14/16 from test failures. Batch+bisect pays off at N>=3 concurrent submits. Does NOT address Assembly-env bug (t-431/t-426 class) \u2014 orthogonal fix needed. v1 scope: count-or-time batch window (>=2 submits OR 60s), sequential rebase within batch, standard git bisect run with smithy test shim.",
+      "title": "Batched Assembly \u2014 staging-merge + uv-scoped venv",
+      "description": "Architectural consolidation of Assembly: (1) Assembly owns a dedicated workspace .worktrees/_assembly-staging \u2014 never touches Forge worktrees, eliminating the Assembly-Forge concurrent-write race class. (2) Within that workspace, Assembly maintains a uv-scoped venv (.venv) \u2014 all pip install -e and pytest runs happen inside it, never in the global Python. Structurally eliminates the stale-install hazard (no global install to poison) and the sys.path.insert chicken-and-egg (venv installs whatever branch is staged). (3) Merge-into-staging batch model: Assembly creates/resets staging branch from main, git-merges N pending task branches into it (order-independent for non-overlapping changes), installs current code into venv, runs full test suite ONCE, then ff-merges staging to main on green or bisects to isolate breaker on red. Amortizes test cost across parallel submissions; log2(N) fault isolation. Does NOT solve: MEMORY.md collisions (t-458, per-forge dirs), which are orthogonal to merge strategy. Supersedes ini-018/t-457 (staging-worktree decoupling folded in here), t-460 prior pin+rebind framing (replaced by venv isolation).",
       "status": "approved",
-      "budget_cap": 20,
+      "budget_cap": 30,
       "heats_used": 1,
       "viewed_at": null,
       "rank": 3,
