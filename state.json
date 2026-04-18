@@ -2,15 +2,15 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1543,
-    "used": 828,
+    "used": 833,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
     "research": {
       "target": 0.156,
-      "heats": 52,
+      "heats": 53,
       "progress": 0.9,
-      "value_ema": 0.622
+      "value_ema": 0.675
     },
     "planning": {
       "target": 0.21,
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 378,
+      "heats": 386,
       "progress": 0.98,
-      "value_ema": 0.753
+      "value_ema": 0.45
     },
     "testing": {
       "target": 0.183,
@@ -4565,8 +4565,8 @@
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-018",
-      "human_priority": 20,
-      "priority_reason": "assembly rejected: tests failed: FAILED ",
+      "human_priority": 25,
+      "priority_reason": "assembly rejected: severe conflict in pe",
       "assigned_forge": "forge-quench"
     },
     {
@@ -4687,36 +4687,36 @@
         "t-440"
       ],
       "initiative_id": "ini-018",
-      "human_priority": null,
-      "priority_reason": "ini-018 rank=1 + blocked-deps-clear",
+      "human_priority": 5,
+      "priority_reason": "assembly rejected: severe conflict in pe",
       "assigned_forge": "forge-quench"
     },
     {
       "id": "t-442",
       "stage": "implementation",
       "desc": "Multi-forge Poker \u2014 Task 3/4 (Assembly back-pressure, ini-018). In Marshal's dispatch entry points (queue-pop, set-next-tasks), add pre-flight: depth = count_lines(assembly_queue_path(root)); n_forges = len(parallel.forges); if depth >= 2*max(1,n_forges): refuse with reason 'assembly-queue backpressure (depth=N)'. Include skip reason in nudge to Forge so operator sees why no dispatch. Tests: depth<2N dispatches; depth==2N refuses with 'backpressure' in reason; depth>2N same. Patrol check #9 still runs independently. Depends on t-440. Source: plans/multi-forge-poker-plan.md \u00a7Task3. Est 1 heat.",
-      "status": "in_progress",
+      "status": "pending",
       "priority": 1,
       "blocked_by": [
         "t-440"
       ],
       "initiative_id": "ini-018",
-      "human_priority": null,
-      "priority_reason": "ini-018 rank=1 + blocked-deps-clear",
+      "human_priority": 5,
+      "priority_reason": "assembly rejected: rebase error: error: ",
       "assigned_forge": "forge-anneal"
     },
     {
       "id": "t-443",
       "stage": "implementation",
       "desc": "Multi-forge Poker \u2014 Task 4/4 (Priority Poker UI, ini-018). Extend initiative card in ui-priority-poker/app.py with three advisory fields: parallelism chip (toggle parallel|serial, green=parallel/amber=serial), affinity chip (editable comma-separated forge-id list), touches chip (editable path-glob list). Drag-to-rank unchanged. Unset cards show 'parallel \u00b7 any forge \u00b7 no contention' dim text. Tests: loaded initiative with all three shows chips; POST persists; drag-to-rank works after chip edits; Playwright smoke: set parallelism=serial, save, reload \u2192 chip color flips. Depends on t-440. Source: plans/multi-forge-poker-plan.md \u00a7Task4. Est 1-2 heats.",
-      "status": "submitted",
+      "status": "pending",
       "priority": 1,
       "blocked_by": [
         "t-440"
       ],
       "initiative_id": "ini-018",
-      "human_priority": null,
-      "priority_reason": "ini-018 rank=1 + blocked-deps-clear",
+      "human_priority": 5,
+      "priority_reason": "assembly rejected: rebase error: error: ",
       "assigned_forge": "forge-anneal"
     },
     {
@@ -4735,13 +4735,13 @@
       "id": "t-445",
       "stage": "research",
       "desc": "ini-019 R2: Retro-annotate task\u2192initiative_id mapping. Add initiative_id field to state.queue task schema. One-time backfill: cross-reference worklog notes, commit messages, and ini descriptions to assign initiative_id to historical tasks. Output: migration script + updated state.json + schema-version bump.",
-      "status": "submitted",
+      "status": "complete",
       "priority": 2,
       "blocked_by": [
         "t-444"
       ],
-      "human_priority": "p1",
-      "priority_reason": "ini-019 prerequisite; without this no initiative metrics work",
+      "human_priority": null,
+      "priority_reason": null,
       "assigned_forge": "forge-temper",
       "initiative_id": "ini-019"
     },
@@ -4763,13 +4763,13 @@
       "id": "t-447",
       "stage": "implementation",
       "desc": "ini-019 I0: Retro-populate initiative_id for all existing state.queue tasks (~400 entries). Cross-reference each task against initiatives list using: task desc keywords, worklog.tsv notes, merge-commit messages, ini description overlap, and heat-proximity to ini approval window. Produce a proposed mapping as a reviewable dry-run diff first (plans/ini-019-retro-map.md), then apply in a single state.json edit. Flag ambiguous cases (multiple plausible ini) rather than guess. Tests: every mapped task has a valid ini_id from initiatives list.",
-      "status": "submitted",
+      "status": "pending",
       "priority": 2,
       "blocked_by": [
         "t-445"
       ],
-      "human_priority": "p1",
-      "priority_reason": "ini-019 backfill; once schema lands, without this retro-pop no historical metrics work",
+      "human_priority": 6,
+      "priority_reason": "assembly rejected: tests failed: ERROR t",
       "assigned_forge": "forge-temper",
       "initiative_id": "ini-019"
     },
@@ -4780,8 +4780,8 @@
       "status": "pending",
       "priority": 2,
       "blocked_by": [],
-      "human_priority": "p1",
-      "priority_reason": "ini-020 kickoff",
+      "human_priority": 6,
+      "priority_reason": "assembly rejected: tests failed: ERROR t",
       "assigned_forge": "forge-temper",
       "initiative_id": "ini-020"
     },
@@ -4792,7 +4792,7 @@
       "status": "pending",
       "priority": 2,
       "blocked_by": [],
-      "human_priority": "p1",
+      "human_priority": 1,
       "priority_reason": "ini-020 parallel research to R1; independent",
       "assigned_forge": "forge-anneal",
       "initiative_id": "ini-020"
@@ -4807,7 +4807,7 @@
         "t-448",
         "t-449"
       ],
-      "human_priority": "p1",
+      "human_priority": 1,
       "priority_reason": "ini-020 design gate",
       "assigned_forge": null,
       "initiative_id": "ini-020"
@@ -4819,7 +4819,7 @@
       "status": "pending",
       "priority": 2,
       "blocked_by": [],
-      "human_priority": "p2",
+      "human_priority": 2,
       "priority_reason": "ini-021 kickoff; can start coarse, refine after ini-019",
       "assigned_forge": null,
       "initiative_id": "ini-021"
@@ -4831,7 +4831,7 @@
       "status": "pending",
       "priority": 2,
       "blocked_by": [],
-      "human_priority": "p2",
+      "human_priority": 2,
       "priority_reason": "ini-021 mechanism research; parallelizable with R1",
       "assigned_forge": null,
       "initiative_id": "ini-021"
@@ -4846,7 +4846,7 @@
         "t-451",
         "t-452"
       ],
-      "human_priority": "p2",
+      "human_priority": 2,
       "priority_reason": "ini-021 design gate",
       "assigned_forge": null,
       "initiative_id": "ini-021"
@@ -4858,7 +4858,7 @@
       "status": "in_progress",
       "priority": 1,
       "blocked_by": [],
-      "human_priority": "p1",
+      "human_priority": 1,
       "priority_reason": "trust-in-record bug; drifting budget undermines every downstream metric (ini-019 depends on this being fixed)",
       "assigned_forge": "forge-temper",
       "initiative_id": "ini-019"
@@ -4867,11 +4867,11 @@
       "id": "t-455",
       "stage": "implementation",
       "desc": "BLOCKER \u2014 fix _do_assembly_reject TypeError. Location: smithy/smithy/cli.py:826-827. Code: hp = task.get(\"human_priority\") or 0; task[\"human_priority\"] = hp + 5. Fails when human_priority is a string like \"p1\"/\"p2\" (which Anvil started assigning on new tasks). Fix: normalize human_priority in one place \u2014 accept int, \"N\", or \"pN\" forms; store as int internally; raise TypeError fixed. Add tests: (a) integer input, (b) \"p1\" string input, (c) None input, (d) assembly-reject bumps priority correctly for each form. Check all other callsites that read/write human_priority and align them. Root cause note: Anvil introduced \"p1\"/\"p2\" strings on t-444..t-454; pre-existing queue used ints. This is the collision.",
-      "status": "pending",
+      "status": "complete",
       "priority": 0,
       "blocked_by": [],
-      "human_priority": 0,
-      "priority_reason": "BLOCKER: Assembly merge loop halted; stuck queue [t-445,t-443,t-431]",
+      "human_priority": null,
+      "priority_reason": null,
       "assigned_forge": "forge-quench",
       "initiative_id": "ini-018"
     },
@@ -4882,9 +4882,47 @@
       "status": "in_progress",
       "priority": 0,
       "blocked_by": [],
+      "human_priority": 5,
+      "priority_reason": "assembly rejected: tests failed: ERROR t",
+      "assigned_forge": "forge-quench",
+      "initiative_id": "ini-018"
+    },
+    {
+      "id": "t-457",
+      "stage": "implementation",
+      "desc": "FOLLOW-UP to t-456: complete the staging-worktree decoupling. Current t-456 fix (rebase_forge_branch does checkout+stash in Forge worktree) is partial \u2014 eliminates the wrong-branch class but still races with active Forges in the same worktree (observed 2026-04-18 drain: 2 unstaged-changes rejects on t-443/t-442 and 2 pytest-collection errors on t-447/t-456 first attempt, all race symptoms). Real fix: Assembly operates in its OWN worktree .worktrees/_assembly-staging, never touches Forge worktrees. Per the original t-456 design: (a) ensure_staging_worktree(project_dir) creates/reuses the Assembly worktree, (b) snapshot the task branch into _merge-<task-id> via checkout -B, (c) rebase + run tests in staging, (d) ff-merge from the staging ref in project_dir, (e) cleanup temp ref + delete source task branch. Keep the existing rebase_forge_branch for back-compat; add rebase_task_branch as the new primary. Update assembly_tick callers. Tests: concurrent case (Forge writing to its worktree while Assembly merges), clean case, conflict case, stale-branch case. Expected result: zero rebase/test races regardless of Forge activity.",
+      "status": "pending",
+      "priority": 0,
+      "blocked_by": [],
       "human_priority": 0,
-      "priority_reason": "BLOCKER: Assembly\u2194Forge coupling; Forge cannot move on while Assembly merges = massive idle capacity loss",
-      "assigned_forge": "forge-temper",
+      "priority_reason": "eliminates the race class that caused 4/7 rejects in today drain; blocks reliable parallel operation at N=3+",
+      "assigned_forge": null,
+      "initiative_id": "ini-018"
+    },
+    {
+      "id": "t-458",
+      "stage": "implementation",
+      "desc": "Eliminate MEMORY.md merge conflicts between parallel Forges. Current: personas/forge/memory/MEMORY.md is shared by all 3 Forges; concurrent edits on separate per-task branches produce severe conflicts Assembly rejects (3 rejects in 2026-04-18 drain: t-431\u00d72 and t-441). Design options: (a) per-forge memory subdirs personas/forge/memory/quench/ temper/ anneal/ \u2014 eliminates collision, each Forge writes its own file; OR (b) append-only memory log with forge-id + timestamp per entry, later consolidation job. Recommend (a) \u2014 simpler, clear ownership, natural git semantics. Migration: move existing personas/forge/memory/*.md into quench/ subdir (most recent edits), leave others empty, update forge CLAUDE.md path references. Add patrol check that flags divergence between subdirs to catch drift.",
+      "status": "pending",
+      "priority": 0,
+      "blocked_by": [],
+      "human_priority": 0,
+      "priority_reason": "blocks parallel Forge memory writes; caused 3 of 7 rejects in today drain",
+      "assigned_forge": null,
+      "initiative_id": "ini-018"
+    },
+    {
+      "id": "t-459",
+      "stage": "research",
+      "desc": "Add patrol check for Assembly-Forge worktree contention. After the staging-worktree decoupling lands, we still want a lightweight check that Assembly never enters a Forge worktree for merge ops (to catch regressions). Audit all callers of _worktree() in assembly.py and cli.py; verify assembly-tick path only touches the staging worktree for rebase/test. Document the rule in assembly.py docstring and CLAUDE.md. Output: scripts/check-assembly-isolation or patrol check #11.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [
+        "t-457"
+      ],
+      "human_priority": 2,
+      "priority_reason": "regression guard for staging-worktree invariant",
+      "assigned_forge": null,
       "initiative_id": "ini-018"
     }
   ],
@@ -4932,7 +4970,7 @@
       "description": "Run multiple Forge workers concurrently via per-Forge git worktrees. Dedicated Assembly teammate handles merge queue integration (conflicts, test-on-integrate, merge ordering). Unlocks parallelism (Marshal dispatches N heats simultaneously) and enforces branch hygiene. Incremental: N=2 proof before N=3+.",
       "status": "approved",
       "budget_cap": null,
-      "heats_used": 42,
+      "heats_used": 47,
       "viewed_at": "2026-04-18T09:06:15Z",
       "rank": 1,
       "parallelism": "parallel",
@@ -4960,7 +4998,7 @@
       "description": "Gas Town Refinery pattern adapted for Assembly: batch N pending submissions into one integration branch, run full test suite ONCE, fast-forward-merge all on green, git-bisect to isolate breaker on red. Amortizes test cost across parallel submissions; log2(N) fault isolation replaces whole-batch rejection. Data (2026-04-18): current Assembly merge latency median 1.0min/p90 1.12min \u2014 merge speed is not the issue. Real cost is rejection thrash: 50%% reject rate (16/32 events), concentrated in 4 tasks, 14/16 from test failures. Batch+bisect pays off at N>=3 concurrent submits. Does NOT address Assembly-env bug (t-431/t-426 class) \u2014 orthogonal fix needed. v1 scope: count-or-time batch window (>=2 submits OR 60s), sequential rebase within batch, standard git bisect run with smithy test shim.",
       "status": "approved",
       "budget_cap": 20,
-      "heats_used": 0,
+      "heats_used": 1,
       "viewed_at": null,
       "rank": 3,
       "parallelism": "parallel",
@@ -5254,10 +5292,7 @@
     }
   ],
   "next_tasks": [
-    "t-455",
-    "t-448",
     "t-449",
-    "t-441",
     "t-431"
   ],
   "schema_version": 2,
@@ -5324,7 +5359,7 @@
     ],
     "assembly": {
       "enabled": true,
-      "last_heartbeat": "2026-04-18T19:26:08+00:00"
+      "last_heartbeat": "2026-04-18T19:49:15+00:00"
     },
     "forge_roster": [
       "forge-quench",
