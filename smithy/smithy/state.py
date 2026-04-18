@@ -52,6 +52,21 @@ def find_project_root(start: str = ".") -> Path:
     raise FileNotFoundError("No state.json found in parent directories")
 
 
+def state_json_path(project_dir: Path) -> Path:
+    """t-419: canonical state.json path — always the MAIN repo's copy.
+
+    Every worktree has a tracked state.json on disk, but smithy must read
+    and write only the MAIN repo's file so queues, stages, and progress
+    stay consistent across worktrees. Without this, Marshal's queue-push
+    in `.worktrees/marshal/` never reaches Forge's queue-pop in
+    `.worktrees/forge-quench/` — the rig silently deadlocks (the
+    2026-04-12 incident root-caused on 2026-04-17). Nudge queues and
+    worklog.tsv were already anchored this way (t-409); this closes the
+    last gap.
+    """
+    return main_repo_root(project_dir) / "state.json"
+
+
 def _apply_steerability_defaults(state: dict) -> dict:
     """Ensure steerability fields exist with null defaults on every task/initiative.
 
@@ -95,8 +110,8 @@ def _apply_steerability_defaults(state: dict) -> dict:
 
 
 def load_state(project_dir: Path) -> dict:
-    """Load and return state.json."""
-    path = project_dir / "state.json"
+    """Load and return state.json (from the MAIN repo root, t-419)."""
+    path = state_json_path(project_dir)
     if not path.exists():
         raise FileNotFoundError(f"state.json not found at {path}")
     return _apply_steerability_defaults(json.loads(path.read_text()))
@@ -119,12 +134,13 @@ def clear_human_priority(state: dict, task_id: str) -> bool:
 
 
 def load_state_with_mtime(project_dir: Path) -> tuple[dict, float]:
-    """Load state.json and return (state, mtime) for optimistic concurrency.
+    """Load state.json (main repo, t-419) and return (state, mtime) for
+    optimistic concurrency.
 
     The caller passes the returned mtime back to save_state_checked; if the
     file was written by another process between load and save, the save aborts.
     """
-    path = project_dir / "state.json"
+    path = state_json_path(project_dir)
     if not path.exists():
         raise FileNotFoundError(f"state.json not found at {path}")
     mtime = path.stat().st_mtime
@@ -132,12 +148,19 @@ def load_state_with_mtime(project_dir: Path) -> tuple[dict, float]:
 
 
 def save_state(project_dir: Path, state: dict):
-    """Save state.json with validation. Stamps schema_version if absent."""
+    """Save state.json (to main repo root, t-419) with validation.
+
+    Writes atomically via temp-file + rename so concurrent writers from
+    different worktrees never observe a half-written file. Stamps
+    schema_version if absent.
+    """
     state.setdefault("schema_version", SCHEMA_VERSION)
     _apply_steerability_defaults(state)
     validate_state(state)
-    path = project_dir / "state.json"
-    path.write_text(json.dumps(state, indent=2) + "\n")
+    path = state_json_path(project_dir)
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(json.dumps(state, indent=2) + "\n")
+    tmp.replace(path)
 
 
 def save_state_checked(project_dir: Path, state: dict, expected_mtime: float):
@@ -146,7 +169,7 @@ def save_state_checked(project_dir: Path, state: dict, expected_mtime: float):
     Raises ConcurrentWriteError if another writer has touched the file.
     This makes lost writes loud instead of silent (retro §6 #2).
     """
-    path = project_dir / "state.json"
+    path = state_json_path(project_dir)
     if path.exists():
         current_mtime = path.stat().st_mtime
         # Floating-point mtimes: compare with small epsilon for cross-fs stability.

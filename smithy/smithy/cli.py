@@ -2112,6 +2112,40 @@ def patrol(ctx, fix):
             ".worktrees/marshal does not exist — Marshal must not run on main"
         )
 
+    # 8. t-419: state.json divergence. Under approach A, worktree copies of
+    # state.json are stale tracked snapshots — smithy only reads/writes the
+    # main copy. A worktree file with `budget.used` *higher* than main is
+    # evidence that something wrote to the worktree directly (a smithy
+    # regression or manual edit), which is what caused the 2026-04-12 rig
+    # deadlock. Report divergence so the operator can investigate or run
+    # `scripts/state-sync.sh`; --fix does not auto-resolve (we don't trust
+    # either copy blindly).
+    main_state_path = main_root / "state.json"
+    if main_state_path.exists():
+        try:
+            main_used = json.loads(main_state_path.read_text())\
+                .get("budget", {}).get("used", 0)
+        except Exception:
+            main_used = None
+        wt_base = main_root / ".worktrees"
+        if wt_base.exists() and main_used is not None:
+            for wt_dir in sorted(wt_base.iterdir()):
+                wt_state = wt_dir / "state.json"
+                if not wt_state.exists() or wt_state.resolve() == \
+                        main_state_path.resolve():
+                    continue
+                try:
+                    wt_used = json.loads(wt_state.read_text())\
+                        .get("budget", {}).get("used", 0)
+                except Exception:
+                    continue
+                if wt_used > main_used:
+                    issues.append(
+                        f"{wt_dir.name}/state.json budget.used={wt_used} > "
+                        f"main={main_used} — worktree-local write detected. "
+                        f"Run scripts/state-sync.sh after investigating."
+                    )
+
     # Save fixes if any
     if fix and fixes:
         save_state(root, state)
@@ -2120,7 +2154,7 @@ def patrol(ctx, fix):
         "issues": issues,
         "fixes": fixes,
         "clean": len(issues) == 0,
-        "checks_run": 7,
+        "checks_run": 8,
         "stuck_forges": sorted(set(stuck_forges)),
     })
     if issues:
