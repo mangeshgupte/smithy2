@@ -113,8 +113,12 @@ class TestCLIStateFlow:
         assert "deferred task" in out
         assert "pending task" not in out
 
-    def test_end_heat_triggers_nudge_to_marshal(self, scaffolded):
+    def test_end_heat_triggers_nudge_to_marshal(self, scaffolded, monkeypatch):
         """end-heat should fire a nudge — either delivered via tmux or queued to .smithy-nudge-queue."""
+        # t-429: opt out of the pytest-context backstop in _nudge_persona —
+        # this test specifically verifies the nudge attempt path. Subprocess
+        # inherits env, so unset before invoking _smithy.
+        monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
         _smithy(scaffolded, "start-heat", "testing")
         rc, out, _ = _smithy(scaffolded, "end-heat", "0.7", "🟢", "nudge test")
         assert rc == 0

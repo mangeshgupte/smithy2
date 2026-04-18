@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1043,
-    "used": 827,
+    "used": 836,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,15 +20,15 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 322,
+      "heats": 329,
       "progress": 0.98,
-      "value_ema": 0.769
+      "value_ema": 0.759
     },
     "testing": {
       "target": 0.183,
-      "heats": 142,
+      "heats": 145,
       "progress": 0.88,
-      "value_ema": 0.814
+      "value_ema": 0.784
     },
     "editing": {
       "target": 0.183,
@@ -48,7 +48,7 @@
       "research": 0.5,
       "planning": 0.5,
       "implementation": -0.5,
-      "testing": 0.03,
+      "testing": 0.045,
       "editing": -0.365,
       "marketing": 0.5
     }
@@ -4251,6 +4251,102 @@
       "human_priority": null,
       "priority_reason": null,
       "assigned_forge": "forge-quench"
+    },
+    {
+      "id": "t-423",
+      "stage": "implementation",
+      "desc": "Patrol check #9: stale .assembly-queue.jsonl entries. From t-422 spec, deferred. WHY: Assembly is the only thing that drains .assembly-queue.jsonl; if its pane crashes, mis-handles a nudge, or the persona enters a bad state, queue entries accumulate silently and the rig appears to be running but nothing reaches main. Patrol needs to surface this. WHAT: smithy patrol check #9 \u2014 read .assembly-queue.jsonl at main repo root; for each entry, check submitted_at age. Threshold: warn at >5 minutes since submitted_at without movement (no matching merge commit on main, no rejection in assembly-log.jsonl). Print one line per stale entry: 'STALE assembly-queue: <task_id> by <forge_id> submitted <Xm ago>, branch <branch>@<sha>'. Add to patrol's checks_run count. Tests: simulate 1 fresh + 1 stale entry, assert patrol flags only the stale one. Anvil-filed 2026-04-17 for hardening sprint.",
+      "status": "complete",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-018",
+      "human_priority": null,
+      "priority_reason": null,
+      "assigned_forge": "forge-quench"
+    },
+    {
+      "id": "t-424",
+      "stage": "implementation",
+      "desc": "Verify + ensure Marshal nudge on Assembly merge/reject. Assembly's tick loop should already nudge Marshal on outcomes (per the t-422 docs update: 'Nudges to Marshal on successful merge \u2014 blocked_by graph may have opened'). VERIFY: read smithy/smithy/assembly.py and smithy/smithy/cli.py for the assembly-tick code path; confirm both merged AND rejected outcomes call _nudge_persona('marshal', ...) using the per-forge routing fixed by t-414. Look for pre-existing wiring vs new code needed. FIX (if missing): on Assembly merge success, nudge marshal with 'ASSEMBLY_MERGED: <task_id> on main @ <sha>. Re-prioritize.' On reject: 'ASSEMBLY_REJECTED: <task_id> back to pending (reason: <why>). Re-prioritize.' Marshal's existing on-nudge handler picks it up. TESTS: simulate assembly-tick clean merge \u2192 assert marshal nudge fires. Simulate rejected merge \u2192 same. WHY: closes the loop. Without Marshal hearing about Assembly outcomes, the rig stalls after each merge waiting for someone to push the next task. Anvil-filed 2026-04-17 for hardening sprint.",
+      "status": "complete",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-018",
+      "human_priority": null,
+      "priority_reason": null,
+      "assigned_forge": "forge-quench"
+    },
+    {
+      "id": "t-425",
+      "stage": "implementation",
+      "desc": "Rig telemetry: append-only rig-events.jsonl for autonomous-run observability. WHY: a 30-heat hands-off run is impossible to debug from worklog.tsv alone \u2014 need timestamps for every transition (forge start-heat, end-heat, assembly-tick start/end, queue-push, queue-pop, marshal-nudge, assembly-nudge) so we can reconstruct what happened and where time went. WHAT: new file at main repo root rig-events.jsonl, append-only, gitignored. Each line: {ts, event, actor, target, task_id?, forge_id?, sha?, latency_ms?, detail?}. Hook into: (1) start-heat \u2014 emit forge_started; (2) end-heat \u2014 emit forge_ended_<outcome>, plus separate marshal_nudged + assembly_nudged when applicable; (3) assembly-tick begin/end \u2014 emit assembly_tick_<status> with latency_ms; (4) queue-push/queue-pop/set-next-tasks \u2014 emit queue_push/pop/set with task_id; (5) any nudge that lands \u2014 emit nudge_sent. New CLI: smithy rig-replay [--since N] \u2014 pretty-prints the recent events. Tests: simulate one full forge\u2192assembly\u2192marshal cycle, assert rig-events.jsonl has the expected sequence in order. Anvil-filed 2026-04-17 for hardening sprint.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [],
+      "initiative_id": "ini-018",
+      "human_priority": 15,
+      "priority_reason": "assembly rejected: tests failed: FAILED ",
+      "assigned_forge": "forge-quench"
+    },
+    {
+      "id": "t-426",
+      "stage": "implementation",
+      "desc": "Heat-counter race in start-heat/end-heat under parallel Forges. EVIDENCE (2026-04-17 heat ~828-830): forge-anneal worked on t-423 for ~25 minutes, then reported its heat was 'clobbered by another forge's start-heat during the ~25m I was working' \u2014 its commit bb69f95 is on forge-anneal/scratch but never reached .assembly-queue.jsonl because end-heat saw an unexpected counter and bailed/silently misrouted. Marshal then reassigned t-423 to forge-quench, which is now redoing the same work on forge-quench/t-423. Wasted Forge time + orphan commit. ROOT CAUSE: state.json's heat counter is read-modified-written without locking. Two Forges calling start-heat or end-heat in the same window race on save_state. t-419 added atomic write (temp + os.replace) but that only prevents torn reads \u2014 it does not prevent lost-update (forge-A reads heat=N, forge-B reads heat=N, both write heat=N+1, one update lost). FIX OPTIONS (pick one): (A) flock on state.json for the duration of read-modify-write in start-heat, end-heat, queue-pop, queue-push, set-priority \u2014 anything that mutates state under contention. fcntl.flock(LOCK_EX) on the file handle, hold across the read+modify+write, release on close. Cross-platform on POSIX. (B) Per-forge heat counters + a global next-heat allocator that does a single atomic increment (file_lock on a tiny .heat-counter file). Each forge gets its own monotonic per-forge heat number; the global is just for ordering. More invasive but cleaner concurrency. (C) Optimistic concurrency: read state with mtime/sha, only commit if mtime/sha unchanged, retry on conflict (5 attempts). Good for low-contention cases (true here at N=3). RECOMMEND A or C. TESTS: simulate two forges calling start-heat concurrently with threading or two subprocesses; assert both succeed AND heat counter advanced by exactly 2 (no lost updates). Repeat with end-heat. Repeat across queue-pop. ACCEPTANCE: at N=3 sustained for 30+ heats, no 'heat clobbered' reports in worklog or pane buffers. Anvil-filed 2026-04-17 after observing the race during hardening sprint.",
+      "status": "in_progress",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-018",
+      "human_priority": 5,
+      "priority_reason": "assembly rejected: tests failed: =======",
+      "assigned_forge": "forge-quench"
+    },
+    {
+      "id": "t-427",
+      "stage": "implementation",
+      "desc": "Pre-submit test gate in end-heat: forge-local pytest before assembly-queue row is written. EVIDENCE (2026-04-17): two consecutive Assembly rejections from forge-quench during the hardening sprint \u2014 t-425 (test_full_cycle_emits_expect failed) and t-423 (test_patrol_flags failed). Both rejected tests are NEW tests forge-quench authored AS PART OF the same heats \u2014 meaning forge-quench did not run them before submitting. Hypothesis: forge-quench runs pytest smithy/tests/ but its new tests live in tests/ at repo root, so they execute first under Assembly's rebase + pytest, where they fail. Classic 'works on my machine.' WHAT: when smithy end-heat is called with --outcome submitted (or the auto-promotion when assembly is enabled), automatically run the FULL test suite from the Forge's worktree BEFORE: (a) writing the .assembly-queue.jsonl row, (b) emitting the assembly nudge, (c) updating task status to submitted. Command: python3 -m pytest -q smithy/tests/ tests/ \u2014 both paths. Configurable via --tests-cmd or env SMITHY_TESTS_CMD for projects with different layouts. BEHAVIOR ON FAIL: refuse the submit. Print the first ~30 lines of pytest output to the Forge's pane. Set effective_outcome back to 'partial' and write a worklog row with outcome=test-fail and signal=\ud83d\udfe1 + the failing test names. Forge knows immediately and re-iterates next heat instead of burning an Assembly merge cycle. ESCAPE HATCH: --skip-tests flag for legitimate cases (research stages, planning stages where no code changed) \u2014 should be opt-in and noisy in the worklog. Auto-skip when stage is in {research, planning, marketing}. WHY: (1) eliminates this entire failure class; (2) saves Assembly cycles (~5 min each rebase+test); (3) teaches forge-discipline by forcing the loop, not by prompt-engineering. RELATED: this is also a hard gate against the prompt-drift problem \u2014 Forges skipping tests under time pressure no longer matters. TESTS: simulate end-heat where one new test fails \u2014 assert no .assembly-queue.jsonl row written, no assembly nudge, worklog shows test-fail outcome. Simulate passing tests \u2014 assert normal submit flow proceeds. Anvil-filed 2026-04-17 after observing 2 back-to-back Assembly rejections during hardening sprint. UNBLOCKS: Assembly stops being the de-facto CI; pipeline becomes purely an integrator.",
+      "status": "complete",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-018",
+      "human_priority": null,
+      "priority_reason": null,
+      "assigned_forge": "forge-quench"
+    },
+    {
+      "id": "t-428",
+      "stage": "implementation",
+      "desc": "Fix pytest test discovery: include both smithy/tests/ and tests/ paths. ROOT CAUSE (2026-04-17): two consecutive Assembly rejections on the hardening sprint (t-425, t-423) \u2014 both because forge-quench wrote new tests under tests/ at the repo root but its pre-commit pytest run probably only picked up smithy/tests/ (the legacy path). pytest with no config defaults to discovering tests from rootdir, but if rootdir is set or pytest.ini scopes to one path, the second is silently invisible. WHAT: add pytest config that forces discovery of both directories. Options: (1) pyproject.toml \u2014 add [tool.pytest.ini_options] testpaths = ['smithy/tests', 'tests']; (2) pytest.ini at repo root; (3) conftest.py at repo root that sets collect_ignore_glob to nothing and explicitly includes both. Pick whichever is simplest given the project's current layout \u2014 check what's already present (pyproject.toml in smithy/, may or may not have a pytest section; no top-level pytest.ini). VERIFY: from repo root, python3 -m pytest --collect-only -q | grep test_ | wc -l should equal sum of tests across both paths (currently ~610 tests post-t-422). Run from a forge worktree too \u2014 same number. ALSO: update personas/forge/CLAUDE.md to reference the canonical command (python3 -m pytest -q from repo root) instead of any path-specific incantations Forge might have learned. WHY: this is the actual root cause that would have prevented t-425 and t-423 rejections. Cheaper than a pre-submit gate (t-427, dropped) and addresses the real failure mode rather than papering over it. Anvil-filed 2026-04-17 after reframing t-427.",
+      "status": "in_progress",
+      "priority": 0,
+      "blocked_by": [],
+      "initiative_id": "ini-018",
+      "human_priority": null,
+      "priority_reason": "ini-018 rank=1 + poker",
+      "assigned_forge": "forge-anneal"
+    },
+    {
+      "id": "t-429",
+      "stage": "testing",
+      "desc": "_nudge_persona test isolation: stop pytest from sending real tmux send-keys to the live Marshal pane. EVIDENCE (2026-04-17): Marshal periodically receives nudges like 'HEAT_DONE: generated complete, value=0.8, signal=\ud83d\udfe2. Re-prioritize.' and 'HEAT_DONE: t-001 complete, value=0.9, signal=\ud83d\udfe2. Re-prioritize.' \u2014 both formats match cli.py:412 verbatim. Source: smithy/tests/test_smithy.py:89-93 (test_end_heat) and ~1186 invoke real end-heat via runner.invoke(cli, [..., 'end-heat', '0.8', '\ud83d\udfe2', 'Test notes']) WITHOUT --no-nudge. When pytest runs from a forge worktree while the rig is live, _nudge_persona finds the real 'forge' tmux session (post-t-414 fix), finds Marshal's pane, and fires tmux send-keys. Marshal correctly tags them 'Ignoring \u2014 synthetic' but they should never arrive in the first place. The leak existed forever; t-414 made it loud by fixing the addressing model. FIX (do BOTH for belt-and-braces): (1) BACKSTOP in _nudge_persona (smithy/smithy/cli.py): at the top of the function, check os.environ.get('PYTEST_CURRENT_TEST') \u2014 pytest sets this automatically for every running test. If present, return {'nudged': False, 'queued': False, 'reason': 'pytest context, nudge skipped'} immediately. One-line guard, covers any current OR future test that forgets to mock. (2) EXPLICIT in test code: audit smithy/tests/test_smithy.py and smithy/tests/test_marshal_forge_flow.py for tests that invoke end-heat / queue-push / set-next-tasks via runner.invoke without --no-nudge AND without @mock.patch on _nudge_persona. Add --no-nudge to the invocation OR wrap with @mock.patch('smithy.cli._nudge_persona'). Keeps test intent explicit even if the env-var backstop is later removed. (3) Add a regression test: invoke end-heat with PYTEST_CURRENT_TEST set, assert the nudge result.reason == 'pytest context, nudge skipped' and no subprocess.run call to tmux. WHY: noise to Marshal pollutes its decision stream and burns its context tokens parsing junk. Also a correctness signal \u2014 tests should never have side effects on the running system. Anvil-filed 2026-04-17 after diagnosis; option 3 (env backstop + explicit mocks) chosen by human.",
+      "status": "complete",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-018",
+      "human_priority": null,
+      "priority_reason": null,
+      "assigned_forge": "forge-anneal"
+    },
+    {
+      "id": "t-430",
+      "stage": "research",
+      "desc": "Multi-forge Priority Poker design (research + planning brief). PROBLEM: Priority Poker (ui-priority-poker/app.py + state.initiatives[].rank, used by Marshal as Priority Rule #3 in personas/marshal/CLAUDE.md) was designed for a single-Forge rig. With N=3 Forges + Assembly now live (validated 2026-04-17), five assumptions break: (1) single global rank means strict serial consumption \u2014 three top-ranked initiatives can't run in parallel even though three Forges are available; (2) no contention model \u2014 two top initiatives both touching cli.py guarantee Assembly rebase conflicts; (3) no parallelism semantics per initiative \u2014 some initiatives are inherently parallel-safe, others need to serialize; (4) no Forge affinity \u2014 forge-quench has built deep cli.py context across t-411/t-414/t-419/t-422 and round-robin loses that; (5) Assembly back-pressure invisible \u2014 if Assembly drain rate < dispatch rate, more pushes just create a backlog. DELIVERABLES \u2014 produce two files: (A) research/multi-forge-poker-design.md \u2014 ~2-3 page brief enumerating the five broken assumptions with concrete examples from the 2026-04-17 hardening sprint (e.g., t-423 forge-anneal/forge-quench duplicate work; t-425/t-423 Assembly rejections under load); enumerate the three design options (Lanes / Affinity-tagged single Poker / Two-layer Initiative+Task Poker) with pros/cons each; recommend the hybrid B+C-lite approach below; include UI sketches (drag-to-rank stays + per-initiative parallelism/affinity/touches chips). (B) plans/multi-forge-poker-plan.md \u2014 break the recommended approach into ~4 ordered implementation tasks ready for Marshal to dispatch. RECOMMENDED HYBRID (Anvil's framing 2026-04-17): (1) keep single global Poker ranking \u2014 human's main priority knob, unchanged; (2) add three fields per initiative: parallelism (serial|parallel, default parallel), affinity ([forge-id], default empty=any), touches ([path-glob], default empty=no contention claim, optionally auto-suggested from task descriptions); (3) Marshal's dispatch becomes a constraint walk \u2014 for each idle Forge, walk initiatives by rank, skip if parallelism=serial AND another forge is on it, skip if affinity is set AND this forge isn't in the list AND a listed forge is idle, skip if touches overlaps an in-flight task's touches AND parallelism=serial, then find top unblocked task in initiative and dispatch; (4) Assembly back-pressure \u2014 if .assembly-queue.jsonl depth >= 2 * N_forges, Marshal pauses dispatching new work, services in-flight only. PRESERVES: human still does drag-to-rank; the three new fields are advisory and default to today's behavior, so existing initiatives work unchanged. ENABLES: real N=3 throughput on parallel-friendly initiatives, automatic serialization where needed, forge-context preservation, Assembly-aware throttling. SCOPE FOR THIS TASK: research + planning only. ~2 heats. Implementation tasks (schema additions, Marshal constraint walk, Poker UI extensions, back-pressure logic) get filed by the planning doc as separate t-XXX entries. Anvil-filed 2026-04-17 after observing the hardening-sprint friction.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-018",
+      "human_priority": null,
+      "priority_reason": "ini-018 rank=1 + poker",
+      "assigned_forge": null
     }
   ],
   "ideas": [
@@ -4297,8 +4393,8 @@
       "description": "Run multiple Forge workers concurrently via per-Forge git worktrees. Dedicated Assembly teammate handles merge queue integration (conflicts, test-on-integrate, merge ordering). Unlocks parallelism (Marshal dispatches N heats simultaneously) and enforces branch hygiene. Incremental: N=2 proof before N=3+.",
       "status": "approved",
       "budget_cap": null,
-      "heats_used": 14,
-      "viewed_at": "2026-04-13T15:29:26Z",
+      "heats_used": 22,
+      "viewed_at": "2026-04-18T03:46:12Z",
       "rank": 1
     },
     {
@@ -4321,7 +4417,7 @@
       "status": "approved",
       "budget_cap": null,
       "heats_used": 2,
-      "viewed_at": "2026-04-12T21:37:51Z",
+      "viewed_at": "2026-04-18T03:47:11Z",
       "rank": 3
     },
     {
@@ -4522,7 +4618,9 @@
       "created": "2026-04-11T10:44:28.678810"
     }
   ],
-  "next_tasks": [],
+  "next_tasks": [
+    "t-430"
+  ],
   "schema_version": 1,
   "intents": [
     {
@@ -4587,7 +4685,7 @@
     ],
     "assembly": {
       "enabled": true,
-      "last_heartbeat": "2026-04-17T22:21:52Z"
+      "last_heartbeat": "2026-04-18T03:58:29+00:00"
     },
     "forge_roster": [
       "forge-quench",

@@ -1374,17 +1374,9 @@ def _resolve_pane(session, persona):
     Verify: python3 -c "from smithy.cli import _resolve_pane; \
                          print(_resolve_pane('forge','marshal'))"
     """
-    # t-429: pytest-context backstop. When tests invoke end-heat / queue-push
-    # etc. via runner.invoke without --no-nudge or mocking, this function
-    # used to fire real tmux send-keys at the live Marshal pane, polluting
-    # its decision stream. pytest exports PYTEST_CURRENT_TEST for every
-    # running test — short-circuit here so no individual test can leak a
-    # nudge. Explicit --no-nudge / mock.patch usage at call sites (option 2
-    # in the task) remains the preferred style; this is belt-and-braces.
-    import os
-    if os.environ.get("PYTEST_CURRENT_TEST"):
-        return {"nudged": False, "queued": False, "persona": persona,
-                "reason": "pytest context, nudge skipped"}
+    # t-429: pytest-context backstop lives in _nudge_persona (one level up),
+    # not here — _resolve_pane returns a (pane_id, reason) tuple so a dict
+    # short-circuit would break the unpacking contract.
     import subprocess
     chk = subprocess.run(
         ["tmux", "has-session", "-t", session],
@@ -1419,7 +1411,15 @@ def _nudge_persona(persona, message, root=None):
     Code TUI input box sometimes swallows a combined "text\\nEnter" so we
     deliver them independently.
     """
+    import os
     import subprocess
+
+    # t-429: pytest-context backstop must be first — before busy-check, before
+    # session lookup, before anything that has side effects (the busy-check
+    # branch queues a nudge to file; we want even that suppressed under pytest).
+    if os.environ.get("PYTEST_CURRENT_TEST"):
+        return {"nudged": False, "queued": False, "persona": persona,
+                "reason": "pytest context, nudge skipped"}
 
     session = _forge_session()
 
