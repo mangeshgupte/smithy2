@@ -15,3 +15,7 @@ smithy/smithy.egg-info/
 # t-461 (ini-020 phase 2): per-Forge / per-worktree uv venvs
 .venv/
 **/.venv/
+
+# Runtime coordination artifacts — local, not version-tracked
+.smithy-nudge-queue/
+.state.json.lock

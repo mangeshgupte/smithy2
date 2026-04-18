@@ -23,3 +23,51 @@
 {"ts": "2026-04-18T09:11:50+00:00", "forge_id": "forge-quench", "task_id": "t-439", "outcome": "merged", "detail": "ab8b25281c145be6e698771e83fa03c9d2c17ac2"}
 {"ts": "2026-04-18T09:16:50+00:00", "forge_id": "forge-anneal", "task_id": "t-431", "outcome": "rejected", "detail": "tests failed: FAILED tests/test_t431_task_tree.py::test_task_tree_initiative_filter - Asser...|FAILED tests/test_t431_task_tree.py::te"}
 {"ts": "2026-04-18T09:18:27+00:00", "forge_id": "forge-quench", "task_id": "t-438", "outcome": "merged", "detail": "59983b7e340f6cf0948520b2bb92120e0907a877"}
+{"ts": "2026-04-18T16:14:51+00:00", "forge_id": "forge-temper", "task_id": "generated", "outcome": "rejected", "detail": "rebase error: error: cannot rebase: You have unstaged changes.\nerror: Please commit or stash them."}
+{"ts": "2026-04-18T16:17:19+00:00", "forge_id": "forge-quench", "task_id": "t-435", "outcome": "merged", "detail": "efbe5584b2568742d5e86d0c517f4cecc9d8609e"}
+{"ts": "2026-04-18T16:17:19+00:00", "forge_id": "forge-quench", "task_id": "t-435", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-18T16:20:31+00:00", "forge_id": "forge-temper", "task_id": "t-430", "outcome": "merged", "detail": "5b96eeb3d88adc984f4ec2199640cd4c0f4c360e"}
+{"ts": "2026-04-18T16:20:31+00:00", "forge_id": "forge-temper", "task_id": "t-430", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-18T16:21:37+00:00", "forge_id": "forge-temper", "task_id": "t-436", "outcome": "merged", "detail": "47ccb14830de7d8d4b23915d45d3ebcec5a28006"}
+{"ts": "2026-04-18T16:21:37+00:00", "forge_id": "forge-temper", "task_id": "t-436", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-18T19:10:14+00:00", "forge_id": "forge-temper", "task_id": "t-444", "outcome": "merged", "detail": "021832aed6b2309ef84f333e7bdb780347e74f53"}
+{"ts": "2026-04-18T19:10:14+00:00", "forge_id": "forge-temper", "task_id": "t-444", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-18T19:12:49+00:00", "forge_id": "forge-quench", "task_id": "t-440", "outcome": "merged", "detail": "7e21bf0eb8feaaa9675f30c3705c86fe865642df"}
+{"ts": "2026-04-18T19:12:49+00:00", "forge_id": "forge-quench", "task_id": "t-440", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-18T19:23:15+00:00", "forge_id": "forge-anneal", "task_id": "t-446", "outcome": "merged", "detail": "888e5cff73b2b5f7fd13d4d9fe029072c69da894"}
+{"ts": "2026-04-18T19:23:15+00:00", "forge_id": "forge-anneal", "task_id": "t-446", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-18T19:23:57+00:00", "forge_id": "assembly", "task_id": "BLOCKED", "outcome": "blocked", "detail": "smithy bugs: (1) _do_assembly_reject hp+5 TypeError on string human_priority; (2) rebase_forge_branch targets wrong branch when Forge has moved on. Queue=[t-445,t-443,t-431]. Anvil nudged."}
+{"ts": "2026-04-18T19:40:12+00:00", "forge_id": "forge-quench", "task_id": "t-455", "outcome": "merged", "detail": "8ccf2f257d25efdb6a0ff9c34a20705f52909bb2"}
+{"ts": "2026-04-18T19:40:12+00:00", "forge_id": "forge-quench", "task_id": "t-455", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-18T19:41:22+00:00", "forge_id": "forge-temper", "task_id": "t-456", "outcome": "rejected", "detail": "tests failed: ERROR tests/test_t455_normalize_hp.py|!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!|1"}
+{"ts": "2026-04-18T19:44:58+00:00", "forge_id": "forge-temper", "task_id": "t-456", "outcome": "merged", "detail": "75c83ed8166491dfeb4792c12e169f03e88e3253"}
+{"ts": "2026-04-18T19:44:58+00:00", "forge_id": "forge-temper", "task_id": "t-456", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-18T19:46:33+00:00", "forge_id": "forge-temper", "task_id": "t-445", "outcome": "merged", "detail": "acb72b3f65c5941140201f69f27e54fd3b8d48b1"}
+{"ts": "2026-04-18T19:46:33+00:00", "forge_id": "forge-temper", "task_id": "t-445", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-18T19:46:33+00:00", "forge_id": "forge-anneal", "task_id": "t-443", "outcome": "rejected", "detail": "rebase error: error: cannot rebase: You have unstaged changes.\nerror: Please commit or stash them."}
+{"ts": "2026-04-18T19:46:34+00:00", "forge_id": "forge-quench", "task_id": "t-431", "outcome": "rejected", "detail": "severe conflict in personas/forge/memory/MEMORY.md"}
+{"ts": "2026-04-18T19:46:35+00:00", "forge_id": "forge-temper", "task_id": "t-447", "outcome": "rejected", "detail": "tests failed: ERROR tests/test_t455_normalize_hp.py|!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!|1"}
+{"ts": "2026-04-18T19:46:35+00:00", "forge_id": "forge-quench", "task_id": "t-441", "outcome": "rejected", "detail": "severe conflict in personas/forge/memory/MEMORY.md"}
+{"ts": "2026-04-18T19:46:35+00:00", "forge_id": "forge-anneal", "task_id": "t-442", "outcome": "rejected", "detail": "rebase error: error: cannot rebase: You have unstaged changes.\nerror: Please commit or stash them."}
+{"ts": "2026-04-18T19:46:36+00:00", "forge_id": "forge-quench", "task_id": "t-431", "outcome": "rejected", "detail": "severe conflict in personas/forge/memory/MEMORY.md"}
+{"ts": "2026-04-18T19:47:58+00:00", "forge_id": "forge-temper", "task_id": "t-448", "outcome": "rejected", "detail": "tests failed: ERROR tests/test_t455_normalize_hp.py|!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!|1"}
+{"ts": "2026-04-18T20:00:16+00:00", "forge_id": "forge-quench", "task_id": "t-457", "outcome": "rejected", "detail": "tests failed: ERROR tests/test_t457_staging_worktree.py|!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!"}
+{"ts": "2026-04-18T20:02:50+00:00", "forge_id": "forge-anneal", "task_id": "t-460", "outcome": "rejected", "detail": "tests failed: FAILED tests/test_t460_install_pinning.py::TestRebindHook::test_pip_failure_surfaced_not_raised|FAILED tests/test_t460_i"}
+{"ts": "2026-04-18T20:54:51+00:00", "forge_id": "forge-anneal", "task_id": "t-460", "outcome": "merged", "detail": "b1ea3e6ab1a0bcd49710ac725f9767aad999f5c3"}
+{"ts": "2026-04-18T20:54:51+00:00", "forge_id": "forge-anneal", "task_id": "t-460", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-18T20:56:13+00:00", "forge_id": "forge-temper", "task_id": "t-458", "outcome": "merged", "detail": "f560007e2e03272b2eaa84740d33cbeb0476fa05"}
+{"ts": "2026-04-18T20:56:13+00:00", "forge_id": "forge-temper", "task_id": "t-458", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-18T20:57:20+00:00", "forge_id": "forge-temper", "task_id": "t-448", "outcome": "rejected", "detail": "tests failed: FAILED tests/test_witness_per_forge.py::test_busy_without_checkpoint_flagged|FAILED tests/test_witness_per_forge.py::tes"}
+{"ts": "2026-04-18T20:58:28+00:00", "forge_id": "forge-anneal", "task_id": "t-449", "outcome": "rejected", "detail": "tests failed: FAILED tests/test_t458_per_forge_memory.py::test_concurrent_writes_from_different_forges_never_conflict|FAILED tests/tes"}
+{"ts": "2026-04-18T21:02:56+00:00", "forge_id": "forge-anneal", "task_id": "t-461", "outcome": "rejected", "detail": "rebase error: error: cannot rebase: You have unstaged changes.\nerror: Please commit or stash them."}
+{"ts": "2026-04-18T21:09:04+00:00", "forge_id": "forge-temper", "task_id": "t-462", "outcome": "merged", "detail": "41d3d5e265771bc46c249fc7e99280c1b7b4c99d"}
+{"ts": "2026-04-18T21:09:04+00:00", "forge_id": "forge-temper", "task_id": "t-462", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-18T21:10:15+00:00", "forge_id": "forge-anneal", "task_id": "t-464", "outcome": "merged", "detail": "6ac0500591edf8098bc1722db84ea2e9a061303b"}
+{"ts": "2026-04-18T21:10:15+00:00", "forge_id": "forge-anneal", "task_id": "t-464", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-18T21:14:42+00:00", "forge_id": "forge-anneal", "task_id": "t-461", "outcome": "rejected", "detail": "tests failed: FAILED tests/test_t461_forge_venv_setup.py::TestActivateLineOnStdout::test_final_emit_line_format|FAILED tests/test_t461"}
+{"ts": "2026-04-18T21:18:01+00:00", "forge_id": "forge-temper", "task_id": "t-465", "outcome": "merged", "detail": "05b13c08cb9b9afe1f327453fd577c1d7e61e8ce"}
+{"ts": "2026-04-18T21:18:01+00:00", "forge_id": "forge-temper", "task_id": "t-465", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-18T21:19:37+00:00", "forge_id": "forge-anneal", "task_id": "t-461", "outcome": "rejected", "detail": "tests failed: FAILED tests/test_t461_forge_venv_setup.py::TestActivateLineOnStdout::test_final_emit_line_format|FAILED tests/test_t461"}
+{"ts": "2026-04-18T21:21:36+00:00", "forge_id": "forge-anneal", "task_id": "t-461", "outcome": "merged", "detail": "874e48af078bfd1393f5955c018dda007aef4daa"}
+{"ts": "2026-04-18T21:21:36+00:00", "forge_id": "forge-anneal", "task_id": "t-461", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-18T21:28:07+00:00", "forge_id": "forge-temper", "task_id": "t-466", "outcome": "rejected", "detail": "merge failed: error: Your local changes to the following files would be overwritten by merge:\n\tpersonas/anvil/memory/MEMORY.md\nPlease "}
