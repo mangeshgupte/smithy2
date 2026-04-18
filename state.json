@@ -4163,7 +4163,7 @@
       "id": "t-414",
       "stage": "implementation",
       "desc": "Fix smithy auto-nudge for current tmux rig (t-408 layout).\n\nPROBLEM: smithy/smithy/cli.py::_nudge_persona was written for the old layout (session 'smithy2', one window per persona). Current rig is one window with personas as panes in session 'forge'. Every auto-nudge from queue-push/end-heat/set-next-tasks silently falls back to .smithy-nudge-queue/<persona>.jsonl with reason \"window 'forge' not found, nudge queued\". Marshal\u2192Forge handoff loop is broken; only manual scripts/nudge.sh works.\n\nFIX: rewrite _nudge_persona to resolve the target by pane_current_path (mirroring scripts/nudge.sh logic). Read session name from FORGE_SESSION env, default 'forge'. Match panes:\n  /.worktrees/<persona>/...     -> marshal, forge-quench, forge-temper, forge-anneal\n  /personas/<persona> (suffix)  -> anvil, assembly\nPreserve the existing return-dict shape (nudged/queued/persona/target/reason/message) and the busy/queue fallback path. Send message text and Enter as TWO separate send-keys calls (Claude Code TUI quirk).\n\nREFERENCE PATCH (already prototyped by Anvil on main, then reverted to respect 'only Assembly writes main' rule): see Anvil's nudge from 2026-04-13 \u2014 _resolve_pane(session, persona) helper + new _nudge_persona body.\n\nVERIFY:\n  python3 -c \"from smithy.cli import _resolve_pane; print(_resolve_pane('forge','marshal'))\"  # -> ('%XX', None)\n  smithy queue-push <some-task> --to forge  # status should show \"nudged: true\", forge-quench pane receives the message\n\nPOST-MERGE: every worktree must reinstall (`pip install -e <worktree>/smithy`) for the fix to take effect \u2014 flag this in the AAR / Marshal's next steering note so all 5 worktree installs (anvil, marshal, forge-quench, forge-temper, forge-anneal) get refreshed.",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 0,
       "blocked_by": [],
       "human_priority": 0,
@@ -4215,6 +4215,18 @@
       "human_priority": null,
       "priority_reason": null,
       "assigned_forge": "forge-quench"
+    },
+    {
+      "id": "t-420",
+      "stage": "implementation",
+      "desc": "Enforce per-task branches in Forge start-heat flow (t-399 design). PROBLEM (observed 2026-04-17): personas/forge/CLAUDE.md:58-65 documents the per-task-branch design \u2014 create a branch <forge-id>/<task-id> off latest main before each task \u2014 but the persona prompts have no actionable step that triggers it, and Forge defaults to whatever branch the worktree was on (the long-lived <forge-id>/scratch). Result: scratch branches accumulate stacked commits across tasks (e.g. forge-quench/scratch had t-411 H1, t-411 H2, t-419 all on it), forcing Anvil-driven manual rebase + FF gymnastics on every Assembly merge. Assembly auto-delete (t-411 H1) is silently dead-code because the branch is never named <forge-id>/<task-id>. FIX: (1) Add an explicit BEFORE start-heat step to personas/forge/CLAUDE.md that runs: git checkout -B <forge-id>/<task-id> main (or fail the rig if main is not fast-forwarded). (2) Optionally bake it into smithy start-heat itself: when --task <id> is set and current branch is not <forge-id>/<task-id>, create/checkout that branch off main before writing the checkpoint. Refuse to start-heat from <forge-id>/scratch with --task <id> unless a --reuse-scratch flag is passed. (3) Update personas/assembly/CLAUDE.md to confirm post-merge state: worktree restored to <forge-id>/scratch, ready for next task to branch off main. (4) Migration: existing <forge-id>/scratch branches that match main can be left alone; ones that diverge need manual reset by Anvil. (5) Patrol check: warn if a Forge worktree HEAD is on <forge-id>/scratch with uncommitted task work older than one heat. TESTS: simulate start-heat from clean scratch, verify branch <forge-id>/<task-id> created off main; simulate the refuse-to-start case. Anvil-filed 2026-04-17 after observing the long-lived-scratch antipattern during t-411/t-419 bootstrap merges.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "initiative_id": "ini-018",
+      "human_priority": null,
+      "priority_reason": "ini-018 rank=1 + poker",
+      "assigned_forge": null
     }
   ],
   "ideas": [
@@ -4487,9 +4499,8 @@
     }
   ],
   "next_tasks": [
-    "t-419",
-    "t-414",
-    "t-373"
+    "t-373",
+    "t-420"
   ],
   "schema_version": 1,
   "intents": [
