@@ -1996,6 +1996,51 @@ def list_tasks(ctx, status_filter, stage_filter, initiative_filter, limit):
     _err(f"Listed {len(result)} tasks (status={status_filter})")
 
 
+@cli.command("task-tree")
+@click.option("--initiative", "initiative_filter", default=None,
+              help="Only show tasks in this initiative (ini-XXX).")
+@click.option("--json", "emit_json", is_flag=True, default=False,
+              help="Emit machine-readable JSON instead of the ASCII tree.")
+@click.option("--stuck", "stuck_only", is_flag=True, default=False,
+              help="Show only tasks blocked on still-open deps "
+                   "whose worklog is idle ≥24h (or never touched).")
+@click.option("--stuck-hours", "stuck_hours", type=float, default=24.0,
+              help="Threshold for --stuck (hours; default 24).")
+@click.pass_context
+def task_tree_cmd(ctx, initiative_filter, emit_json, stuck_only, stuck_hours):
+    """t-431: Render the task DAG.
+
+    Groups open tasks (status in open/pending/in_progress/submitted) by
+    initiative (rank order) and draws blocked_by edges as an ASCII tree.
+    Dispatchable tasks (deps resolved) are flagged ✓; tasks in a
+    dependency cycle are flagged ⚠; tasks idle ≥24h on live deps get 💤.
+    """
+    from .task_tree import build_forest, forest_to_json, render_ascii
+
+    root = ctx.obj["root"]
+    state = load_state(root)
+    worklog = main_repo_root(root) / "worklog.tsv"
+
+    forest = build_forest(
+        state,
+        initiative_filter=initiative_filter,
+        stuck_only=stuck_only,
+        worklog_path=worklog,
+        stuck_threshold_hours=stuck_hours,
+    )
+
+    if emit_json:
+        _output({"forest": forest_to_json(forest),
+                 "initiatives": len(forest),
+                 "roots": sum(len(r) for _, r in forest)})
+        return
+
+    text = render_ascii(forest)
+    # Print without quoting so the ASCII tree is readable. Route through
+    # click so terminals that want colour/width heuristics can hook in.
+    click.echo(text, nl=False)
+
+
 @cli.command("allocate")
 @click.pass_context
 def allocate(ctx):
