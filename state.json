@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 394,
+      "heats": 396,
       "progress": 0.98,
-      "value_ema": 0.617
+      "value_ema": 0.751
     },
     "testing": {
       "target": 0.183,
@@ -4955,7 +4955,7 @@
       "id": "t-462",
       "stage": "implementation",
       "desc": "Add patrol check for stalled Forges via queue-push/queue-pop correlation. Current patrol (cli.py:2489-2520) only catches zombies with status=busy AND stale heartbeat >900s. Gap: a Forge that dies between heats has status=idle and a stale-but-valid heartbeat \u2014 patrol sees nothing wrong while Marshal pushes tasks into a queue that the Forge never consumes. Observed 2026-04-18: forge-quench wedged at an interactive Claude prompt looking idle while nudges piled up. Fix: add patrol check #11 that reads rig-events.jsonl, finds the latest queue_pushed event per forge, correlates with the most recent queue_popped/heat_started event. If a queue_pushed has no matching pop within N seconds (start with 120s; Forges idle-poll at 30s so 4x grace), emit a message like \"forge-X ignored queue push at TS \u2014 Ys stale; possibly unreachable\". Requires: (a) scanning rig-events.jsonl tail (most recent 500 events is plenty), (b) per-forge push/pop bookkeeping, (c) ignore if the Forge has since transitioned to busy (the pop event naturally resolves). Output in patrol JSON under stalled_forges alongside existing stuck_forges. Complements ini-019 observability \u2014 this is the first derived-from-events check.",
-      "status": "in_progress",
+      "status": "submitted",
       "priority": 1,
       "blocked_by": [],
       "human_priority": 1,
@@ -4979,12 +4979,24 @@
       "id": "t-464",
       "stage": "implementation",
       "desc": "t-456 follow-up: close the on-target-but-dirty gap in rebase_forge_branch. Current behavior (smithy/smithy/assembly.py:43-115): stash logic only fires inside the \"if not on_target\" branch. When the Forge is already on the per-task branch but the worktree is dirty (e.g., modified state.json from scripts/state-sync.sh, which happens frequently), stash is skipped, then \"git rebase main\" refuses with \"unstaged changes\" and Assembly rejects. Observed 2026-04-18 on t-461 reject. Fix: move the status --porcelain check + stash-push + stash_ref capture OUTSIDE the on_target conditional \u2014 stash unconditionally when dirty, regardless of branch state. Keep the checkout inside the not-on-target branch. Tests: (1) on-target + clean (no stash, no checkout, clean rebase), (2) on-target + dirty (stash, no checkout, rebase, stash_ref reported), (3) different-branch + clean (no stash, checkout, rebase), (4) different-branch + dirty (stash, checkout, rebase, stash_ref reported). Note: this is still a symptom patch \u2014 the real fix is ini-020 (Assembly in its own staging worktree, so Forge worktree dirtiness is irrelevant). Ship this to unblock current drain, ini-020 supersedes it later.",
-      "status": "in_progress",
+      "status": "submitted",
       "priority": 0,
       "blocked_by": [],
       "human_priority": 0,
       "priority_reason": "blocks Assembly drain on any dirty-worktree-on-branch case (common due to state-sync); bandaid until ini-020",
       "assigned_forge": "forge-anneal",
+      "initiative_id": "ini-018"
+    },
+    {
+      "id": "t-465",
+      "stage": "implementation",
+      "desc": "Fix Bellows 500 on home page: TypeError in read_project when a worklog row has signal=None. Location: bellows/forge_reader.py:223. Current code: s = h.get('signal', '\ud83d\udfe2'); if '\ud83d\udd34' in s: ...  dict.get(key, default) returns the default only when key is MISSING, not when value is None. Some worklog rows have signal=None (observed 2026-04-18 blocking the whole home page). Fix: s = h.get('signal') or '\ud83d\udfe2'  (coalesces both missing-key and None-value). Apply same defensive pattern to any other dict.get(..., default) reads in that file where None is a real possibility in the data. Test: add a unit test that read_project handles a worklog with a None signal field without raising.",
+      "status": "pending",
+      "priority": 1,
+      "blocked_by": [],
+      "human_priority": 1,
+      "priority_reason": "bellows home page 500s; small fix; blocks Bellows UX",
+      "assigned_forge": null,
       "initiative_id": "ini-018"
     }
   ],
@@ -5032,7 +5044,7 @@
       "description": "Run multiple Forge workers concurrently via per-Forge git worktrees. Dedicated Assembly teammate handles merge queue integration (conflicts, test-on-integrate, merge ordering). Unlocks parallelism (Marshal dispatches N heats simultaneously) and enforces branch hygiene. Incremental: N=2 proof before N=3+.",
       "status": "approved",
       "budget_cap": null,
-      "heats_used": 51,
+      "heats_used": 52,
       "viewed_at": "2026-04-18T20:55:38Z",
       "rank": 1,
       "parallelism": "parallel",
@@ -5046,7 +5058,7 @@
       "description": "Read-only aggregation layer over worklog.tsv + rig-events.jsonl + assembly-log.jsonl + state.json + git log. Three surfaces: (L0) smithy report CLI \u2014 initiative burn-down, forge idle%, top failure buckets. (L1) Bellows Forge Ops dashboard \u2014 initiative panel with burn bars, task drill-down with timeline, persona heatmap, Issues view (ghost submits, test recurrence, Assembly rejects, thrash \u22653 retries), flow diagram. (L2) per-heat JSON snapshots for time-series regression analysis. Principle: no new write paths; deterministic replay from the record. Pre-req: retro-annotate task\u2192initiative_id mapping (schema gap in state.queue).",
       "status": "approved",
       "budget_cap": 25,
-      "heats_used": 4,
+      "heats_used": 5,
       "viewed_at": "2026-04-18T20:56:19Z",
       "rank": 3,
       "parallelism": "parallel",
