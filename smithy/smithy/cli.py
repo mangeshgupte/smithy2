@@ -1439,9 +1439,14 @@ def add_task(ctx, stage, desc, priority, blocked_by, initiative_id):
         "status": "pending",
         "priority": priority,
         "blocked_by": list(blocked_by),
+        # t-471: initiative_id is the canonical schema (t-447 invariant).
+        # Always write the key, defaulting to None, so freshly-added tasks
+        # can never break test_every_task_has_initiative_id_field. Before
+        # this, the field was only set when --initiative was passed, which
+        # landed t-470 in state.json without it and blocked Assembly for
+        # every submission afterward.
+        "initiative_id": initiative_id,
     }
-    if initiative_id:
-        task["initiative_id"] = initiative_id
 
     task["human_priority"] = None
     task["priority_reason"] = _build_priority_reason(state, task)

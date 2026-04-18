@@ -140,6 +140,13 @@ def _apply_steerability_defaults(state: dict) -> dict:
         # t-396 I1: assigned_forge lets Marshal pin a task to a specific Forge
         # at N≥2. Null = unassigned (any idle Forge may take it).
         task.setdefault("assigned_forge", None)
+        # t-471: initiative_id is part of the t-447 schema invariant. The
+        # field must always be present (None if unassigned); t-470 shipped
+        # without it due to an add-task bug and blocked every Assembly
+        # submission that tripped the whole-suite gate. Backfilling here
+        # means any state.json touched by a save_state call normalises
+        # automatically on the next load→save cycle.
+        task.setdefault("initiative_id", None)
         # t-455: coerce drifted human_priority (strings like "p1" / "p2"
         # landed on t-444..t-454 via a writer that skipped the Poker
         # UI's int-check) to canonical int on load so the scheduler +
