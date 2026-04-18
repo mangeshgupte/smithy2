@@ -697,3 +697,38 @@ All 6 stages now have at least 1 heat. 6 human ideas received, all implemented. 
 
 
 **⚠️ Initiative ini-009 (Steering patterns research) has reached its budget cap (10 heats).**
+
+## 2026-04-18 — Session AAR [via anvil]
+
+**Session span:** ~2026-04-17 15:20Z → 2026-04-18 16:22Z (~25 hours elapsed, ~81 heats consumed from heat 822 → 903).
+
+**What was broken coming in:** rig had been halted since 2026-04-13. `_nudge_persona` targeted the wrong tmux session. `state.json` was per-worktree with no sync. Assembly had no event-driven wake. Nudge-queue files held 9 stale messages. 145 commits unpushed to origin.
+
+**What shipped (15 merged tasks under ini-018):**
+- Plumbing: t-411 (nudge pane resolution), t-414 (per-Forge routing + dynamic VALID_PERSONAS), t-419 (state→main anchoring), t-420 (per-task branch enforcement in start-heat), t-422 (Assembly nudge+queue wiring), t-424 (Marshal nudge on Assembly merge)
+- Observability: t-425 (rig-events.jsonl), t-428 (pytest.ini discovery config), t-429 (pytest-leak backstop), t-437 (orphan reap in patrol)
+- Quality gates: t-427 (pre-submit pytest gate), t-439 (clean worktree on reject)
+- Integrity: t-438 (Assembly auto-push + patrol check #10)
+- Scaffold: t-412 (tmux-stop), t-413 (nudge.sh up-channel docs), t-418 (TestMemoryWrite fix), t-423 (patrol #9), t-432 (forge-status.sh), t-433 (state.py coverage), t-434 (README v2), t-435 (persona memory)
+- Design: t-430 (multi-forge Poker brief + plan), t-436 (✕ button removal)
+
+**Parked (p2, next session):**
+- **t-431** (task-tree CLI) — 5 Assembly rejections on `test_task_tree_initiative_filter`; passes in every Anvil reproduction (clean /tmp worktree, forge-quench worktree, forge-anneal worktree, full suite). Only fails inside Assembly's subprocess. Needs targeted debug of env-var inheritance / pytest timing.
+- **t-426** (heat-counter race) — similar pattern. Deferred.
+
+**Dropped:** t-416 (per-worktree smithy isolation) — premise obsoleted by t-419+t-414.
+
+**Milestones validated:**
+- First autonomous Forge→Assembly→main merge (t-424, 09:11Z)
+- First N=3 parallel shipment (t-412/t-413/t-418/t-420 same cycle)
+- First autonomous reject+retry loop (t-425, test fail → Assembly reject → next-heat fix → merge)
+- Assembly auto-push to origin now live
+
+**Remaining friction:**
+- t-431/t-426 thrash pattern (untracked Assembly env issue)
+- Forges accumulate scratch-branch cruft; Anvil manually reset forge-temper once. Worth an auto-prune in a future sprint.
+- Marshal doesn't live-reap orphans (fixed via t-437 but patrol-level only; not on-nudge reap yet)
+- "Stale binary" nuance per forge — global editable install means rebinds affect all forges at once, occasionally surprising
+
+**Handing off:** rig halted at 2026-04-18T16:22:11Z. 140 heats remaining of 1043 budget. Origin synced. All worktrees clean. Next session starts with the t-431/t-426 debug and the multi-forge Poker design's implementation fanout (plans from t-430's brief).
+

@@ -2,15 +2,15 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1043,
-    "used": 892,
+    "used": 903,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
     "research": {
       "target": 0.156,
-      "heats": 49,
+      "heats": 50,
       "progress": 0.9,
-      "value_ema": 0.814
+      "value_ema": 0.75
     },
     "planning": {
       "target": 0.21,
@@ -20,21 +20,21 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 366,
+      "heats": 380,
       "progress": 0.98,
-      "value_ema": 0.837
+      "value_ema": 0.736
     },
     "testing": {
       "target": 0.183,
-      "heats": 148,
+      "heats": 149,
       "progress": 0.88,
       "value_ema": 0.681
     },
     "editing": {
       "target": 0.183,
-      "heats": 190,
+      "heats": 193,
       "progress": 0.88,
-      "value_ema": 0.618
+      "value_ema": 0.571
     },
     "marketing": {
       "target": 0.219,
@@ -49,7 +49,7 @@
       "planning": 0.5,
       "implementation": -0.5,
       "testing": 0.056,
-      "editing": -0.319,
+      "editing": -0.315,
       "marketing": 0.5
     }
   },
@@ -4174,11 +4174,11 @@
       "id": "t-416",
       "stage": "implementation",
       "desc": "Per-worktree smithy isolation: each agent's `smithy` command must resolve to its own worktree's source, not a global pip install.\n\nPROBLEM (diagnosed 2026-04-13): `pip install -e <path>/smithy` registers a SINGLE global editable install. All panes share it. Whoever last ran `pip install -e` wins for everyone. Symptoms today:\n- Assembly tried `smithy assembly-tick` \u2192 \"No such command\" because the global install was bound to forge-quench/scratch (a branch that forked before t-399 H1 added assembly-tick).\n- forge-quench editing smithy code in its branch silently changes CLI behavior for Marshal, Assembly, Anvil \u2014 opposite of worktree isolation.\n- After Anvil reverted a smithy/cli.py edit on main, the global install still pointed at a divergent worktree, so the revert had no observable effect on any pane's `smithy`.\n\nGOAL: `which smithy` and `pip show smithy` (when run inside a worktree) should report that worktree's path. A Forge editing smithy code in .worktrees/forge-quench/ must affect ONLY the forge-quench pane, not Marshal/Assembly/Anvil.\n\nDESIGN OPTIONS:\n1. Per-worktree venv: each .worktrees/<id>/ gets a .venv/ with smithy editable-installed there. tmux-layout.sh activates the venv before launching Claude in that pane (modify -c chdir or prepend to PATH via shell init). Robust but heavyweight (5 venvs to maintain, ~50MB each).\n2. Wrapper script: replace the `smithy` entrypoint with a shell wrapper that detects the calling pane's cwd, finds the nearest .worktrees/<id>/smithy or smithy/ ancestor, and execs `python -m smithy.cli` with PYTHONPATH set to that worktree's smithy/. Lightweight, no per-worktree install, but fragile (relies on cwd inference).\n3. PYTHONPATH per pane: tmux-layout.sh launches each pane with `PYTHONPATH=<worktree>/smithy claude ...`. Then `python -m smithy.cli` resolves locally without any pip install. Simplest. The console_scripts `smithy` entrypoint becomes a thin shim: `#!/usr/bin/env python -m smithy.cli`. Recommend this.\n\nTASKS:\n- Decide between options 1/2/3 (recommend 3 \u2014 simplest, no extra tooling)\n- Modify scripts/tmux-layout.sh to set PYTHONPATH per pane based on its workdir\n- Update smithy console_scripts entrypoint or replace with a shim that respects PYTHONPATH\n- Add `smithy doctor` subcommand (or extend an existing diagnostics command) that prints the resolved smithy source path for the current pane, so future \"wrong version running\" bugs are 1-command to diagnose\n- Update README + WALKTHROUGH to remove the `pip install -e .` step (no longer needed)\n- Test: launch rig, edit smithy/cli.py inside one worktree, verify ONLY that pane's `smithy` reflects the change\n\nPOSTPONE-OK: not urgent \u2014 option (A) (rebind global install to main when needed) keeps things working. But the global install is a stealth coupling that will bite again.",
-      "status": "submitted",
-      "priority": 2,
+      "status": "complete",
+      "priority": 3,
       "blocked_by": [],
-      "human_priority": 2,
-      "priority_reason": "Structural fix for stealth coupling between worktrees via global smithy install. Not urgent (rebinding works as a stopgap), but bites repeatedly during integration \u2014 diagnosed during the t-411/t-414 nudge cascade on 2026-04-13.",
+      "human_priority": null,
+      "priority_reason": null,
       "assigned_forge": "forge-temper"
     },
     {
@@ -4340,13 +4340,13 @@
       "id": "t-430",
       "stage": "research",
       "desc": "Multi-forge Priority Poker design (research + planning brief). PROBLEM: Priority Poker (ui-priority-poker/app.py + state.initiatives[].rank, used by Marshal as Priority Rule #3 in personas/marshal/CLAUDE.md) was designed for a single-Forge rig. With N=3 Forges + Assembly now live (validated 2026-04-17), five assumptions break: (1) single global rank means strict serial consumption \u2014 three top-ranked initiatives can't run in parallel even though three Forges are available; (2) no contention model \u2014 two top initiatives both touching cli.py guarantee Assembly rebase conflicts; (3) no parallelism semantics per initiative \u2014 some initiatives are inherently parallel-safe, others need to serialize; (4) no Forge affinity \u2014 forge-quench has built deep cli.py context across t-411/t-414/t-419/t-422 and round-robin loses that; (5) Assembly back-pressure invisible \u2014 if Assembly drain rate < dispatch rate, more pushes just create a backlog. DELIVERABLES \u2014 produce two files: (A) research/multi-forge-poker-design.md \u2014 ~2-3 page brief enumerating the five broken assumptions with concrete examples from the 2026-04-17 hardening sprint (e.g., t-423 forge-anneal/forge-quench duplicate work; t-425/t-423 Assembly rejections under load); enumerate the three design options (Lanes / Affinity-tagged single Poker / Two-layer Initiative+Task Poker) with pros/cons each; recommend the hybrid B+C-lite approach below; include UI sketches (drag-to-rank stays + per-initiative parallelism/affinity/touches chips). (B) plans/multi-forge-poker-plan.md \u2014 break the recommended approach into ~4 ordered implementation tasks ready for Marshal to dispatch. RECOMMENDED HYBRID (Anvil's framing 2026-04-17): (1) keep single global Poker ranking \u2014 human's main priority knob, unchanged; (2) add three fields per initiative: parallelism (serial|parallel, default parallel), affinity ([forge-id], default empty=any), touches ([path-glob], default empty=no contention claim, optionally auto-suggested from task descriptions); (3) Marshal's dispatch becomes a constraint walk \u2014 for each idle Forge, walk initiatives by rank, skip if parallelism=serial AND another forge is on it, skip if affinity is set AND this forge isn't in the list AND a listed forge is idle, skip if touches overlaps an in-flight task's touches AND parallelism=serial, then find top unblocked task in initiative and dispatch; (4) Assembly back-pressure \u2014 if .assembly-queue.jsonl depth >= 2 * N_forges, Marshal pauses dispatching new work, services in-flight only. PRESERVES: human still does drag-to-rank; the three new fields are advisory and default to today's behavior, so existing initiatives work unchanged. ENABLES: real N=3 throughput on parallel-friendly initiatives, automatic serialization where needed, forge-context preservation, Assembly-aware throttling. SCOPE FOR THIS TASK: research + planning only. ~2 heats. Implementation tasks (schema additions, Marshal constraint walk, Poker UI extensions, back-pressure logic) get filed by the planning doc as separate t-XXX entries. Anvil-filed 2026-04-17 after observing the hardening-sprint friction.",
-      "status": "submitted",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-018",
-      "human_priority": 2,
-      "priority_reason": "you:p1",
-      "assigned_forge": "forge-anneal"
+      "human_priority": null,
+      "priority_reason": null,
+      "assigned_forge": "forge-temper"
     },
     {
       "id": "t-431",
@@ -4364,12 +4364,12 @@
       "id": "t-432",
       "stage": "implementation",
       "desc": "scripts/forge-status.sh: live per-forge status table for the human. Pure bash, no smithy CLI dependency (parallel with smithy doctor/heat-detail/task-tree which use Python). Reads state.parallel.forges[] from state.json + tmux pane info to produce a table: forge_id | pane_id | branch | current_task | heat | status | last_heat_age | tmux_responsive. Color-coded (green=working, yellow=idle, red=stuck-or-disconnected). Refresh mode: --watch refreshes every 2s. Default: one shot. Works whether rig is N=1 or N=3 (driven by state.parallel.forges[]). WHY: the multi-pane tmux view is hard to scan when forges are working \u2014 need a single dashboard line per forge. Companion to scripts/tmux-stop.sh and scripts/nudge.sh. Tests: smoke test that the script runs without error against a scaffolded state.json (no tmux session needed; should gracefully handle missing tmux). Anvil-filed 2026-04-17 for hardening sprint v2.",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-018",
       "human_priority": null,
-      "priority_reason": "ini-018 rank=1 + poker",
+      "priority_reason": null,
       "assigned_forge": "forge-anneal"
     },
     {
@@ -4400,24 +4400,24 @@
       "id": "t-435",
       "stage": "editing",
       "desc": "Persona memory dedup pass. Each persona dir (personas/{anvil,forge,marshal,assembly}/memory/) has accumulated entries during dogfooding. Audit + tighten: (1) For each persona, read MEMORY.md + every linked entry file; identify duplicates, contradictions, or content already covered by IDENTITY.md / CLAUDE.md (which are loaded fresh every session, so memory shouldn't restate them); (2) Merge duplicates, delete entries the code now self-documents (e.g. anything about pre-t-419 state.json behavior, pre-t-414 nudge addressing, pre-t-422 Assembly draining \u2014 those are obsolete); (3) Update each MEMORY.md index line to match the (possibly updated) memory body; (4) Keep the per-persona memory under 15 entries each \u2014 anything more is signal that the entry should become a CLAUDE.md doc instead. SCOPE: 4 separate persona dirs = 4 independent file trees, can run as a single edit heat per persona dir or one heat covering all (your call as Forge). Don't touch ./memory/ (that's Anvil's auto-memory, separate). Anvil-filed 2026-04-17 for hardening sprint v2 \u2014 addresses memory bloat.",
-      "status": "pending",
+      "status": "complete",
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-018",
       "human_priority": null,
-      "priority_reason": "ini-018 rank=1 + poker",
-      "assigned_forge": "forge-anneal"
+      "priority_reason": null,
+      "assigned_forge": "forge-quench"
     },
     {
       "id": "t-436",
       "stage": "editing",
       "desc": "Priority Poker UI: remove the \u2715 reject button. Human-decided 2026-04-17: drag-into-kill-zone is sufficient UX for rejecting an initiative; the redundant \u2715 button just adds clutter and risks accidental clicks. WHAT: remove the two \u2715 buttons in ui-priority-poker/templates/index.html (line 139 on approved cards + line 162 on proposed cards \u2014 both '<button class=kill-btn onclick=rejectCard...>\u2715</button>'). KEEP: the rejectCard() JS function (still used by the kill-zone drop handler) AND the kill-zone div + 'Drop here to reject' label. CSS: ui-priority-poker/static/style.css \u2014 audit .kill-btn rules; if no other element uses the class, remove the rules. If kept (e.g. used by approve-btn neighbor styling), leave a comment noting the button was removed. TESTS: if any tests assert presence of .kill-btn or 'Reject' button text in the rendered template, update or remove those assertions (likely in tests/test_steering_uis.py or similar). VERIFY: load the Poker UI in a browser, confirm cards show no \u2715, drag-to-kill-zone still rejects (calls /api/reject), proposed cards still have the \u2713 Approve button. Anvil-filed 2026-04-17 \u2014 small UI cleanup, ~1 heat.",
-      "status": "submitted",
+      "status": "complete",
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-016",
       "human_priority": null,
-      "priority_reason": "ini-016 rank=2 + poker",
+      "priority_reason": null,
       "assigned_forge": "forge-temper"
     },
     {
@@ -4501,7 +4501,7 @@
       "description": "Run multiple Forge workers concurrently via per-Forge git worktrees. Dedicated Assembly teammate handles merge queue integration (conflicts, test-on-integrate, merge ordering). Unlocks parallelism (Marshal dispatches N heats simultaneously) and enforces branch hygiene. Incremental: N=2 proof before N=3+.",
       "status": "approved",
       "budget_cap": null,
-      "heats_used": 38,
+      "heats_used": 40,
       "viewed_at": "2026-04-18T09:06:15Z",
       "rank": 1
     },
@@ -4512,7 +4512,7 @@
       "description": "Primary UI surface for steering per-task prioritization. Live view of the actual task queue synced to state.json, showing every task with Marshal priority, human priority, stage, status, priority reason, initiative tag. Human downranks/promotes/pins/defers from this surface. Poker remains for initiative-level steering; this is the per-task master cockpit.",
       "status": "approved",
       "budget_cap": null,
-      "heats_used": 14,
+      "heats_used": 15,
       "viewed_at": "2026-04-18T09:06:18Z",
       "rank": 2,
       "intent": "Give the human a way to ensure that individual task assignments conform to the high-level intent the human has, and gives a way to identify and correct drift."
@@ -4726,10 +4726,7 @@
       "created": "2026-04-11T10:44:28.678810"
     }
   ],
-  "next_tasks": [
-    "t-435",
-    "t-432"
-  ],
+  "next_tasks": [],
   "schema_version": 1,
   "intents": [
     {
@@ -4759,7 +4756,7 @@
   ],
   "parallel": {
     "max_forges": 3,
-    "halt_flag": false,
+    "halt_flag": true,
     "forges": [
       {
         "id": "forge-quench",
@@ -4794,7 +4791,7 @@
     ],
     "assembly": {
       "enabled": true,
-      "last_heartbeat": "2026-04-18T09:18:27+00:00"
+      "last_heartbeat": "2026-04-18T16:21:37+00:00"
     },
     "forge_roster": [
       "forge-quench",
@@ -4805,6 +4802,8 @@
       "forge-weld",
       "forge-shape",
       "forge-harden"
-    ]
+    ],
+    "halted_at": "2026-04-18T16:22:11+00:00",
+    "halt_reason": null
   }
 }

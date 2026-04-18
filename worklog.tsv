@@ -891,3 +891,14 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-18T02:16:50Z	823	implementation	t-431	rejected	0.0	🚫	reason=tests failed: FAILED tests/test_t431_task_tree.py::test_task_tree_initiative_fil	forge-quench
 2026-04-18T02:17:21Z	824	implementation	t-438	submitted	0.85	🟢	t-438: Assembly advisory push + patrol check #10. 4 tests, 636 green.	forge-quench
 2026-04-18T02:18:27Z	822	implementation	t-438	merged	0.0	✅	merge sha=59983b7e340f	forge-quench
+2026-04-18T09:10:28Z	878	implementation	t-416	rejected	0.0	🚫	reason=ghost submit: no forge-temper/t-416 branch exists in any worktree; pre-t-420 For	forge-quench
+2026-04-18T09:10:31Z	878	implementation	t-430	rejected	0.0	🚫	reason=ghost submit: no forge-anneal/t-430 branch exists; pre-t-420 Forge	forge-quench
+2026-04-18T09:10:33Z	878	implementation	t-436	rejected	0.0	🚫	reason=ghost submit: no forge-temper/t-436 branch exists; pre-t-420 Forge	forge-quench
+2026-04-18T09:11:03Z	878	implementation	generated	complete	0.5	🟢	t-432 verification pass — script committed f5f6fe8, all 8 smoke tests pass; complete-task had been missed in original heat close, now reconciled.	forge-anneal
+2026-04-18T09:14:46Z	819	editing	generated	submitted	0.5	🟢	t-436 re-submit: cherry-picked 3e9c42c onto new forge-temper/t-436 branch off main; previous submit was ghost (commit stranded on scratch). 58 poker tests pass.	forge-temper
+2026-04-18T09:16:11Z	877	editing	t-435	submitted	0.5	🟡	Persona memory dedup: typed-entry system already near-empty (0 entries in anvil/forge/marshal, 1 valid recent entry in assembly). No duplicates, contradictions, or obsolete pre-t-419/t-414/t-422 entries found. Real bloat was forge MEMORY_DAILY.md (~7KB rollups from h461-804, 6-8 days stale at h877/2026-04-18); reset to canonical header. Task description overstated actual accumulated state. Incidental: checkpoint vanished mid-heat, had to reconstruct manually to close — no state loss.	forge-quench
+2026-04-18T09:17:19Z	823	implementation	t-435	merged	0.0	✅	merge sha=efbe5584b256	forge-quench
+2026-04-18T09:19:28Z	823	research	t-430	submitted	0.6	🟢	t-430 re-land: cherry-picked forge-anneal's 4048b7e onto forge-temper/t-430. 228-line research brief + 151-line plan. Prior work was stranded (ghost submit like t-436). Cherry-pick preserves quality and authorship; saved duplicate work.	forge-temper
+2026-04-18T09:20:31Z	823	implementation	t-430	merged	0.0	✅	merge sha=5b96eeb3d88a	forge-quench
+2026-04-18T09:20:34Z	823	editing	t-436	submitted	0.6	🟢	t-436 clean resubmit on per-task branch: cherry-picked a7f3db6 onto fresh forge-temper/t-436 (now one commit ahead of main). 58 poker tests pass. Previous manual-branch attempt was stranded before start-heat --task gave us proper branch mgmt.	forge-temper
+2026-04-18T09:21:37Z	822	implementation	t-436	merged	0.0	✅	merge sha=47ccb14830de	forge-quench
