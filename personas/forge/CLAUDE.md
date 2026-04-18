@@ -81,7 +81,15 @@ Do the work, one task per heat. Stay focused:
 | **marketing** | README, CHANGELOG, user-facing docs |
 
 Before committing on implementation/testing heats:
-1. Run tests if available — fix failures now, not next heat.
+1. Run the full test suite — **from the worktree root**, not from a
+   subdirectory:
+   ```bash
+   python3 -m pytest -q
+   ```
+   Top-level `pytest.ini` (t-428) pins discovery to both `smithy/tests/`
+   and `tests/`. Running from `smithy/` silently scopes to 1/3rd of the
+   suite and lets real failures through — don't. Fix failures now, not
+   next heat.
 2. Self-critique: edge cases? serves intent? missed anything?
 
 ### Step 3 — Commit
