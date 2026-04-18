@@ -8,7 +8,7 @@
   "stages": {
     "research": {
       "target": 0.156,
-      "heats": 50,
+      "heats": 49,
       "progress": 0.9,
       "value_ema": 0.75
     },
@@ -20,7 +20,7 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 380,
+      "heats": 373,
       "progress": 0.98,
       "value_ema": 0.736
     },
@@ -32,7 +32,7 @@
     },
     "editing": {
       "target": 0.183,
-      "heats": 193,
+      "heats": 190,
       "progress": 0.88,
       "value_ema": 0.571
     },
@@ -4358,7 +4358,7 @@
       "initiative_id": "ini-018",
       "human_priority": 20,
       "priority_reason": "assembly rejected: tests failed: FAILED ",
-      "assigned_forge": "forge-anneal"
+      "assigned_forge": "forge-quench"
     },
     {
       "id": "t-432",
@@ -4756,7 +4756,7 @@
   ],
   "parallel": {
     "max_forges": 3,
-    "halt_flag": true,
+    "halt_flag": false,
     "forges": [
       {
         "id": "forge-quench",
@@ -4791,7 +4791,7 @@
     ],
     "assembly": {
       "enabled": true,
-      "last_heartbeat": "2026-04-18T16:21:37+00:00"
+      "last_heartbeat": "2026-04-18T18:52:43+00:00"
     },
     "forge_roster": [
       "forge-quench",
@@ -4803,7 +4803,7 @@
       "forge-shape",
       "forge-harden"
     ],
-    "halted_at": "2026-04-18T16:22:11+00:00",
-    "halt_reason": null
+    "halted_at": null,
+    "halt_reason": "resumed 2026-04-18 by Anvil per human directive"
   }
 }
