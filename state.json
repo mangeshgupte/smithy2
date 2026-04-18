@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1543,
-    "used": 904,
+    "used": 906,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 396,
+      "heats": 398,
       "progress": 0.98,
-      "value_ema": 0.751
+      "value_ema": 0.641
     },
     "testing": {
       "target": 0.183,
@@ -4695,7 +4695,7 @@
       "id": "t-442",
       "stage": "implementation",
       "desc": "Multi-forge Poker \u2014 Task 3/4 (Assembly back-pressure, ini-018). In Marshal's dispatch entry points (queue-pop, set-next-tasks), add pre-flight: depth = count_lines(assembly_queue_path(root)); n_forges = len(parallel.forges); if depth >= 2*max(1,n_forges): refuse with reason 'assembly-queue backpressure (depth=N)'. Include skip reason in nudge to Forge so operator sees why no dispatch. Tests: depth<2N dispatches; depth==2N refuses with 'backpressure' in reason; depth>2N same. Patrol check #9 still runs independently. Depends on t-440. Source: plans/multi-forge-poker-plan.md \u00a7Task3. Est 1 heat.",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 1,
       "blocked_by": [
         "t-440"
@@ -4941,13 +4941,13 @@
       "id": "t-461",
       "stage": "implementation",
       "desc": "Phase 2: Extend uv-scoped venv pattern to Forges. After t-460 lands Assembly-side venv isolation, each Forge worktree should have its own .venv via uv. smithy commands invoked by the Forge run via uv run (or auto-activated venv). Eliminates the last remaining \"global install\" surface \u2014 Forges running pip install -e in their worktree no longer affects any other pane. Protocol updates: (a) Forge start-up creates its venv if missing, (b) smithy CLI commands work transparently under uv run, (c) CLAUDE.md + loop.md document the per-Forge venv expectation, (d) memory entry project_worktree_editable_installs.md updated or retired. Blocked by t-460 (Assembly needs its venv working first so we can validate the pattern). Requires coordinated update across all Forge panes (staggered, one at a time).",
-      "status": "pending",
-      "priority": 1,
+      "status": "submitted",
+      "priority": 0,
       "blocked_by": [
         "t-460"
       ],
-      "human_priority": 1,
-      "priority_reason": "un-cooldown: prior reject caused by bug 2 gap (t-464 now merged); ready to retry. closes re-poison class by giving Forges their own venvs.",
+      "human_priority": 0,
+      "priority_reason": "P0: structurally closes install re-poison class. Every recent Assembly tick fired the hazard check; merges only passed on luck. Forge venvs make the global install vestigial.",
       "assigned_forge": "forge-anneal",
       "initiative_id": "ini-020"
     },
@@ -5084,7 +5084,7 @@
       "description": "Architectural consolidation of Assembly: (1) Assembly owns a dedicated workspace .worktrees/_assembly-staging \u2014 never touches Forge worktrees, eliminating the Assembly-Forge concurrent-write race class. (2) Within that workspace, Assembly maintains a uv-scoped venv (.venv) \u2014 all pip install -e and pytest runs happen inside it, never in the global Python. Structurally eliminates the stale-install hazard (no global install to poison) and the sys.path.insert chicken-and-egg (venv installs whatever branch is staged). (3) Merge-into-staging batch model: Assembly creates/resets staging branch from main, git-merges N pending task branches into it (order-independent for non-overlapping changes), installs current code into venv, runs full test suite ONCE, then ff-merges staging to main on green or bisects to isolate breaker on red. Amortizes test cost across parallel submissions; log2(N) fault isolation. Does NOT solve: MEMORY.md collisions (t-458, per-forge dirs), which are orthogonal to merge strategy. Supersedes ini-018/t-457 (staging-worktree decoupling folded in here), t-460 prior pin+rebind framing (replaced by venv isolation).",
       "status": "approved",
       "budget_cap": 30,
-      "heats_used": 4,
+      "heats_used": 5,
       "viewed_at": "2026-04-18T20:57:35Z",
       "rank": 2,
       "parallelism": "parallel",
@@ -5378,7 +5378,6 @@
     }
   ],
   "next_tasks": [
-    "t-442",
     "t-431",
     "t-443",
     "t-447",
