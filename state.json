@@ -14,15 +14,15 @@
     },
     "planning": {
       "target": 0.21,
-      "heats": 34,
+      "heats": 35,
       "progress": 0.85,
-      "value_ema": 0.765
+      "value_ema": 0.775
     },
     "implementation": {
       "target": 0.049,
-      "heats": 374,
+      "heats": 375,
       "progress": 0.98,
-      "value_ema": 0.545
+      "value_ema": 0.621
     },
     "testing": {
       "target": 0.183,
@@ -4460,12 +4460,12 @@
       "id": "t-440",
       "stage": "implementation",
       "desc": "Multi-forge Poker \u2014 Task 1/4 (schema + defaults, ini-018). Add three fields to each state.initiatives[] entry via _apply_steerability_defaults in smithy/smithy/state.py: parallelism (serial|parallel, default parallel), affinity ([forge-id], default []), touches ([path-glob], default []). Extend smithy add-initiative / edit-initiative CLI with --parallelism, --affinity, --touches flags. Tests: existing state.json loads + round-trips unchanged; new initiatives default correctly; invalid parallelism rejected at add-time. BLOCKS Tasks 2/3/4 of multi-forge Poker. Source: plans/multi-forge-poker-plan.md \u00a7Task1. Est 1 heat.",
-      "status": "pending",
+      "status": "complete",
       "priority": 0,
       "blocked_by": [],
       "initiative_id": "ini-018",
       "human_priority": null,
-      "priority_reason": "ini-018 rank=1 + poker",
+      "priority_reason": null,
       "assigned_forge": "forge-quench"
     },
     {
@@ -4479,8 +4479,8 @@
       ],
       "initiative_id": "ini-018",
       "human_priority": null,
-      "priority_reason": "ini-018 rank=1 + poker",
-      "assigned_forge": null
+      "priority_reason": "ini-018 rank=1 + blocked-deps-clear",
+      "assigned_forge": "forge-quench"
     },
     {
       "id": "t-442",
@@ -4493,8 +4493,8 @@
       ],
       "initiative_id": "ini-018",
       "human_priority": null,
-      "priority_reason": "ini-018 rank=1 + poker",
-      "assigned_forge": null
+      "priority_reason": "ini-018 rank=1 + blocked-deps-clear",
+      "assigned_forge": "forge-quench"
     },
     {
       "id": "t-443",
@@ -4507,18 +4507,18 @@
       ],
       "initiative_id": "ini-018",
       "human_priority": null,
-      "priority_reason": "ini-018 rank=1 + poker",
-      "assigned_forge": null
+      "priority_reason": "ini-018 rank=1 + blocked-deps-clear",
+      "assigned_forge": "forge-anneal"
     },
     {
       "id": "t-444",
       "stage": "research",
       "desc": "ini-019 R1: Survey observability metrics \u2014 which lifecycle states, which failure types, which retry patterns are already inferable from worklog+rig-events+assembly-log. Output: research/ini-019-metrics-inventory.md. List every derivable metric + source column.",
-      "status": "submitted",
+      "status": "complete",
       "priority": 2,
       "blocked_by": [],
-      "human_priority": "p1",
-      "priority_reason": "ini-019 kickoff; blocks L0/L1 design",
+      "human_priority": null,
+      "priority_reason": null,
       "assigned_forge": "forge-temper",
       "initiative_id": "ini-019"
     },
@@ -4540,7 +4540,7 @@
       "id": "t-446",
       "stage": "planning",
       "desc": "ini-019 P1: Design spec for the three surfaces. (a) smithy report CLI \u2014 output format, arg surface, replay-at-heat flag. (b) Bellows Forge Ops view \u2014 wireframes for 5 panels (rig strip, initiatives, drill-down, persona heatmap, Issues). (c) L2 time-series JSON schema. Output: plans/ini-019-surfaces-plan.md.",
-      "status": "pending",
+      "status": "submitted",
       "priority": 2,
       "blocked_by": [
         "t-444"
@@ -4573,7 +4573,7 @@
       "blocked_by": [],
       "human_priority": "p1",
       "priority_reason": "ini-020 kickoff",
-      "assigned_forge": null,
+      "assigned_forge": "forge-temper",
       "initiative_id": "ini-020"
     },
     {
@@ -4585,7 +4585,7 @@
       "blocked_by": [],
       "human_priority": "p1",
       "priority_reason": "ini-020 parallel research to R1; independent",
-      "assigned_forge": null,
+      "assigned_forge": "forge-anneal",
       "initiative_id": "ini-020"
     },
     {
@@ -4602,6 +4602,45 @@
       "priority_reason": "ini-020 design gate",
       "assigned_forge": null,
       "initiative_id": "ini-020"
+    },
+    {
+      "id": "t-451",
+      "stage": "research",
+      "desc": "ini-021 R1: Measure baseline. Instrument Forge sessions to capture context-size telemetry at end-heat (token estimate, scrollback line count, auto-compact events). Survey 30+ recent heats in worklog for symptoms: stale shell-prompt branches, cross-task confusion in notes, retry cascades where previous-task context may have contributed. Output: research/ini-021-baseline.md. Depends on ini-019 observability landing for clean telemetry, but can begin with coarse measurements now.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [],
+      "human_priority": "p2",
+      "priority_reason": "ini-021 kickoff; can start coarse, refine after ini-019",
+      "assigned_forge": null,
+      "initiative_id": "ini-021"
+    },
+    {
+      "id": "t-452",
+      "stage": "research",
+      "desc": "ini-021 R2: Claude Code hook mechanism survey. Verify PostToolUse hooks fire on smithy end-heat; test /clear keystroke delivery to a pane; confirm system-prompt + CLAUDE.md + persona memory re-load cleanly after /clear. Identify edge cases: mid-heat failures, nudge-during-clear race, long-running bash outputs. Output: research/ini-021-clear-mechanism.md with a working prototype settings.json hook snippet.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [],
+      "human_priority": "p2",
+      "priority_reason": "ini-021 mechanism research; parallelizable with R1",
+      "assigned_forge": null,
+      "initiative_id": "ini-021"
+    },
+    {
+      "id": "t-453",
+      "stage": "planning",
+      "desc": "ini-021 P1: Design spec \u2014 clean-end-heat-only trigger rule, hook wiring (settings.json + script), loop.md protocol update (warm-up read after clear: state.json + queue + persona memory), rollout strategy (enable on one Forge first, A/B over 20+ heats), metrics to track (context tokens, value score, rejection rate, retry cascades), rollback path. Output: plans/ini-021-context-reset.md.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [
+        "t-451",
+        "t-452"
+      ],
+      "human_priority": "p2",
+      "priority_reason": "ini-021 design gate",
+      "assigned_forge": null,
+      "initiative_id": "ini-021"
     }
   ],
   "ideas": [
@@ -4648,7 +4687,7 @@
       "description": "Run multiple Forge workers concurrently via per-Forge git worktrees. Dedicated Assembly teammate handles merge queue integration (conflicts, test-on-integrate, merge ordering). Unlocks parallelism (Marshal dispatches N heats simultaneously) and enforces branch hygiene. Incremental: N=2 proof before N=3+.",
       "status": "approved",
       "budget_cap": null,
-      "heats_used": 40,
+      "heats_used": 41,
       "viewed_at": "2026-04-18T09:06:15Z",
       "rank": 1,
       "parallelism": "parallel",
@@ -4662,7 +4701,7 @@
       "description": "Read-only aggregation layer over worklog.tsv + rig-events.jsonl + assembly-log.jsonl + state.json + git log. Three surfaces: (L0) smithy report CLI \u2014 initiative burn-down, forge idle%, top failure buckets. (L1) Bellows Forge Ops dashboard \u2014 initiative panel with burn bars, task drill-down with timeline, persona heatmap, Issues view (ghost submits, test recurrence, Assembly rejects, thrash \u22653 retries), flow diagram. (L2) per-heat JSON snapshots for time-series regression analysis. Principle: no new write paths; deterministic replay from the record. Pre-req: retro-annotate task\u2192initiative_id mapping (schema gap in state.queue).",
       "status": "approved",
       "budget_cap": 25,
-      "heats_used": 1,
+      "heats_used": 2,
       "viewed_at": null,
       "rank": 2,
       "parallelism": "parallel",
@@ -4678,7 +4717,21 @@
       "budget_cap": 20,
       "heats_used": 0,
       "viewed_at": null,
-      "rank": 3
+      "rank": 3,
+      "parallelism": "parallel",
+      "affinity": [],
+      "touches": []
+    },
+    {
+      "id": "ini-021",
+      "theme_id": "th-002",
+      "title": "Context Reset Per Task (Forge)",
+      "description": "Hypothesis: Forge session context between tasks is not load-bearing \u2014 every durable output (code, state, worklog, memory, checkpoint) already persists on disk. Cross-task context accumulation causes pollution (stale branch name in prompt, autoregressive drift) and unnecessary token burn. v1 design: Claude Code hook on clean end-heat triggers /clear; persona re-loads via system prompt + CLAUDE.md + persona memory on next turn. Clear only on clean end-heat (complete/submit), NOT on partial/blocked/rejected \u2014 partials preserve debug trail. Depends on ini-019 telemetry to measure win (context tokens at end-heat, rejection rate before/after). A/B validation plan: one forge with auto-clear, one without, ~20 heats each, compare value scores + rejection rate + rework frequency.",
+      "status": "approved",
+      "budget_cap": 15,
+      "heats_used": 0,
+      "viewed_at": null,
+      "rank": 4
     },
     {
       "id": "ini-016",
@@ -4953,8 +5006,11 @@
     }
   ],
   "next_tasks": [
-    "t-440",
-    "t-431"
+    "t-443",
+    "t-448",
+    "t-449",
+    "t-441",
+    "t-442"
   ],
   "schema_version": 1,
   "intents": [
@@ -5020,7 +5076,7 @@
     ],
     "assembly": {
       "enabled": true,
-      "last_heartbeat": "2026-04-18T18:52:43+00:00"
+      "last_heartbeat": "2026-04-18T19:12:51+00:00"
     },
     "forge_roster": [
       "forge-quench",
