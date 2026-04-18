@@ -89,8 +89,9 @@ class TestStartEndHeat:
     def test_end_heat(self, project, runner):
         # Start first
         runner.invoke(cli, ["--dir", str(project), "start-heat", "implementation"])
-        # End
-        result = runner.invoke(cli, ["--dir", str(project), "end-heat", "0.8", "🟢", "Test notes"])
+        # End — --no-nudge keeps test intent explicit even without the
+        # PYTEST_CURRENT_TEST backstop (t-429).
+        result = runner.invoke(cli, ["--dir", str(project), "end-heat", "0.8", "🟢", "Test notes", "--no-nudge"])
         data = json.loads(result.output)
         assert data["heat"] == 11
         assert data["outcome"] == "complete"
@@ -521,11 +522,49 @@ class TestNudgeHelpers:
         assert _persona_is_busy(tmp_path, "marshal") is True
 
 
-class TestNudgeCommand:
-    """Tests for the 'nudge' CLI command — mocks tmux subprocess calls."""
+class TestNudgePytestBackstop:
+    """t-429: _nudge_persona must short-circuit when PYTEST_CURRENT_TEST is
+    set, so pytest runs never leak real tmux send-keys to a live Marshal
+    pane.
+    """
 
-    def test_nudge_queues_when_busy(self, project, runner):
+    def test_skips_when_pytest_current_test_set(self):
+        """Env-var is set by pytest automatically — assert it and verify
+        _nudge_persona returns the sentinel without touching subprocess."""
+        import os
+        from unittest.mock import patch
+        from smithy.cli import _nudge_persona
+        assert os.environ.get("PYTEST_CURRENT_TEST"), \
+            "pytest should set PYTEST_CURRENT_TEST for every test"
+        with patch("subprocess.run") as mock_run:
+            result = _nudge_persona("marshal", "HEAT_DONE: t-001 …")
+        assert result["nudged"] is False
+        assert result["queued"] is False
+        assert result["reason"] == "pytest context, nudge skipped"
+        mock_run.assert_not_called()
+
+    def test_skips_even_with_root_arg(self, tmp_path):
+        """Backstop fires before the busy-check branch too."""
+        from smithy.cli import _nudge_persona
+        (tmp_path / ".marshal-checkpoint.json").write_text("{}")  # would normally queue
+        result = _nudge_persona("marshal", "hi", root=tmp_path)
+        assert result["reason"] == "pytest context, nudge skipped"
+        # No queue file should have been created.
+        assert not (tmp_path / ".smithy-nudge-queue").exists()
+
+
+class TestNudgeCommand:
+    """Tests for the 'nudge' CLI command — mocks tmux subprocess calls.
+
+    These tests intentionally exercise _nudge_persona's real tmux path,
+    so they must opt out of the t-429 PYTEST_CURRENT_TEST backstop via
+    monkeypatch.delenv. Without that, every test would short-circuit at
+    the backstop and return 'pytest context, nudge skipped'.
+    """
+
+    def test_nudge_queues_when_busy(self, project, runner, monkeypatch):
         """When persona has a checkpoint, nudge should queue instead of sending."""
+        monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
         (project / ".forge-checkpoint.json").write_text("{}")
         result = runner.invoke(cli, ["--dir", str(project), "nudge", "forge", "wake up"])
         assert result.exit_code == 0
@@ -541,6 +580,7 @@ class TestNudgeCommand:
 
     def test_nudge_queues_when_no_tmux(self, project, runner, monkeypatch):
         """When tmux session doesn't exist, nudge should queue with fallback."""
+        monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
         import subprocess as sp
 
         def fake_run(cmd, **kwargs):
@@ -556,6 +596,7 @@ class TestNudgeCommand:
 
     def test_nudge_queues_when_pane_missing(self, project, runner, monkeypatch):
         """When session exists but no pane resolves to the persona, queue the nudge."""
+        monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
         import subprocess as sp
 
         def fake_run(cmd, **kwargs):
@@ -586,6 +627,7 @@ class TestNudgeCommand:
         "forge-quench" rather than "forge". Target the real verb name —
         that's the addressing convention Marshal and end-heat now use.
         """
+        monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
         import subprocess as sp
 
         def fake_run(cmd, **kwargs):
@@ -1183,7 +1225,7 @@ class TestSteerabilitySchema:
         (project / "state.json").write_text(json.dumps(state))
         # start then end the heat on t-001
         runner.invoke(cli, ["--dir", str(project), "start-heat", "implementation", "--task", "t-001"])
-        result = runner.invoke(cli, ["--dir", str(project), "end-heat", "0.7", "🟢", "done"])
+        result = runner.invoke(cli, ["--dir", str(project), "end-heat", "0.7", "🟢", "done", "--no-nudge"])
         assert result.exit_code == 0
         reloaded = json.loads((project / "state.json").read_text())
         task = next(t for t in reloaded["queue"] if t["id"] == "t-001")

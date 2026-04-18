@@ -1374,6 +1374,17 @@ def _resolve_pane(session, persona):
     Verify: python3 -c "from smithy.cli import _resolve_pane; \
                          print(_resolve_pane('forge','marshal'))"
     """
+    # t-429: pytest-context backstop. When tests invoke end-heat / queue-push
+    # etc. via runner.invoke without --no-nudge or mocking, this function
+    # used to fire real tmux send-keys at the live Marshal pane, polluting
+    # its decision stream. pytest exports PYTEST_CURRENT_TEST for every
+    # running test — short-circuit here so no individual test can leak a
+    # nudge. Explicit --no-nudge / mock.patch usage at call sites (option 2
+    # in the task) remains the preferred style; this is belt-and-braces.
+    import os
+    if os.environ.get("PYTEST_CURRENT_TEST"):
+        return {"nudged": False, "queued": False, "persona": persona,
+                "reason": "pytest context, nudge skipped"}
     import subprocess
     chk = subprocess.run(
         ["tmux", "has-session", "-t", session],
