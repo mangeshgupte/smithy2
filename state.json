@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1543,
-    "used": 843,
+    "used": 844,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 393,
+      "heats": 394,
       "progress": 0.98,
-      "value_ema": 0.796
+      "value_ema": 0.617
     },
     "testing": {
       "target": 0.183,
@@ -4979,12 +4979,12 @@
       "id": "t-464",
       "stage": "implementation",
       "desc": "t-456 follow-up: close the on-target-but-dirty gap in rebase_forge_branch. Current behavior (smithy/smithy/assembly.py:43-115): stash logic only fires inside the \"if not on_target\" branch. When the Forge is already on the per-task branch but the worktree is dirty (e.g., modified state.json from scripts/state-sync.sh, which happens frequently), stash is skipped, then \"git rebase main\" refuses with \"unstaged changes\" and Assembly rejects. Observed 2026-04-18 on t-461 reject. Fix: move the status --porcelain check + stash-push + stash_ref capture OUTSIDE the on_target conditional \u2014 stash unconditionally when dirty, regardless of branch state. Keep the checkout inside the not-on-target branch. Tests: (1) on-target + clean (no stash, no checkout, clean rebase), (2) on-target + dirty (stash, no checkout, rebase, stash_ref reported), (3) different-branch + clean (no stash, checkout, rebase), (4) different-branch + dirty (stash, checkout, rebase, stash_ref reported). Note: this is still a symptom patch \u2014 the real fix is ini-020 (Assembly in its own staging worktree, so Forge worktree dirtiness is irrelevant). Ship this to unblock current drain, ini-020 supersedes it later.",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 0,
       "blocked_by": [],
       "human_priority": 0,
       "priority_reason": "blocks Assembly drain on any dirty-worktree-on-branch case (common due to state-sync); bandaid until ini-020",
-      "assigned_forge": null,
+      "assigned_forge": "forge-anneal",
       "initiative_id": "ini-018"
     }
   ],
@@ -5048,7 +5048,7 @@
       "budget_cap": 25,
       "heats_used": 4,
       "viewed_at": "2026-04-18T20:56:19Z",
-      "rank": 2,
+      "rank": 3,
       "parallelism": "parallel",
       "affinity": [],
       "touches": []
@@ -5062,7 +5062,7 @@
       "budget_cap": 30,
       "heats_used": 4,
       "viewed_at": "2026-04-18T20:57:35Z",
-      "rank": 3,
+      "rank": 2,
       "parallelism": "parallel",
       "affinity": [],
       "touches": []
