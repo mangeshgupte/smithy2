@@ -38,6 +38,104 @@ def branch_name(forge_id: str, task_id: str) -> str:
 
 
 _STASH_LABEL = "assembly-rebase-autostash"
+_STAGING_WORKTREE = "_assembly-staging"
+
+
+def staging_path(project_dir: Path) -> Path:
+    """Conventional location of Assembly's private rebase workspace."""
+    return project_dir / ".worktrees" / _STAGING_WORKTREE
+
+
+def merge_ref_name(task_id: str) -> str:
+    """Ephemeral branch Assembly creates in staging per merge attempt."""
+    return f"_merge-{task_id}"
+
+
+def ensure_staging_worktree(project_dir: Path, base: str = "main") -> dict:
+    """t-456: create/reuse Assembly's own worktree so rebases don't race
+    whichever branch the Forge happens to be sitting on.
+
+    The staging worktree lives at ``.worktrees/_assembly-staging`` and
+    always starts checked out at ``base``. Idempotent — if a worktree
+    already exists we just return its path.
+
+    Returns:
+      {"status": "ready",    "path": "<abs-path>", "created": True|False}
+      {"status": "error",    "detail": "..."}
+    """
+    path = staging_path(project_dir)
+    if path.exists() and (path / ".git").exists():
+        return {"status": "ready", "path": str(path), "created": False}
+
+    # Ensure base branch exists — Assembly always rebases onto main, so
+    # bail out loudly if main is missing rather than silently stage on HEAD.
+    rev = _git(project_dir, "rev-parse", "--verify", base)
+    if rev.returncode != 0:
+        return {"status": "error",
+                "detail": f"base branch '{base}' not found: "
+                          f"{rev.stderr.strip() or rev.stdout.strip()}"}
+
+    r = _git(project_dir, "worktree", "add", "--detach", str(path), base)
+    # --detach avoids "branch already checked out" collisions — we
+    # immediately create ephemeral per-task branches anyway (see
+    # rebase_task_branch); the staging HEAD never needs to track `base`.
+    if r.returncode != 0:
+        return {"status": "error",
+                "detail": f"worktree add failed: "
+                          f"{r.stderr.strip() or r.stdout.strip()}"}
+    return {"status": "ready", "path": str(path), "created": True}
+
+
+def rebase_task_branch(project_dir: Path, forge_id: str,
+                       task_id: str, base: str = "main") -> dict:
+    """t-456: rebase ``<forge-id>/<task-id>`` onto ``base`` inside
+    Assembly's private staging worktree.
+
+    Works by creating an ephemeral branch ``_merge-<task-id>`` in the
+    staging worktree that starts at the commit of the Forge's per-task
+    branch; we then ``git rebase <base>`` that branch. The Forge's own
+    branch ref is untouched until we merge. This decouples Assembly
+    from whatever branch the Forge is currently on — Forge can move on
+    to the next task immediately after submit.
+
+    Returns:
+      {"status": "clean",    "staging_ref": "_merge-<task-id>",
+       "path": "<staging>"}
+      {"status": "conflict", "files": [...],
+       "staging_ref": "_merge-<task-id>", "path": "<staging>"}
+      {"status": "error",    "detail": "..."}
+    """
+    staged = ensure_staging_worktree(project_dir, base=base)
+    if staged["status"] != "ready":
+        return {"status": "error",
+                "detail": staged.get("detail", "staging worktree not ready")}
+    wt = Path(staged["path"])
+
+    source = branch_name(forge_id, task_id)
+    exists = _git(project_dir, "rev-parse", "--verify", "--quiet", source)
+    if exists.returncode != 0:
+        return {"status": "error",
+                "detail": f"source branch '{source}' not found"}
+
+    ephemeral = merge_ref_name(task_id)
+    # -B resets the ref if it lingered from a prior attempt.
+    co = _git(wt, "checkout", "-B", ephemeral, source)
+    if co.returncode != 0:
+        return {"status": "error",
+                "detail": f"checkout {ephemeral}: "
+                          f"{co.stderr.strip() or co.stdout.strip()}"}
+
+    r = _git(wt, "rebase", base)
+    if r.returncode == 0:
+        return {"status": "clean", "staging_ref": ephemeral,
+                "path": str(wt)}
+    files = conflicted_files(wt)
+    if files or (wt / ".git" / "rebase-merge").exists() or \
+            (wt / ".git" / "rebase-apply").exists():
+        return {"status": "conflict", "files": files,
+                "staging_ref": ephemeral, "path": str(wt)}
+    return {"status": "error",
+            "detail": r.stderr.strip() or r.stdout.strip()}
 
 
 def rebase_forge_branch(project_dir: Path, forge_id: str,
@@ -164,7 +262,8 @@ def ff_merge_forge_branch(project_dir: Path, forge_id: str,
                           task_id: str, base: str = "main",
                           delete_branch: bool = True,
                           push_remote: str = "origin",
-                          push_timeout_s: int = 30) -> dict:
+                          push_timeout_s: int = 30,
+                          source_ref: str | None = None) -> dict:
     """Merge `<forge-id>/<task-id>` into `base` in project_dir (--no-ff).
 
     After a successful rebase the branch is linear on top of base, so this
@@ -184,11 +283,16 @@ def ff_merge_forge_branch(project_dir: Path, forge_id: str,
     ``push_remote=""`` to disable (tests).
     """
     branch = branch_name(forge_id, task_id)
+    # t-456: when Assembly has rebased in its staging worktree, it passes
+    # the ephemeral staging ref as source_ref so the merge pulls from the
+    # rebased tip rather than from the Forge's (possibly-moved-on) branch.
+    # Back-compat default merges directly from <forge-id>/<task-id>.
+    merge_from = source_ref or branch
     r = _git(project_dir, "checkout", base)
     if r.returncode != 0:
         return {"status": "error", "detail": f"checkout {base}: {r.stderr.strip()}"}
     r = _git(project_dir, "merge", "--no-ff", "--no-edit",
-             "-m", f"[assembly] merge {branch} → {base}", branch)
+             "-m", f"[assembly] merge {branch} → {base}", merge_from)
     if r.returncode != 0:
         return {"status": "merge_failed",
                 "detail": r.stderr.strip() or r.stdout.strip()}
