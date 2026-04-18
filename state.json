@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1043,
-    "used": 823,
+    "used": 824,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -26,9 +26,9 @@
     },
     "testing": {
       "target": 0.183,
-      "heats": 140,
+      "heats": 141,
       "progress": 0.88,
-      "value_ema": 0.829
+      "value_ema": 0.82
     },
     "editing": {
       "target": 0.183,
@@ -48,7 +48,7 @@
       "research": 0.5,
       "planning": 0.5,
       "implementation": -0.5,
-      "testing": 0.014,
+      "testing": 0.023,
       "editing": -0.365,
       "marketing": 0.5
     }
@@ -4232,12 +4232,12 @@
       "id": "t-421",
       "stage": "testing",
       "desc": "Migrate stale nudge-related tests after t-414's _resolve_pane refactor. After t-414 (commit f92aece) replaced 'smithy2:<persona>' addressing with FORGE_SESSION + pane-resolution, 4 tests that mock the old tmux send-keys path now fail: (1) smithy/tests/test_marshal_forge_flow.py::TestQueuePushNudge::test_push_adds_to_queue_and_nudges (2) ::TestSetNextTasksNudgesForge::test_set_next_tasks_nudges_forge (3) ::TestFullDispatchCycle::test_full_cycle (4) smithy/tests/test_smithy.py::TestNudgeCommand::test_nudge_sends_via_tmux \u2014 all need to mock tmux list-panes (the new resolution path) instead of the old session+window check, plus the new return-dict shape from _resolve_pane. ALSO: smithy/test_assembly_scaffold.py::test_anvil_spawn_doc_mentions_assembly fails \u2014 likely a docs-content assertion that checks personas/anvil/CLAUDE.md or similar; verify and fix the assertion or update the doc to match. Anvil-filed 2026-04-17 immediately after merging t-414.",
-      "status": "pending",
+      "status": "complete",
       "priority": 1,
       "blocked_by": [],
       "initiative_id": "ini-018",
       "human_priority": null,
-      "priority_reason": "ini-018 rank=1 + poker",
+      "priority_reason": null,
       "assigned_forge": "forge-quench"
     }
   ],
@@ -4285,7 +4285,7 @@
       "description": "Run multiple Forge workers concurrently via per-Forge git worktrees. Dedicated Assembly teammate handles merge queue integration (conflicts, test-on-integrate, merge ordering). Unlocks parallelism (Marshal dispatches N heats simultaneously) and enforces branch hygiene. Incremental: N=2 proof before N=3+.",
       "status": "approved",
       "budget_cap": null,
-      "heats_used": 11,
+      "heats_used": 12,
       "viewed_at": "2026-04-13T15:29:26Z",
       "rank": 1
     },
@@ -4511,7 +4511,6 @@
     }
   ],
   "next_tasks": [
-    "t-421",
     "t-373",
     "t-420"
   ],

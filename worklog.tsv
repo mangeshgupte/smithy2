@@ -824,3 +824,4 @@ timestamp	heat	stage	task_id	outcome	value	signal	notes
 2026-04-13T02:05:46Z	823	implementation	generated	complete	0.8	🟢	t-411: ported _nudge_persona pane-resolution fix; 178 tests pass; needs pip reinstall in each worktree after Assembly merge	forge-quench
 2026-04-17T18:41:14Z	823	implementation	t-419	submitted	0.85	🟢	t-419: state.json routes to main repo root; +state-sync.sh, patrol check #8, 5 tests	forge-quench
 2026-04-17T18:53:47Z	823	implementation	t-414	submitted	0.85	🟢	t-414: per-forge nudge routing + dynamic VALID_PERSONAS + 6 smithy2 refs + test fix + 8 new tests	forge-quench
+2026-04-17T19:01:49Z	824	testing	t-421	submitted	0.8	🟢	t-421: migrated 4 stale nudge mocks + 1 anvil docs assertion; suite 596/599 (3 pre-existing)	forge-quench
