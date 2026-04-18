@@ -75,23 +75,30 @@ def rebase_forge_branch(project_dir: Path, forge_id: str,
         target = branch_name(forge_id, task_id)
         cur = _git(wt, "rev-parse", "--abbrev-ref", "HEAD")
         on_target = (cur.returncode == 0 and cur.stdout.strip() == target)
+
+        # t-464: stash unconditionally when the worktree is dirty, NOT just
+        # when we need to switch branches. Prior code (t-456) put stash
+        # inside the `if not on_target` branch, so an on-target-but-dirty
+        # worktree (very common: scripts/state-sync.sh modifies state.json
+        # in every Forge worktree) would skip the stash, then `git rebase
+        # main` would refuse with "unstaged changes" and Assembly would
+        # reject — observed 2026-04-18 on t-461. Symptom patch only; the
+        # real fix is ini-020 staging-worktree isolation.
+        st = _git(wt, "status", "--porcelain")
+        if st.returncode == 0 and st.stdout.strip():
+            sp = _git(wt, "stash", "push", "--include-untracked",
+                      "-m", f"{_STASH_LABEL}:{forge_id}:{target}")
+            if sp.returncode == 0:
+                # Capture the stash ref so callers can report it.
+                lst = _git(wt, "stash", "list", "-n", "1")
+                if lst.returncode == 0 and lst.stdout:
+                    stash_ref = lst.stdout.splitlines()[0].split(":", 1)[0]
+            else:
+                return {"status": "error",
+                        "detail": f"stash failed before rebase: "
+                                  f"{sp.stderr.strip() or sp.stdout.strip()}"}
+
         if not on_target:
-            # If the worktree has uncommitted changes, stash them so
-            # checkout doesn't refuse. The sentinel label lets the Forge
-            # find the stash later if it wants to restore.
-            st = _git(wt, "status", "--porcelain")
-            if st.returncode == 0 and st.stdout.strip():
-                sp = _git(wt, "stash", "push", "--include-untracked",
-                          "-m", f"{_STASH_LABEL}:{forge_id}:{target}")
-                if sp.returncode == 0:
-                    # Capture the stash ref so callers can report it.
-                    lst = _git(wt, "stash", "list", "-n", "1")
-                    if lst.returncode == 0 and lst.stdout:
-                        stash_ref = lst.stdout.splitlines()[0].split(":", 1)[0]
-                else:
-                    return {"status": "error",
-                            "detail": f"stash failed before checkout: "
-                                      f"{sp.stderr.strip() or sp.stdout.strip()}"}
             co = _git(wt, "checkout", target)
             if co.returncode != 0:
                 return {"status": "error",
