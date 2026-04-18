@@ -15,7 +15,35 @@ from .state import (
 )
 from .task_detail import scheduler_key
 
-VALID_PERSONAS = ["forge", "marshal", "anvil", "chisel"]
+# t-414: base set for Click type=Choice defaults. The *runtime* valid set is
+# dynamic — includes every Forge id from state.parallel.forges[] — so new
+# Forge verbs (temper, anneal, draw, …) don't need a code edit. Commands that
+# accept a persona argument use `type=str` + `_validate_persona(state, ...)`
+# instead of `type=click.Choice(...)` so they accept "forge-quench" and peers.
+VALID_PERSONAS = ["forge", "marshal", "anvil", "chisel", "assembly"]
+
+
+def _all_personas(state):
+    """t-414: dynamic valid-persona set. Base is the fixed roster plus every
+    Forge id registered in state.parallel.forges[]. Used to validate
+    arguments to CLI commands that route nudges."""
+    names = set(VALID_PERSONAS)
+    for f in (state.get("parallel") or {}).get("forges") or []:
+        fid = f.get("id")
+        if fid:
+            names.add(fid)
+    return names
+
+
+def _validate_persona(state, persona, arg_name="persona"):
+    """Raise click.BadParameter if persona isn't in the dynamic valid set."""
+    valid = _all_personas(state)
+    if persona not in valid:
+        raise click.BadParameter(
+            f"{persona!r} is not a valid persona; expected one of "
+            f"{sorted(valid)}",
+            param_hint=arg_name,
+        )
 
 
 def _pick_priority_signal(state: dict, task: dict) -> str:
@@ -1031,15 +1059,17 @@ def set_next_tasks(ctx, task_ids, no_nudge):
 
     result = {"next_tasks": ordered, "count": len(ordered)}
 
-    # Auto-nudge forge with queue summary
+    # Auto-nudge the Forge assigned to the top task (t-414 per-forge routing).
+    # Fall back to the primary Forge when assigned_forge is unset.
     if not no_nudge:
         top_task = queue_map.get(ordered[0], {})
         top_desc = top_task.get("desc", "")[:60]
         nudge_msg = f"Queue updated. {len(ordered)} tasks ready. Top: {ordered[0]} — {top_desc}"
-        nudge_result = _nudge_persona("forge", nudge_msg, root=root)
+        target = top_task.get("assigned_forge") or primary_forge_id(state)
+        nudge_result = _nudge_persona(target, nudge_msg, root=root)
         result["nudge"] = nudge_result
         if nudge_result["nudged"]:
-            _err(f"Set {len(ordered)} next tasks: {', '.join(ordered)} — nudged forge")
+            _err(f"Set {len(ordered)} next tasks: {', '.join(ordered)} — nudged {target}")
         else:
             _err(f"Set {len(ordered)} next tasks: {', '.join(ordered)} — nudge skipped: {nudge_result['reason']}")
     else:
@@ -1114,36 +1144,76 @@ def _persona_is_busy(root, persona):
 def _pane_agent(path):
     """Derive agent name from a pane's cwd.
 
-    Mirrors scripts/nudge.sh, but prefers the `personas/<name>` suffix over
-    the `.worktrees/<name>/` prefix so a forge-quench pane whose cwd is
-    `.worktrees/forge-quench/personas/forge` resolves to the canonical
-    persona name "forge" (what callers of _nudge_persona pass).
+    t-414: worktree match now takes precedence over personas. A forge-quench
+    pane whose cwd is `.worktrees/forge-quench/personas/forge` resolves to
+    "forge-quench", not the generic "forge" — that's what makes per-Forge
+    nudge routing possible at N≥2. Anvil and Assembly still live outside
+    `.worktrees/` (per the Assembly-only-to-main rule), so the
+    /personas/<name>/ suffix fallback resolves them to "anvil"/"assembly".
     """
     import re
-    m = re.search(r"/personas/([^/]+)/?$", path)
+    m = re.search(r"/\.worktrees/([^/]+)(?:/|$)", path)
     if m:
         return m.group(1)
-    m = re.search(r"/\.worktrees/([^/]+)(?:/|$)", path)
+    m = re.search(r"/personas/([^/]+)/?$", path)
     if m:
         return m.group(1)
     return None
 
 
+def _forge_session():
+    """tmux session name for the current rig. Defaults to 'forge'
+    (t-408 layout); FORGE_SESSION env overrides for tests or alternate
+    rigs. Replaces the old hardcoded 'smithy2' session name."""
+    import os
+    return os.environ.get("FORGE_SESSION", "forge")
+
+
+def _resolve_pane(session, persona):
+    """t-414: return (pane_id, reason). pane_id is the tmux id of the pane
+    whose cwd maps to `persona` via _pane_agent; reason is a short string
+    explaining why resolution failed (None on success).
+
+    Verify: python3 -c "from smithy.cli import _resolve_pane; \
+                         print(_resolve_pane('forge','marshal'))"
+    """
+    import subprocess
+    chk = subprocess.run(
+        ["tmux", "has-session", "-t", session],
+        capture_output=True, text=True,
+    )
+    if chk.returncode != 0:
+        return None, f"tmux session not found ('{session}')"
+    ls = subprocess.run(
+        ["tmux", "list-panes", "-t", session, "-s",
+         "-F", "#{pane_id}\t#{pane_current_path}"],
+        capture_output=True, text=True,
+    )
+    if ls.returncode != 0:
+        return None, f"tmux list-panes failed: {ls.stderr.strip()}"
+    for line in ls.stdout.splitlines():
+        if "\t" not in line:
+            continue
+        pid, path = line.split("\t", 1)
+        if _pane_agent(path) == persona:
+            return pid, None
+    return None, f"no pane for persona '{persona}' in session '{session}'"
+
+
 def _nudge_persona(persona, message, root=None):
     """Send a message to a persona's pane in the FORGE_SESSION tmux session.
 
-    Panes are resolved by `pane_current_path` (same rule as
-    scripts/nudge.sh): we scan every pane in the session and match the
-    agent name derived from its cwd. This replaces the previous logic
-    that hardcoded session="smithy2" and window_name==persona.
-
-    If the persona is mid-heat (checkpoint exists), queues the nudge to
+    Panes are resolved by `pane_current_path` via `_resolve_pane`. If the
+    persona is mid-heat (checkpoint exists), queues the nudge to
     .smithy-nudge-queue/<persona>.jsonl instead of sending via tmux.
+
+    Message text and Enter are two separate send-keys calls — the Claude
+    Code TUI input box sometimes swallows a combined "text\\nEnter" so we
+    deliver them independently.
     """
-    import os
     import subprocess
 
-    session = os.environ.get("FORGE_SESSION", "forge")
+    session = _forge_session()
 
     if root and _persona_is_busy(root, persona):
         _queue_nudge(root, persona, message)
@@ -1151,44 +1221,15 @@ def _nudge_persona(persona, message, root=None):
                 "target": session,
                 "reason": "persona mid-heat, nudge queued"}
 
-    chk = subprocess.run(
-        ["tmux", "has-session", "-t", session],
-        capture_output=True, text=True,
-    )
-    if chk.returncode != 0:
-        if root:
-            _queue_nudge(root, persona, message)
-            return {"nudged": False, "queued": True, "persona": persona,
-                    "target": session,
-                    "reason": f"tmux session not found ('{session}'), nudge queued"}
-        return {"nudged": False, "queued": False,
-                "reason": f"tmux session not found ('{session}')",
-                "target": session}
-
-    ls = subprocess.run(
-        ["tmux", "list-panes", "-t", session, "-s",
-         "-F", "#{pane_id}\t#{pane_current_path}"],
-        capture_output=True, text=True,
-    )
-    pane_id = None
-    if ls.returncode == 0:
-        for line in ls.stdout.splitlines():
-            if "\t" not in line:
-                continue
-            pid, path = line.split("\t", 1)
-            if _pane_agent(path) == persona:
-                pane_id = pid
-                break
-
+    pane_id, reason = _resolve_pane(session, persona)
     if pane_id is None:
         if root:
             _queue_nudge(root, persona, message)
             return {"nudged": False, "queued": True, "persona": persona,
                     "target": session,
-                    "reason": f"no pane for persona '{persona}' in session '{session}', nudge queued"}
+                    "reason": f"{reason}, nudge queued"}
         return {"nudged": False, "queued": False,
-                "reason": f"no pane for persona '{persona}' in session '{session}'",
-                "target": session}
+                "reason": reason, "target": session}
 
     subprocess.run(
         ["tmux", "send-keys", "-t", pane_id, "--", message],
@@ -1211,8 +1252,9 @@ def _nudge_persona(persona, message, root=None):
 @click.argument("task_id")
 @click.option("--top/--bottom", default=True, help="Insert at top (default) or bottom")
 @click.option("--no-nudge", is_flag=True, default=False, help="Skip auto-nudge after push")
-@click.option("--to", "target_persona", type=click.Choice(VALID_PERSONAS), default="forge",
-              help="Persona to nudge (default: forge)")
+@click.option("--to", "target_persona", type=str, default="forge",
+              help="Persona to nudge (default: forge; accepts forge-quench/"
+                   "forge-temper/etc. or any registered forge id).")
 @click.option("--forge", "assigned_forge", default=None,
               help="t-400 I5: Pin this task to the given Forge id (assigned_forge).")
 @click.pass_context
@@ -1266,13 +1308,21 @@ def queue_push(ctx, task_id, top, no_nudge, target_persona, assigned_forge):
     position = "top" if top else "bottom"
     result = {"task_id": task_id, "position": position, "queue_size": len(next_tasks)}
 
-    # Auto-nudge unless --no-nudge
+    # Auto-nudge unless --no-nudge. Under t-414 routing, a generic "forge"
+    # target resolves to the task's assigned_forge (if any) or the primary
+    # Forge — otherwise _resolve_pane would miss every pane (they all report
+    # forge-quench/forge-temper/…, not bare "forge").
     if not no_nudge:
+        target = target_persona
+        if target == "forge":
+            target = queue_map[task_id].get("assigned_forge") \
+                or primary_forge_id(state)
+        _validate_persona(state, target, arg_name="--to/--forge")
         nudge_msg = f"Task {task_id} queued. Run smithy queue-pop to start."
-        nudge_result = _nudge_persona(target_persona, nudge_msg, root=root)
+        nudge_result = _nudge_persona(target, nudge_msg, root=root)
         result["nudge"] = nudge_result
         if nudge_result["nudged"]:
-            _err(f"Pushed {task_id} to {position} of queue ({len(next_tasks)} total) — nudged {target_persona}")
+            _err(f"Pushed {task_id} to {position} of queue ({len(next_tasks)} total) — nudged {target}")
         else:
             _err(f"Pushed {task_id} to {position} of queue ({len(next_tasks)} total) — nudge skipped: {nudge_result['reason']}")
     else:
@@ -1554,16 +1604,20 @@ def next_task(ctx):
 
 
 @cli.command("nudge")
-@click.argument("persona", type=click.Choice(VALID_PERSONAS))
+@click.argument("persona", type=str)
 @click.argument("message")
 @click.pass_context
 def nudge(ctx, persona, message):
-    """Send a message to a persona's window in the smithy2 tmux session.
+    """Send a message to a persona's pane in the FORGE_SESSION tmux session.
 
     If the persona is mid-heat (checkpoint exists), the nudge is queued
     to .smithy-nudge-queue/<persona>.jsonl instead of sent via tmux.
+    Accepts any registered forge id (forge-quench/forge-temper/…) in
+    addition to the fixed roster (marshal/anvil/assembly/chisel/forge).
     """
     root = ctx.obj["root"]
+    state = load_state(root)
+    _validate_persona(state, persona)
     result = _nudge_persona(persona, message, root=root)
     _output(result)
     if result["nudged"]:
@@ -1575,11 +1629,13 @@ def nudge(ctx, persona, message):
 
 
 @cli.command("drain-nudges")
-@click.argument("persona", type=click.Choice(VALID_PERSONAS))
+@click.argument("persona", type=str)
 @click.pass_context
 def drain_nudges(ctx, persona):
     """Read and clear queued nudges for a persona. Returns JSON array of messages."""
     root = ctx.obj["root"]
+    state = load_state(root)
+    _validate_persona(state, persona)
     queue_path = _nudge_queue_path(root, persona)
 
     if not queue_path.exists():
@@ -1605,28 +1661,28 @@ def drain_nudges(ctx, persona):
 @cli.command("sessions")
 @click.pass_context
 def sessions(ctx):
-    """List persona windows in the smithy2 tmux session."""
+    """List persona windows in the tmux session."""
     import subprocess
 
-    # Check smithy2 session exists
+    # Check tmux session exists
     result = subprocess.run(
-        ["tmux", "has-session", "-t", "smithy2"],
+        ["tmux", "has-session", "-t", _forge_session()],
         capture_output=True, text=True,
     )
     if result.returncode != 0:
-        _output({"session": "smithy2", "windows": [], "count": 0})
-        _err("No smithy2 session found")
+        _output({"session": _forge_session(), "windows": [], "count": 0})
+        _err("No tmux session found")
         return
 
-    # List windows in smithy2
+    # List windows in tmux session
     result = subprocess.run(
-        ["tmux", "list-windows", "-t", "smithy2", "-F",
+        ["tmux", "list-windows", "-t", _forge_session(), "-F",
          "#{window_name}\t#{window_activity}\t#{window_active}"],
         capture_output=True, text=True,
     )
     if result.returncode != 0:
-        _output({"session": "smithy2", "windows": [], "count": 0})
-        _err("Failed to list smithy2 windows")
+        _output({"session": _forge_session(), "windows": [], "count": 0})
+        _err("Failed to list tmux windows")
         return
 
     from datetime import datetime
@@ -1644,61 +1700,61 @@ def sessions(ctx):
             last_activity = activity_ts
         windows.append({
             "name": name,
-            "target": f"smithy2:{name}",
+            "target": f"{_forge_session()}:{name}",
             "last_activity": last_activity,
             "active": active == "1",
         })
 
-    _output({"session": "smithy2", "windows": windows, "count": len(windows)})
-    _err(f"{len(windows)} window(s) in smithy2")
+    _output({"session": _forge_session(), "windows": windows, "count": len(windows)})
+    _err(f"{len(windows)} window(s) in tmux session")
 
 
 @cli.command("start")
 @click.argument("persona", type=click.Choice(VALID_PERSONAS))
 @click.pass_context
 def start_session(ctx, persona):
-    """Start a persona as a named window in the smithy2 tmux session."""
+    """Start a persona as a named window in the tmux session."""
     import subprocess
     root = ctx.obj["root"]
-    target = f"smithy2:{persona}"
+    target = f"{_forge_session()}:{persona}"
     persona_dir = root / "personas" / persona
 
     if not persona_dir.exists():
         _output({"error": f"Persona directory not found: {persona_dir}"})
         sys.exit(1)
 
-    # Ensure smithy2 session exists
+    # Ensure tmux session exists
     result = subprocess.run(
-        ["tmux", "has-session", "-t", "smithy2"],
+        ["tmux", "has-session", "-t", _forge_session()],
         capture_output=True, text=True,
     )
     if result.returncode != 0:
         # Create the session with this persona as the first window
         result = subprocess.run(
-            ["tmux", "new-session", "-d", "-s", "smithy2", "-n", persona,
+            ["tmux", "new-session", "-d", "-s", _forge_session(), "-n", persona,
              "-c", str(persona_dir), "claude"],
             capture_output=True, text=True,
         )
         if result.returncode != 0:
-            _output({"error": f"Failed to create smithy2 session: {result.stderr.strip()}"})
+            _output({"error": f"Failed to create tmux session: {result.stderr.strip()}"})
             sys.exit(1)
         _output({"started": True, "target": target, "persona": persona, "dir": str(persona_dir), "created_session": True})
-        _err(f"Created smithy2 session with {persona} window in {persona_dir}")
+        _err(f"Created tmux session with {persona} window in {persona_dir}")
         return
 
     # Check if window already exists
     result = subprocess.run(
-        ["tmux", "list-windows", "-t", "smithy2", "-F", "#{window_name}"],
+        ["tmux", "list-windows", "-t", _forge_session(), "-F", "#{window_name}"],
         capture_output=True, text=True,
     )
     if persona in result.stdout.strip().split("\n"):
         _output({"started": False, "reason": "window already exists", "target": target})
-        _err(f"Warning: window '{persona}' already exists in smithy2")
+        _err(f"Warning: window '{persona}' already exists in tmux session")
         return
 
-    # Create new window in smithy2
+    # Create new window in tmux session
     result = subprocess.run(
-        ["tmux", "new-window", "-t", "smithy2", "-n", persona,
+        ["tmux", "new-window", "-t", _forge_session(), "-n", persona,
          "-c", str(persona_dir), "claude"],
         capture_output=True, text=True,
     )
@@ -1707,28 +1763,28 @@ def start_session(ctx, persona):
         sys.exit(1)
 
     _output({"started": True, "target": target, "persona": persona, "dir": str(persona_dir)})
-    _err(f"Started {persona} window in smithy2 ({persona_dir})")
+    _err(f"Started {persona} window in tmux session ({persona_dir})")
 
 
 @cli.command("start-all")
 @click.option("--safe", is_flag=True, default=False, help="Run claude without --dangerously-skip-permissions")
 @click.pass_context
 def start_all(ctx, safe):
-    """Start the full smithy2 tmux session with anvil, forge, and marshal windows."""
+    """Start the full tmux session with anvil, forge, and marshal windows."""
     import subprocess
     root = ctx.obj["root"]
     claude_cmd = "claude" if safe else "claude --dangerously-skip-permissions"
     personas = ["anvil", "forge", "marshal"]
 
-    # Check if smithy2 session already exists
+    # Check if tmux session already exists
     result = subprocess.run(
-        ["tmux", "has-session", "-t", "smithy2"],
+        ["tmux", "has-session", "-t", _forge_session()],
         capture_output=True, text=True,
     )
     if result.returncode == 0:
         # Session exists — check which windows are missing
         result = subprocess.run(
-            ["tmux", "list-windows", "-t", "smithy2", "-F", "#{window_name}"],
+            ["tmux", "list-windows", "-t", _forge_session(), "-F", "#{window_name}"],
             capture_output=True, text=True,
         )
         existing = result.stdout.strip().split("\n") if result.stdout.strip() else []
@@ -1743,29 +1799,29 @@ def start_all(ctx, safe):
                 skipped.append(p)
                 continue
             subprocess.run(
-                ["tmux", "new-window", "-t", "smithy2", "-n", p,
+                ["tmux", "new-window", "-t", _forge_session(), "-n", p,
                  "-c", str(persona_dir)],
                 capture_output=True, text=True,
             )
             subprocess.run(
-                ["tmux", "send-keys", "-t", f"smithy2:{p}", claude_cmd, "Enter"],
+                ["tmux", "send-keys", "-t", f"{_forge_session()}:{p}", claude_cmd, "Enter"],
                 capture_output=True, text=True,
             )
             started.append(p)
-        _output({"session": "smithy2", "started": started, "skipped": skipped, "claude_cmd": claude_cmd})
-        _err(f"smithy2: started {started}, skipped {skipped}")
+        _output({"session": _forge_session(), "started": started, "skipped": skipped, "claude_cmd": claude_cmd})
+        _err(f"{_forge_session()}: started {started}, skipped {skipped}")
         return
 
     # Create fresh session with first persona, then add the rest
     first = personas[0]
     first_dir = root / "personas" / first
     subprocess.run(
-        ["tmux", "new-session", "-d", "-s", "smithy2", "-n", first,
+        ["tmux", "new-session", "-d", "-s", _forge_session(), "-n", first,
          "-c", str(first_dir)],
         capture_output=True, text=True,
     )
     subprocess.run(
-        ["tmux", "send-keys", "-t", f"smithy2:{first}", claude_cmd, "Enter"],
+        ["tmux", "send-keys", "-t", f"{_forge_session()}:{first}", claude_cmd, "Enter"],
         capture_output=True, text=True,
     )
     started = [first]
@@ -1775,18 +1831,18 @@ def start_all(ctx, safe):
         if not persona_dir.exists():
             continue
         subprocess.run(
-            ["tmux", "new-window", "-t", "smithy2", "-n", p,
+            ["tmux", "new-window", "-t", _forge_session(), "-n", p,
              "-c", str(persona_dir)],
             capture_output=True, text=True,
         )
         subprocess.run(
-            ["tmux", "send-keys", "-t", f"smithy2:{p}", claude_cmd, "Enter"],
+            ["tmux", "send-keys", "-t", f"{_forge_session()}:{p}", claude_cmd, "Enter"],
             capture_output=True, text=True,
         )
         started.append(p)
 
-    _output({"session": "smithy2", "started": started, "claude_cmd": claude_cmd})
-    _err(f"smithy2 session created with windows: {started}")
+    _output({"session": _forge_session(), "started": started, "claude_cmd": claude_cmd})
+    _err(f"tmux session created with windows: {started}")
 
 
 @cli.command("stop")
@@ -1794,24 +1850,24 @@ def start_all(ctx, safe):
 @click.option("--kill", is_flag=True, default=False, help="Kill the tmux window instead of graceful /exit")
 @click.pass_context
 def stop_session(ctx, persona, kill):
-    """Stop a persona's Claude session in the smithy2 tmux session."""
+    """Stop a persona's Claude session in the tmux session."""
     import subprocess, time
-    target = f"smithy2:{persona}"
+    target = f"{_forge_session()}:{persona}"
 
     # Check session and window exist
     result = subprocess.run(
-        ["tmux", "list-windows", "-t", "smithy2", "-F", "#{window_name}"],
+        ["tmux", "list-windows", "-t", _forge_session(), "-F", "#{window_name}"],
         capture_output=True, text=True,
     )
     if result.returncode != 0:
-        _output({"stopped": False, "reason": "smithy2 session not found"})
-        _err("smithy2 session not found")
+        _output({"stopped": False, "reason": "tmux session not found"})
+        _err("tmux session not found")
         return
 
     existing = result.stdout.strip().split("\n") if result.stdout.strip() else []
     if persona not in existing:
         _output({"stopped": False, "reason": f"window '{persona}' not found"})
-        _err(f"Window '{persona}' not found in smithy2")
+        _err(f"Window '{persona}' not found in tmux session")
         return
 
     if kill:
@@ -1828,32 +1884,32 @@ def stop_session(ctx, persona, kill):
 
 
 @cli.command("stop-all")
-@click.option("--kill", is_flag=True, default=False, help="Kill the entire smithy2 tmux session")
+@click.option("--kill", is_flag=True, default=False, help="Kill the entire tmux session")
 @click.pass_context
 def stop_all(ctx, kill):
-    """Stop all Claude sessions in the smithy2 tmux session."""
+    """Stop all Claude sessions in the tmux session."""
     import subprocess, time
     personas = ["anvil", "forge", "marshal"]
 
     # Check session exists
     result = subprocess.run(
-        ["tmux", "has-session", "-t", "smithy2"],
+        ["tmux", "has-session", "-t", _forge_session()],
         capture_output=True, text=True,
     )
     if result.returncode != 0:
-        _output({"stopped": False, "reason": "smithy2 session not found"})
-        _err("smithy2 session not found")
+        _output({"stopped": False, "reason": "tmux session not found"})
+        _err("tmux session not found")
         return
 
     if kill:
-        subprocess.run(["tmux", "kill-session", "-t", "smithy2"], capture_output=True, text=True)
+        subprocess.run(["tmux", "kill-session", "-t", _forge_session()], capture_output=True, text=True)
         _output({"stopped": True, "method": "kill-session", "personas": personas})
-        _err("Killed entire smithy2 session")
+        _err("Killed tmux session")
         return
 
     # Graceful: send /exit to each window's Claude, then exit the shell
     result = subprocess.run(
-        ["tmux", "list-windows", "-t", "smithy2", "-F", "#{window_name}"],
+        ["tmux", "list-windows", "-t", _forge_session(), "-F", "#{window_name}"],
         capture_output=True, text=True,
     )
     existing = result.stdout.strip().split("\n") if result.stdout.strip() else []
@@ -1861,13 +1917,13 @@ def stop_all(ctx, kill):
     for p in personas:
         if p not in existing:
             continue
-        subprocess.run(["tmux", "send-keys", "-t", f"smithy2:{p}", "/exit", "Enter"], capture_output=True, text=True)
+        subprocess.run(["tmux", "send-keys", "-t", f"{_forge_session()}:{p}", "/exit", "Enter"], capture_output=True, text=True)
         stopped.append(p)
 
     # Wait for Claude to exit, then close shells
     time.sleep(3)
     for p in stopped:
-        subprocess.run(["tmux", "send-keys", "-t", f"smithy2:{p}", "exit", "Enter"], capture_output=True, text=True)
+        subprocess.run(["tmux", "send-keys", "-t", f"{_forge_session()}:{p}", "exit", "Enter"], capture_output=True, text=True)
 
     _output({"stopped": True, "method": "graceful", "personas": stopped})
     _err(f"Stopped: {stopped}")
