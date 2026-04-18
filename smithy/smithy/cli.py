@@ -1551,44 +1551,48 @@ def queue_push(ctx, task_id, top, no_nudge, target_persona, assigned_forge):
     empty string) clears any prior assignment.
     """
     root = ctx.obj["root"]
-    state = load_state(root)
-    queue_map = {t["id"]: t for t in state.get("queue", [])}
+    # t-426: serialise queue-push across actors (Anvil's manual fixes +
+    # Marshal's automated re-prioritisations). Without the lock the
+    # next_tasks list could lose one writer's update.
+    with state_lock(root):
+        state = load_state(root)
+        queue_map = {t["id"]: t for t in state.get("queue", [])}
 
-    if task_id not in queue_map:
-        _output({"error": f"Task {task_id} not found in queue"})
-        sys.exit(1)
-    if queue_map[task_id]["status"] != "pending":
-        _output({"error": f"Task {task_id} is {queue_map[task_id]['status']}, not pending"})
-        sys.exit(1)
-
-    # t-400 I5: stamp assigned_forge if --forge was given.
-    if assigned_forge is not None:
-        parallel = state.get("parallel") or {}
-        forge_ids = {f.get("id") for f in (parallel.get("forges") or [])}
-        if assigned_forge in ("", "null"):
-            queue_map[task_id]["assigned_forge"] = None
-        elif assigned_forge not in forge_ids:
-            _output({"error": f"unknown forge id: {assigned_forge}",
-                     "known": sorted(fid for fid in forge_ids if fid)})
+        if task_id not in queue_map:
+            _output({"error": f"Task {task_id} not found in queue"})
             sys.exit(1)
+        if queue_map[task_id]["status"] != "pending":
+            _output({"error": f"Task {task_id} is {queue_map[task_id]['status']}, not pending"})
+            sys.exit(1)
+
+        # t-400 I5: stamp assigned_forge if --forge was given.
+        if assigned_forge is not None:
+            parallel = state.get("parallel") or {}
+            forge_ids = {f.get("id") for f in (parallel.get("forges") or [])}
+            if assigned_forge in ("", "null"):
+                queue_map[task_id]["assigned_forge"] = None
+            elif assigned_forge not in forge_ids:
+                _output({"error": f"unknown forge id: {assigned_forge}",
+                         "known": sorted(fid for fid in forge_ids if fid)})
+                sys.exit(1)
+            else:
+                queue_map[task_id]["assigned_forge"] = assigned_forge
+
+        next_tasks = state.get("next_tasks", [])
+        # Remove if already present to avoid duplicates
+        next_tasks = [t for t in next_tasks if t != task_id]
+        if top:
+            next_tasks.insert(0, task_id)
         else:
-            queue_map[task_id]["assigned_forge"] = assigned_forge
+            next_tasks.append(task_id)
+        state["next_tasks"] = next_tasks
 
-    next_tasks = state.get("next_tasks", [])
-    # Remove if already present to avoid duplicates
-    next_tasks = [t for t in next_tasks if t != task_id]
-    if top:
-        next_tasks.insert(0, task_id)
-    else:
-        next_tasks.append(task_id)
-    state["next_tasks"] = next_tasks
+        # Auto-populate priority_reason on push unless a human has set one.
+        task = queue_map[task_id]
+        if task.get("human_priority") is None:
+            task["priority_reason"] = _build_priority_reason(state, task)
 
-    # Auto-populate priority_reason on push unless a human has set one.
-    task = queue_map[task_id]
-    if task.get("human_priority") is None:
-        task["priority_reason"] = _build_priority_reason(state, task)
-
-    save_state(root, state)
+        save_state(root, state)
 
     position = "top" if top else "bottom"
     result = {"task_id": task_id, "position": position, "queue_size": len(next_tasks)}
@@ -1635,45 +1639,56 @@ def queue_pop(ctx, forge_id):
     intended Forge; only status-stale entries are removed.
     """
     root = ctx.obj["root"]
-    state = load_state(root)
     # t-407 H2: default --forge from cwd's worktree if caller omitted it.
-    # Keeps queue-pop usable without every caller threading --forge through.
+    # Resolve outside the lock — it's a pure fs lookup.
     if forge_id is None:
         forge_id = detect_forge_from_cwd(root)
-    next_tasks = state.get("next_tasks", [])
 
-    if not next_tasks:
+    # t-426: serialise queue-pop so two sibling Forges don't both claim
+    # the same head of next_tasks. Was the contention point that drove
+    # Marshal to reassign a task Forge-A was silently working on.
+    skipped_stale: list[str] = []
+    skipped_other_forge: list[str] = []
+    task = None
+    task_id = None
+    empty = False
+    remaining_len = 0
+    with state_lock(root):
+        state = load_state(root)
+        next_tasks = state.get("next_tasks", [])
+
+        if not next_tasks:
+            empty = True
+        else:
+            queue_by_id = {t["id"]: t for t in state.get("queue", [])}
+            preserved: list[str] = []  # tasks not matching this forge — put back.
+            while next_tasks:
+                candidate_id = next_tasks.pop(0)
+                candidate = queue_by_id.get(candidate_id)
+                # Drop stale (missing / non-pending) entries outright.
+                if not candidate or candidate.get("status") != "pending":
+                    skipped_stale.append(candidate_id)
+                    continue
+                # If a --forge filter is in play, respect assigned_forge pinning.
+                if forge_id is not None:
+                    af = candidate.get("assigned_forge")
+                    if af is not None and af != forge_id:
+                        skipped_other_forge.append(candidate_id)
+                        preserved.append(candidate_id)
+                        continue
+                task_id = candidate_id
+                task = candidate
+                break
+
+            # Put back tasks that belong to other Forges, in original order.
+            state["next_tasks"] = preserved + next_tasks
+            save_state(root, state)
+            remaining_len = len(state["next_tasks"])
+
+    if empty:
         _output({"task": None, "message": "Queue empty"})
         _err("Queue empty")
         return
-
-    queue_by_id = {t["id"]: t for t in state.get("queue", [])}
-    skipped_stale: list[str] = []
-    skipped_other_forge: list[str] = []
-    preserved: list[str] = []  # tasks not matching this forge — put back.
-    task = None
-    task_id = None
-    while next_tasks:
-        candidate_id = next_tasks.pop(0)
-        candidate = queue_by_id.get(candidate_id)
-        # Drop stale (missing / non-pending) entries outright.
-        if not candidate or candidate.get("status") != "pending":
-            skipped_stale.append(candidate_id)
-            continue
-        # If a --forge filter is in play, respect assigned_forge pinning.
-        if forge_id is not None:
-            af = candidate.get("assigned_forge")
-            if af is not None and af != forge_id:
-                skipped_other_forge.append(candidate_id)
-                preserved.append(candidate_id)
-                continue
-        task_id = candidate_id
-        task = candidate
-        break
-
-    # Put back tasks that belong to other Forges, in original order.
-    state["next_tasks"] = preserved + next_tasks
-    save_state(root, state)
 
     if task is None:
         _output({"task": None, "message": "Queue empty (no match)",
@@ -1686,12 +1701,12 @@ def queue_pop(ctx, forge_id):
         _err(f"Skipped {len(skipped_stale)} stale head(s): {skipped_stale}")
     _emit_rig_event(root, "queue_pop", actor=forge_id or "queue",
                     task_id=task_id, forge_id=forge_id,
-                    remaining=len(state["next_tasks"]))
+                    remaining=remaining_len)
     _output({"task_id": task_id, "task": task,
-             "remaining": len(state["next_tasks"]),
+             "remaining": remaining_len,
              "skipped_stale": skipped_stale,
              "skipped_other_forge": skipped_other_forge})
-    _err(f"Popped {task_id} ({len(state['next_tasks'])} remaining)")
+    _err(f"Popped {task_id} ({remaining_len} remaining)")
 
 
 @cli.command("queue-clear")
