@@ -11,7 +11,7 @@ from .state import (
     append_worklog, write_checkpoint, delete_checkpoint,
     forge_checkpoint_path, DEFAULT_FORGE_ID,
     primary_forge_id, detect_forge_from_cwd, main_repo_root,
-    assembly_queue_path,
+    assembly_queue_path, state_lock,
     VALID_STAGES, VALID_SIGNALS, VALID_OUTCOMES,
 )
 from .task_detail import scheduler_key
@@ -260,58 +260,66 @@ def cli(ctx, project_dir):
 def start_heat(ctx, stage, task_id, forge_id, reuse_scratch):
     """Start a new heat. Sets task to in_progress, writes checkpoint."""
     root = ctx.obj["root"]
-    state = load_state(root)
     # t-409 H1: resolve forge id — explicit flag wins, else detect from cwd,
     # else fall back to primary (lets main-root smoke-runs still work).
     if forge_id is None:
         forge_id = detect_forge_from_cwd(root) or primary_forge_id(root)
-    budget = state["budget"]
 
-    # t-395 I0: Halt flag blocks new heats. In-flight heats drain via end-heat.
-    parallel = state.get("parallel") or {}
-    if parallel.get("halt_flag"):
-        _output({
-            "error": "Rig is halted — new heats blocked",
-            "halted_at": parallel.get("halted_at"),
-            "reason": parallel.get("halt_reason"),
-            "hint": "smithy resume-rig to clear",
-        })
-        sys.exit(1)
-
-    if budget["used"] >= budget["total_heats"]:
-        _output({"error": "Budget exhausted", "used": budget["used"], "total": budget["total_heats"]})
-        sys.exit(1)
-
-    heat_number = budget["used"] + 1
-
-    # t-420: per-task branch enforcement. The t-399 design says each task
-    # gets its own `<forge-id>/<task-id>` branch off the latest main, so
-    # Assembly can rebase-merge-delete cleanly and stacked scratches don't
-    # force Anvil into manual ff gymnastics. Enforce it here (the human-
-    # authored CLAUDE.md step was easy to forget). Skip when we're on the
-    # main repo (smoke runs) or when caller passed --reuse-scratch.
+    # t-420: per-task branch enforcement runs BEFORE the lock so a slow
+    # git checkout never blocks a sibling Forge's heat transition. The
+    # branch op only touches filesystem, not state.json.
     branch_change = None
     if task_id and not reuse_scratch:
         main_root = main_repo_root(root)
         if root.resolve() != main_root.resolve():
             branch_change = _ensure_task_branch(root, forge_id, task_id)
 
-    # Set task to in_progress if specified
+    # t-426: bump budget.used INSIDE the lock so two concurrent
+    # start-heats don't both compute heat=N+1 from the same snapshot
+    # and collide on the checkpoint. Used to happen at end-heat, which
+    # was the lost-update race (see task description evidence).
     task_desc = None
-    if task_id:
-        for task in state.get("queue", []):
-            if task["id"] == task_id:
-                if task["status"] != "pending":
-                    _output({"error": f"Task {task_id} is {task['status']}, not pending"})
-                    sys.exit(1)
-                task["status"] = "in_progress"
-                task_desc = task["desc"]
-                break
-        else:
-            _output({"error": f"Task {task_id} not found in queue"})
+    with state_lock(root):
+        state = load_state(root)
+        budget = state["budget"]
+
+        # t-395 I0: halt flag checked inside the lock so a concurrent
+        # halt-rig either sees this start-heat or we see the halt.
+        parallel = state.get("parallel") or {}
+        if parallel.get("halt_flag"):
+            _output({
+                "error": "Rig is halted — new heats blocked",
+                "halted_at": parallel.get("halted_at"),
+                "reason": parallel.get("halt_reason"),
+                "hint": "smithy resume-rig to clear",
+            })
             sys.exit(1)
 
-    save_state(root, state)
+        if budget["used"] >= budget["total_heats"]:
+            _output({"error": "Budget exhausted", "used": budget["used"],
+                     "total": budget["total_heats"]})
+            sys.exit(1)
+
+        heat_number = budget["used"] + 1
+        budget["used"] = heat_number  # t-426: atomic bump.
+
+        # Set task to in_progress if specified
+        if task_id:
+            for task in state.get("queue", []):
+                if task["id"] == task_id:
+                    if task["status"] != "pending":
+                        _output({"error": f"Task {task_id} is {task['status']}, not pending"})
+                        sys.exit(1)
+                    task["status"] = "in_progress"
+                    task_desc = task["desc"]
+                    break
+            else:
+                _output({"error": f"Task {task_id} not found in queue"})
+                sys.exit(1)
+
+        save_state(root, state)
+        total_heats = budget["total_heats"]
+
     write_checkpoint(root, heat_number, stage, task_id or "generated",
                      forge_id=forge_id)
 
@@ -321,7 +329,7 @@ def start_heat(ctx, stage, task_id, forge_id, reuse_scratch):
         "task_id": task_id,
         "task_desc": task_desc,
         "forge_id": forge_id,
-        "budget_remaining": budget["total_heats"] - heat_number,
+        "budget_remaining": total_heats - heat_number,
     }
     if branch_change:
         result["branch"] = branch_change
@@ -353,7 +361,6 @@ def end_heat(ctx, value, signal, notes, outcome, progress, no_nudge, forge_id,
              skip_tests, tests_cmd):
     """End the current heat. Updates all counters and logs."""
     root = ctx.obj["root"]
-    state = load_state(root)
 
     # t-409 H1: resolve forge id the same way start-heat does so the
     # matching per-Forge checkpoint is read.
@@ -372,46 +379,22 @@ def end_heat(ctx, value, signal, notes, outcome, progress, no_nudge, forge_id,
     stage = checkpoint["stage"]
     task_id = checkpoint["task_id"]
 
-    # Update budget
-    state["budget"]["used"] = heat
-
-    # Update stage stats
-    s = state["stages"][stage]
-    s["heats"] = s.get("heats", 0) + 1
-    if progress is not None:
-        s["progress"] = max(0, min(1, progress))
-    s["value_ema"] = round(0.7 * s.get("value_ema", 0.5) + 0.3 * value, 3)
-
-    # Update allocator integral
-    total_heats = sum(st["heats"] for st in state["stages"].values()) or 1
-    actual_frac = s["heats"] / total_heats
-    target = s.get("target", 0.16)
-    error = target - actual_frac
-    integral = state["allocator"]["integral"].get(stage, 0)
-    integral = integral * 0.85 + error
-    integral = max(-0.5, min(0.5, integral))
-    state["allocator"]["integral"][stage] = round(integral, 3)
-
     # t-399 I4: two-row lifecycle gate. When Assembly is enabled, a
-    # "complete" end-heat is really a "submitted" hand-off — Forge committed
-    # to its branch and the task awaits Assembly's merge. Assembly flips
-    # status to "complete" via `assembly-merge` (or back to "pending" via
-    # `assembly-reject"). Default (enabled=False) preserves legacy N=1 flow.
+    # "complete" end-heat is really a "submitted" hand-off. Read the
+    # config OUTSIDE the state lock — it doesn't change during a heat.
+    state_peek = load_state(root)
     assembly_enabled = (
-        (state.get("parallel") or {}).get("assembly", {}).get("enabled", False)
+        (state_peek.get("parallel") or {}).get("assembly", {}).get("enabled", False)
     )
+
     effective_outcome = outcome
     if assembly_enabled and outcome == "complete" and task_id != "generated":
         effective_outcome = "submitted"
 
-    # t-427: pre-submit pytest gate. Run the project's test suite in the
-    # Forge's worktree BEFORE the submit side-effects (assembly-queue
-    # row, assembly nudge, status flip). A red suite downgrades the
-    # outcome to "partial" — the task stays in_progress → Forge
-    # re-iterates next heat instead of burning an Assembly rebase cycle
-    # (the 2026-04-17 t-425/t-423 scenario). Skip for prose-heavy stages
-    # (research / planning / marketing) or when the operator passes
-    # --skip-tests.
+    # t-427: pre-submit pytest gate runs OUTSIDE the lock (t-426) — the
+    # test suite can take minutes and blocking every other Forge's
+    # state transition on it would defeat the point of N>1. The gate
+    # reads code/disk but never writes state.json.
     test_gate = None
     if (effective_outcome == "submitted"
             and not skip_tests
@@ -434,54 +417,82 @@ def end_heat(ctx, value, signal, notes, outcome, progress, no_nudge, forge_id,
             _err(head)
             _err("--- end ---")
 
-    # Mark task status based on effective outcome.
+    # t-426: all state.json mutations happen inside the lock. Re-load
+    # state fresh so we see any sibling's updates (e.g. a concurrent
+    # start-heat's budget.used bump) and don't clobber them.
     completed_task = None
-    if effective_outcome == "complete" and task_id != "generated":
-        for task in state.get("queue", []):
-            if task["id"] == task_id:
-                task["status"] = "complete"
-                # Auto-clear sticky human priority on complete (t-312).
-                task["human_priority"] = None
-                task["priority_reason"] = None
-                completed_task = task
-                break
-    elif effective_outcome == "submitted" and task_id != "generated":
-        for task in state.get("queue", []):
-            if task["id"] == task_id:
-                task["status"] = "submitted"
-                completed_task = task
-                break
-    elif (test_gate is not None and not test_gate["passed"]
-          and task_id != "generated"):
-        # t-427: pre-submit test-fail downgrade — flip status back to
-        # pending so the Forge can start the next heat on the same
-        # task without tripping start-heat's "not pending" guard. The
-        # per-task branch stays intact; the Forge just iterates.
-        for task in state.get("queue", []):
-            if task["id"] == task_id:
-                task["status"] = "pending"
-                break
+    with state_lock(root):
+        state = load_state(root)
 
-    # Increment initiative heats_used
-    ini_id = completed_task.get("initiative_id") if completed_task else None
-    if ini_id:
-        for ini in state.get("initiatives", []):
-            if ini["id"] == ini_id:
-                ini["heats_used"] = ini.get("heats_used", 0) + 1
-                if ini.get("budget_cap") and ini["heats_used"] >= ini["budget_cap"]:
-                    # Append warning to outbox
-                    outbox_path = root / "outbox.md"
-                    if outbox_path.exists():
-                        warning = f"\n\n**⚠️ Initiative {ini_id} ({ini['title']}) has reached its budget cap ({ini['budget_cap']} heats).**\n"
-                        outbox_path.write_text(outbox_path.read_text() + warning)
-                break
+        # t-426: budget.used is bumped by start-heat now. end-heat used
+        # to re-set state["budget"]["used"] = heat here — that was the
+        # lost-update race: if another Forge had bumped to heat+1
+        # while we were working, resetting to heat lost their update.
 
-    # Update overall progress
-    progresses = [st.get("progress", 0) for st in state["stages"].values()]
-    state["overall_progress"] = round(sum(progresses) / len(progresses), 2)
+        # Update stage stats
+        s = state["stages"][stage]
+        s["heats"] = s.get("heats", 0) + 1
+        if progress is not None:
+            s["progress"] = max(0, min(1, progress))
+        s["value_ema"] = round(0.7 * s.get("value_ema", 0.5) + 0.3 * value, 3)
 
-    # Save state
-    save_state(root, state)
+        # Update allocator integral
+        total_heats = sum(st["heats"] for st in state["stages"].values()) or 1
+        actual_frac = s["heats"] / total_heats
+        target = s.get("target", 0.16)
+        error = target - actual_frac
+        integral = state["allocator"]["integral"].get(stage, 0)
+        integral = integral * 0.85 + error
+        integral = max(-0.5, min(0.5, integral))
+        state["allocator"]["integral"][stage] = round(integral, 3)
+
+        # Mark task status based on effective outcome.
+        if effective_outcome == "complete" and task_id != "generated":
+            for task in state.get("queue", []):
+                if task["id"] == task_id:
+                    task["status"] = "complete"
+                    # Auto-clear sticky human priority on complete (t-312).
+                    task["human_priority"] = None
+                    task["priority_reason"] = None
+                    completed_task = task
+                    break
+        elif effective_outcome == "submitted" and task_id != "generated":
+            for task in state.get("queue", []):
+                if task["id"] == task_id:
+                    task["status"] = "submitted"
+                    completed_task = task
+                    break
+        elif (test_gate is not None and not test_gate["passed"]
+              and task_id != "generated"):
+            # t-427: pre-submit test-fail downgrade — flip status back to
+            # pending so the Forge can start the next heat on the same
+            # task without tripping start-heat's "not pending" guard.
+            # The per-task branch stays intact; the Forge just iterates.
+            for task in state.get("queue", []):
+                if task["id"] == task_id:
+                    task["status"] = "pending"
+                    break
+
+        # Increment initiative heats_used
+        ini_id = completed_task.get("initiative_id") if completed_task else None
+        if ini_id:
+            for ini in state.get("initiatives", []):
+                if ini["id"] == ini_id:
+                    ini["heats_used"] = ini.get("heats_used", 0) + 1
+                    if ini.get("budget_cap") and ini["heats_used"] >= ini["budget_cap"]:
+                        # Append warning to outbox
+                        outbox_path = root / "outbox.md"
+                        if outbox_path.exists():
+                            warning = f"\n\n**⚠️ Initiative {ini_id} ({ini['title']}) has reached its budget cap ({ini['budget_cap']} heats).**\n"
+                            outbox_path.write_text(outbox_path.read_text() + warning)
+                    break
+
+        # Update overall progress
+        progresses = [st.get("progress", 0) for st in state["stages"].values()]
+        state["overall_progress"] = round(sum(progresses) / len(progresses), 2)
+
+        # Save state
+        save_state(root, state)
 
     # Append worklog (use effective_outcome so "submitted" lands when Assembly
     # is enabled — the second row is written later by assembly-merge/reject).
@@ -1540,44 +1551,48 @@ def queue_push(ctx, task_id, top, no_nudge, target_persona, assigned_forge):
     empty string) clears any prior assignment.
     """
     root = ctx.obj["root"]
-    state = load_state(root)
-    queue_map = {t["id"]: t for t in state.get("queue", [])}
+    # t-426: serialise queue-push across actors (Anvil's manual fixes +
+    # Marshal's automated re-prioritisations). Without the lock the
+    # next_tasks list could lose one writer's update.
+    with state_lock(root):
+        state = load_state(root)
+        queue_map = {t["id"]: t for t in state.get("queue", [])}
 
-    if task_id not in queue_map:
-        _output({"error": f"Task {task_id} not found in queue"})
-        sys.exit(1)
-    if queue_map[task_id]["status"] != "pending":
-        _output({"error": f"Task {task_id} is {queue_map[task_id]['status']}, not pending"})
-        sys.exit(1)
-
-    # t-400 I5: stamp assigned_forge if --forge was given.
-    if assigned_forge is not None:
-        parallel = state.get("parallel") or {}
-        forge_ids = {f.get("id") for f in (parallel.get("forges") or [])}
-        if assigned_forge in ("", "null"):
-            queue_map[task_id]["assigned_forge"] = None
-        elif assigned_forge not in forge_ids:
-            _output({"error": f"unknown forge id: {assigned_forge}",
-                     "known": sorted(fid for fid in forge_ids if fid)})
+        if task_id not in queue_map:
+            _output({"error": f"Task {task_id} not found in queue"})
             sys.exit(1)
+        if queue_map[task_id]["status"] != "pending":
+            _output({"error": f"Task {task_id} is {queue_map[task_id]['status']}, not pending"})
+            sys.exit(1)
+
+        # t-400 I5: stamp assigned_forge if --forge was given.
+        if assigned_forge is not None:
+            parallel = state.get("parallel") or {}
+            forge_ids = {f.get("id") for f in (parallel.get("forges") or [])}
+            if assigned_forge in ("", "null"):
+                queue_map[task_id]["assigned_forge"] = None
+            elif assigned_forge not in forge_ids:
+                _output({"error": f"unknown forge id: {assigned_forge}",
+                         "known": sorted(fid for fid in forge_ids if fid)})
+                sys.exit(1)
+            else:
+                queue_map[task_id]["assigned_forge"] = assigned_forge
+
+        next_tasks = state.get("next_tasks", [])
+        # Remove if already present to avoid duplicates
+        next_tasks = [t for t in next_tasks if t != task_id]
+        if top:
+            next_tasks.insert(0, task_id)
         else:
-            queue_map[task_id]["assigned_forge"] = assigned_forge
+            next_tasks.append(task_id)
+        state["next_tasks"] = next_tasks
 
-    next_tasks = state.get("next_tasks", [])
-    # Remove if already present to avoid duplicates
-    next_tasks = [t for t in next_tasks if t != task_id]
-    if top:
-        next_tasks.insert(0, task_id)
-    else:
-        next_tasks.append(task_id)
-    state["next_tasks"] = next_tasks
+        # Auto-populate priority_reason on push unless a human has set one.
+        task = queue_map[task_id]
+        if task.get("human_priority") is None:
+            task["priority_reason"] = _build_priority_reason(state, task)
 
-    # Auto-populate priority_reason on push unless a human has set one.
-    task = queue_map[task_id]
-    if task.get("human_priority") is None:
-        task["priority_reason"] = _build_priority_reason(state, task)
-
-    save_state(root, state)
+        save_state(root, state)
 
     position = "top" if top else "bottom"
     result = {"task_id": task_id, "position": position, "queue_size": len(next_tasks)}
@@ -1624,45 +1639,56 @@ def queue_pop(ctx, forge_id):
     intended Forge; only status-stale entries are removed.
     """
     root = ctx.obj["root"]
-    state = load_state(root)
     # t-407 H2: default --forge from cwd's worktree if caller omitted it.
-    # Keeps queue-pop usable without every caller threading --forge through.
+    # Resolve outside the lock — it's a pure fs lookup.
     if forge_id is None:
         forge_id = detect_forge_from_cwd(root)
-    next_tasks = state.get("next_tasks", [])
 
-    if not next_tasks:
+    # t-426: serialise queue-pop so two sibling Forges don't both claim
+    # the same head of next_tasks. Was the contention point that drove
+    # Marshal to reassign a task Forge-A was silently working on.
+    skipped_stale: list[str] = []
+    skipped_other_forge: list[str] = []
+    task = None
+    task_id = None
+    empty = False
+    remaining_len = 0
+    with state_lock(root):
+        state = load_state(root)
+        next_tasks = state.get("next_tasks", [])
+
+        if not next_tasks:
+            empty = True
+        else:
+            queue_by_id = {t["id"]: t for t in state.get("queue", [])}
+            preserved: list[str] = []  # tasks not matching this forge — put back.
+            while next_tasks:
+                candidate_id = next_tasks.pop(0)
+                candidate = queue_by_id.get(candidate_id)
+                # Drop stale (missing / non-pending) entries outright.
+                if not candidate or candidate.get("status") != "pending":
+                    skipped_stale.append(candidate_id)
+                    continue
+                # If a --forge filter is in play, respect assigned_forge pinning.
+                if forge_id is not None:
+                    af = candidate.get("assigned_forge")
+                    if af is not None and af != forge_id:
+                        skipped_other_forge.append(candidate_id)
+                        preserved.append(candidate_id)
+                        continue
+                task_id = candidate_id
+                task = candidate
+                break
+
+            # Put back tasks that belong to other Forges, in original order.
+            state["next_tasks"] = preserved + next_tasks
+            save_state(root, state)
+            remaining_len = len(state["next_tasks"])
+
+    if empty:
         _output({"task": None, "message": "Queue empty"})
         _err("Queue empty")
         return
-
-    queue_by_id = {t["id"]: t for t in state.get("queue", [])}
-    skipped_stale: list[str] = []
-    skipped_other_forge: list[str] = []
-    preserved: list[str] = []  # tasks not matching this forge — put back.
-    task = None
-    task_id = None
-    while next_tasks:
-        candidate_id = next_tasks.pop(0)
-        candidate = queue_by_id.get(candidate_id)
-        # Drop stale (missing / non-pending) entries outright.
-        if not candidate or candidate.get("status") != "pending":
-            skipped_stale.append(candidate_id)
-            continue
-        # If a --forge filter is in play, respect assigned_forge pinning.
-        if forge_id is not None:
-            af = candidate.get("assigned_forge")
-            if af is not None and af != forge_id:
-                skipped_other_forge.append(candidate_id)
-                preserved.append(candidate_id)
-                continue
-        task_id = candidate_id
-        task = candidate
-        break
-
-    # Put back tasks that belong to other Forges, in original order.
-    state["next_tasks"] = preserved + next_tasks
-    save_state(root, state)
 
     if task is None:
         _output({"task": None, "message": "Queue empty (no match)",
@@ -1675,12 +1701,12 @@ def queue_pop(ctx, forge_id):
         _err(f"Skipped {len(skipped_stale)} stale head(s): {skipped_stale}")
     _emit_rig_event(root, "queue_pop", actor=forge_id or "queue",
                     task_id=task_id, forge_id=forge_id,
-                    remaining=len(state["next_tasks"]))
+                    remaining=remaining_len)
     _output({"task_id": task_id, "task": task,
-             "remaining": len(state["next_tasks"]),
+             "remaining": remaining_len,
              "skipped_stale": skipped_stale,
              "skipped_other_forge": skipped_other_forge})
-    _err(f"Popped {task_id} ({len(state['next_tasks'])} remaining)")
+    _err(f"Popped {task_id} ({remaining_len} remaining)")
 
 
 @cli.command("queue-clear")
