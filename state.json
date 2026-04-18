@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 390,
+      "heats": 391,
       "progress": 0.98,
-      "value_ema": 0.785
+      "value_ema": 0.804
     },
     "testing": {
       "target": 0.183,
@@ -4903,7 +4903,7 @@
       "id": "t-458",
       "stage": "implementation",
       "desc": "Eliminate MEMORY.md merge conflicts between parallel Forges. Current: personas/forge/memory/MEMORY.md is shared by all 3 Forges; concurrent edits on separate per-task branches produce severe conflicts Assembly rejects (3 rejects in 2026-04-18 drain: t-431\u00d72 and t-441). Design options: (a) per-forge memory subdirs personas/forge/memory/quench/ temper/ anneal/ \u2014 eliminates collision, each Forge writes its own file; OR (b) append-only memory log with forge-id + timestamp per entry, later consolidation job. Recommend (a) \u2014 simpler, clear ownership, natural git semantics. Migration: move existing personas/forge/memory/*.md into quench/ subdir (most recent edits), leave others empty, update forge CLAUDE.md path references. Add patrol check that flags divergence between subdirs to catch drift.",
-      "status": "in_progress",
+      "status": "submitted",
       "priority": 0,
       "blocked_by": [],
       "human_priority": 0,
@@ -4928,12 +4928,12 @@
     {
       "id": "t-460",
       "stage": "implementation",
-      "desc": "Pin smithy editable install to main, never a worktree. Root cause observed 2026-04-18: the global editable install (pip install -e smithy/) had been last run from a worktree (forge-quench/smithy/), so every pane imported from that stale tree. When Assembly ran pytest inside any worktree, collection of tests imported from main (e.g., test_t455_normalize_hp.py requiring normalize_human_priority) failed because the stale install lacked the symbol. 3 rejects hit this pattern (t-447 + two earlier transients). Assembly unstuck by re-binding to main. Fix: (a) add post-Assembly-merge hook that runs pip install -e from main-repo smithy/ whenever smithy code changes (detect via merge-commit paths); OR (b) guard in smithy startup that warns if __file__ is inside .worktrees/; OR (c) refactor so every pane uses a PYTHONPATH prepend to main-repo smithy/ and editable install is frozen to main. Recommend (a)+(b) \u2014 automated rebind post-merge, plus a loud warning when detection fails. Tests: regression test for module path invariant; e2e smoke that a merge touching smithy/ triggers rebind.",
-      "status": "submitted",
+      "desc": "Pin smithy editable install to main, never a worktree. Root cause observed 2026-04-18: the global editable install (pip install -e smithy/) had been last run from a worktree (forge-quench/smithy/), so every pane imported from that stale tree. When Assembly ran pytest inside any worktree, collection of tests imported from main (e.g., test_t455_normalize_hp.py requiring normalize_human_priority) failed because the stale install lacked the symbol. 3 rejects hit this pattern (t-447 + two earlier transients). Assembly unstuck by re-binding to main. Fix: (a) add post-Assembly-merge hook that runs pip install -e from main-repo smithy/ whenever smithy code changes (detect via merge-commit paths); OR (b) guard in smithy startup that warns if __file__ is inside .worktrees/; OR (c) refactor so every pane uses a PYTHONPATH prepend to main-repo smithy/ and editable install is frozen to main. Recommend (a)+(b) \u2014 automated rebind post-merge, plus a loud warning when detection fails. Tests: regression test for module path invariant; e2e smoke that a merge touching smithy/ triggers rebind. FOLLOW-UP (2026-04-18 Assembly reject): test_t460_install_pinning.py did \"from smithy.cli import _rebind_smithy_install\". When the smithy editable install is pinned to main (the correct state at Assembly merge time), the symbol doesn't exist there yet \u2014 only on the branch \u2014 so ImportError on test collection. PATCH THE TEST like test_t455_normalize_hp.py does: prepend the branch's local smithy/ source to sys.path BEFORE the import (sys.path.insert(0, ...)). This makes the test robust whether the editable install points at main or elsewhere. Commit the patch on forge-anneal/t-460 and end-heat to resubmit. One small test-only change.",
+      "status": "pending",
       "priority": -1,
       "blocked_by": [],
-      "human_priority": 0,
-      "priority_reason": "MUST land before t-457/t-458 retry \u2014 closes stale-install hazard that Assembly keeps rebinding manually",
+      "human_priority": 5,
+      "priority_reason": "MUST land before t-457/t-458 retry \u2014 closes stale-install hazard (test-patch followup)",
       "assigned_forge": "forge-anneal",
       "initiative_id": "ini-018"
     }
@@ -4982,7 +4982,7 @@
       "description": "Run multiple Forge workers concurrently via per-Forge git worktrees. Dedicated Assembly teammate handles merge queue integration (conflicts, test-on-integrate, merge ordering). Unlocks parallelism (Marshal dispatches N heats simultaneously) and enforces branch hygiene. Incremental: N=2 proof before N=3+.",
       "status": "approved",
       "budget_cap": null,
-      "heats_used": 49,
+      "heats_used": 50,
       "viewed_at": "2026-04-18T09:06:15Z",
       "rank": 1,
       "parallelism": "parallel",
@@ -5371,7 +5371,7 @@
     ],
     "assembly": {
       "enabled": true,
-      "last_heartbeat": "2026-04-18T20:00:16+00:00"
+      "last_heartbeat": "2026-04-18T20:04:23+00:00"
     },
     "forge_roster": [
       "forge-quench",
