@@ -2,15 +2,15 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1543,
-    "used": 826,
+    "used": 828,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
     "research": {
       "target": 0.156,
-      "heats": 51,
+      "heats": 52,
       "progress": 0.9,
-      "value_ema": 0.76
+      "value_ema": 0.622
     },
     "planning": {
       "target": 0.21,
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 377,
+      "heats": 378,
       "progress": 0.98,
-      "value_ema": 0.712
+      "value_ema": 0.753
     },
     "testing": {
       "target": 0.183,
@@ -4763,7 +4763,7 @@
       "id": "t-447",
       "stage": "implementation",
       "desc": "ini-019 I0: Retro-populate initiative_id for all existing state.queue tasks (~400 entries). Cross-reference each task against initiatives list using: task desc keywords, worklog.tsv notes, merge-commit messages, ini description overlap, and heat-proximity to ini approval window. Produce a proposed mapping as a reviewable dry-run diff first (plans/ini-019-retro-map.md), then apply in a single state.json edit. Flag ambiguous cases (multiple plausible ini) rather than guess. Tests: every mapped task has a valid ini_id from initiatives list.",
-      "status": "in_progress",
+      "status": "submitted",
       "priority": 2,
       "blocked_by": [
         "t-445"
@@ -4855,7 +4855,7 @@
       "id": "t-454",
       "stage": "research",
       "desc": "Investigate budget.used non-monotonic drift. Observed 2026-04-18: Anvil reconciled budget.used from 892 \u2192 903 (worklog truth, commit 64eedda). Within an hour, state.json showed used=824 \u2014 a 79-heat decrease without any rollback directive. Suspects: (a) smithy sync-stages recomputing used from stage-heat sums (sums were 892 pre-reconcile), (b) a Forge worktree writing stale snapshot back despite t-419, (c) patrol --fix reversing the reconcile, (d) Marshal session writing cached in-memory value. Method: bisect the git log for state.json writes between commits 64eedda and 1c7f84f, cross-ref with rig-events.jsonl and nudge-queue timestamps to identify the writer. Output: research/budget-drift-rca.md with reproduction steps + recommended fix (likely: make budget.used monotonic-or-explicit-override in state code; or remove any recomputation path that competes with worklog-as-truth).",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 1,
       "blocked_by": [],
       "human_priority": "p1",
@@ -4872,19 +4872,19 @@
       "blocked_by": [],
       "human_priority": 0,
       "priority_reason": "BLOCKER: Assembly merge loop halted; stuck queue [t-445,t-443,t-431]",
-      "assigned_forge": null,
+      "assigned_forge": "forge-quench",
       "initiative_id": "ini-018"
     },
     {
       "id": "t-456",
       "stage": "implementation",
-      "desc": "BLOCKER \u2014 fix rebase_forge_branch wrong-branch bug. Location: smithy/smithy/assembly.py:40-59. Function rebases whatever branch is CURRENTLY checked out in the Forge worktree \u2014 not the per-task branch Assembly was asked to merge. Fails with \"unstaged changes\" when Forge has moved on to a new task. Fix: rebase_forge_branch must take task_id, explicitly git checkout <forge-id>/<task-id> in the worktree first, then rebase. Handle already-checked-out case idempotently. If worktree has unstaged/untracked changes blocking checkout, stash-push with a sentinel label, checkout+rebase, then decide policy (stash-pop only if still relevant or document that the Forge must resume its prior branch). Update all callers (cli.py assembly_tick) to pass task_id. Tests: (a) Forge on target branch, (b) Forge on different branch, clean worktree, (c) Forge on different branch, dirty worktree.",
-      "status": "pending",
+      "desc": "BLOCKER \u2014 decouple Assembly rebase from the Forge worktree. Current bug: rebase_forge_branch (smithy/smithy/assembly.py:40-59) runs `git rebase` in the Forge's worktree, which rebases WHATEVER branch is currently checked out there \u2014 not the per-task branch being merged. Fails when Forge has moved on to a new task, and fails 'unstaged changes' when Forge is mid-heat with dirty worktree. The right architecture: Assembly must operate in its OWN workspace and reference branches by name, not by worktree checkout. Design: (a) Add ensure_staging_worktree(project_dir) that creates/reuses .worktrees/_assembly-staging. (b) Replace rebase_forge_branch(project_dir, forge_id) with rebase_task_branch(project_dir, forge_id, task_id) that does: `git -C staging checkout -B _merge-<task-id> <forge-id>/<task-id>` (snapshot ref), then `git -C staging rebase main`. Returns the staging ref name on clean, or conflict/error dict as today. (c) Update ff_merge_forge_branch to accept a source_ref parameter (defaults to <forge-id>/<task-id> for back-compat), so Assembly merges FROM the rebased staging ref into main in project_dir as before. (d) On success, cleanup the original <forge-id>/<task-id> branch (Forge has moved on \u2014 already validated by t-420 per-task branches). (e) Update all cli.py callers (assembly_tick, any test harness) to pass task_id. Properties to preserve: Forge NEVER waits for Assembly \u2014 once it submits, it's free to queue-pop the next task. Branch refs in git worktree setups are shared across worktrees, so the staging approach works without additional sync. Tests: (1) Forge on the branch clean, (2) Forge on a DIFFERENT branch clean, (3) Forge on different branch DIRTY, (4) concurrent: Forge commits t-460 while Assembly merges t-455, (5) rebase conflict path still returns {status:conflict, files:[...]}. Reverts the earlier bad 'Forge stays on branch' workaround \u2014 the whole point is Forge throughput must not block on Assembly.",
+      "status": "in_progress",
       "priority": 0,
       "blocked_by": [],
       "human_priority": 0,
-      "priority_reason": "BLOCKER: Assembly merge loop halted when Forge moved on between submit and merge",
-      "assigned_forge": null,
+      "priority_reason": "BLOCKER: Assembly\u2194Forge coupling; Forge cannot move on while Assembly merges = massive idle capacity loss",
+      "assigned_forge": "forge-temper",
       "initiative_id": "ini-018"
     }
   ],
@@ -4946,7 +4946,7 @@
       "description": "Read-only aggregation layer over worklog.tsv + rig-events.jsonl + assembly-log.jsonl + state.json + git log. Three surfaces: (L0) smithy report CLI \u2014 initiative burn-down, forge idle%, top failure buckets. (L1) Bellows Forge Ops dashboard \u2014 initiative panel with burn bars, task drill-down with timeline, persona heatmap, Issues view (ghost submits, test recurrence, Assembly rejects, thrash \u22653 retries), flow diagram. (L2) per-heat JSON snapshots for time-series regression analysis. Principle: no new write paths; deterministic replay from the record. Pre-req: retro-annotate task\u2192initiative_id mapping (schema gap in state.queue).",
       "status": "approved",
       "budget_cap": 25,
-      "heats_used": 3,
+      "heats_used": 4,
       "viewed_at": null,
       "rank": 2,
       "parallelism": "parallel",
@@ -5254,7 +5254,7 @@
     }
   ],
   "next_tasks": [
-    "t-454",
+    "t-455",
     "t-448",
     "t-449",
     "t-441",
@@ -5324,7 +5324,7 @@
     ],
     "assembly": {
       "enabled": true,
-      "last_heartbeat": "2026-04-18T19:23:57+00:00"
+      "last_heartbeat": "2026-04-18T19:26:08+00:00"
     },
     "forge_roster": [
       "forge-quench",
