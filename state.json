@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1543,
-    "used": 824,
+    "used": 826,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 376,
+      "heats": 377,
       "progress": 0.98,
-      "value_ema": 0.675
+      "value_ema": 0.712
     },
     "testing": {
       "target": 0.183,
@@ -63,7 +63,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-045",
@@ -74,7 +75,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-046",
@@ -85,7 +87,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-051",
@@ -96,7 +99,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-055",
@@ -107,7 +111,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": "ini-010"
     },
     {
       "id": "t-056",
@@ -118,7 +123,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-057",
@@ -129,7 +135,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-058",
@@ -140,7 +147,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-059",
@@ -151,7 +159,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-060",
@@ -162,7 +171,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-061",
@@ -173,7 +183,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": "ini-012"
     },
     {
       "id": "t-062",
@@ -184,7 +195,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-063",
@@ -195,7 +207,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-064",
@@ -206,7 +219,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-065",
@@ -217,7 +231,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-066",
@@ -228,7 +243,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-067",
@@ -239,7 +255,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-068",
@@ -250,7 +267,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-069",
@@ -261,7 +279,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-070",
@@ -272,7 +291,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-076",
@@ -283,7 +303,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-077",
@@ -294,7 +315,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-078",
@@ -307,7 +329,8 @@
       ],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-079",
@@ -318,7 +341,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-080",
@@ -329,7 +353,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-081",
@@ -340,7 +365,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-082",
@@ -351,7 +377,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-083",
@@ -362,7 +389,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-084",
@@ -373,7 +401,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-085",
@@ -384,7 +413,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-086",
@@ -395,7 +425,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-087",
@@ -406,7 +437,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-088",
@@ -417,7 +449,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-089",
@@ -428,7 +461,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-090",
@@ -439,7 +473,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-091",
@@ -450,7 +485,8 @@
       "blocked_by": [],
       "human_priority": 3,
       "priority_reason": "you:p-1",
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-092",
@@ -461,7 +497,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-093",
@@ -472,7 +509,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-094",
@@ -483,7 +521,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-095",
@@ -494,7 +533,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-096",
@@ -505,7 +545,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-097",
@@ -516,7 +557,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": "ini-010"
     },
     {
       "id": "t-098",
@@ -527,7 +569,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-099",
@@ -538,7 +581,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-100",
@@ -549,7 +593,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-101",
@@ -560,7 +605,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-102",
@@ -571,7 +617,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-103",
@@ -582,7 +629,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-104",
@@ -593,7 +641,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-105",
@@ -604,7 +653,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-106",
@@ -615,7 +665,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-107",
@@ -626,7 +677,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-108",
@@ -637,7 +689,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-109",
@@ -648,7 +701,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-110",
@@ -659,7 +713,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-111",
@@ -670,7 +725,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-112",
@@ -681,7 +737,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-113",
@@ -692,7 +749,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-114",
@@ -703,7 +761,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-115",
@@ -714,7 +773,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-116",
@@ -725,7 +785,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-117",
@@ -736,7 +797,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-118",
@@ -747,7 +809,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-119",
@@ -758,7 +821,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-120",
@@ -769,7 +833,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-121",
@@ -780,7 +845,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-122",
@@ -791,7 +857,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-123",
@@ -802,7 +869,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-124",
@@ -813,7 +881,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-125",
@@ -824,7 +893,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-126",
@@ -835,7 +905,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-127",
@@ -846,7 +917,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-128",
@@ -857,7 +929,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-129",
@@ -868,7 +941,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-130",
@@ -879,7 +953,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": "ini-009"
     },
     {
       "id": "t-131",
@@ -890,7 +965,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-132",
@@ -901,7 +977,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-133",
@@ -912,7 +989,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-134",
@@ -923,7 +1001,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-135",
@@ -934,7 +1013,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-136",
@@ -945,7 +1025,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-137",
@@ -956,7 +1037,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-138",
@@ -967,7 +1049,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-139",
@@ -978,7 +1061,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-140",
@@ -989,7 +1073,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-141",
@@ -1000,7 +1085,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-142",
@@ -1011,7 +1097,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-143",
@@ -1022,7 +1109,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-144",
@@ -1033,7 +1121,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-145",
@@ -1044,7 +1133,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-146",
@@ -1055,7 +1145,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-147",
@@ -1066,7 +1157,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-148",
@@ -1077,7 +1169,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-149",
@@ -1088,7 +1181,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-150",
@@ -1099,7 +1193,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-151",
@@ -1110,7 +1205,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-152",
@@ -1121,7 +1217,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": "ini-013"
     },
     {
       "id": "t-153",
@@ -1132,7 +1229,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-154",
@@ -1143,7 +1241,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-155",
@@ -1154,7 +1253,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-156",
@@ -1165,7 +1265,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-157",
@@ -1176,7 +1277,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": "ini-013"
     },
     {
       "id": "t-158",
@@ -1187,7 +1289,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-159",
@@ -1198,7 +1301,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": "ini-011"
     },
     {
       "id": "t-160",
@@ -1209,7 +1313,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": "ini-011"
     },
     {
       "id": "t-161",
@@ -1220,7 +1325,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": "ini-013"
     },
     {
       "id": "t-162",
@@ -1231,7 +1337,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-163",
@@ -1242,7 +1349,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": "ini-013"
     },
     {
       "id": "t-164",
@@ -1253,7 +1361,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-165",
@@ -1264,7 +1373,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-166",
@@ -1275,7 +1385,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-167",
@@ -1286,7 +1397,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-168",
@@ -1297,7 +1409,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-169",
@@ -1308,7 +1421,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-170",
@@ -1319,7 +1433,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-171",
@@ -1330,7 +1445,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-172",
@@ -1341,7 +1457,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-173",
@@ -1352,7 +1469,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-174",
@@ -1363,7 +1481,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-175",
@@ -1374,7 +1493,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-176",
@@ -1385,7 +1505,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-177",
@@ -1396,7 +1517,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-178",
@@ -1407,7 +1529,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-179",
@@ -1418,7 +1541,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-180",
@@ -1429,7 +1553,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-181",
@@ -1440,7 +1565,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-182",
@@ -1451,7 +1577,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-183",
@@ -1630,7 +1757,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-198",
@@ -1641,7 +1769,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-199",
@@ -1652,7 +1781,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-200",
@@ -1663,7 +1793,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-201",
@@ -1674,7 +1805,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-202",
@@ -1685,7 +1817,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-203",
@@ -1696,7 +1829,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-204",
@@ -1707,7 +1841,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-205",
@@ -1898,7 +2033,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": "ini-011"
     },
     {
       "id": "t-221",
@@ -1933,7 +2069,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": "ini-010"
     },
     {
       "id": "t-224",
@@ -1944,7 +2081,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-225",
@@ -1955,7 +2093,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-226",
@@ -1966,7 +2105,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-227",
@@ -1977,7 +2117,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-228",
@@ -1988,7 +2129,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-229",
@@ -1999,7 +2141,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-230",
@@ -2034,7 +2177,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-233",
@@ -2045,7 +2189,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-234",
@@ -2056,7 +2201,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-235",
@@ -2067,7 +2213,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-236",
@@ -2078,7 +2225,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-237",
@@ -2089,7 +2237,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-238",
@@ -2100,7 +2249,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-239",
@@ -2111,7 +2261,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-240",
@@ -2122,7 +2273,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-241",
@@ -2193,7 +2345,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-247",
@@ -2444,7 +2597,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": "ini-016"
     },
     {
       "id": "t-268",
@@ -2455,7 +2609,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-269",
@@ -2466,7 +2621,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": "ini-016"
     },
     {
       "id": "t-270",
@@ -2477,7 +2633,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-271",
@@ -2488,7 +2645,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-272",
@@ -2499,7 +2657,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": "ini-016"
     },
     {
       "id": "t-273",
@@ -2510,7 +2669,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": "ini-016"
     },
     {
       "id": "t-274",
@@ -2521,7 +2681,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-275",
@@ -2688,7 +2849,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-289",
@@ -2723,7 +2885,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-292",
@@ -2782,7 +2945,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-297",
@@ -2793,7 +2957,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-298",
@@ -2816,7 +2981,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-300",
@@ -2827,7 +2993,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-301",
@@ -2838,7 +3005,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-302",
@@ -2861,7 +3029,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": "ini-015"
     },
     {
       "id": "t-304",
@@ -2872,7 +3041,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-305",
@@ -2943,7 +3113,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": "ini-011"
     },
     {
       "id": "t-311",
@@ -2954,7 +3125,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-312",
@@ -3025,7 +3197,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-318",
@@ -3036,7 +3209,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": "ini-011"
     },
     {
       "id": "t-319",
@@ -3059,7 +3233,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-321",
@@ -3070,7 +3245,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-322",
@@ -3081,7 +3257,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": "ini-010"
     },
     {
       "id": "t-323",
@@ -3224,7 +3401,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-335",
@@ -3247,7 +3425,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": "ini-013"
     },
     {
       "id": "t-337",
@@ -3258,7 +3437,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": "ini-010"
     },
     {
       "id": "t-338",
@@ -3269,7 +3449,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-339",
@@ -3280,7 +3461,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": "ini-009"
     },
     {
       "id": "t-340",
@@ -3291,7 +3473,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": "ini-012"
     },
     {
       "id": "t-341",
@@ -3302,7 +3485,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": "ini-009"
     },
     {
       "id": "t-342",
@@ -3313,7 +3497,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": "ini-009"
     },
     {
       "id": "t-343",
@@ -3324,7 +3509,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": "ini-012"
     },
     {
       "id": "t-344",
@@ -3335,7 +3521,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-345",
@@ -3346,7 +3533,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": "ini-012"
     },
     {
       "id": "t-346",
@@ -3357,7 +3545,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-347",
@@ -3368,7 +3557,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": "ini-013"
     },
     {
       "id": "t-348",
@@ -3379,7 +3569,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-349",
@@ -3390,7 +3581,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-350",
@@ -3401,7 +3593,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-351",
@@ -3412,7 +3605,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-352",
@@ -3423,7 +3617,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": "ini-009"
     },
     {
       "id": "t-353",
@@ -3434,7 +3629,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-354",
@@ -3445,7 +3641,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": "ini-010"
     },
     {
       "id": "t-355",
@@ -3456,7 +3653,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": "ini-010"
     },
     {
       "id": "t-356",
@@ -3467,7 +3665,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": "ini-013"
     },
     {
       "id": "t-357",
@@ -3478,7 +3677,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": "ini-010"
     },
     {
       "id": "t-358",
@@ -3489,7 +3689,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-359",
@@ -3500,7 +3701,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-360",
@@ -3511,7 +3713,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-361",
@@ -3522,7 +3725,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": null
+      "assigned_forge": null,
+      "initiative_id": null
     },
     {
       "id": "t-362",
@@ -4146,7 +4350,8 @@
       ],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": "forge-anneal"
+      "assigned_forge": "forge-anneal",
+      "initiative_id": "ini-019"
     },
     {
       "id": "t-413",
@@ -4157,7 +4362,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": "forge-temper"
+      "assigned_forge": "forge-temper",
+      "initiative_id": null
     },
     {
       "id": "t-414",
@@ -4168,7 +4374,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": "forge-quench"
+      "assigned_forge": "forge-quench",
+      "initiative_id": null
     },
     {
       "id": "t-416",
@@ -4179,7 +4386,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": "forge-temper"
+      "assigned_forge": "forge-temper",
+      "initiative_id": null
     },
     {
       "id": "t-417",
@@ -4202,7 +4410,8 @@
       "blocked_by": [],
       "human_priority": null,
       "priority_reason": null,
-      "assigned_forge": "forge-anneal"
+      "assigned_forge": "forge-anneal",
+      "initiative_id": null
     },
     {
       "id": "t-419",
@@ -4472,7 +4681,7 @@
       "id": "t-441",
       "stage": "implementation",
       "desc": "Multi-forge Poker \u2014 Task 2/4 (Marshal constraint walk, ini-018). Rewrite initiative-selection portion of Marshal's dispatch (today's Priority Rule #3 + code behind smithy queue-pop --forge / smithy dispatch-next). For each idle Forge, walk initiatives by rank: skip if parallelism=serial AND another in-flight task from this ini; skip if affinity non-empty AND current Forge not in list AND any listed forge idle; skip if parallelism=serial AND touches overlaps in-flight task touches; else dispatch top-priority unblocked task. Tests: 3 parallel inis + 3 idle forges \u2192 all dispatch; serial ini only one in-flight; affinity preference + fallback; touches collision serializes across inis. Update personas/marshal/CLAUDE.md Priority Rule #3. Depends on t-440. Source: plans/multi-forge-poker-plan.md \u00a7Task2. Est 2 heats.",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 1,
       "blocked_by": [
         "t-440"
@@ -4486,7 +4695,7 @@
       "id": "t-442",
       "stage": "implementation",
       "desc": "Multi-forge Poker \u2014 Task 3/4 (Assembly back-pressure, ini-018). In Marshal's dispatch entry points (queue-pop, set-next-tasks), add pre-flight: depth = count_lines(assembly_queue_path(root)); n_forges = len(parallel.forges); if depth >= 2*max(1,n_forges): refuse with reason 'assembly-queue backpressure (depth=N)'. Include skip reason in nudge to Forge so operator sees why no dispatch. Tests: depth<2N dispatches; depth==2N refuses with 'backpressure' in reason; depth>2N same. Patrol check #9 still runs independently. Depends on t-440. Source: plans/multi-forge-poker-plan.md \u00a7Task3. Est 1 heat.",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 1,
       "blocked_by": [
         "t-440"
@@ -4500,7 +4709,7 @@
       "id": "t-443",
       "stage": "implementation",
       "desc": "Multi-forge Poker \u2014 Task 4/4 (Priority Poker UI, ini-018). Extend initiative card in ui-priority-poker/app.py with three advisory fields: parallelism chip (toggle parallel|serial, green=parallel/amber=serial), affinity chip (editable comma-separated forge-id list), touches chip (editable path-glob list). Drag-to-rank unchanged. Unset cards show 'parallel \u00b7 any forge \u00b7 no contention' dim text. Tests: loaded initiative with all three shows chips; POST persists; drag-to-rank works after chip edits; Playwright smoke: set parallelism=serial, save, reload \u2192 chip color flips. Depends on t-440. Source: plans/multi-forge-poker-plan.md \u00a7Task4. Est 1-2 heats.",
-      "status": "in_progress",
+      "status": "submitted",
       "priority": 1,
       "blocked_by": [
         "t-440"
@@ -4540,13 +4749,13 @@
       "id": "t-446",
       "stage": "planning",
       "desc": "ini-019 P1: Design spec for the three surfaces. (a) smithy report CLI \u2014 output format, arg surface, replay-at-heat flag. (b) Bellows Forge Ops view \u2014 wireframes for 5 panels (rig strip, initiatives, drill-down, persona heatmap, Issues). (c) L2 time-series JSON schema. Output: plans/ini-019-surfaces-plan.md.",
-      "status": "submitted",
+      "status": "complete",
       "priority": 2,
       "blocked_by": [
         "t-444"
       ],
-      "human_priority": "p1",
-      "priority_reason": "ini-019 design gate; must follow R1 inventory",
+      "human_priority": null,
+      "priority_reason": null,
       "assigned_forge": "forge-anneal",
       "initiative_id": "ini-019"
     },
@@ -4651,8 +4860,32 @@
       "blocked_by": [],
       "human_priority": "p1",
       "priority_reason": "trust-in-record bug; drifting budget undermines every downstream metric (ini-019 depends on this being fixed)",
-      "assigned_forge": null,
+      "assigned_forge": "forge-temper",
       "initiative_id": "ini-019"
+    },
+    {
+      "id": "t-455",
+      "stage": "implementation",
+      "desc": "BLOCKER \u2014 fix _do_assembly_reject TypeError. Location: smithy/smithy/cli.py:826-827. Code: hp = task.get(\"human_priority\") or 0; task[\"human_priority\"] = hp + 5. Fails when human_priority is a string like \"p1\"/\"p2\" (which Anvil started assigning on new tasks). Fix: normalize human_priority in one place \u2014 accept int, \"N\", or \"pN\" forms; store as int internally; raise TypeError fixed. Add tests: (a) integer input, (b) \"p1\" string input, (c) None input, (d) assembly-reject bumps priority correctly for each form. Check all other callsites that read/write human_priority and align them. Root cause note: Anvil introduced \"p1\"/\"p2\" strings on t-444..t-454; pre-existing queue used ints. This is the collision.",
+      "status": "pending",
+      "priority": 0,
+      "blocked_by": [],
+      "human_priority": 0,
+      "priority_reason": "BLOCKER: Assembly merge loop halted; stuck queue [t-445,t-443,t-431]",
+      "assigned_forge": null,
+      "initiative_id": "ini-018"
+    },
+    {
+      "id": "t-456",
+      "stage": "implementation",
+      "desc": "BLOCKER \u2014 fix rebase_forge_branch wrong-branch bug. Location: smithy/smithy/assembly.py:40-59. Function rebases whatever branch is CURRENTLY checked out in the Forge worktree \u2014 not the per-task branch Assembly was asked to merge. Fails with \"unstaged changes\" when Forge has moved on to a new task. Fix: rebase_forge_branch must take task_id, explicitly git checkout <forge-id>/<task-id> in the worktree first, then rebase. Handle already-checked-out case idempotently. If worktree has unstaged/untracked changes blocking checkout, stash-push with a sentinel label, checkout+rebase, then decide policy (stash-pop only if still relevant or document that the Forge must resume its prior branch). Update all callers (cli.py assembly_tick) to pass task_id. Tests: (a) Forge on target branch, (b) Forge on different branch, clean worktree, (c) Forge on different branch, dirty worktree.",
+      "status": "pending",
+      "priority": 0,
+      "blocked_by": [],
+      "human_priority": 0,
+      "priority_reason": "BLOCKER: Assembly merge loop halted when Forge moved on between submit and merge",
+      "assigned_forge": null,
+      "initiative_id": "ini-018"
     }
   ],
   "ideas": [
@@ -4699,7 +4932,7 @@
       "description": "Run multiple Forge workers concurrently via per-Forge git worktrees. Dedicated Assembly teammate handles merge queue integration (conflicts, test-on-integrate, merge ordering). Unlocks parallelism (Marshal dispatches N heats simultaneously) and enforces branch hygiene. Incremental: N=2 proof before N=3+.",
       "status": "approved",
       "budget_cap": null,
-      "heats_used": 41,
+      "heats_used": 42,
       "viewed_at": "2026-04-18T09:06:15Z",
       "rank": 1,
       "parallelism": "parallel",
@@ -4743,7 +4976,10 @@
       "budget_cap": 15,
       "heats_used": 0,
       "viewed_at": null,
-      "rank": 4
+      "rank": 4,
+      "parallelism": "parallel",
+      "affinity": [],
+      "touches": []
     },
     {
       "id": "ini-016",
@@ -5018,12 +5254,13 @@
     }
   ],
   "next_tasks": [
-    "t-442",
+    "t-454",
     "t-448",
     "t-449",
-    "t-441"
+    "t-441",
+    "t-431"
   ],
-  "schema_version": 1,
+  "schema_version": 2,
   "intents": [
     {
       "id": "intent-project",
@@ -5087,7 +5324,7 @@
     ],
     "assembly": {
       "enabled": true,
-      "last_heartbeat": "2026-04-18T19:12:51+00:00"
+      "last_heartbeat": "2026-04-18T19:23:57+00:00"
     },
     "forge_roster": [
       "forge-quench",
