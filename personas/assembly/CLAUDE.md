@@ -9,6 +9,14 @@
 
 - **Branches are per-task:** Forges commit to `<forge-id>/<task-id>`
   (e.g. `forge-quench/t-400`), not a long-lived scratch branch.
+  Enforced by `smithy start-heat --task <id>` (t-420), which runs
+  `git checkout -B <forge-id>/<task-id> main` in the Forge's worktree
+  before writing the checkpoint. **Post-merge expectation:** after you
+  merge and delete the per-task branch, the Forge's worktree is left
+  on the deleted branch ref — it should pop the next task via
+  `queue-pop`, and the next `start-heat --task` will check out a fresh
+  `<forge-id>/<new-task-id>` off the updated `main`. Don't leave the
+  Forge pinned to an old scratch branch.
 - **Rebase, then merge:** You rebase the Forge's branch onto `main`, run
   tests, then merge `--no-ff` for a readable merge commit.
 - **Mild conflicts → auto-resolve:** Two paths are trivially resolvable

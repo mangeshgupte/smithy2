@@ -10,7 +10,7 @@ from .state import (
     find_project_root, load_state, save_state, validate_state,
     append_worklog, write_checkpoint, delete_checkpoint,
     forge_checkpoint_path, DEFAULT_FORGE_ID,
-    primary_forge_id, detect_forge_from_cwd,
+    primary_forge_id, detect_forge_from_cwd, main_repo_root,
     VALID_STAGES, VALID_SIGNALS, VALID_OUTCOMES,
 )
 from .task_detail import scheduler_key
@@ -97,6 +97,56 @@ def _build_priority_reason(state: dict, task: dict) -> str:
     return reason[:40]
 
 
+def _ensure_task_branch(root, forge_id, task_id):
+    """t-420: checkout `<forge_id>/<task_id>` off main if not already there.
+
+    Returns a dict describing the change (or the already-on-branch state)
+    so start-heat can include it in its JSON output. Exits the process
+    with a clear error when the worktree has uncommitted changes — we
+    never silently reset a Forge's in-progress work; the operator commits
+    or passes --reuse-scratch.
+    """
+    import subprocess
+    expected = f"{forge_id}/{task_id}"
+    cur = subprocess.run(
+        ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+        cwd=str(root), capture_output=True, text=True,
+    ).stdout.strip()
+    if cur == expected:
+        return {"branch": expected, "created": False, "from": cur}
+
+    # Refuse to move if the worktree has uncommitted changes — that's
+    # someone's in-progress task work and the switch would either abort
+    # or clobber it.
+    dirty = subprocess.run(
+        ["git", "status", "--porcelain"],
+        cwd=str(root), capture_output=True, text=True,
+    ).stdout.strip()
+    if dirty:
+        _output({
+            "error": "worktree has uncommitted changes — commit them or "
+                     "pass --reuse-scratch before start-heat",
+            "current_branch": cur,
+            "would_switch_to": expected,
+            "dirty_files": [line[3:] for line in dirty.splitlines()][:20],
+        })
+        sys.exit(1)
+
+    r = subprocess.run(
+        ["git", "checkout", "-B", expected, "main"],
+        cwd=str(root), capture_output=True, text=True,
+    )
+    if r.returncode != 0:
+        _output({
+            "error": f"git checkout -B {expected} main failed",
+            "stderr": r.stderr.strip(),
+            "hint": "ensure main is fast-forwardable here "
+                    "(git fetch origin main), or pass --reuse-scratch",
+        })
+        sys.exit(1)
+    return {"branch": expected, "created": True, "from": cur}
+
+
 def _output(data: dict):
     """Print JSON to stdout (for LLM consumption)."""
     click.echo(json.dumps(data, indent=2))
@@ -124,8 +174,12 @@ def cli(ctx, project_dir):
 @click.option("--task", "task_id", default=None, help="Task ID to work on")
 @click.option("--forge", "forge_id", default=None,
               help="t-409 H1: Forge id (defaults to cwd's worktree; primary if cwd is main).")
+@click.option("--reuse-scratch", "reuse_scratch", is_flag=True, default=False,
+              help="t-420: skip the per-task branch checkout and commit on "
+                   "the worktree's current branch. Escape hatch for the "
+                   "rare case where stacking commits on scratch is the goal.")
 @click.pass_context
-def start_heat(ctx, stage, task_id, forge_id):
+def start_heat(ctx, stage, task_id, forge_id, reuse_scratch):
     """Start a new heat. Sets task to in_progress, writes checkpoint."""
     root = ctx.obj["root"]
     state = load_state(root)
@@ -152,6 +206,18 @@ def start_heat(ctx, stage, task_id, forge_id):
 
     heat_number = budget["used"] + 1
 
+    # t-420: per-task branch enforcement. The t-399 design says each task
+    # gets its own `<forge-id>/<task-id>` branch off the latest main, so
+    # Assembly can rebase-merge-delete cleanly and stacked scratches don't
+    # force Anvil into manual ff gymnastics. Enforce it here (the human-
+    # authored CLAUDE.md step was easy to forget). Skip when we're on the
+    # main repo (smoke runs) or when caller passed --reuse-scratch.
+    branch_change = None
+    if task_id and not reuse_scratch:
+        main_root = main_repo_root(root)
+        if root.resolve() != main_root.resolve():
+            branch_change = _ensure_task_branch(root, forge_id, task_id)
+
     # Set task to in_progress if specified
     task_desc = None
     if task_id:
@@ -171,14 +237,17 @@ def start_heat(ctx, stage, task_id, forge_id):
     write_checkpoint(root, heat_number, stage, task_id or "generated",
                      forge_id=forge_id)
 
-    _output({
+    result = {
         "heat": heat_number,
         "stage": stage,
         "task_id": task_id,
         "task_desc": task_desc,
         "forge_id": forge_id,
         "budget_remaining": budget["total_heats"] - heat_number,
-    })
+    }
+    if branch_change:
+        result["branch"] = branch_change
+    _output(result)
     _err(f"Heat {heat_number} [{stage}] started as {forge_id}"
          + (f" — {task_desc}" if task_desc else ""))
 

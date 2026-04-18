@@ -46,7 +46,7 @@ Queued nudges can contain task assignments, re-prioritization signals, or status
 ### Step 2 — Execute (~4 minutes)
 
 ```bash
-smithy start-heat <stage>    # Begins heat, writes checkpoint, marks task in_progress
+smithy start-heat <stage> --task <task-id>   # Writes checkpoint, marks task in_progress, checks out <forge-id>/<task-id>
 ```
 
 **Parallel Forges (t-409):** `start-heat` / `end-heat` auto-detect which Forge
@@ -55,14 +55,19 @@ needed. Primary keeps `.forge-checkpoint.json`; non-primary Forges get
 `.forge-checkpoint-<id>.json` at the main repo root so Assembly/patrol
 don't have to hop worktrees.
 
-**Per-task branches (t-399):** Before starting a task, create a branch
-`<forge-id>/<task-id>` off the latest `main` and check it out in your
-worktree (`git checkout -B forge-quench/t-400 main`). Commit every heat
-on that branch. When the task is complete, `end-heat` enqueues the
-branch for Assembly, which rebases it onto `main`, runs tests, and
-merges. On severe conflicts Assembly rejects the task back to Marshal
-(not to you directly). `worklog.tsv` gains a trailing `forge_id`
-column for attribution.
+**Per-task branches (t-399, enforced t-420):** Each task lives on its own
+`<forge-id>/<task-id>` branch off the latest `main`, so Assembly can
+rebase-merge-delete cleanly and stacked scratches don't force ff
+gymnastics. `smithy start-heat --task <id>` *automatically* runs
+`git checkout -B <forge-id>/<task-id> main` before writing the
+checkpoint — if your worktree has uncommitted changes, start-heat
+refuses; commit them or pass `--reuse-scratch` to stay on the current
+branch (rare; only when stacking onto scratch is truly the goal).
+Commit every heat on that branch. When you finish, `end-heat` enqueues
+the branch for Assembly, which rebases onto `main`, runs tests, merges,
+and deletes the per-task branch. On severe conflicts Assembly rejects
+back to Marshal (not to you directly). `worklog.tsv` gains a trailing
+`forge_id` column for attribution.
 
 Do the work, one task per heat. Stay focused:
 
