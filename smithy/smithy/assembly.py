@@ -99,7 +99,9 @@ def run_tests_in_worktree(project_dir: Path, forge_id: str,
 
 def ff_merge_forge_branch(project_dir: Path, forge_id: str,
                           task_id: str, base: str = "main",
-                          delete_branch: bool = True) -> dict:
+                          delete_branch: bool = True,
+                          push_remote: str = "origin",
+                          push_timeout_s: int = 30) -> dict:
     """Merge `<forge-id>/<task-id>` into `base` in project_dir (--no-ff).
 
     After a successful rebase the branch is linear on top of base, so this
@@ -109,6 +111,14 @@ def ff_merge_forge_branch(project_dir: Path, forge_id: str,
     On success, by default also deletes the per-task branch (t-411) and
     returns the deletion result under key "deleted". Pass
     ``delete_branch=False`` to skip cleanup (tests, dry-runs).
+
+    t-438: after a successful merge this also fires a best-effort
+    ``git push <push_remote> <base>`` so origin doesn't drift (observed
+    144-commit unpushed backlog on 2026-04-18). The push is
+    advisory — any failure (network, auth, non-fast-forward) logs to
+    the returned dict under ``push`` and is picked up by the caller /
+    assembly-log, but NEVER fails the merge itself. Pass
+    ``push_remote=""`` to disable (tests).
     """
     branch = branch_name(forge_id, task_id)
     r = _git(project_dir, "checkout", base)
@@ -125,6 +135,31 @@ def ff_merge_forge_branch(project_dir: Path, forge_id: str,
         result["deleted"] = delete_forge_branch(
             project_dir, forge_id, task_id, force=False,
         )
+    # t-438: advisory push. Outcome lands under `result["push"]` — the
+    # assembly-tick caller forwards it to assembly-log.jsonl and
+    # rig-events.jsonl for observability.
+    if push_remote:
+        try:
+            pr = subprocess.run(
+                ["git", "push", push_remote, base],
+                cwd=str(project_dir),
+                capture_output=True, text=True, timeout=push_timeout_s,
+            )
+            if pr.returncode == 0:
+                result["push"] = {"status": "ok", "remote": push_remote,
+                                  "branch": base}
+            else:
+                reason = (pr.stderr or pr.stdout or "").strip().splitlines()
+                result["push"] = {"status": "failed", "remote": push_remote,
+                                  "branch": base,
+                                  "reason": (reason[-1] if reason else "")[:200]}
+        except subprocess.TimeoutExpired:
+            result["push"] = {"status": "failed", "remote": push_remote,
+                              "branch": base,
+                              "reason": f"timeout after {push_timeout_s}s"}
+        except Exception as exc:
+            result["push"] = {"status": "failed", "remote": push_remote,
+                              "branch": base, "reason": str(exc)[:200]}
     return result
 
 
