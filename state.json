@@ -4352,7 +4352,7 @@
       "id": "t-431",
       "stage": "implementation",
       "desc": "smithy task-tree CLI: render the task DAG. Show all open tasks (status in {open, pending, in_progress, submitted}) grouped by initiative (use ini-XXX rank for initiative ordering), with blocked_by edges drawn as ASCII tree (\u251c\u2500 \u2514\u2500). For each task: id, stage emoji (\ud83d\udd2cresearch \ud83d\udcddplanning \ud83d\udd27impl \u2705testing \u270f\ufe0fediting \ud83d\udce3marketing), status emoji, priority badge, assigned_forge if set. Highlight: tasks whose blocked_by is satisfied + can be dispatched (\u2713), tasks with cycles (\u26a0). Flags: --initiative <ini-id> to filter, --json for machine output, --stuck to show only tasks blocked >24h. WHY: with N=3 forges + dependency chains, the queue is no longer linear; humans + Marshal need a visualization. Useful for hardening sprint observability. Tests: 3 fixture initiatives with cross-deps, assert ASCII output structure + cycle detection. Anvil-filed 2026-04-17 for hardening sprint v2.",
-      "status": "in_progress",
+      "status": "pending",
       "priority": 2,
       "blocked_by": [],
       "initiative_id": "ini-018",
@@ -4460,7 +4460,7 @@
       "id": "t-440",
       "stage": "implementation",
       "desc": "Multi-forge Poker \u2014 Task 1/4 (schema + defaults, ini-018). Add three fields to each state.initiatives[] entry via _apply_steerability_defaults in smithy/smithy/state.py: parallelism (serial|parallel, default parallel), affinity ([forge-id], default []), touches ([path-glob], default []). Extend smithy add-initiative / edit-initiative CLI with --parallelism, --affinity, --touches flags. Tests: existing state.json loads + round-trips unchanged; new initiatives default correctly; invalid parallelism rejected at add-time. BLOCKS Tasks 2/3/4 of multi-forge Poker. Source: plans/multi-forge-poker-plan.md \u00a7Task1. Est 1 heat.",
-      "status": "in_progress",
+      "status": "pending",
       "priority": 0,
       "blocked_by": [],
       "initiative_id": "ini-018",
@@ -4549,6 +4549,20 @@
       "priority_reason": "ini-019 design gate; must follow R1 inventory",
       "assigned_forge": null,
       "initiative_id": "ini-019"
+    },
+    {
+      "id": "t-447",
+      "stage": "implementation",
+      "desc": "ini-019 I0: Retro-populate initiative_id for all existing state.queue tasks (~400 entries). Cross-reference each task against initiatives list using: task desc keywords, worklog.tsv notes, merge-commit messages, ini description overlap, and heat-proximity to ini approval window. Produce a proposed mapping as a reviewable dry-run diff first (plans/ini-019-retro-map.md), then apply in a single state.json edit. Flag ambiguous cases (multiple plausible ini) rather than guess. Tests: every mapped task has a valid ini_id from initiatives list.",
+      "status": "pending",
+      "priority": 2,
+      "blocked_by": [
+        "t-445"
+      ],
+      "human_priority": "p1",
+      "priority_reason": "ini-019 backfill; once schema lands, without this retro-pop no historical metrics work",
+      "assigned_forge": null,
+      "initiative_id": "ini-019"
     }
   ],
   "ideas": [
@@ -4597,7 +4611,10 @@
       "budget_cap": null,
       "heats_used": 40,
       "viewed_at": "2026-04-18T09:06:15Z",
-      "rank": 1
+      "rank": 1,
+      "parallelism": "parallel",
+      "affinity": [],
+      "touches": []
     },
     {
       "id": "ini-019",
@@ -4608,7 +4625,10 @@
       "budget_cap": 25,
       "heats_used": 0,
       "viewed_at": null,
-      "rank": 2
+      "rank": 2,
+      "parallelism": "parallel",
+      "affinity": [],
+      "touches": []
     },
     {
       "id": "ini-016",
@@ -4620,7 +4640,10 @@
       "heats_used": 15,
       "viewed_at": "2026-04-18T09:06:18Z",
       "rank": 2,
-      "intent": "Give the human a way to ensure that individual task assignments conform to the high-level intent the human has, and gives a way to identify and correct drift."
+      "intent": "Give the human a way to ensure that individual task assignments conform to the high-level intent the human has, and gives a way to identify and correct drift.",
+      "parallelism": "parallel",
+      "affinity": [],
+      "touches": []
     },
     {
       "id": "ini-017",
@@ -4631,7 +4654,10 @@
       "budget_cap": null,
       "heats_used": 2,
       "viewed_at": "2026-04-18T03:47:11Z",
-      "rank": 3
+      "rank": 3,
+      "parallelism": "parallel",
+      "affinity": [],
+      "touches": []
     },
     {
       "id": "ini-009",
@@ -4644,7 +4670,10 @@
       "rank": 4,
       "planned_start": 635,
       "planned_end": 645,
-      "viewed_at": "2026-04-13T04:13:36Z"
+      "viewed_at": "2026-04-13T04:13:36Z",
+      "parallelism": "parallel",
+      "affinity": [],
+      "touches": []
     },
     {
       "id": "ini-010",
@@ -4657,7 +4686,10 @@
       "rank": 5,
       "planned_start": 645,
       "planned_end": 655,
-      "viewed_at": "2026-04-12T21:07:16Z"
+      "viewed_at": "2026-04-12T21:07:16Z",
+      "parallelism": "parallel",
+      "affinity": [],
+      "touches": []
     },
     {
       "id": "ini-015",
@@ -4668,7 +4700,10 @@
       "budget_cap": 25,
       "heats_used": 24,
       "viewed_at": "2026-04-12T21:07:19Z",
-      "rank": 6
+      "rank": 6,
+      "parallelism": "parallel",
+      "affinity": [],
+      "touches": []
     },
     {
       "id": "ini-014",
@@ -4681,7 +4716,10 @@
       "planned_start": 640,
       "planned_end": 655,
       "rank": 7,
-      "viewed_at": "2026-04-12T20:07:18Z"
+      "viewed_at": "2026-04-12T20:07:18Z",
+      "parallelism": "parallel",
+      "affinity": [],
+      "touches": []
     },
     {
       "id": "ini-012",
@@ -4695,7 +4733,10 @@
       "planned_start": 650,
       "planned_end": 665,
       "viewed_at": null,
-      "intent": "Play with different UIs which would inform a good way of adopting steerability."
+      "intent": "Play with different UIs which would inform a good way of adopting steerability.",
+      "parallelism": "parallel",
+      "affinity": [],
+      "touches": []
     },
     {
       "id": "ini-001",
@@ -4706,7 +4747,10 @@
       "budget_cap": null,
       "heats_used": 0,
       "rank": 9,
-      "viewed_at": null
+      "viewed_at": null,
+      "parallelism": "parallel",
+      "affinity": [],
+      "touches": []
     },
     {
       "id": "ini-013",
@@ -4719,7 +4763,10 @@
       "rank": 9,
       "planned_start": 645,
       "planned_end": 665,
-      "viewed_at": null
+      "viewed_at": null,
+      "parallelism": "parallel",
+      "affinity": [],
+      "touches": []
     },
     {
       "id": "ini-011",
@@ -4732,7 +4779,10 @@
       "rank": 10,
       "planned_start": 650,
       "planned_end": 665,
-      "viewed_at": "2026-04-12T19:52:52Z"
+      "viewed_at": "2026-04-12T19:52:52Z",
+      "parallelism": "parallel",
+      "affinity": [],
+      "touches": []
     },
     {
       "id": "ini-002",
@@ -4742,7 +4792,10 @@
       "status": "rejected",
       "budget_cap": 8,
       "heats_used": 0,
-      "viewed_at": null
+      "viewed_at": null,
+      "parallelism": "parallel",
+      "affinity": [],
+      "touches": []
     },
     {
       "id": "ini-003",
@@ -4752,7 +4805,10 @@
       "status": "rejected",
       "budget_cap": 8,
       "heats_used": 0,
-      "viewed_at": null
+      "viewed_at": null,
+      "parallelism": "parallel",
+      "affinity": [],
+      "touches": []
     },
     {
       "id": "ini-004",
@@ -4762,7 +4818,10 @@
       "status": "rejected",
       "budget_cap": 8,
       "heats_used": 0,
-      "viewed_at": null
+      "viewed_at": null,
+      "parallelism": "parallel",
+      "affinity": [],
+      "touches": []
     },
     {
       "id": "ini-005",
@@ -4772,7 +4831,10 @@
       "status": "rejected",
       "budget_cap": 10,
       "heats_used": 0,
-      "viewed_at": null
+      "viewed_at": null,
+      "parallelism": "parallel",
+      "affinity": [],
+      "touches": []
     },
     {
       "id": "ini-006",
@@ -4782,7 +4844,10 @@
       "status": "rejected",
       "budget_cap": 15,
       "heats_used": 0,
-      "viewed_at": null
+      "viewed_at": null,
+      "parallelism": "parallel",
+      "affinity": [],
+      "touches": []
     },
     {
       "id": "ini-007",
@@ -4792,7 +4857,10 @@
       "status": "rejected",
       "budget_cap": 8,
       "heats_used": 0,
-      "viewed_at": null
+      "viewed_at": null,
+      "parallelism": "parallel",
+      "affinity": [],
+      "touches": []
     },
     {
       "id": "ini-008",
@@ -4802,7 +4870,10 @@
       "status": "rejected",
       "budget_cap": 12,
       "heats_used": 0,
-      "viewed_at": null
+      "viewed_at": null,
+      "parallelism": "parallel",
+      "affinity": [],
+      "touches": []
     }
   ],
   "feedback_cursor": 26,
