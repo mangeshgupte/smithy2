@@ -2338,15 +2338,31 @@ def patrol(ctx, fix):
                 state["budget"]["used"] = worklog_heats
                 fixes.append(f"Set budget.used to {worklog_heats}")
 
-    # 2. Check for tasks stuck in_progress (no active checkpoint)
+    # 2. Check for tasks stuck in_progress (no active checkpoint).
+    # t-437: parallel-Forges aware — each task's assigned_forge must
+    # have ITS OWN per-Forge checkpoint on disk. The pre-t-437 check
+    # only looked at the primary's `.forge-checkpoint.json`, so a task
+    # pinned to forge-temper would appear "live" (because the primary
+    # had a checkpoint for ITS task) while its own forge-temper
+    # checkpoint was absent — and the orphan leaked across Marshal's
+    # re-prioritize cycles (observed t-416 / t-433 on 2026-04-18).
     cp_path = root / ".forge-checkpoint.json"
-    has_checkpoint = cp_path.exists()
+    has_checkpoint = cp_path.exists()  # kept for check #4 below.
+    from .state import primary_forge_id as _pfi
+    primary = _pfi(root)
     for task in state.get("queue", []):
-        if task["status"] == "in_progress" and not has_checkpoint:
-            issues.append(f"Task {task['id']} is in_progress but no checkpoint exists")
+        if task["status"] != "in_progress":
+            continue
+        fid = task.get("assigned_forge") or primary
+        cp = forge_checkpoint_path(root, fid)
+        if not cp.exists():
+            issues.append(
+                f"Task {task['id']} is in_progress on {fid} but "
+                f"{cp.name} is missing"
+            )
             if fix:
                 task["status"] = "pending"
-                fixes.append(f"Reset {task['id']} to pending")
+                fixes.append(f"Reset {task['id']} to pending (orphan reap)")
 
     # 3. Check stage heats sum approximately matches budget.used
     stage_sum = sum(s.get("heats", 0) for s in state["stages"].values())
