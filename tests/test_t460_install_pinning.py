@@ -25,6 +25,24 @@ from unittest.mock import patch
 
 import pytest
 
+# t-460 follow-up: prepend this branch's smithy/ to sys.path BEFORE
+# importing smithy.cli so the test sees the symbols it actually exercises
+# (e.g. `_rebind_smithy_install`, which only exists on this branch until
+# the merge lands). Without this, when the global editable install points
+# at main, `from smithy.cli import _rebind_smithy_install` fails with
+# ImportError at test collection — which is exactly the reject Assembly
+# hit on the first attempt at this task. Same pattern as
+# `tests/test_t455_normalize_hp.py`. We also drop the cached `smithy.cli`
+# / `smithy.state` modules (and only those — leaving `smithy` and
+# `smithy.smithy` intact so other tests that resolve via the outer-package
+# layout aren't disturbed) so that a sibling test which imported the stale
+# main copy first doesn't shadow our prepended path.
+sys.path.insert(0, str(Path(__file__).parent.parent / "smithy"))
+from smithy import cli as _smithy_cli
+from smithy.state import VALID_STAGES
+_rebind_smithy_install = _smithy_cli._rebind_smithy_install
+_do_assembly_merge = _smithy_cli._do_assembly_merge
+
 
 # -- Part (a): rebind hook --------------------------------------------------
 
@@ -53,7 +71,6 @@ def _last_sha(repo):
 
 class TestRebindHook:
     def test_skipped_when_env_set(self, main_repo_with_smithy, monkeypatch):
-        from smithy.cli import _rebind_smithy_install
         monkeypatch.setenv("SMITHY_SKIP_INSTALL_REBIND", "1")
         sha = _last_sha(main_repo_with_smithy)
         result = _rebind_smithy_install(main_repo_with_smithy, sha)
@@ -62,7 +79,6 @@ class TestRebindHook:
 
     def test_skipped_when_merge_touched_no_smithy_files(
             self, main_repo_with_smithy, monkeypatch):
-        from smithy.cli import _rebind_smithy_install
         monkeypatch.delenv("SMITHY_SKIP_INSTALL_REBIND", raising=False)
         # Add a non-smithy file and commit
         (main_repo_with_smithy / "README.md").write_text("hi")
@@ -77,7 +93,6 @@ class TestRebindHook:
         assert "didn't touch smithy" in result["reason"]
 
     def test_skipped_when_no_main_smithy_pyproject(self, tmp_path, monkeypatch):
-        from smithy.cli import _rebind_smithy_install
         monkeypatch.delenv("SMITHY_SKIP_INSTALL_REBIND", raising=False)
         # A repo with no smithy/pyproject.toml
         subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
@@ -93,7 +108,7 @@ class TestRebindHook:
 
     def test_pip_failure_surfaced_not_raised(
             self, main_repo_with_smithy, monkeypatch):
-        from smithy import cli
+        cli = _smithy_cli
         monkeypatch.delenv("SMITHY_SKIP_INSTALL_REBIND", raising=False)
         # Make smithy/ dirty so the diff names a smithy/ path
         (main_repo_with_smithy / "smithy" / "x.py").write_text("# x")
@@ -128,8 +143,7 @@ class TestAssemblyMergeIntegratesRebind:
 
     def test_merge_payload_includes_rebind_block(
             self, main_repo_with_smithy, monkeypatch):
-        from smithy import cli
-        from smithy.state import VALID_STAGES, save_state
+        cli = _smithy_cli
         monkeypatch.setenv("SMITHY_SKIP_INSTALL_REBIND", "1")
         # Seed a project state with one submitted task
         state = {
