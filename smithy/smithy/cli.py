@@ -952,6 +952,19 @@ def assembly_tick_cmd(ctx, base, dry_run, tests_cmd):
     # 4. Record + flip task status
     _do_assembly_merge(root, task_id, mr["sha"], resolution=False)
     _log(root, forge_id, task_id, "merged", mr["sha"])
+    # t-438: record the advisory push outcome alongside the merge
+    # audit row. Best-effort — ff_merge_forge_branch already made the
+    # attempt and never throws; we just log / telemeter it.
+    push = mr.get("push")
+    if push:
+        _log(root, forge_id, task_id,
+             f"push_{push['status']}",
+             push.get("reason", push.get("branch", "")))
+        _emit_rig_event(root, f"assembly_push_{push['status']}",
+                        actor="assembly", forge_id=forge_id,
+                        task_id=task_id, branch=push.get("branch"),
+                        remote=push.get("remote"),
+                        reason=push.get("reason"))
     # Nudge Marshal: a task just merged, graph may have opened up.
     # t-424: fire BOTH a durable file-queue row and a live tmux event
     # (see _do_assembly_reject above for the reasoning).
@@ -965,7 +978,7 @@ def assembly_tick_cmd(ctx, base, dry_run, tests_cmd):
                     branch=mr["branch"], sha=mr["sha"],
                     latency_ms=_tick_latency_ms())
     _output({"status": "merged", "task_id": task_id, "sha": mr["sha"],
-             "branch": mr["branch"]})
+             "branch": mr["branch"], "push": push})
 
 
 def _log(root, forge_id, task_id, outcome, detail):
@@ -2596,6 +2609,32 @@ def patrol(ctx, fix):
                     f"@{(entry.get('sha','') or '')[:8]}"
                 )
 
+    # 10. t-438: origin/main drift. Assembly's advisory push is
+    # best-effort — if it fails silently over enough merges, local
+    # main marches ahead of origin and the next disk failure loses
+    # the whole session (observed 2026-04-18: 144 commits unpushed).
+    # Warn at >=5 unpushed commits, red at >=20. No auto-fix — pushing
+    # is a decision, not a repair (may conflict, may need auth, etc.).
+    try:
+        _rv = _sp.run(
+            ["git", "rev-list", "--count", "origin/main..main"],
+            cwd=root, capture_output=True, text=True, check=False,
+        )
+        if _rv.returncode == 0 and _rv.stdout.strip().isdigit():
+            ahead = int(_rv.stdout.strip())
+            if ahead >= 20:
+                issues.append(
+                    f"main is {ahead} commits ahead of origin/main — "
+                    f"push is badly stuck; `git push origin main` now"
+                )
+            elif ahead >= 5:
+                issues.append(
+                    f"main is {ahead} commits ahead of origin/main — "
+                    f"Assembly's advisory push may be failing"
+                )
+    except Exception:
+        pass  # no remote configured, no network — silent skip.
+
     # Save fixes if any
     if fix and fixes:
         save_state(root, state)
@@ -2604,7 +2643,7 @@ def patrol(ctx, fix):
         "issues": issues,
         "fixes": fixes,
         "clean": len(issues) == 0,
-        "checks_run": 9,
+        "checks_run": 10,
         "stuck_forges": sorted(set(stuck_forges)),
     })
     if issues:
