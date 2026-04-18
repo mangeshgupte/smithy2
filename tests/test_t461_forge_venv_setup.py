@@ -17,6 +17,17 @@ import subprocess
 import sys
 from pathlib import Path
 
+# t-461 follow-up: prepend this branch's smithy/ to sys.path BEFORE
+# pytest's collection imports anything from smithy. Matches the pattern
+# in tests/test_t455_normalize_hp.py. Defensive: this test file doesn't
+# import smithy directly, but Assembly's pytest run mixes us with sibling
+# tests that DO `from smithy.cli import ...` at module load. When the
+# global editable install points at main (the post-t-460 rebind state at
+# Assembly merge time), branch-only symbols go missing and collection
+# fails — same self-referential trap that bit t-460. Importing the path
+# early here lands the worktree's smithy in sys.modules first.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "smithy"))
+
 import pytest
 
 
