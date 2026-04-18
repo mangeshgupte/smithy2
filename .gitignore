@@ -3,6 +3,9 @@
 .forge-handoff.json
 .forge-output.log
 
+# t-425: append-only rig telemetry — local to each clone
+rig-events.jsonl
+
 # Local workspace
 .worktrees/
 
