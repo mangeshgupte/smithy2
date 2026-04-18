@@ -2,7 +2,7 @@
   "project": "the-smithy",
   "budget": {
     "total_heats": 1543,
-    "used": 842,
+    "used": 843,
     "started_at": "2026-04-09T00:00:00Z"
   },
   "stages": {
@@ -20,9 +20,9 @@
     },
     "implementation": {
       "target": 0.049,
-      "heats": 392,
+      "heats": 393,
       "progress": 0.98,
-      "value_ema": 0.773
+      "value_ema": 0.796
     },
     "testing": {
       "target": 0.183,
@@ -4941,13 +4941,13 @@
       "id": "t-461",
       "stage": "implementation",
       "desc": "Phase 2: Extend uv-scoped venv pattern to Forges. After t-460 lands Assembly-side venv isolation, each Forge worktree should have its own .venv via uv. smithy commands invoked by the Forge run via uv run (or auto-activated venv). Eliminates the last remaining \"global install\" surface \u2014 Forges running pip install -e in their worktree no longer affects any other pane. Protocol updates: (a) Forge start-up creates its venv if missing, (b) smithy CLI commands work transparently under uv run, (c) CLAUDE.md + loop.md document the per-Forge venv expectation, (d) memory entry project_worktree_editable_installs.md updated or retired. Blocked by t-460 (Assembly needs its venv working first so we can validate the pattern). Requires coordinated update across all Forge panes (staggered, one at a time).",
-      "status": "in_progress",
+      "status": "pending",
       "priority": 1,
       "blocked_by": [
         "t-460"
       ],
-      "human_priority": 1,
-      "priority_reason": "ini-020 phase 2 \u2014 full venv isolation across all agents",
+      "human_priority": 6,
+      "priority_reason": "assembly rejected: rebase error: error: ",
       "assigned_forge": "forge-anneal",
       "initiative_id": "ini-020"
     },
@@ -4967,11 +4967,23 @@
       "id": "t-463",
       "stage": "implementation",
       "desc": "Add Bellows to the tmux rig as a managed tmux window (no pane split needed). Observed 2026-04-18: current running Bellows processes (ports 8001/8003/8004) are stale \u2014 they pre-date the /project/{name}/initiative/{id} routes (bellows/app.py:498) which landed via t-363/t-364 but were never picked up because nobody restarts Bellows on merges touching bellows/. Three separate Bellows processes are running with different titles (Poker, Intent Editor, Timeline) \u2014 unclear how they came to be; lifecycle is unmanaged. Requirements: (a) dedicated tmux window (smithy2:bellows or similar; one window, no pane split) launched at rig startup; (b) runs uvicorn with --reload so bellows/ edits are picked up without manual restart; (c) stable port pinned in config (pick one canonical port, document it); (d) scripts/launch-rig.sh (or whatever starts the rig) includes Bellows; (e) Anvil startup protocol updated: \"expected roster\" check adds a Bellows window; (f) patrol health check: verify the Bellows port is listening and /openapi.json responds; (g) CLAUDE.md + the Anvil IDENTITY.md updated to describe Bellows as a rig member. Side concern to note (not block): the three existing Bellows processes on 8001/8003/8004 may be legacy experiments \u2014 if so, the launcher should kill stale instances before starting the canonical one. Test: kill Bellows, launch rig, verify window appears, verify /project/the-smithy/initiative/ini-020 loads. Protocol principle: any long-running rig service lives in tmux, is lifecycle-managed, patrol-checked.",
-      "status": "pending",
+      "status": "in_progress",
       "priority": 1,
       "blocked_by": [],
       "human_priority": 1,
       "priority_reason": "rig hygiene \u2014 stale Bellows blocks initiative detail page; pattern of un-managed services recurs",
+      "assigned_forge": "forge-anneal",
+      "initiative_id": "ini-018"
+    },
+    {
+      "id": "t-464",
+      "stage": "implementation",
+      "desc": "t-456 follow-up: close the on-target-but-dirty gap in rebase_forge_branch. Current behavior (smithy/smithy/assembly.py:43-115): stash logic only fires inside the \"if not on_target\" branch. When the Forge is already on the per-task branch but the worktree is dirty (e.g., modified state.json from scripts/state-sync.sh, which happens frequently), stash is skipped, then \"git rebase main\" refuses with \"unstaged changes\" and Assembly rejects. Observed 2026-04-18 on t-461 reject. Fix: move the status --porcelain check + stash-push + stash_ref capture OUTSIDE the on_target conditional \u2014 stash unconditionally when dirty, regardless of branch state. Keep the checkout inside the not-on-target branch. Tests: (1) on-target + clean (no stash, no checkout, clean rebase), (2) on-target + dirty (stash, no checkout, rebase, stash_ref reported), (3) different-branch + clean (no stash, checkout, rebase), (4) different-branch + dirty (stash, checkout, rebase, stash_ref reported). Note: this is still a symptom patch \u2014 the real fix is ini-020 (Assembly in its own staging worktree, so Forge worktree dirtiness is irrelevant). Ship this to unblock current drain, ini-020 supersedes it later.",
+      "status": "pending",
+      "priority": 0,
+      "blocked_by": [],
+      "human_priority": 0,
+      "priority_reason": "blocks Assembly drain on any dirty-worktree-on-branch case (common due to state-sync); bandaid until ini-020",
       "assigned_forge": null,
       "initiative_id": "ini-018"
     }
@@ -5048,7 +5060,7 @@
       "description": "Architectural consolidation of Assembly: (1) Assembly owns a dedicated workspace .worktrees/_assembly-staging \u2014 never touches Forge worktrees, eliminating the Assembly-Forge concurrent-write race class. (2) Within that workspace, Assembly maintains a uv-scoped venv (.venv) \u2014 all pip install -e and pytest runs happen inside it, never in the global Python. Structurally eliminates the stale-install hazard (no global install to poison) and the sys.path.insert chicken-and-egg (venv installs whatever branch is staged). (3) Merge-into-staging batch model: Assembly creates/resets staging branch from main, git-merges N pending task branches into it (order-independent for non-overlapping changes), installs current code into venv, runs full test suite ONCE, then ff-merges staging to main on green or bisects to isolate breaker on red. Amortizes test cost across parallel submissions; log2(N) fault isolation. Does NOT solve: MEMORY.md collisions (t-458, per-forge dirs), which are orthogonal to merge strategy. Supersedes ini-018/t-457 (staging-worktree decoupling folded in here), t-460 prior pin+rebind framing (replaced by venv isolation).",
       "status": "approved",
       "budget_cap": 30,
-      "heats_used": 3,
+      "heats_used": 4,
       "viewed_at": "2026-04-18T20:57:35Z",
       "rank": 3,
       "parallelism": "parallel",
@@ -5411,7 +5423,7 @@
     ],
     "assembly": {
       "enabled": true,
-      "last_heartbeat": "2026-04-18T20:58:28+00:00"
+      "last_heartbeat": "2026-04-18T21:02:56+00:00"
     },
     "forge_roster": [
       "forge-quench",
