@@ -1570,6 +1570,55 @@ def set_priority(ctx, task_id, priority):
     sys.exit(1)
 
 
+# t-442 (ini-018 Task 3/4): Assembly-queue back-pressure.
+#
+# Marshal's dispatch path must slow down when Assembly is buried. The
+# signal is the length of `.assembly-queue.jsonl` at the MAIN repo root
+# — one line per submitted-but-not-yet-merged task. If that depth
+# reaches 2x the number of registered Forges, we refuse new dispatches
+# so Assembly has room to drain without the queue ballooning further.
+#
+# Scope: queue-pop (Forge's dispatch moment) and set-next-tasks
+# (Marshal's bulk dispatch). queue-push is intentionally untouched —
+# Marshal still records priorities; only hand-off to a Forge is
+# throttled. Patrol check #9 (t-423) is orthogonal (it flags *stale*
+# submitted rows, regardless of depth) and keeps running as usual.
+
+
+def _assembly_queue_depth(root) -> int:
+    """Count live entries in .assembly-queue.jsonl (empty lines skipped).
+    Returns 0 when the file doesn't exist yet."""
+    qpath = assembly_queue_path(root)
+    if not qpath.exists():
+        return 0
+    try:
+        return sum(1 for ln in qpath.read_text().splitlines() if ln.strip())
+    except OSError:
+        return 0
+
+
+def _backpressure_check(root, state) -> dict:
+    """Return {"ok": bool, "depth": int, "n_forges": int,
+               "threshold": int, "reason": str | None}.
+
+    `ok=False` means Marshal's dispatch path should refuse and surface
+    the reason. Threshold = 2 * max(1, n_forges) — small-enough to stop
+    pile-ups but wide-enough that a single slow merge doesn't starve
+    a two-Forge rig.
+    """
+    parallel = state.get("parallel") or {}
+    n_forges = len((parallel.get("forges") or []))
+    threshold = 2 * max(1, n_forges)
+    depth = _assembly_queue_depth(root)
+    if depth >= threshold:
+        return {"ok": False, "depth": depth, "n_forges": n_forges,
+                "threshold": threshold,
+                "reason": f"assembly-queue backpressure (depth={depth}, "
+                          f"threshold={threshold}, n_forges={n_forges})"}
+    return {"ok": True, "depth": depth, "n_forges": n_forges,
+            "threshold": threshold, "reason": None}
+
+
 @cli.command("set-next-tasks")
 @click.argument("task_ids", nargs=-1, required=True)
 @click.option("--no-nudge", is_flag=True, default=False, help="Skip auto-nudge to forge")
@@ -1578,6 +1627,16 @@ def set_next_tasks(ctx, task_ids, no_nudge):
     """Set the ordered list of upcoming tasks for Marshal/Forge."""
     root = ctx.obj["root"]
     state = load_state(root)
+
+    # t-442: refuse bulk dispatch when Assembly is saturated.
+    bp = _backpressure_check(root, state)
+    if not bp["ok"]:
+        _output({"error": bp["reason"], "dispatched": False,
+                 "depth": bp["depth"], "threshold": bp["threshold"],
+                 "n_forges": bp["n_forges"]})
+        _err(f"set-next-tasks refused: {bp['reason']}")
+        sys.exit(1)
+
     queue = state.get("queue", [])
     queue_map = {t["id"]: t for t in queue}
 
@@ -1962,6 +2021,20 @@ def queue_pop(ctx, forge_id):
     with state_lock(root):
         state = load_state(root)
         next_tasks = state.get("next_tasks", [])
+
+        # t-442: refuse dispatch when Assembly is saturated — keeps
+        # Forge idling without clearing the pinned task from next_tasks.
+        # Depth is read inside the lock so concurrent end-heat submits
+        # don't race us into a wrong decision.
+        bp = _backpressure_check(root, state)
+        if not bp["ok"]:
+            _output({"task": None, "dispatched": False,
+                     "reason": bp["reason"],
+                     "depth": bp["depth"],
+                     "threshold": bp["threshold"],
+                     "n_forges": bp["n_forges"]})
+            _err(f"queue-pop backpressure: {bp['reason']}")
+            return
 
         if not next_tasks:
             empty = True
