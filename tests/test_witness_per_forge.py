@@ -109,8 +109,10 @@ def test_healthy_forges_are_clean(rig):
     _set_forge(rig, "forge-01", status="busy", last_heartbeat=_iso(30))
     rc, out, _ = _smithy(rig, "patrol")
     data = json.loads(out)
-    # No witness issues about forge-01.
-    forge_issues = [i for i in data["issues"] if "forge-" in i]
+    # No witness issues about forge-01. (t-467 check #14 about missing
+    # .venv/ is a different category — filter it out.)
+    forge_issues = [i for i in data["issues"]
+                    if "forge-" in i and "/.venv missing" not in i]
     assert forge_issues == []
     assert data["stuck_forges"] == []
 
