@@ -1074,16 +1074,30 @@ def assembly_tick_cmd(ctx, base, dry_run, tests_cmd):
     )
     root = ctx.obj["root"]
     qpath = assembly_queue_path(root)
+    reconciled = False
     if not qpath.exists() or qpath.stat().st_size == 0:
-        _output({"status": "empty"})
-        return
-    lines = [ln for ln in qpath.read_text().splitlines() if ln.strip()]
-    item = json.loads(lines[0])
-    rest = lines[1:]
+        # ini-024 T1: an empty/missing jsonl is NOT a "no work" signal — it
+        # just means the fast-path cache is silent. Reconcile against truth:
+        # state.queue + git branches. If a submitted task has a real per-task
+        # branch on disk, process it; otherwise genuinely idle. This closes
+        # the freeze class where a lost nudge or a _pop_queue race dropped
+        # a row but state.json + git still said there was work (incident
+        # 2026-04-18: t-480/t-448/t-493).
+        recon = _reconcile_submitted(root)
+        if recon is None:
+            _output({"status": "empty"})
+            return
+        item = recon
+        rest = []
+        reconciled = True
+    else:
+        lines = [ln for ln in qpath.read_text().splitlines() if ln.strip()]
+        item = json.loads(lines[0])
+        rest = lines[1:]
 
     if dry_run:
         _output({"status": "would_process", "item": item,
-                 "remaining": len(rest)})
+                 "remaining": len(rest), "reconciled": reconciled})
         return
 
     forge_id = item["forge_id"]
@@ -1093,7 +1107,8 @@ def assembly_tick_cmd(ctx, base, dry_run, tests_cmd):
     _tick_started_at = datetime.now(timezone.utc)
     _emit_rig_event(root, "assembly_tick_begin", actor="assembly",
                     forge_id=forge_id, task_id=task_id,
-                    branch=expected_branch, sha=item.get("sha"))
+                    branch=expected_branch, sha=item.get("sha"),
+                    reconciled=reconciled)
 
     def _tick_latency_ms():
         return int((datetime.now(timezone.utc) - _tick_started_at)
@@ -1109,7 +1124,8 @@ def assembly_tick_cmd(ctx, base, dry_run, tests_cmd):
         _emit_rig_event(root, "assembly_tick_rejected", actor="assembly",
                         forge_id=forge_id, task_id=task_id, reason=reason,
                         latency_ms=_tick_latency_ms())
-        return {"status": "rejected", "task_id": task_id, "reason": reason}
+        return {"status": "rejected", "task_id": task_id, "reason": reason,
+                "reconciled": reconciled}
 
     # 1. Rebase onto base — t-475: use rebase_task_branch so the work
     # happens in .worktrees/_assembly-staging/ instead of the Forge's
@@ -1202,7 +1218,8 @@ def assembly_tick_cmd(ctx, base, dry_run, tests_cmd):
                     branch=mr["branch"], sha=mr["sha"],
                     latency_ms=_tick_latency_ms())
     _output({"status": "merged", "task_id": task_id, "sha": mr["sha"],
-             "branch": mr["branch"], "push": push})
+             "branch": mr["branch"], "push": push,
+             "reconciled": reconciled})
 
 
 def _log(root, forge_id, task_id, outcome, detail):
@@ -1222,6 +1239,56 @@ def _pop_queue(qpath, rest):
         qpath.write_text("\n".join(rest) + "\n")
     else:
         qpath.unlink(missing_ok=True)
+
+
+def _reconcile_submitted(root):
+    """ini-024 T1: Assembly reconciliation — scan state.queue for tasks that
+    look ready for merge based on truth (status=submitted + branch exists in
+    git), and return the first one as a synthesized queue item. Intended as
+    a backstop for when .assembly-queue.jsonl is empty/missing despite real
+    work existing on disk.
+
+    A task is eligible when ALL of:
+      - status == "submitted"
+      - assigned_forge is set (can't derive a branch name otherwise)
+      - branch `<forge-id>/<task-id>` resolves via `git rev-parse --verify`
+
+    Returns a dict shaped like a jsonl row (forge_id, task_id, branch, sha,
+    reconciled=True) or None when nothing eligible is found. Does not mutate
+    anything — the caller drives the normal rebase/test/merge pipeline.
+    """
+    import subprocess as _subprocess
+    state = load_state(root)
+    for task in state.get("queue", []):
+        if task.get("status") != "submitted":
+            continue
+        forge_id = task.get("assigned_forge")
+        task_id = task.get("id")
+        if not forge_id or not task_id:
+            # No way to derive the branch — skip rather than guess. A patrol
+            # check (t-491) surfaces submitted-without-forge as a separate
+            # class of issue.
+            continue
+        branch = f"{forge_id}/{task_id}"
+        r = _subprocess.run(
+            ["git", "rev-parse", "--verify", "--quiet", branch],
+            cwd=str(root), capture_output=True, text=True,
+        )
+        if r.returncode != 0:
+            # No branch on disk — skipping is the safe path (don't
+            # synthesize a ghost merge for a task that was marked
+            # submitted but never pushed a branch). Patrol's submitted-
+            # without-branch check will catch the data-integrity issue
+            # separately.
+            continue
+        return {
+            "forge_id": forge_id,
+            "task_id": task_id,
+            "branch": branch,
+            "sha": r.stdout.strip(),
+            "reconciled": True,
+        }
+    return None
 
 
 @cli.command("forge-spawn")

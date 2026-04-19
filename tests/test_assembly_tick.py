@@ -84,6 +84,16 @@ def _queue_item(proj, sha, branch="forge-01/t-1"):
 
 
 def test_empty_queue_is_no_op(rig):
+    """With ini-024 T1 reconciliation, "genuinely empty" means jsonl missing
+    AND state has no submitted tasks ready to merge. The default fixture
+    seeds t-1 as submitted with a branch, so flip it to pending here to
+    exercise the true no-op path."""
+    s = json.loads((rig / "state.json").read_text())
+    for t in s["queue"]:
+        if t["id"] == "t-1":
+            t["status"] = "pending"
+    (rig / "state.json").write_text(json.dumps(s, indent=2))
+
     rc, out, _ = _smithy(rig, "assembly-tick", "--tests-cmd", "/usr/bin/true")
     assert rc == 0
     assert json.loads(out)["status"] == "empty"
@@ -162,3 +172,150 @@ def test_mild_conflict_auto_resolves(rig):
     merged_log = (rig / "worklog.tsv").read_text()
     assert "forge-line" in merged_log
     assert "main-line" in merged_log
+
+
+# --- ini-024 T1: reconciliation ---------------------------------------------
+
+def _commit_forge_work(wt):
+    """Helper: create one commit on the forge branch; return its sha."""
+    (wt / "feat.py").write_text("f = 1\n")
+    _git(wt, "add", "-A")
+    _git(wt, "commit", "-q", "-m", "forge work")
+    return _git(wt, "rev-parse", "HEAD").stdout.strip()
+
+
+def test_reconcile_empty_jsonl_submitted_task_with_branch_processed(rig):
+    """(a) jsonl empty + state.queue has submitted task + branch exists on
+    disk → tick processes it via the normal pipeline (no jsonl row needed).
+    Reproduces the incident shape of 2026-04-18 (t-480/t-448/t-493)."""
+    wt = rig / ".worktrees" / "forge-01"
+    _commit_forge_work(wt)
+    # Crucially: .assembly-queue.jsonl does NOT exist. state.queue already
+    # has t-1 as submitted from the fixture.
+    assert not (rig / ".assembly-queue.jsonl").exists()
+
+    rc, out, _ = _smithy(rig, "assembly-tick", "--tests-cmd", "/usr/bin/true")
+    assert rc == 0, out
+    data = json.loads(out)
+    assert data["status"] == "merged", data
+    assert data.get("reconciled") is True
+    # Task flipped to complete + branch content landed on main.
+    s = json.loads((rig / "state.json").read_text())
+    t = next(t for t in s["queue"] if t["id"] == "t-1")
+    assert t["status"] == "complete"
+    assert (rig / "feat.py").exists()
+
+
+def test_reconcile_empty_jsonl_submitted_task_without_branch_is_noop(rig):
+    """(b) jsonl empty + state.queue has submitted task but NO per-task
+    branch on disk → tick returns empty, does NOT ghost-merge.
+    Protects against fabricating work from a data-integrity anomaly
+    (status=submitted but never actually branched)."""
+    # Delete the per-task branch left by the fixture.
+    _git(rig, "worktree", "remove", "--force", str(rig / ".worktrees" / "forge-01"))
+    _git(rig, "branch", "-D", "forge-01/t-1")
+    # state.queue still says t-1 is submitted.
+    s = json.loads((rig / "state.json").read_text())
+    assert any(t["id"] == "t-1" and t["status"] == "submitted" for t in s["queue"])
+    assert not (rig / ".assembly-queue.jsonl").exists()
+
+    rc, out, _ = _smithy(rig, "assembly-tick", "--tests-cmd", "/usr/bin/true")
+    assert rc == 0, out
+    assert json.loads(out)["status"] == "empty"
+    # t-1 MUST remain submitted (no hallucinated status flip).
+    s = json.loads((rig / "state.json").read_text())
+    assert next(t for t in s["queue"] if t["id"] == "t-1")["status"] == "submitted"
+
+
+def test_reconcile_missing_jsonl_file_is_handled(rig):
+    """(e) `.assembly-queue.jsonl` never existed — reconciliation still
+    kicks in, no FileNotFoundError. Same path as (a) but explicitly covers
+    the missing-vs-empty distinction."""
+    wt = rig / ".worktrees" / "forge-01"
+    _commit_forge_work(wt)
+    qp = rig / ".assembly-queue.jsonl"
+    # Defensive: ensure there's no file at all (fixture doesn't create one).
+    if qp.exists():
+        qp.unlink()
+
+    rc, out, _ = _smithy(rig, "assembly-tick", "--tests-cmd", "/usr/bin/true")
+    assert rc == 0, out
+    data = json.loads(out)
+    assert data["status"] == "merged"
+    assert data.get("reconciled") is True
+
+
+def test_reconcile_jsonl_row_wins_over_state(rig):
+    """(c) When the jsonl has a row, the fast path is used (reconciled=False
+    in output). state.queue's submitted row is NOT double-processed — it's
+    the same task, driven by the jsonl entry."""
+    wt = rig / ".worktrees" / "forge-01"
+    sha = _commit_forge_work(wt)
+    _queue_item(rig, sha)
+    assert (rig / ".assembly-queue.jsonl").exists()
+
+    rc, out, _ = _smithy(rig, "assembly-tick", "--tests-cmd", "/usr/bin/true")
+    assert rc == 0, out
+    data = json.loads(out)
+    assert data["status"] == "merged"
+    assert data.get("reconciled") is False
+
+
+def test_reconcile_one_task_per_tick(rig):
+    """(d) If multiple submitted tasks exist and jsonl is empty,
+    reconciliation picks exactly ONE per tick (first eligible) — same pacing
+    as the fast path. The second task stays submitted until the next tick."""
+    # Add a second forge + task + branch so there are two candidates.
+    wt = rig / ".worktrees" / "forge-01"
+    _commit_forge_work(wt)
+
+    # Create a second forge worktree/branch with its own commit.
+    _git(rig, "branch", "forge-02/t-2")
+    wt2 = rig / ".worktrees" / "forge-02"
+    _git(rig, "worktree", "add", "-q", str(wt2), "forge-02/t-2")
+    _git(wt2, "config", "user.email", "t@t.t")
+    _git(wt2, "config", "user.name", "T")
+    (wt2 / "other.py").write_text("g = 2\n")
+    _git(wt2, "add", "-A")
+    _git(wt2, "commit", "-q", "-m", "forge-02 work")
+
+    s = json.loads((rig / "state.json").read_text())
+    s["queue"].append({
+        "id": "t-2", "stage": "implementation", "desc": "second",
+        "status": "submitted", "priority": 2, "blocked_by": [],
+        "human_priority": None, "priority_reason": None,
+        "assigned_forge": "forge-02",
+    })
+    (rig / "state.json").write_text(json.dumps(s, indent=2))
+
+    rc, out, _ = _smithy(rig, "assembly-tick", "--tests-cmd", "/usr/bin/true")
+    assert rc == 0, out
+    data = json.loads(out)
+    assert data["status"] == "merged"
+    assert data.get("reconciled") is True
+    # Exactly one of the two flipped; the other is still submitted.
+    s = json.loads((rig / "state.json").read_text())
+    statuses = {t["id"]: t["status"] for t in s["queue"]}
+    submitted = [tid for tid, st in statuses.items() if st == "submitted"]
+    complete = [tid for tid, st in statuses.items() if st == "complete"]
+    assert len(submitted) == 1
+    assert len(complete) == 1
+
+
+def test_reconcile_dry_run_surfaces_reconciled_marker(rig):
+    """--dry-run on the reconcile path reports the synthesized item so an
+    operator can inspect what the tick would touch without side effects."""
+    wt = rig / ".worktrees" / "forge-01"
+    _commit_forge_work(wt)
+    assert not (rig / ".assembly-queue.jsonl").exists()
+
+    rc, out, _ = _smithy(rig, "assembly-tick", "--dry-run")
+    assert rc == 0, out
+    data = json.loads(out)
+    assert data["status"] == "would_process"
+    assert data["reconciled"] is True
+    assert data["item"]["task_id"] == "t-1"
+    assert data["item"]["branch"] == "forge-01/t-1"
+    # Dry-run must not mutate state.
+    s = json.loads((rig / "state.json").read_text())
+    assert next(t for t in s["queue"] if t["id"] == "t-1")["status"] == "submitted"
