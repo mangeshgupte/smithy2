@@ -784,9 +784,14 @@ def end_heat(ctx, value, signal, notes, outcome, progress, no_nudge, forge_id,
                         target="marshal", task_id=task_id,
                         nudged=nudge_result.get("nudged"))
         if submit_entry:
-            asm_msg = (f"ASSEMBLY_QUEUE: {submit_entry['branch']} "
-                       f"@ {submit_entry['sha'][:8]} ({task_id}) — "
-                       f"run smithy assembly-tick.")
+            # t-510: compact ASSEMBLY_QUEUE format — mirrors HEAT_DONE's
+            # emoji-first identity-then-context shape. "run smithy
+            # assembly-tick." suffix dropped (Assembly's loop ticks, not
+            # a human).
+            asm_msg = _format_assembly_queue_nudge(
+                task=_nudge_task, sha=submit_entry["sha"],
+                forge_id=forge_id or "",
+            )
             asm_result = _nudge_persona("assembly", asm_msg, root=root)
             result["assembly_nudge"] = asm_result
             _emit_rig_event(root, "assembly_nudged", actor=forge_id,
@@ -991,8 +996,8 @@ def _do_assembly_merge(root, task_id, sha, resolution):
     # batch path) needs the wake-up too — putting it here makes the
     # nudge unconditional. Symmetric with _do_assembly_reject above.
     # t-424: fire both a durable file-queue row AND a live tmux event.
-    merged_msg = (f"ASSEMBLY_MERGED: {task_id} merged "
-                  f"(sha={sha[:12]}). Re-prioritize downstream.")
+    # t-510: compact format — mirrors t-508's HEAT_DONE shape.
+    merged_msg = _format_assembly_merged_nudge(task=task, sha=sha)
     _queue_nudge(root, "marshal", merged_msg)
     _nudge_persona("marshal", merged_msg, root=root)
 
@@ -1053,9 +1058,14 @@ def _do_assembly_reject(root, task_id, reason):
     # pane, and the file row is a durable audit trail Marshal can drain
     # if it was offline when the event fired. _nudge_persona alone
     # skips the file on success; we want the record either way.
-    nudge_msg = (f"ASSEMBLY_REJECTED: {task_id} — {reason[:80]}. "
-                 f"Task back to pending (priority +5). Decide: reassign, "
-                 f"split, or deprioritize.")
+    # t-510: compact ASSEMBLY_REJECTED — drops the verbose
+    # "Task back to pending (priority +5). Decide: reassign, split, or
+    # deprioritize." suffix. Assembly already flipped the status +
+    # human_priority in state.json above; Marshal's re-prioritization
+    # decision is its own job.
+    nudge_msg = _format_assembly_rejected_nudge(
+        task=task, forge_id=task.get("assigned_forge") or "", reason=reason,
+    )
     _queue_nudge(root, "marshal", nudge_msg)
     _nudge_persona("marshal", nudge_msg, root=root)
     return {"task_id": task_id, "status": "pending",
@@ -1129,6 +1139,21 @@ def assembly_tick_cmd(ctx, base, dry_run, tests_cmd):
                     forge_id=forge_id, task_id=task_id,
                     branch=expected_branch, sha=item.get("sha"),
                     reconciled=reconciled)
+
+    # t-510: ASSEMBLY_ATTEMPT — surface the merge-start so the 3–5min
+    # rebase+test window isn't silent. Look up the task for desc +
+    # stage + initiative_id (best-effort; a stale jsonl entry may point
+    # at a task that was edited/removed from state.queue between submit
+    # and tick). Emit to the Assembly pane via stderr; rig-event
+    # already exists (`assembly_tick_begin`), so we don't double-log.
+    _tick_state = load_state(root)
+    _tick_task = next(
+        (_t for _t in _tick_state.get("queue", []) if _t.get("id") == task_id),
+        None,
+    )
+    _err(_format_assembly_attempt_nudge(
+        task=_tick_task, forge_id=forge_id, sha=item.get("sha") or "",
+    ))
 
     def _tick_latency_ms():
         return int((datetime.now(timezone.utc) - _tick_started_at)
@@ -1271,6 +1296,78 @@ def _truncate_for_nudge(text: str, limit: int = 50) -> str:
     if len(collapsed) <= limit:
         return collapsed
     return collapsed[:limit - 1].rstrip() + "…"
+
+
+def _stage_ini_segment(task, stage_fallback=None):
+    """Render the '{stage}[/{ini_id}]' segment used by t-508/t-510
+    nudges. Empty-string initiative IDs treated the same as None.
+    Falls back to `stage_fallback` when the task dict omits `stage`."""
+    if task is None:
+        return stage_fallback or ""
+    stage = task.get("stage") or stage_fallback or ""
+    ini = task.get("initiative_id")
+    if ini:
+        return f"{stage}/{ini}"
+    return stage
+
+
+def _format_assembly_queue_nudge(task, sha: str, forge_id: str) -> str:
+    """t-510: ASSEMBLY_QUEUE (Forge → Assembly) compact format.
+
+      ASSEMBLY_QUEUE ⏳ {task_id} {stage}[/{ini}] · "{desc}" · from {forge_id} · sha={sha[:8]}
+    """
+    task_id = (task or {}).get("id", "(unknown)")
+    stage_seg = _stage_ini_segment(task) or "(no stage)"
+    desc = _truncate_for_nudge((task or {}).get("desc") or "") or "(no desc)"
+    sha_short = (sha or "")[:8] or "(no sha)"
+    return (f'ASSEMBLY_QUEUE ⏳ {task_id} {stage_seg} '
+            f'· "{desc}" · from {forge_id or "(unknown-forge)"} '
+            f'· sha={sha_short}')
+
+
+def _format_assembly_attempt_nudge(task, forge_id: str, sha: str = "") -> str:
+    """t-510: ASSEMBLY_ATTEMPT pane / rig-event message fired at the
+    start of a merge try so the 3–5min rebase+test window isn't silent.
+
+      ASSEMBLY_ATTEMPT 🔨 {task_id} {stage}[/{ini}] · "{desc}" · from {forge_id}
+    """
+    task_id = (task or {}).get("id", "(unknown)")
+    stage_seg = _stage_ini_segment(task) or "(no stage)"
+    desc = _truncate_for_nudge((task or {}).get("desc") or "") or "(no desc)"
+    return (f'ASSEMBLY_ATTEMPT 🔨 {task_id} {stage_seg} '
+            f'· "{desc}" · from {forge_id or "(unknown-forge)"}')
+
+
+def _format_assembly_merged_nudge(task, sha: str) -> str:
+    """t-510: ASSEMBLY_MERGED (Assembly → Marshal) compact format.
+
+      ASSEMBLY_MERGED 🟢 {task_id} {stage}[/{ini}] · "{desc}" · sha={sha[:8]}
+    """
+    task_id = (task or {}).get("id", "(unknown)")
+    stage_seg = _stage_ini_segment(task) or "(no stage)"
+    desc = _truncate_for_nudge((task or {}).get("desc") or "") or "(no desc)"
+    sha_short = (sha or "")[:8] or "(no sha)"
+    return (f'ASSEMBLY_MERGED 🟢 {task_id} {stage_seg} '
+            f'· "{desc}" · sha={sha_short}')
+
+
+def _format_assembly_rejected_nudge(task, forge_id: str, reason: str) -> str:
+    """t-510: ASSEMBLY_REJECTED (Assembly → Marshal) compact format.
+
+      ASSEMBLY_REJECTED 🔴 {task_id} {stage}[/{ini}] · "{desc}" · from {forge_id} · {reason_60}
+
+    Reason is truncated to 60 chars; the old verbose suffix ("Task back
+    to pending (priority +5). Decide: reassign, split, or deprioritize.")
+    is dropped — Assembly already flipped state.json and Marshal's job
+    is obvious.
+    """
+    task_id = (task or {}).get("id", "(unknown)")
+    stage_seg = _stage_ini_segment(task) or "(no stage)"
+    desc = _truncate_for_nudge((task or {}).get("desc") or "") or "(no desc)"
+    reason_short = _truncate_for_nudge(reason, limit=60) or "(no reason)"
+    return (f'ASSEMBLY_REJECTED 🔴 {task_id} {stage_seg} '
+            f'· "{desc}" · from {forge_id or "(unknown-forge)"} '
+            f'· {reason_short}')
 
 
 def _format_heat_done_nudge(signal: str, forge_id: str, heat: int,
