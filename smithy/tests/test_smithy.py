@@ -994,6 +994,139 @@ class TestRunTestsInWorktreeVenv:
         assert captured["cmd"] == ["python3", "-c", "print('custom')"]
 
 
+class TestAssemblyQueuePopRace:
+    """t-493: the queue-pop-vs-append race. Prior _pop_queue read
+    `rest = lines[1:]` before the merge tick, then overwrote the file
+    at the end. Any concurrent `end-heat` append during the tick was
+    destroyed (silent zombie-submit). Fix: re-read under fcntl lock and
+    drop only the drained line.
+    """
+
+    def test_append_creates_if_missing(self, tmp_path):
+        from smithy.cli import _append_queue
+        qpath = tmp_path / ".assembly-queue.jsonl"
+        assert not qpath.exists()
+        _append_queue(qpath, {"task_id": "t-001", "sha": "abc"})
+        assert qpath.exists()
+        lines = qpath.read_text().splitlines()
+        assert len(lines) == 1
+        assert json.loads(lines[0])["task_id"] == "t-001"
+
+    def test_append_preserves_existing(self, tmp_path):
+        from smithy.cli import _append_queue
+        qpath = tmp_path / ".assembly-queue.jsonl"
+        qpath.write_text(json.dumps({"task_id": "t-001"}) + "\n")
+        _append_queue(qpath, {"task_id": "t-002"})
+        lines = qpath.read_text().splitlines()
+        assert [json.loads(ln)["task_id"] for ln in lines] == ["t-001", "t-002"]
+
+    def test_pop_drops_only_matching_line(self, tmp_path):
+        from smithy.cli import _pop_queue
+        qpath = tmp_path / ".assembly-queue.jsonl"
+        line_a = json.dumps({"task_id": "t-a"})
+        line_b = json.dumps({"task_id": "t-b"})
+        line_c = json.dumps({"task_id": "t-c"})
+        qpath.write_text(f"{line_a}\n{line_b}\n{line_c}\n")
+        _pop_queue(qpath, line_b)
+        kept = qpath.read_text().splitlines()
+        assert kept == [line_a, line_c]
+
+    def test_pop_empty_after_last_entry_leaves_file_intact(self, tmp_path):
+        """Critical t-493 invariant: after popping the LAST entry, the
+        file exists but is empty. Not unlinked — so a concurrent
+        _append_queue never races `open(..., 'a')` against a missing
+        file (the old `unlink(missing_ok=True)` let appends land in
+        a fresh file that assembly's tick hadn't yet recreated)."""
+        from smithy.cli import _pop_queue
+        qpath = tmp_path / ".assembly-queue.jsonl"
+        line = json.dumps({"task_id": "t-only"})
+        qpath.write_text(line + "\n")
+        _pop_queue(qpath, line)
+        assert qpath.exists(), "file must remain — concurrent appenders rely on it"
+        assert qpath.read_text() == ""
+
+    def test_pop_preserves_concurrent_append(self, tmp_path):
+        """Simulate the race: assembly_tick captured `lines[0]` at T0,
+        a forge appended a new row at T1, and _pop_queue runs at T2.
+        The new row must survive."""
+        from smithy.cli import _pop_queue, _append_queue
+        qpath = tmp_path / ".assembly-queue.jsonl"
+        drained = json.dumps({"task_id": "t-drained"})
+        qpath.write_text(drained + "\n")
+        # Concurrent forge append DURING the tick:
+        _append_queue(qpath, {"task_id": "t-new"})
+        # Assembly finishes and pops the drained entry:
+        _pop_queue(qpath, drained)
+        kept = qpath.read_text().splitlines()
+        assert [json.loads(ln)["task_id"] for ln in kept] == ["t-new"]
+
+    def test_pop_missing_file_is_noop(self, tmp_path):
+        from smithy.cli import _pop_queue
+        qpath = tmp_path / ".assembly-queue.jsonl"
+        _pop_queue(qpath, json.dumps({"task_id": "t-x"}))  # must not raise
+        assert not qpath.exists()
+
+
+class TestPatrolZombieSubmitted:
+    """t-493 patrol check #15: detects + repairs the zombie-submitted
+    class (state.submitted without a jsonl row)."""
+
+    def _setup_zombie(self, project):
+        state = json.loads((project / "state.json").read_text())
+        state["queue"][0]["status"] = "submitted"
+        state["queue"][0]["assigned_forge"] = "forge-01"
+        (project / "state.json").write_text(json.dumps(state))
+        qpath = project / ".assembly-queue.jsonl"
+        qpath.write_text("")
+
+    def test_detects_zombie_submitted(self, project, runner):
+        self._setup_zombie(project)
+        result = runner.invoke(cli, ["--dir", str(project), "patrol"])
+        data = json.loads(result.output)
+        zombie_issues = [
+            i for i in data["issues"]
+            if "zombie-submitted" in i and "t-001" in i
+        ]
+        assert zombie_issues, data["issues"]
+
+    def test_fix_rebuilds_entry_when_branch_exists(self, project, runner):
+        import subprocess as sp
+        self._setup_zombie(project)
+        # Create the per-task branch so rev-parse succeeds.
+        sp.run(["git", "checkout", "-b", "forge-01/t-001"],
+               cwd=str(project), capture_output=True)
+        (project / "rebuild-marker").write_text("x")
+        sp.run(["git", "add", "rebuild-marker"], cwd=str(project), capture_output=True)
+        sp.run(["git", "commit", "-m", "mark"], cwd=str(project), capture_output=True)
+        # Back to whatever default branch is (init-branch can be master or main).
+        default = sp.run(["git", "config", "--get", "init.defaultBranch"],
+                         cwd=str(project), capture_output=True, text=True).stdout.strip()
+        sp.run(["git", "checkout", default or "main"],
+               cwd=str(project), capture_output=True)
+        sp.run(["git", "checkout", "master"], cwd=str(project), capture_output=True)
+
+        result = runner.invoke(cli, ["--dir", str(project), "patrol", "--fix"])
+        data = json.loads(result.output)
+        rebuilds = [f for f in data["fixes"]
+                    if "Rebuilt" in f and "t-001" in f]
+        assert rebuilds, data
+        qpath = project / ".assembly-queue.jsonl"
+        rows = [json.loads(ln) for ln in qpath.read_text().splitlines() if ln.strip()]
+        assert any(r["task_id"] == "t-001" for r in rows)
+
+    def test_fix_skips_when_branch_missing(self, project, runner):
+        """If per-task branch is gone (already deleted post-merge),
+        --fix must NOT fabricate an entry — leaves it for the operator."""
+        self._setup_zombie(project)
+        result = runner.invoke(cli, ["--dir", str(project), "patrol", "--fix"])
+        data = json.loads(result.output)
+        rebuilds = [f for f in data["fixes"]
+                    if "Rebuilt" in f and "t-001" in f]
+        assert not rebuilds, data
+        zombies = [i for i in data["issues"] if "zombie-submitted" in i]
+        assert zombies
+
+
 class TestDrainNudges:
     """Tests for the 'drain-nudges' CLI command."""
 

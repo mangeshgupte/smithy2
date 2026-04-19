@@ -116,8 +116,11 @@ def test_clean_merge_flow(rig):
     s = json.loads((rig / "state.json").read_text())
     t = next(t for t in s["queue"] if t["id"] == "t-1")
     assert t["status"] == "complete"
-    # Queue drained.
-    assert not (rig / ".assembly-queue.jsonl").exists()
+    # Queue drained. t-493: the file stays in place (may be empty) so
+    # concurrent appenders never race an unlink; assert contents empty
+    # rather than file absence.
+    q = rig / ".assembly-queue.jsonl"
+    assert not q.exists() or q.read_text().strip() == ""
 
 
 def test_severe_conflict_rejects_to_marshal(rig):

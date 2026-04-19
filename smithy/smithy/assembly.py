@@ -292,7 +292,8 @@ def run_tests_in_worktree(project_dir: Path, forge_id: str,
     to MAIN by t-460), so any test that exercises a symbol newly added
     on the worktree's branch fails with AttributeError / TypeError and
     Assembly rejects the submit — even though the worktree's own
-    `.venv` would have resolved correctly.
+    `.venv` would have resolved correctly. (t-493 verified this path
+    separately against the `_append_queue` symbol added in that branch.)
 
     t-507: staging (`_assembly-staging`) doesn't carry a `.venv/` by
     default; auto-bootstrap one via `ensure_staging_venv` on demand so

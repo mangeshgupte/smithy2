@@ -804,8 +804,10 @@ def end_heat(ctx, value, signal, notes, outcome, progress, no_nudge, forge_id,
             "submitted_at": datetime.now(timezone.utc).isoformat(
                 timespec="seconds"),
         }
-        with open(queue_path, "a") as f:
-            f.write(json.dumps(submit_entry) + "\n")
+        # t-493: use the locked _append_queue helper so Assembly's tick
+        # can't overwrite this row mid-flight. Plain open-for-append
+        # without fcntl lost rows to the read-then-overwrite race.
+        _append_queue(queue_path, submit_entry)
 
     result = {
         "heat": heat,
@@ -1246,7 +1248,12 @@ def assembly_tick_cmd(ctx, base, dry_run, tests_cmd):
         abort_rebase(root, STAGING_WORKTREE)
         _do_assembly_reject(root, task_id, reason)
         _log(root, forge_id, task_id, "rejected", reason)
-        _pop_queue(qpath, rest)
+        # t-493 × ini-024 T1: only pop a row when the tick actually
+        # consumed one (non-reconciled path). Reconciliation derives
+        # `item` from state.json without reading the jsonl, so there's
+        # nothing to drop.
+        if not reconciled:
+            _pop_queue(qpath, lines[0])
         _emit_rig_event(root, "assembly_tick_rejected", actor="assembly",
                         forge_id=forge_id, task_id=task_id, reason=reason,
                         latency_ms=_tick_latency_ms())
@@ -1338,7 +1345,12 @@ def assembly_tick_cmd(ctx, base, dry_run, tests_cmd):
     # t-478: Marshal nudge moved into _do_assembly_merge so any caller
     # that bypasses assembly_tick (smithy assembly-merge, future batch
     # path) still wakes Marshal at the submitted→complete transition.
-    _pop_queue(qpath, rest)
+    # t-493 × ini-024 T1: drop only the drained row under lock —
+    # preserves any Forge append that arrived during the merge tick.
+    # Reconciliation paths didn't read from jsonl so there's no row to
+    # drop; skip.
+    if not reconciled:
+        _pop_queue(qpath, lines[0])
     _emit_rig_event(root, "assembly_tick_merged", actor="assembly",
                     forge_id=forge_id, task_id=task_id,
                     branch=mr["branch"], sha=mr["sha"],
@@ -1360,11 +1372,73 @@ def _log(root, forge_id, task_id, outcome, detail):
         f.write(json.dumps(entry) + "\n")
 
 
-def _pop_queue(qpath, rest):
-    if rest:
-        qpath.write_text("\n".join(rest) + "\n")
-    else:
-        qpath.unlink(missing_ok=True)
+def _append_queue(qpath, entry):
+    """t-493: locked append to .assembly-queue.jsonl.
+
+    Opens for append (create-if-missing) under an exclusive fcntl lock so
+    a concurrent `_pop_queue` can't overwrite the file between the new
+    row landing and the lock release. `fsync` after flush so a crash
+    between the Forge's end-heat and Assembly's tick doesn't lose the
+    just-submitted row.
+    """
+    import fcntl
+    import os as _os
+    qpath.parent.mkdir(parents=True, exist_ok=True)
+    with open(qpath, "a") as f:
+        try:
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+            f.write(json.dumps(entry) + "\n")
+            f.flush()
+            try:
+                _os.fsync(f.fileno())
+            except OSError:
+                pass  # fsync can fail on some filesystems; append still lands.
+        finally:
+            fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+
+
+def _pop_queue(qpath, drained_line):
+    """t-493: remove `drained_line` from `qpath` without destroying any
+    concurrent appends.
+
+    Prior behaviour overwrote the file with a stale in-memory `rest =
+    lines[1:]` (or unlinked it when `rest` was empty). If a Forge
+    appended a new row during the merge tick (seconds to minutes), that
+    row was silently destroyed. Net effect: state.json still carried
+    `status=submitted` for the lost task, `.assembly-queue.jsonl` had no
+    matching entry, and Assembly idled forever while the task sat
+    zombie (observed t-450 / t-463 / t-472 / t-480 / t-448).
+
+    Fix: re-read the file under an exclusive lock, drop the FIRST
+    occurrence of `drained_line`, and write back. Leave the file in
+    place (empty is fine) so `_append_queue` never races an unlink.
+
+    `drained_line` is the exact line text that was consumed (the first
+    element of the `lines = [...]` list captured by assembly_tick).
+    Matching by string keeps the contract simple and avoids
+    re-serialising; Forge writes each row via `json.dumps` with the same
+    key order, so byte-equality holds.
+    """
+    import fcntl
+    if not qpath.exists():
+        return
+    with open(qpath, "r+") as f:
+        try:
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+            current = [ln for ln in f.read().splitlines() if ln.strip()]
+            kept = []
+            dropped = False
+            for ln in current:
+                if not dropped and ln == drained_line:
+                    dropped = True
+                    continue
+                kept.append(ln)
+            f.seek(0)
+            f.truncate()
+            if kept:
+                f.write("\n".join(kept) + "\n")
+        finally:
+            fcntl.flock(f.fileno(), fcntl.LOCK_UN)
 
 
 def _truncate_for_nudge(text: str, limit: int = 50) -> str:
@@ -4613,6 +4687,66 @@ def patrol(ctx, fix):
                 ".worktrees/_assembly-staging/"
             )
 
+    # 17. t-493: state-vs-jsonl drift (zombie-submitted detector).
+    # A task marked `submitted` in state.json must have a matching row
+    # in .assembly-queue.jsonl — otherwise Assembly can't see it, idles,
+    # and the work sits forever while the rig looks healthy. Recurring
+    # class (t-450 / t-463 / t-472 / t-480 / t-448). Root cause was the
+    # read-then-overwrite race in _pop_queue (fixed same heat) but the
+    # patrol check guards against any future path that drops a row.
+    #
+    # --fix rebuilds missing entries from (a) the queue task's
+    # assigned_forge, (b) per-task branch tip via `git rev-parse`. If
+    # the branch is missing, the entry is NOT rebuilt (that's the
+    # operator's call — state flip back to pending, or assembly-reject).
+    import subprocess as _sp2
+    q_path = assembly_queue_path(root)
+    jsonl_task_ids = set()
+    if q_path.exists():
+        for raw in q_path.read_text().splitlines():
+            if not raw.strip():
+                continue
+            try:
+                entry = json.loads(raw)
+            except Exception:
+                continue
+            tid = entry.get("task_id")
+            if tid:
+                jsonl_task_ids.add(tid)
+    submitted_in_state = [t for t in state.get("queue", [])
+                          if t.get("status") == "submitted"]
+    from .state import primary_forge_id as _pfi2
+    _primary = _pfi2(state)
+    zombies = [t for t in submitted_in_state
+               if t["id"] not in jsonl_task_ids]
+    for zt in zombies:
+        issues.append(
+            f"state has {zt['id']} status=submitted but "
+            f".assembly-queue.jsonl missing its entry — "
+            f"zombie-submitted (Assembly will never see it)"
+        )
+        if fix:
+            fid = zt.get("assigned_forge") or _primary
+            br = f"{fid}/{zt['id']}"
+            pr = _sp2.run(["git", "rev-parse", br],
+                          cwd=str(main_root), capture_output=True, text=True)
+            if pr.returncode != 0:
+                continue  # branch gone — operator must decide
+            entry = {
+                "forge_id": fid,
+                "task_id": zt["id"],
+                "heat": state["budget"].get("used"),
+                "branch": br,
+                "sha": pr.stdout.strip(),
+                "submitted_at": datetime.now(timezone.utc).isoformat(
+                    timespec="seconds"),
+            }
+            _append_queue(q_path, entry)
+            fixes.append(
+                f"Rebuilt assembly-queue entry for {zt['id']} "
+                f"({br}@{entry['sha'][:8]})"
+            )
+
     # Save fixes if any
     if fix and fixes:
         save_state(root, state)
@@ -4621,7 +4755,7 @@ def patrol(ctx, fix):
         "issues": issues,
         "fixes": fixes,
         "clean": len(issues) == 0,
-        "checks_run": 16,
+        "checks_run": 17,
         "stuck_forges": sorted(set(stuck_forges)),
         "stalled_forges": stalled_forges,
         "starving_forges": starving_forges,
