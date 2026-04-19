@@ -846,6 +846,21 @@ details.heat-card[open] .heat-summary {
 }
 
 .task-id { color: var(--text-muted); font-family: monospace; font-size: 12px; }
+
+/* t-500: preserve source whitespace in task.desc so multi-paragraph
+   descs (filed by Anvil on large initiative tasks) don't collapse to
+   a run-on line. `pre-wrap` keeps newlines + leading spaces while
+   still wrapping long lines; `overflow-wrap: anywhere` stops very
+   long words (URLs, paths) from pushing column width out. Applies to
+   the inline `<td class="task-desc">` (initiative.html rows,
+   direct.html span) AND the drawer `<div class="td-desc">` populated
+   by JS textContent — textContent already preserves \n; with pre-wrap
+   the browser now renders those breaks. */
+.task-desc,
+.td-desc {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
 .task-desc { flex: 1; }
 
 /* Utilities */
