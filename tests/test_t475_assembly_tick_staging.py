@@ -113,14 +113,20 @@ def test_assembly_tick_merges_via_staging(tmp_path):
 
     # Skip pytest inside assembly_tick — it would recursively invoke
     # pytest on this entire test file, which we don't want.
-    runner = CliRunner()
+    # t-510: keep stdout pure so raw_decode can parse the merge result —
+    # assembly-tick now prints ASSEMBLY_ATTEMPT to stderr on merge-start
+    # and click 8.1.x's CliRunner mixes streams by default.
+    try:
+        runner = CliRunner(mix_stderr=False)
+    except TypeError:
+        runner = CliRunner()  # click >=8.3 removed the kwarg; streams already separate
     result = runner.invoke(
         smithy_cli,
         ["--dir", str(project), "assembly-tick",
          "--tests-cmd", "true"],  # `true` always returns 0
     )
     assert result.exit_code == 0, result.output
-    body, _end = json.JSONDecoder().raw_decode(result.output.lstrip())
+    body, _end = json.JSONDecoder().raw_decode(result.stdout.lstrip())
     assert body["status"] == "merged", body
 
     # main now contains fq/t-X's payload and the subsequent bump.
