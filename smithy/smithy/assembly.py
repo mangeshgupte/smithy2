@@ -483,3 +483,196 @@ def try_auto_resolve(project_dir: Path, forge_id: str) -> dict:
             return {"status": "severe", "files": [rel], "all": conflicts}
         resolved.append(rel)
     return {"status": "resolved", "files": resolved}
+
+
+# --- ini-020 impl-T1: batched staging merge ---------------------------------
+# All of the below is t-511 (MVP: green-path + N=1 fallback; bisect is
+# impl-T3). See plans/ini-020-staging-merge-design.md for the full spec.
+
+
+def smithy_tree_hash(repo: Path, base: str = "HEAD") -> str | None:
+    """ini-020 §(b): hash of `smithy/` tree at `base`. Used to decide
+    whether the staging venv needs a rebuild. Returns None if git
+    ls-tree fails (e.g. base missing)."""
+    import hashlib
+    r = _git(repo, "ls-tree", "-r", base, "smithy")
+    if r.returncode != 0:
+        return None
+    return hashlib.sha256(r.stdout.encode()).hexdigest()[:16]
+
+
+def reset_staging_to(wt: Path, ref: str) -> dict:
+    """Hard-reset staging worktree to `ref` + remove untracked cruft.
+    Used both for 'reset to main' at batch start and 'reset to
+    last-good merge' after a severe conflict mid-batch.
+    """
+    r1 = _git(wt, "reset", "--hard", ref)
+    if r1.returncode != 0:
+        return {"status": "error",
+                "detail": f"reset --hard {ref}: {r1.stderr.strip()}"}
+    r2 = _git(wt, "clean", "-fdx")
+    if r2.returncode != 0:
+        return {"status": "error", "detail": r2.stderr.strip()}
+    return {"status": "ready"}
+
+
+def ensure_staging_venv_versioned(wt: Path,
+                                  smithy_hash: str | None = None) -> dict:
+    """ini-020 §(b): create/reuse staging's .venv based on `smithy/`
+    tree hash. Reuse when hash matches the stored marker; otherwise
+    rebuild from scratch and bump recreate_count.
+
+    Returns:
+      {"status": "reused"   | "created" | "recreated" | "error",
+       "path":   <venv/bin/python3>,
+       "recreated": bool,
+       "detail": "..."   (only on error)}
+    """
+    import os as _os
+    import shutil as _sh
+    venv = wt / ".venv"
+    marker = venv / ".smithy-tree-hash"
+    py = venv / "bin" / "python3"
+    stored = marker.read_text().strip() if marker.exists() else None
+    if (venv.exists() and py.exists() and smithy_hash is not None
+            and stored == smithy_hash):
+        return {"status": "reused", "path": str(py), "recreated": False}
+
+    uv = _sh.which("uv")
+    if uv is None:
+        return {"status": "error", "detail": "uv not on PATH"}
+
+    recreated = venv.exists()
+    if recreated:
+        try:
+            _sh.rmtree(venv)
+        except OSError as exc:
+            return {"status": "error", "detail": f"rmtree venv: {exc}"}
+
+    r1 = subprocess.run([uv, "venv", str(venv)], capture_output=True,
+                        text=True, timeout=30)
+    if r1.returncode != 0 or not py.exists():
+        return {"status": "error",
+                "detail": f"uv venv: {r1.stderr.strip()}"}
+
+    env = dict(_os.environ)
+    env["VIRTUAL_ENV"] = str(venv)
+    r2 = subprocess.run(
+        [uv, "pip", "install", "--quiet", "-e",
+         str(wt / "smithy"), "pytest"],
+        cwd=str(wt), env=env, capture_output=True, text=True, timeout=180,
+    )
+    if r2.returncode != 0:
+        return {"status": "error",
+                "detail": f"uv pip install: {r2.stderr.strip()}"}
+
+    if smithy_hash is not None:
+        marker.write_text(smithy_hash)
+
+    return {"status": "recreated" if recreated else "created",
+            "path": str(py), "recreated": recreated}
+
+
+def run_batch(project_dir: Path, entries: list,
+              base: str = "main") -> dict:
+    """ini-020 §(d): merge each entry's per-task branch into the
+    staging worktree sequentially, accumulating into the running tip.
+
+    `entries` — list of `.assembly-queue.jsonl`-shaped dicts (keys:
+    `forge_id`, `task_id`, `branch`, `sha`, …). Submit order preserved.
+
+    Return:
+      {
+        "status": "ok" | "error",
+        "merged": [{entry, sha, status: "clean"|"mild"|"severe"}],
+        "staging_tip": "<sha after last clean/mild merge>",
+        "path": "<staging-root>",
+      }
+
+    Severe conflicts are NOT rejected here (per the t-511 MVP scope;
+    impl-T2 wires per-task reject). We merge --abort that entry, reset
+    staging to the last-good tip, and record status=severe in `merged`
+    so the caller can decide.
+    """
+    staged = ensure_staging_worktree(project_dir, base=base)
+    if staged["status"] != "ready":
+        return {"status": "error",
+                "detail": staged.get("detail", "staging not ready"),
+                "merged": []}
+    wt = Path(staged["path"])
+
+    rs = reset_staging_to(wt, base)
+    if rs["status"] != "ready":
+        return {"status": "error", "detail": rs["detail"], "merged": []}
+
+    merged = []
+    last_good_sha = _git(wt, "rev-parse", "HEAD").stdout.strip()
+
+    for entry in entries:
+        br = entry.get("branch")
+        # Branch sanity: it must exist on disk. A vanished per-task
+        # branch means the Forge force-completed or Marshal cleaned it
+        # — treat as severe (caller skips without merge work).
+        ex = _git(project_dir, "rev-parse", "--verify", "--quiet", br)
+        if ex.returncode != 0:
+            merged.append({"entry": entry, "sha": None,
+                           "status": "severe",
+                           "detail": f"branch '{br}' not found"})
+            continue
+
+        mr = _git(wt, "merge", "--no-ff", "--no-edit",
+                  "-m", f"[batch] merge {br}", br)
+        if mr.returncode == 0:
+            sha = _git(wt, "rev-parse", "HEAD").stdout.strip()
+            merged.append({"entry": entry, "sha": sha, "status": "clean"})
+            last_good_sha = sha
+            continue
+
+        # Conflict path: try the mild auto-resolve.
+        conf = conflicted_files(wt)
+        if conf:
+            ar = try_auto_resolve(project_dir, _STAGING_WORKTREE)
+            if ar.get("status") == "resolved":
+                # Finalise the merge commit.
+                fc = _git(wt, "commit", "--no-edit")
+                if fc.returncode == 0:
+                    sha = _git(wt, "rev-parse", "HEAD").stdout.strip()
+                    merged.append({"entry": entry, "sha": sha,
+                                   "status": "mild",
+                                   "resolved": ar.get("files", [])})
+                    last_good_sha = sha
+                    continue
+            # Severe or finalise failed — abort + reset to last good.
+            _git(wt, "merge", "--abort")
+            reset_staging_to(wt, last_good_sha)
+            merged.append({"entry": entry, "sha": None,
+                           "status": "severe",
+                           "detail": f"conflict in {conf}"})
+            continue
+
+        # Non-conflict merge error (e.g. missing branch locally). Abort
+        # and reset defensively.
+        _git(wt, "merge", "--abort")
+        reset_staging_to(wt, last_good_sha)
+        merged.append({"entry": entry, "sha": None, "status": "severe",
+                       "detail": mr.stderr.strip() or mr.stdout.strip()})
+
+    return {"status": "ok", "merged": merged,
+            "staging_tip": last_good_sha, "path": str(wt)}
+
+
+def run_batch_tests(wt: Path, timeout_s: int = 600,
+                    test_paths: tuple = ("smithy/tests/", "tests/")) -> dict:
+    """ini-020 §(f): single pytest run post-merge, inside staging's
+    venv. Assumes `ensure_staging_venv_versioned` has already run and
+    `<wt>/.venv/bin/python3` is valid. 10-min timeout.
+    """
+    py = wt / ".venv" / "bin" / "python3"
+    if not py.exists():
+        return {"passed": False, "returncode": 127,
+                "output": f"staging venv python missing at {py}"}
+    cmd = [str(py), "-m", "pytest", "-q", *test_paths]
+    r = subprocess.run(cmd, cwd=str(wt), capture_output=True,
+                       text=True, timeout=timeout_s)
+    return {"passed": r.returncode == 0, "returncode": r.returncode,
+            "output": (r.stdout + r.stderr)[-4000:]}
