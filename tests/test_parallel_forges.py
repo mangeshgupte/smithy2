@@ -85,6 +85,21 @@ def sandbox(tmp_path):
     yield proj
 
 
+def _drain_assembly_queue(sandbox):
+    """Pop the head jsonl row — mirrors the tail of assembly-tick so the
+    sandbox (which uses the `assembly-merge` helper directly, not the
+    full tick) doesn't accumulate rows that would trip t-442
+    back-pressure after 2*N heats."""
+    qpath = sandbox / ".assembly-queue.jsonl"
+    if not qpath.exists():
+        return
+    lines = [ln for ln in qpath.read_text().splitlines() if ln.strip()]
+    if len(lines) <= 1:
+        qpath.unlink(missing_ok=True)
+    else:
+        qpath.write_text("\n".join(lines[1:]) + "\n")
+
+
 def test_n2_sandbox_five_heats_end_to_end(sandbox):
     """Full acceptance loop: 5 heats across 2 Forges, all merged clean."""
     forges_used = set()
@@ -115,6 +130,9 @@ def test_n2_sandbox_five_heats_end_to_end(sandbox):
         assert rc == 0
         task = next(t for t in _state(sandbox)["queue"] if t["id"] == tid)
         assert task["status"] == "complete"
+        # Production assembly-tick pops the jsonl row after merge; the
+        # sandbox calls assembly-merge directly, so do it here too (t-442).
+        _drain_assembly_queue(sandbox)
 
     # Both Forges actually worked — not a N=1 rig in disguise.
     assert forges_used == {"forge-01", "forge-02"}
@@ -153,6 +171,7 @@ def test_patrol_clean_after_sandbox_run(sandbox):
         _smithy(sandbox, "end-heat", "0.7", "🟢", "ok",
                 "--outcome", "complete", "--no-nudge", "--skip-tests")
         _smithy(sandbox, "assembly-merge", tid, "--sha", f"sha{i:02d}" + "0" * 36)
+        _drain_assembly_queue(sandbox)  # t-442: see doc in companion test
 
     rc, out, _ = _smithy(sandbox, "patrol")
     data = json.loads(out)
