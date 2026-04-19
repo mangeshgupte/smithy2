@@ -3367,6 +3367,156 @@ def marshal_escalate_list(ctx, open_only):
     _err(f"{len(entries)} {'open' if open_only else 'total'} escalation(s)")
 
 
+# --- t-484 (ini-023 T5): Comms snapshot ------------------------------------
+#
+# Comms is an LLM-driven persona (see personas/comms/CLAUDE.md). At each
+# wake it composes a TL;DR + Metrics section and appends to the day's
+# report file. The metrics numbers must be deterministic — the LLM can
+# compose prose reliably but mis-count queue lengths. This CLI produces
+# the exact fields Comms needs in a single JSON read, so its wake loop
+# is: `/clear` → read persona files → `smithy comms-snapshot` → compose
+# TL;DR (LLM) → append section (LLM).
+#
+# MVP scope (T5): the fields needed for the TL;DR + Metrics table in
+# §6 of plans/comms-persona-design.md. Initiatives / Bottlenecks /
+# What's-next / Anomalies land in T6; push triggers in T7.
+
+
+def _recent_worklog_outcomes(root, tail=30, window_minutes=30):
+    """Parse the tail of worklog.tsv for 'now' metrics.
+
+    Returns (counts, merged_recent) where:
+      counts = {"green": int, "yellow": int, "red": int, "submitted": int,
+                "rejected": int, "merged": int}
+      merged_recent = int — tasks whose worklog row within the window
+                            had outcome=merged (includes Assembly merges
+                            Forge logged via end-heat --outcome merged).
+    """
+    from datetime import datetime, timedelta, timezone
+    wl = root / "worklog.tsv"
+    if not wl.exists():
+        return ({"green": 0, "yellow": 0, "red": 0, "submitted": 0,
+                 "rejected": 0, "merged": 0}, 0)
+    try:
+        lines = wl.read_text().splitlines()
+    except OSError:
+        return ({"green": 0, "yellow": 0, "red": 0, "submitted": 0,
+                 "rejected": 0, "merged": 0}, 0)
+    rows = lines[-tail:] if len(lines) > tail else lines[1:]  # strip header
+    counts = {"green": 0, "yellow": 0, "red": 0,
+              "submitted": 0, "rejected": 0, "merged": 0}
+    merged_recent = 0
+    cutoff = datetime.now(timezone.utc) - timedelta(minutes=window_minutes)
+
+    for line in rows:
+        parts = line.split("\t")
+        if len(parts) < 6:
+            continue
+        ts_raw, _heat, _stage, _tid, outcome, _value = parts[:6]
+        signal = parts[6] if len(parts) > 6 else ""
+        # Signal counts — honour whichever emoji was logged.
+        if "🟢" in signal:
+            counts["green"] += 1
+        elif "🟡" in signal:
+            counts["yellow"] += 1
+        elif "🔴" in signal:
+            counts["red"] += 1
+        if outcome == "submitted":
+            counts["submitted"] += 1
+        elif outcome == "rejected":
+            counts["rejected"] += 1
+        elif outcome == "merged" or outcome == "complete":
+            counts["merged"] += 1
+        # Recency window for merged.
+        try:
+            ts = datetime.fromisoformat(ts_raw.replace("Z", "+00:00"))
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=timezone.utc)
+            if ts >= cutoff and outcome in ("merged", "complete"):
+                merged_recent += 1
+        except (ValueError, AttributeError):
+            pass
+    return counts, merged_recent
+
+
+@cli.command("comms-snapshot")
+@click.option("--window-minutes", type=int, default=30,
+              help="Recency window for 'last N-min' counters (default 30).")
+@click.pass_context
+def comms_snapshot(ctx, window_minutes):
+    """Emit a JSON snapshot of the fields Comms needs for a wake.
+
+    t-484 (ini-023 T5). Comms's wake loop calls this to get
+    deterministic metrics numbers; the LLM composes the TL;DR prose on
+    top. No state is mutated — read-only, like Comms itself.
+    """
+    from datetime import datetime, timezone
+    root = ctx.obj["root"]
+    state = load_state(root)
+
+    budget = state.get("budget") or {}
+    used = budget.get("used", 0) or 0
+    total = budget.get("total_heats", 0) or 0
+    pct_used = (100.0 * used / total) if total else None
+
+    parallel = state.get("parallel") or {}
+    forges = parallel.get("forges") or []
+    active = sum(1 for f in forges if f.get("status") == "busy")
+    halted = bool(parallel.get("halt_flag"))
+
+    # Assembly queue depth — count non-blank lines in .assembly-queue.jsonl.
+    assy_queue = main_repo_root(root) / ".assembly-queue.jsonl"
+    assy_depth = 0
+    if assy_queue.exists():
+        try:
+            assy_depth = sum(
+                1 for line in assy_queue.read_text().splitlines()
+                if line.strip()
+            )
+        except OSError:
+            pass
+
+    queue = state.get("queue") or []
+    queue_summary = {
+        "pending": sum(1 for t in queue if t.get("status") == "pending"),
+        "in_progress": sum(1 for t in queue if t.get("status") == "in_progress"),
+        "submitted": sum(1 for t in queue if t.get("status") == "submitted"),
+        "complete": sum(1 for t in queue if t.get("status") == "complete"),
+    }
+
+    counts, merged_recent = _recent_worklog_outcomes(
+        root, tail=30, window_minutes=window_minutes
+    )
+
+    snapshot = {
+        "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+        "heat": used,
+        "budget": {
+            "used": used,
+            "total": total,
+            "pct_used": round(pct_used, 1) if pct_used is not None else None,
+            "remaining": total - used if total else None,
+        },
+        "forges": {
+            "active": active,
+            "total": len(forges),
+            "ids": [f.get("id") for f in forges if f.get("id")],
+        },
+        "halt_flag": halted,
+        "assembly_queue_depth": assy_depth,
+        "queue_summary": queue_summary,
+        "worklog_tail_30": counts,
+        "tasks_merged_in_window": merged_recent,
+        "window_minutes": window_minutes,
+    }
+    _output(snapshot)
+    _err(
+        f"Comms snapshot: heat {used}/{total or '?'} "
+        f"forges {active}/{len(forges)} "
+        f"assy_queue {assy_depth}"
+    )
+
+
 @cli.command("sessions")
 @click.pass_context
 def sessions(ctx):

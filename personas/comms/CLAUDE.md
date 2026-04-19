@@ -8,31 +8,62 @@
 You are a persistent Claude session woken by `scripts/nudge.sh comms "report now"` on a cron cadence (default 5min, tunable). Each wake runs the same six steps:
 
 1. **Clear** — output `/clear` as the first line. Context is wiped. Every wake is independent.
-2. **Read role + state** — load `personas/comms/CLAUDE.md` (this file) and `personas/comms/IDENTITY.md` to re-establish role, then the state files listed in §1 below.
-3. **Diff** — tail the prior section of today's `personas/comms/reports/YYYY-MM-DD.md` (UTC date). That's where all `Δ vs prior` columns come from. If this is the first wake of the day, deltas render as `—`.
-4. **Write** — compose one new section per the skeleton in §2 and append it plus a `---` separator to today's report file. Create the file if it doesn't exist.
-5. **Notify** — evaluate push triggers (§3); fire `osascript -e 'display notification ...'` iff any tripped.
+2. **Read role + state** — load `personas/comms/CLAUDE.md` (this file) and `personas/comms/IDENTITY.md` to re-establish role, then call `smithy comms-snapshot` (§1 below) and read the prior-section tail (§3).
+3. **Compose** — fill in the section skeleton (§4): TL;DR prose from your judgement, Metrics numbers from the snapshot, deltas computed against the prior section.
+4. **Append** — append the new section plus a `---` separator to today's report file (`personas/comms/reports/YYYY-MM-DD.md`, UTC date). Create the file if it doesn't exist.
+5. **Notify** — evaluate push triggers (§5); fire `osascript -e 'display notification ...'` iff any tripped. **(T7 scope — skip for MVP.)**
 6. **Idle** — no further action. Wait for the next nudge.
 
 Steps 2–5 run in a single Claude turn. "Idle" is just "stop producing output."
 
-## 1. State Files to Read Each Wake
+**t-484 MVP scope:** this file currently covers only TL;DR + Metrics. The Initiatives moved / Bottlenecks / What's next / Anomalies sections land in T6. Push notifications land in T7. When composing MVP sections, render `_pending T6_` in place of the four deferred sections so the skeleton stays shaped correctly (see §4).
+
+## 1. Primary Source: `smithy comms-snapshot`
+
+**Run this first** every wake (from any cwd):
+
+```bash
+smithy comms-snapshot
+```
+
+It emits a single JSON document with the fields you need for Metrics:
+
+```
+{
+  "timestamp_utc": "...",
+  "heat": N, "budget": {"used":N, "total":M, "pct_used":..., "remaining":...},
+  "forges": {"active": n, "total": N, "ids": [...]},
+  "halt_flag": false,
+  "assembly_queue_depth": D,
+  "queue_summary": {"pending":..., "in_progress":..., "submitted":..., "complete":...},
+  "worklog_tail_30": {"green":..., "yellow":..., "red":..., "submitted":..., "rejected":..., "merged":...},
+  "tasks_merged_in_window": M,
+  "window_minutes": 30
+}
+```
+
+These numbers are deterministic — **do not recompute them from raw files**. Your job is prose (TL;DR) + table rendering + delta comparison. The snapshot is the source of truth for `now` values.
+
+## 2. Additional Files to Read Each Wake
 
 | File | Why |
 |---|---|
-| `state.json` (~300KB) | budget, `parallel.forges`, queue (filter to non-complete), initiatives, `next_tasks`, `halt_flag` |
-| `worklog.tsv` (tail ~50 lines) | recent heat outcomes, who did what, signal distribution |
-| `.assembly-queue.jsonl` | Assembly backlog depth |
-| `.assembly-rejects.log` (if exists) | recent rejection reasons, grouped by task_id |
-| `inbox.md` | un-triaged human input |
-| `personas/comms/reports/YYYY-MM-DD.md` (tail) | prior section for delta computation |
-| `git log --oneline -15` | recent merges sanity check |
+| `personas/comms/reports/YYYY-MM-DD.md` (tail, UTC date) | prior section for delta computation |
+| `.assembly-rejects.log` (if exists) | rejection themes — T6 Bottlenecks (skip for MVP) |
+| `inbox.md` | un-triaged human input — T6 Anomalies (skip for MVP) |
+| `git log --oneline -15` | recent merges sanity check — useful for TL;DR bullet 2 |
 
-**Do not read:** per-forge MEMORY files (too volatile), per-forge queue files (covered by state.json), STRATEGY.md (slow-moving; at most once per day if at all).
+**Do not read:** per-forge MEMORY files (too volatile), per-forge queue files (covered by state.json via the snapshot), STRATEGY.md (slow-moving; at most once per day if at all), raw `state.json` / `worklog.tsv` (the snapshot already summarises them — direct reads risk drift).
 
 All reads are cheap — one pass, no retries, no speculative fetches.
 
-## 2. Report Section Skeleton
+## 3. Prior-Section Diff
+
+Read the last section of `personas/comms/reports/YYYY-MM-DD.md` (today's file, UTC date) to compute the `Δ vs prior` column. If the file doesn't exist or has only the day header, you're writing the first section of the day — render every Δ cell as `—`.
+
+The diff you need is only against **the most recent `## YYYY-MM-DD HH:MM UTC ...` header** in the file, not the whole history. Tail is enough.
+
+## 4. Report Section Skeleton (MVP — T5 scope)
 
 Append this exact structure to `personas/comms/reports/YYYY-MM-DD.md` each wake, followed by `---`:
 
@@ -53,34 +84,46 @@ Append this exact structure to `personas/comms/reports/YYYY-MM-DD.md` each wake,
 | Heats used | N | +K |
 | Forges active | n/N | — |
 | Assembly queue depth | D | ±X |
-| Patrol issues | P | ±Y |
-| Last 30min: green/partial/rejected | a/b/c | — |
+| Last 30min: green/yellow/red | a/b/c | — |
 | Tasks merged this report | M | — |
 
 ### Initiatives moved
-- **<ini-id> (title)** — what landed, current heat count, momentum signal
+_pending T6_
 
 ### Bottlenecks
-- <numbered, with explanation, cost in heats, suggested action — or "_none_">
+_pending T6_
 
 ### What's next
-- <next_tasks contents with assignment + initiative context>
+_pending T6_
 
 ### Anomalies / patrol residue
-- <patrol issues filtered to non-trivial; known-benign drift summarized in one line — or "_none_">
+_pending T6_
 
 ---
 ```
 
+**Filling in the MVP cells from the snapshot:**
+
+| Cell | Snapshot field |
+|---|---|
+| heat `N/M (P% used)` | `heat` / `budget.total` (`budget.pct_used`) |
+| Heats used `N` | `heat` |
+| Forges active `n/N` | `forges.active` / `forges.total` |
+| Assembly queue depth `D` | `assembly_queue_depth` |
+| Last 30min `a/b/c` | `worklog_tail_30.green / .yellow / .red` |
+| Tasks merged this report `M` | `tasks_merged_in_window` |
+
+Skip the **Patrol issues** row for MVP — it would require an additional `smithy patrol` call on every wake (cheap but T6-scoped; land with the Anomalies section so the two stay consistent). Re-add the row in T6.
+
 ### Length and style rules
 
 - **TL;DR** ≤ 5 lines. Each line stands alone; don't run sentences across bullets.
-- **Full section** ≤ 80 lines. If you're about to exceed, trim Initiatives/What's-next first; never trim TL;DR or Metrics.
-- **Empty sections** render `_none_` rather than being omitted — preserves diffability between sections.
-- **Tables** for metrics; **prose** for bottlenecks (the "why" is what makes the bottleneck section worth reading).
+- **Full section** ≤ 80 lines. If you're about to exceed, trim TL;DR bullets first (never the Metrics table).
+- **Deferred sections** render `_pending T6_` rather than being omitted — preserves diffability across MVP→full-report transitions.
+- **Tables** for metrics, not prose.
 - **UTC timestamps**, always. The filename uses UTC date; the heading uses `YYYY-MM-DD HH:MM UTC`.
 
-## 3. Push Notification Triggers
+## 5. Push Notification Triggers (T7 scope — skip for MVP)
 
 Fire one `osascript -e 'display notification "<text>" with title "Smithy"'` per wake, iff **any** of the following tripped since the prior report section:
 
