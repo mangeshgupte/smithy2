@@ -26,18 +26,34 @@
 #   scripts/start-smithy.sh -h         # show usage
 #
 # Environment:
-#   FORGE_SESSION   session name (default: forge)
-#   FORGE_CLAUDE    launcher to run in each pane
-#                   (default: claude --dangerously-skip-permissions)
-#                   Set to "" to leave panes empty.
-#   FORGE_ROOT      project root (default: script's ../ — the smithy2 checkout)
+#   FORGE_SESSION    session name (default: forge)
+#   FORGE_CLAUDE     launcher to run in each pane
+#                    (default: claude --dangerously-skip-permissions)
+#                    Set to "" to leave panes empty.
+#   FORGE_ROOT       project root (default: script's ../ — the smithy2 checkout)
+#   FORGE_UI_WINDOW  t-477: name of the second tmux window that hosts the
+#                    four uvicorns (bellows + three steering UIs).
+#                    Default: "ui". Set to "" to skip the ui window
+#                    entirely — symmetric with stop-smithy.sh's --ui-only
+#                    opt-out (t-468).
 
 set -euo pipefail
 
 FORGE_SESSION="${FORGE_SESSION:-forge}"
 FORGE_CLAUDE="${FORGE_CLAUDE-claude --dangerously-skip-permissions}"
+FORGE_UI_WINDOW="${FORGE_UI_WINDOW-ui}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 FORGE_ROOT="${FORGE_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+
+# t-477: ui pane spec. Each entry: "title|relative-workdir|port".
+# Single source of truth for the start side; stop-smithy.sh (t-468) uses
+# tmux window membership to find them, not this list.
+UI_PANES=(
+  "bellows|bellows|8080"
+  "poker|ui-priority-poker|8001"
+  "intent|ui-intent-editor|8003"
+  "timeline|ui-timeline|8004"
+)
 
 usage() {
   cat <<'EOF'
@@ -103,7 +119,36 @@ if (( DRY_RUN )); then
   for p in "${PANES[@]}"; do
     printf "  %s\n" "$p"
   done
+  if [[ -n "$FORGE_UI_WINDOW" ]]; then
+    echo "ui-window: $FORGE_UI_WINDOW"
+    for u in "${UI_PANES[@]}"; do
+      title="${u%%|*}"; rest="${u#*|}"
+      workdir="${rest%|*}"; port="${rest##*|}"
+      printf "  %s|%s/%s|port=%s\n" "$title" "$FORGE_ROOT" "$workdir" "$port"
+    done
+  fi
   exit 0
+fi
+
+# t-477: preflight UI ports FIRST. Port collisions are the most common
+# operator-visible failure (a previous run's uvicorn still bound), and
+# the check is cheap. stop-smithy.sh handles cleanup via t-468's
+# graceful SIGINT; auto-killing from start would race the operator.
+if [[ -n "$FORGE_UI_WINDOW" ]]; then
+  for entry in "${UI_PANES[@]}"; do
+    title="${entry%%|*}"; rest="${entry#*|}"
+    workdir="${rest%|*}"; port="${rest##*|}"
+    if [[ ! -d "$FORGE_ROOT/$workdir" ]]; then
+      echo "missing ui workdir: $FORGE_ROOT/$workdir" >&2
+      exit 1
+    fi
+    if command -v nc >/dev/null 2>&1 && nc -z 127.0.0.1 "$port" 2>/dev/null; then
+      echo "port $port already in use (needed by $title — $workdir)" >&2
+      echo "  run scripts/stop-smithy.sh --ui-only to free the ui window," >&2
+      echo "  or set FORGE_UI_WINDOW='' to skip the ui window entirely." >&2
+      exit 1
+    fi
+  done
 fi
 
 # Preflight: every workdir must exist before we start splitting.
@@ -203,6 +248,41 @@ for idx in "${!PANES[@]}"; do
 done
 
 trap - ERR
+
+# --- t-477: ui window (uvicorns) -------------------------------------------
+#
+# Symmetric with stop-smithy.sh (t-468): a second tmux window named
+# $FORGE_UI_WINDOW with one pane per uvicorn service. The Claude "Start"
+# cascade below intentionally does NOT touch these panes — they're long-
+# running uvicorns, not Claude TUIs. Skipped entirely when
+# FORGE_UI_WINDOW='' (operator opt-out, matches stop's opt-out shape).
+if [[ -n "$FORGE_UI_WINDOW" ]]; then
+  FIRST_UI=""; UI_PANE_IDS=()
+  for entry in "${UI_PANES[@]}"; do
+    title="${entry%%|*}"; rest="${entry#*|}"
+    workdir="${rest%|*}"; port="${rest##*|}"
+    cmd="cd '$FORGE_ROOT/$workdir' && uv run uvicorn app:app --port $port"
+    if [[ -z "$FIRST_UI" ]]; then
+      FIRST_UI=$(tmux new-window -t "$FORGE_SESSION" \
+        -n "$FORGE_UI_WINDOW" \
+        -c "$FORGE_ROOT/$workdir" \
+        -P -F '#{pane_id}')
+      UI_PANE_IDS+=("$FIRST_UI")
+      tmux select-pane -t "$FIRST_UI" -T "$title"
+      tmux send-keys -t "$FIRST_UI" "$cmd" C-m
+    else
+      pid=$(tmux split-window -t "$FIRST_UI" -h \
+        -c "$FORGE_ROOT/$workdir" \
+        -P -F '#{pane_id}')
+      UI_PANE_IDS+=("$pid")
+      tmux select-pane -t "$pid" -T "$title"
+      tmux send-keys -t "$pid" "$cmd" C-m
+    fi
+  done
+  # Equalize pane widths in the ui window so each uvicorn gets a column.
+  tmux select-layout -t "${FORGE_SESSION}:${FORGE_UI_WINDOW}" even-horizontal \
+    >/dev/null 2>&1 || true
+fi
 
 # --- boot cascade -----------------------------------------------------------
 #
