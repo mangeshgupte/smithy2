@@ -355,3 +355,49 @@ code {
 .idle-banner.idle-queue-empty { border-color: var(--border, #333); font-style: italic; }
 .idle-banner.idle-waiting { border-color: var(--yellow, #c89c2a); }
 .idle-icon { font-size: 16px; }
+
+/* t-443: advisory steering chips — parallelism / affinity / touches */
+.card-steering {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin: 4px 0 6px 0;
+    font-size: 11px;
+}
+.card-steering .chip {
+    padding: 2px 8px;
+    border-radius: 10px;
+    border: 1px solid var(--border, #333);
+    background: rgba(255, 255, 255, 0.04);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.15s, transform 0.1s;
+    user-select: none;
+}
+.card-steering .chip:hover {
+    opacity: 0.85;
+    transform: translateY(-1px);
+}
+.card-steering .chip-parallel {
+    background: rgba(40, 180, 80, 0.18);
+    border-color: #3ea85e;
+    color: #7ce09a;
+}
+.card-steering .chip-serial {
+    background: rgba(200, 156, 42, 0.18);
+    border-color: #c89c2a;
+    color: #e6c060;
+}
+.card-steering .chip-empty {
+    opacity: 0.55;
+    font-style: italic;
+}
+.card-steering .steering-unset {
+    font-size: 10px;
+    color: var(--muted, #888);
+    opacity: 0.6;
+    cursor: pointer;
+    font-style: italic;
+    padding: 2px 0;
+}
+.card-steering .steering-unset:hover { opacity: 0.9; }
