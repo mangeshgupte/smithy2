@@ -7,8 +7,8 @@ import pytest
 from pathlib import Path
 from click.testing import CliRunner
 
-from smithy.cli import cli
-from smithy.state import VALID_STAGES
+from smithy.smithy.cli import cli
+from smithy.smithy.state import VALID_STAGES
 
 
 @pytest.fixture
@@ -46,7 +46,11 @@ def project(tmp_path):
 
 @pytest.fixture
 def runner():
-    return CliRunner(mix_stderr=False)
+    # t-489: click >= 8.2 removed `mix_stderr`.
+    try:
+        return CliRunner(mix_stderr=False)
+    except TypeError:
+        return CliRunner()
 
 
 class TestQueuePush:

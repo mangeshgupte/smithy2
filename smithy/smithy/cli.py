@@ -145,9 +145,19 @@ def _run_presubmit_tests(root, forge_id, tests_cmd=None, timeout_s=600):
     )
     wt = main_repo_root(root) / ".worktrees" / (forge_id or "")
     cwd = wt if (forge_id and wt.exists() and (wt / ".git").exists()) else root
+    # t-489: if the default command starts with bare `python3`, rewrite
+    # it to the cwd's `.venv/bin/python3` when present so the pytest
+    # subprocess imports `smithy` from the worktree's own editable
+    # install, not the system's (main-bound) one. An explicit override
+    # via --tests-cmd / SMITHY_TESTS_CMD is respected verbatim.
+    argv = shlex.split(cmd)
+    if tests_cmd is None and argv and argv[0] == "python3":
+        venv_py = Path(cwd) / ".venv" / "bin" / "python3"
+        if venv_py.exists():
+            argv[0] = str(venv_py)
     try:
         r = subprocess.run(
-            shlex.split(cmd), cwd=str(cwd),
+            argv, cwd=str(cwd),
             capture_output=True, text=True, timeout=timeout_s,
         )
     except subprocess.TimeoutExpired:
@@ -2214,10 +2224,18 @@ def _forge_session():
     return os.environ.get("FORGE_SESSION", "forge")
 
 
-def _resolve_pane(session, persona):
+def _resolve_pane(session, persona, forge_ids=None):
     """t-414: return (pane_id, reason). pane_id is the tmux id of the pane
     whose cwd maps to `persona` via _pane_agent; reason is a short string
     explaining why resolution failed (None on success).
+
+    t-489: if `forge_ids` (the set of registered `parallel.forges[].id`s)
+    is provided AND the session has panes but none of them map to any
+    registered forge id, the session is treated as the wrong rig and a
+    'no registered-forge panes' reason is returned. Callers use this
+    signal to fail loudly rather than fall through to the silent
+    .smithy-nudge-queue/ jsonl side-channel (observed 2026-04-18 when a
+    stale 'smithy2' session lingered alongside the live 'forge').
 
     Verify: python3 -c "from smithy.cli import _resolve_pane; \
                          print(_resolve_pane('forge','marshal'))"
@@ -2239,10 +2257,40 @@ def _resolve_pane(session, persona):
     )
     if ls.returncode != 0:
         return None, f"tmux list-panes failed: {ls.stderr.strip()}"
+
+    pane_rows = []
+    pane_agents = set()
     for line in ls.stdout.splitlines():
         if "\t" not in line:
             continue
         pid, path = line.split("\t", 1)
+        pane_rows.append((pid, path))
+        a = _pane_agent(path)
+        if a:
+            pane_agents.add(a)
+
+    # t-489 roster-mismatch guard: a forge-ready tmux session is
+    # characterised by having at least one pane whose _pane_agent maps
+    # to either a registered `parallel.forges[].id` OR a worktree named
+    # `forge-*`. The Apr 11 stale-session case had a single generic
+    # shell window (pane_agents is empty). We return loudly so
+    # _nudge_persona refuses to silently queue to jsonl. We only fire
+    # when forges are registered (falsy/empty forge_ids = "don't know
+    # enough, stay compatible with legacy callers").
+    if forge_ids:
+        has_forge_pane = any(
+            a in forge_ids or a.startswith("forge-")
+            for a in pane_agents
+        )
+        if not has_forge_pane:
+            return None, (
+                f"tmux session '{session}' has no registered-forge panes "
+                f"(expected any of {sorted(forge_ids)} or forge-*, "
+                f"saw {sorted(pane_agents) or '[none]'}) — "
+                f"wrong session? set FORGE_SESSION to the live rig"
+            )
+
+    for pid, path in pane_rows:
         if _pane_agent(path) == persona:
             return pid, None
     return None, f"no pane for persona '{persona}' in session '{session}'"
@@ -2277,8 +2325,31 @@ def _nudge_persona(persona, message, root=None):
                 "target": session,
                 "reason": "persona mid-heat, nudge queued"}
 
-    pane_id, reason = _resolve_pane(session, persona)
+    # t-489: read registered forge ids so _resolve_pane can distinguish
+    # "session is wrong rig" from "persona has no pane". load_state can
+    # raise (corrupt state, missing file); treat that as no-info and
+    # preserve the legacy behaviour.
+    forge_ids = None
+    if root:
+        try:
+            _s = load_state(root)
+            forge_ids = {
+                f.get("id")
+                for f in (_s.get("parallel") or {}).get("forges") or []
+                if f.get("id")
+            }
+        except Exception:
+            forge_ids = None
+
+    pane_id, reason = _resolve_pane(session, persona, forge_ids=forge_ids)
     if pane_id is None:
+        # t-489: wrong-session detected (pane roster has no forge panes).
+        # Fail loudly rather than queue — the side-channel jsonl was what
+        # let tasks t-448/t-474/t-479/t-480 sit unserved for ~25min.
+        if reason and "no registered-forge panes" in reason:
+            _err(f"nudge ERROR: {reason}")
+            return {"nudged": False, "queued": False, "error": True,
+                    "persona": persona, "target": session, "reason": reason}
         if root:
             _queue_nudge(root, persona, message)
             return {"nudged": False, "queued": True, "persona": persona,
@@ -2864,6 +2935,11 @@ def nudge(ctx, persona, message):
         _err(f"Nudged {result['target']}: {message[:60]}")
     elif result.get("queued"):
         _err(f"Queued nudge for {persona} (mid-heat): {message[:60]}")
+    elif result.get("error"):
+        # t-489: wrong-session errors must be actionable (exit != 0) so
+        # callers like Marshal don't treat them as ordinary queuing.
+        _err(f"ERROR: {result['reason']}")
+        sys.exit(1)
     else:
         _err(f"Warning: {result['reason']} ({result['target']})")
 
@@ -3772,6 +3848,34 @@ def patrol(ctx, fix):
                     f"(t-467: pane will silently use the global install)"
                 )
 
+    # 15. t-489: dual-session detection. Warn if FORGE_SESSION's session
+    # is live AND another tmux session named 'smithy*' or 'forge*' is
+    # also live — that's the "stale 'smithy2' alongside live 'forge'"
+    # condition where the internal nudge path could (pre-t-489) silently
+    # pick the wrong session and fall through to .smithy-nudge-queue/.
+    # tmux unavailable or erroring: silent skip (CI, headless dev).
+    try:
+        import subprocess as _sp
+        _ls = _sp.run(
+            ["tmux", "list-sessions", "-F", "#{session_name}"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if _ls.returncode == 0:
+            _active = _forge_session()
+            _all = [s.strip() for s in _ls.stdout.splitlines() if s.strip()]
+            _stale = [s for s in _all
+                      if s != _active
+                      and (s.startswith("smithy") or s.startswith("forge"))]
+            if _active in _all and _stale:
+                issues.append(
+                    f"tmux dual-session: active FORGE_SESSION='{_active}' "
+                    f"plus stale {_stale} — run "
+                    f"`tmux kill-session -t <name>` to clear "
+                    f"(internal nudges may target the wrong session)"
+                )
+    except Exception:
+        pass
+
     # Save fixes if any
     if fix and fixes:
         save_state(root, state)
@@ -3780,7 +3884,7 @@ def patrol(ctx, fix):
         "issues": issues,
         "fixes": fixes,
         "clean": len(issues) == 0,
-        "checks_run": 14,
+        "checks_run": 15,
         "stuck_forges": sorted(set(stuck_forges)),
         "stalled_forges": stalled_forges,
     })
