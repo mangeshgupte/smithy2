@@ -23,8 +23,8 @@ from unittest.mock import patch
 import pytest
 from click.testing import CliRunner
 
-from smithy.cli import cli
-from smithy.state import VALID_STAGES
+from smithy.smithy.cli import cli
+from smithy.smithy.state import VALID_STAGES
 
 
 @pytest.fixture
@@ -115,7 +115,7 @@ def _read_next(project):
 
 
 class TestInvariantHolds:
-    @patch("smithy.cli._nudge_persona")
+    @patch("smithy.smithy.cli._nudge_persona")
     def test_populates_when_empty_and_idle(self, mock_nudge, project, runner):
         mock_nudge.return_value = {"nudged": True, "persona": "forge-quench"}
         _write_state(project, _state(
@@ -241,7 +241,7 @@ class TestNoPendingTasks:
 
 
 class TestMultipleForges:
-    @patch("smithy.cli._nudge_persona")
+    @patch("smithy.smithy.cli._nudge_persona")
     def test_n_idle_forges_populate_n_tasks(self, mock_nudge, project, runner):
         mock_nudge.return_value = {"nudged": True}
         _write_state(project, _state(
@@ -257,7 +257,7 @@ class TestMultipleForges:
         # All distinct (de-duplication).
         assert len(set(data["next_tasks"])) == 3
 
-    @patch("smithy.cli._nudge_persona")
+    @patch("smithy.smithy.cli._nudge_persona")
     def test_fewer_tasks_than_forges(self, mock_nudge, project, runner):
         mock_nudge.return_value = {"nudged": True}
         _write_state(project, _state(
@@ -275,7 +275,7 @@ class TestMultipleForges:
 
 
 class TestIdempotency:
-    @patch("smithy.cli._nudge_persona")
+    @patch("smithy.smithy.cli._nudge_persona")
     def test_already_populated_no_op(self, mock_nudge, project, runner):
         mock_nudge.return_value = {"nudged": True}
         _write_state(project, _state(
@@ -290,7 +290,7 @@ class TestIdempotency:
         # next_tasks unchanged.
         assert _read_next(project) == ["t-100"]
 
-    @patch("smithy.cli._nudge_persona")
+    @patch("smithy.smithy.cli._nudge_persona")
     def test_second_run_is_noop(self, mock_nudge, project, runner):
         mock_nudge.return_value = {"nudged": True}
         _write_state(project, _state(
@@ -311,7 +311,7 @@ class TestIdempotency:
 
 
 class TestAffinityRespect:
-    @patch("smithy.cli._nudge_persona")
+    @patch("smithy.smithy.cli._nudge_persona")
     def test_affinity_pinned_task_goes_to_named_forge(self, mock_nudge,
                                                      project, runner):
         mock_nudge.return_value = {"nudged": True}
@@ -358,7 +358,7 @@ class TestDryRun:
 
 
 class TestRigEvent:
-    @patch("smithy.cli._nudge_persona")
+    @patch("smithy.smithy.cli._nudge_persona")
     def test_event_emitted_on_repopulate(self, mock_nudge, project, runner):
         mock_nudge.return_value = {"nudged": True}
         _write_state(project, _state(
