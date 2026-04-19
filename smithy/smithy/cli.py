@@ -2390,6 +2390,174 @@ def drain_nudges(ctx, persona):
     _err(f"Drained {len(nudges)} nudge(s) for {persona}")
 
 
+# --- t-479: Marshal escalation (never-block-on-stdin) -----------------------
+#
+# Marshal must never pause a loop iteration waiting for a pane-stdin reply.
+# When uncertainty exceeds policy (multiple plausible resolutions, a stuck
+# task whose status change could be wrong, etc.), Marshal calls
+# `smithy marshal-escalate` to persist a structured question, nudge Anvil,
+# and return immediately. Marshal then applies the documented safe-default
+# (typically: skip the ambiguous task, leave its status untouched, move on)
+# and continues the main loop.
+#
+# Anvil resolves via `smithy marshal-escalate-resolve <id> --resolution "…"`
+# which flips the entry to resolved, records the resolution, and nudges
+# Marshal so the next loop iteration can act on it.
+#
+# Storage: `marshal-questions.jsonl` at repo root, append-only for creates,
+# rewritten on resolve (one line per entry, resolved entries retained as
+# audit trail).
+
+
+def _marshal_questions_path(root):
+    return root / "marshal-questions.jsonl"
+
+
+def _read_marshal_questions(root):
+    path = _marshal_questions_path(root)
+    if not path.exists():
+        return []
+    entries = []
+    for line in path.read_text().splitlines():
+        if not line.strip():
+            continue
+        try:
+            entries.append(json.loads(line))
+        except json.JSONDecodeError:
+            # Preserve unparseable lines as raw strings; list cmd flags them.
+            entries.append({"_parse_error": True, "raw": line})
+    return entries
+
+
+def _write_marshal_questions(root, entries):
+    path = _marshal_questions_path(root)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    with open(tmp, "w") as f:
+        for entry in entries:
+            f.write(json.dumps(entry) + "\n")
+    tmp.replace(path)
+
+
+@cli.command("marshal-escalate")
+@click.option("--tasks", "tasks_csv", default="",
+              help="Comma-separated task ids involved (e.g. t-450,t-463).")
+@click.option("--options", "options_csv", default="",
+              help="Comma-separated options considered.")
+@click.option("--reason", required=True,
+              help="Why Marshal can't decide — one line of decision context.")
+@click.option("--safe-default", "safe_default", required=True,
+              help="The safe-default Marshal is applying right now "
+                   "(e.g. 'skip task, leave status untouched, dispatch next').")
+@click.option("--summary", default=None,
+              help="One-line summary for the Anvil nudge. Defaults to reason.")
+@click.option("--no-nudge", is_flag=True, default=False,
+              help="Skip the Anvil nudge (useful in tests).")
+@click.pass_context
+def marshal_escalate(ctx, tasks_csv, options_csv, reason, safe_default,
+                     summary, no_nudge):
+    """Persist a Marshal uncertainty question and nudge Anvil.
+
+    Writes a structured entry to marshal-questions.jsonl and (by default)
+    fires a one-line nudge to Anvil's pane. Returns the entry id so the
+    caller can reference it. Never blocks — Marshal applies the safe-default
+    and continues its loop.
+    """
+    from datetime import datetime, timezone
+    root = ctx.obj["root"]
+    tasks = [t.strip() for t in tasks_csv.split(",") if t.strip()]
+    options = [o.strip() for o in options_csv.split(",") if o.strip()]
+    # Microsecond resolution — two escalations in the same second must
+    # still get distinct ids (test_escalate_appends_multiple covers this).
+    ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    entry_id = f"mq-{ts}"
+    entry = {
+        "id": entry_id,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "tasks": tasks,
+        "options": options,
+        "reason": reason,
+        "safe_default": safe_default,
+        "status": "open",
+        "resolution": None,
+        "resolved_at": None,
+    }
+
+    # Append the raw line (no rewrite needed on create).
+    path = _marshal_questions_path(root)
+    with open(path, "a") as f:
+        f.write(json.dumps(entry) + "\n")
+
+    nudge_summary = (summary or reason)[:160]
+    nudge_result = None
+    if not no_nudge:
+        msg = f"MARSHAL_ESCALATE {entry_id}: {nudge_summary}"
+        nudge_result = _nudge_persona("anvil", msg, root=root)
+
+    _output({
+        "entry": entry,
+        "path": str(path),
+        "nudge": nudge_result,
+    })
+    _err(f"Escalated {entry_id}: {nudge_summary[:80]}")
+
+
+@cli.command("marshal-escalate-resolve")
+@click.argument("entry_id")
+@click.option("--resolution", required=True,
+              help="One-line resolution Anvil chose (or a longer block).")
+@click.option("--no-nudge", is_flag=True, default=False,
+              help="Skip the Marshal nudge.")
+@click.pass_context
+def marshal_escalate_resolve(ctx, entry_id, resolution, no_nudge):
+    """Mark a Marshal escalation entry resolved and nudge Marshal.
+
+    Anvil writes the resolution here; Marshal picks it up on its next wake
+    via `smithy marshal-escalate-list --open` or via the nudge message.
+    """
+    from datetime import datetime, timezone
+    root = ctx.obj["root"]
+    entries = _read_marshal_questions(root)
+    found = False
+    for entry in entries:
+        if entry.get("id") == entry_id:
+            if entry.get("status") == "resolved":
+                _output({"error": "already resolved", "entry": entry})
+                _err(f"{entry_id} already resolved")
+                return
+            entry["status"] = "resolved"
+            entry["resolution"] = resolution
+            entry["resolved_at"] = datetime.now(timezone.utc).isoformat()
+            found = True
+            break
+    if not found:
+        _output({"error": "not found", "id": entry_id})
+        _err(f"No entry {entry_id}")
+        ctx.exit(1)
+    _write_marshal_questions(root, entries)
+
+    nudge_result = None
+    if not no_nudge:
+        msg = f"MARSHAL_ESCALATE_RESOLVED {entry_id}: {resolution[:160]}"
+        nudge_result = _nudge_persona("marshal", msg, root=root)
+
+    _output({"entry": entry, "nudge": nudge_result})
+    _err(f"Resolved {entry_id}")
+
+
+@cli.command("marshal-escalate-list")
+@click.option("--open/--all", "open_only", default=True,
+              help="--open (default) shows only unresolved; --all shows every entry.")
+@click.pass_context
+def marshal_escalate_list(ctx, open_only):
+    """List Marshal escalation entries (default: open only)."""
+    root = ctx.obj["root"]
+    entries = _read_marshal_questions(root)
+    if open_only:
+        entries = [e for e in entries if e.get("status") == "open"]
+    _output({"count": len(entries), "entries": entries})
+    _err(f"{len(entries)} {'open' if open_only else 'total'} escalation(s)")
+
+
 @cli.command("sessions")
 @click.pass_context
 def sessions(ctx):
