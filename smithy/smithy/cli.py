@@ -4627,8 +4627,33 @@ def comms_snapshot(ctx, window_minutes):
         root, tail=30, window_minutes=window_minutes
     )
 
+    # t-487 (ini-023 T8): daily file rollover. Compute today's UTC
+    # report path and whether the file already has any wake sections
+    # so Comms knows whether to render Δ as "first of day" or as a
+    # real delta against the previous section.
+    utc_now = datetime.now(timezone.utc)
+    today_date = utc_now.strftime("%Y-%m-%d")
+    report_path = (main_repo_root(root) / "personas" / "comms" /
+                   "reports" / f"{today_date}.md")
+    # First-of-day iff the file is missing OR contains no section
+    # headers yet. A section header matches the "## YYYY-MM-DD HH:MM
+    # UTC" shape Comms writes (see personas/comms/CLAUDE.md §"Report
+    # section skeleton"). Count those explicitly — a file with only
+    # the day's `# YYYY-MM-DD` banner is still first-of-day.
+    is_first_section_of_day = True
+    if report_path.exists():
+        try:
+            body = report_path.read_text()
+            # Any line starting with "## " and containing "UTC" is a
+            # prior wake section.
+            if any(ln.startswith("## ") and "UTC" in ln
+                   for ln in body.splitlines()):
+                is_first_section_of_day = False
+        except OSError:
+            pass
+
     snapshot = {
-        "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+        "timestamp_utc": utc_now.isoformat(),
         "heat": used,
         "budget": {
             "used": used,
@@ -4652,6 +4677,10 @@ def comms_snapshot(ctx, window_minutes):
         "bottlenecks": _detect_bottlenecks(
             state, root, window_minutes=60, active_forges=len(forges),
         ),
+        # t-487 (ini-023 T8): daily rollover signals.
+        "today_report_path": str(report_path),
+        "today_date": today_date,
+        "is_first_section_of_day": is_first_section_of_day,
     }
     _output(snapshot)
     _err(

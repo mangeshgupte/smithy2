@@ -59,9 +59,30 @@ All reads are cheap — one pass, no retries, no speculative fetches.
 
 ## 3. Prior-Section Diff
 
-Read the last section of `personas/comms/reports/YYYY-MM-DD.md` (today's file, UTC date) to compute the `Δ vs prior` column. If the file doesn't exist or has only the day header, you're writing the first section of the day — render every Δ cell as `—`.
+Read the last section of `personas/comms/reports/YYYY-MM-DD.md` (today's file, UTC date) to compute the `Δ vs prior` column. If the file doesn't exist or has only the day header, you're writing the first section of the day — render every Δ cell as `first of day`.
 
 The diff you need is only against **the most recent `## YYYY-MM-DD HH:MM UTC ...` header** in the file, not the whole history. Tail is enough.
+
+### Daily rollover (t-487 / ini-023 T8)
+
+**Never read or write yesterday's file.** The report path is keyed on
+the UTC date at the moment the wake fires. At UTC midnight a new file
+is created fresh; the prior day's file becomes an immutable archive.
+Concretely:
+
+- Use `today_report_path` + `today_date` + `is_first_section_of_day`
+  from `smithy comms-snapshot`. Do NOT compute the path yourself from
+  a local clock — the CLI has the canonical UTC resolution.
+- If `is_first_section_of_day == true`, you are writing the first
+  section of the day. Render every Δ cell as `first of day` (literal
+  text, no sign, no numeric suffix). Do not attempt to read
+  yesterday's file for a synthetic delta.
+- If a wake fires at 00:00:0X UTC after a 23:5X:5Y UTC wake, the UTC
+  date has rolled over — `is_first_section_of_day` will be true,
+  `today_report_path` points at the new day's file, and yesterday's
+  file stays untouched. Treat it as a fresh first-of-day section.
+- You write ONLY to `today_report_path`. The prior day's file is
+  read-only from this moment on.
 
 ## 4. Report Section Skeleton (MVP — T5 scope)
 
