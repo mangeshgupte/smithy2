@@ -28,19 +28,23 @@
 #   FORGE_UI_WINDOW  ui-window name (default: ui) — set to "" to disable
 #                    the SIGINT pre-step entirely
 #   FORGE_COMMS_WINDOW
-#                    t-481 (ini-023 T2): comms-window name (default: comms).
-#                    Informational — mirrors start-smithy.sh. The comms
-#                    pane is a Claude TUI, so the generic /exit fan-out
-#                    below (which enumerates every pane in the session via
-#                    `tmux list-panes -s`) already tears it down; no
-#                    dedicated pre-step is needed. Setting this variable
-#                    has no effect on stop behaviour.
+#                    t-481 (ini-023 T2) + t-483 (ini-023 T4): comms-window
+#                    name (default: comms). The comms pane is a Claude TUI,
+#                    so the generic /exit fan-out below (which enumerates
+#                    every pane in the session via `tmux list-panes -s`)
+#                    already tears it down — no dedicated pre-step needed.
+#                    This script DOES, however, call scripts/_comms-cron.sh
+#                    uninstall to remove the crontab line so the tick
+#                    doesn't keep firing after the rig stops. The uninstall
+#                    step is skipped for --ui-only (which is a UI restart,
+#                    not a full stop).
 
 set -euo pipefail
 
 FORGE_SESSION="${FORGE_SESSION:-forge}"
 FORGE_STOP_WAIT="${FORGE_STOP_WAIT:-5}"
 FORGE_UI_WINDOW="${FORGE_UI_WINDOW-ui}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 UI_GRACE_S=2
 
 usage() {
@@ -84,14 +88,33 @@ if [[ "$FORGE_SESSION" =~ [[:space:]:.] ]]; then
   exit 2
 fi
 
+# t-483 (ini-023 T4): remove the comms-tick cron entry.
+#
+# Called on every full-stop path (but NOT --ui-only, which is a UI
+# restart). Idempotent — _comms-cron.sh uninstall strips all managed
+# lines, so running it when none exist is a no-op. Silent if crontab
+# isn't on PATH (rare, e.g. CI sandboxes).
+uninstall_comms_cron() {
+  if ! command -v crontab >/dev/null 2>&1; then
+    return 0
+  fi
+  FORGE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)" \
+    "$SCRIPT_DIR/_comms-cron.sh" uninstall 2>/dev/null || true
+}
+
 if ! tmux has-session -t "$FORGE_SESSION" 2>/dev/null; then
   echo "no tmux session '$FORGE_SESSION' — nothing to stop"
+  # Still strip the cron entry — the session being gone doesn't mean
+  # the cron line is gone, and a leftover tick would keep warning to
+  # stderr once per cycle.
+  uninstall_comms_cron
   exit 0
 fi
 
 if (( FORCE )); then
   tmux kill-session -t "$FORGE_SESSION"
   echo "killed session '$FORGE_SESSION' (--force)"
+  uninstall_comms_cron
   exit 0
 fi
 
@@ -148,6 +171,7 @@ done < <(tmux list-panes -s -t "$FORGE_SESSION" -F '#{pane_id}')
 if (( ${#PANE_IDS[@]} == 0 )); then
   tmux kill-session -t "$FORGE_SESSION"
   echo "session '$FORGE_SESSION' had no panes — killed"
+  uninstall_comms_cron
   exit 0
 fi
 
@@ -163,6 +187,7 @@ sleep "$FORGE_STOP_WAIT"
 # Verify — if the session is already gone, we're done.
 if ! tmux has-session -t "$FORGE_SESSION" 2>/dev/null; then
   echo "session '$FORGE_SESSION' closed cleanly"
+  uninstall_comms_cron
   exit 0
 fi
 
@@ -170,3 +195,4 @@ REMAINING=$(tmux list-panes -s -t "$FORGE_SESSION" -F '#{pane_id}' 2>/dev/null |
 echo "session still up with $REMAINING pane(s) — killing"
 tmux kill-session -t "$FORGE_SESSION"
 echo "killed session '$FORGE_SESSION'"
+uninstall_comms_cron
