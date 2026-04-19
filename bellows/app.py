@@ -437,10 +437,32 @@ def _build_initiative_detail(project: dict, initiative_id: str):
         t["shipped_value"] = info.get("value") or ""
         t["commit_sha"] = sha_map.get(t.get("id"))
 
+    # t-505 (ini-025 T3): load retro content if retro_path is set and the
+    # file exists within the project tree. Returns None on any failure
+    # (path traversal, missing file, unreadable) so the template can
+    # omit the Retrospective section entirely — a bad path shouldn't
+    # leak a broken 'Retrospective' header on the page. t-501's markdown
+    # filter will render this as prose once merged; until then the
+    # template falls back to a <pre> wrapper with white-space: pre-wrap.
+    retro_md = None
+    raw_retro_path = ini.get("retro_path")
+    if raw_retro_path:
+        try:
+            candidate = (project_dir / raw_retro_path).resolve()
+            # Constrain to the project tree — reject any `..` or absolute
+            # path that escapes. Uses pathlib's is_relative_to (Python
+            # 3.9+; shipped in all supported environments).
+            root = project_dir.resolve()
+            if candidate.is_relative_to(root) and candidate.is_file():
+                retro_md = candidate.read_text()
+        except (OSError, ValueError):
+            retro_md = None  # broken path or permission issue — omit
+
     return {
         "project": project_name,
         "initiative": ini,
         "theme": theme,
+        "retro_md": retro_md,
         "groups": {
             "in_flight": in_flight,
             "upcoming": upcoming_list,
