@@ -119,6 +119,7 @@ class TestCLIStateFlow:
         # this test specifically verifies the nudge attempt path. Subprocess
         # inherits env, so unset before invoking _smithy.
         monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+        monkeypatch.setenv("SMITHY_NUDGE_ENABLED", "1")
         _smithy(scaffolded, "start-heat", "testing")
         rc, out, _ = _smithy(scaffolded, "end-heat", "0.7", "🟢", "nudge test")
         assert rc == 0
