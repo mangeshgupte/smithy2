@@ -259,6 +259,29 @@ def abort_rebase(project_dir: Path, forge_id: str) -> dict:
     return {"status": "error", "detail": r.stderr.strip()}
 
 
+def ensure_staging_venv(project_dir: Path):
+    """t-507: thin wrapper over `ensure_staging_venv_versioned` that
+    computes the current staging `smithy/` tree hash and bootstraps a
+    venv if needed. Returns the path (as Path) to the venv's python3
+    when ready, or None if staging isn't populated / uv is unavailable.
+
+    Primary consumer is the `forge_id == _STAGING_WORKTREE` branch of
+    `run_tests_in_worktree` below — it wants a turnkey "give me a
+    staging-scoped pytest interpreter". Callers needing finer control
+    (`run_batch_tests` post-merge) go through the versioned variant
+    directly.
+    """
+    staging = staging_path(project_dir)
+    if not staging.exists() or not (staging / "smithy" / "pyproject.toml").is_file():
+        return None
+    sh_hash = smithy_tree_hash(staging)
+    info = ensure_staging_venv_versioned(staging, smithy_hash=sh_hash)
+    if info.get("status") == "error":
+        return None
+    py = info.get("path")
+    return Path(py) if py else None
+
+
 def run_tests_in_worktree(project_dir: Path, forge_id: str,
                           cmd: list | None = None) -> dict:
     """Run pytest (or a custom command) in the Forge's worktree.
@@ -270,10 +293,21 @@ def run_tests_in_worktree(project_dir: Path, forge_id: str,
     on the worktree's branch fails with AttributeError / TypeError and
     Assembly rejects the submit — even though the worktree's own
     `.venv` would have resolved correctly.
+
+    t-507: staging (`_assembly-staging`) doesn't carry a `.venv/` by
+    default; auto-bootstrap one via `ensure_staging_venv` on demand so
+    the same t-489 invariant holds for Assembly's singleton-tick path
+    too. Forge worktrees rely on `scripts/forge-venv-setup.sh` having
+    already run (t-461). Any explicit `cmd` override is respected
+    verbatim.
     """
     wt = _worktree(project_dir, forge_id)
     if cmd is None:
         venv_py = wt / ".venv" / "bin" / "python3"
+        if not venv_py.exists() and forge_id == _STAGING_WORKTREE:
+            bootstrapped = ensure_staging_venv(project_dir)
+            if bootstrapped is not None:
+                venv_py = bootstrapped
         py = str(venv_py) if venv_py.exists() else "python3"
         cmd = [py, "-m", "pytest", "-q"]
     r = subprocess.run(cmd, cwd=str(wt), capture_output=True, text=True,
