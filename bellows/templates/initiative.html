@@ -1,12 +1,25 @@
 {% extends "base.html" %}
 {% block title_suffix %} — {{ detail.initiative.title }}{% endblock %}
 {% block content %}
+{# t-499: .initiative-page scopes the widened canvas + typography polish
+   without touching base.html or other pages. CSS selector uses :has(). #}
+<div class="initiative-page">
 <header class="page-header">
     <a href="{{ poker_url }}" class="back-link">← Poker</a>
-    <div class="project-title-row">
+    {# t-499: Intent + Progress collapsed into one compact header strip.
+       Rank, status, heats-progress all inline with the title so the
+       Tasks section below gets vertical real estate. #}
+    <div class="initiative-header-row">
         <h1>{{ detail.initiative.id }} · {{ detail.initiative.title }}</h1>
-        {% if detail.initiative.rank %}<span class="progress-badge">rank #{{ detail.initiative.rank }}</span>{% endif %}
-        <span class="progress-badge">{{ detail.initiative.status }}</span>
+        {% if detail.initiative.rank %}<span class="progress-badge rank-badge">rank #{{ detail.initiative.rank }}</span>{% endif %}
+        <span class="progress-badge status-badge status-{{ detail.initiative.status }}">{{ detail.initiative.status }}</span>
+        {% if detail.initiative.heats_used is not none and detail.initiative.budget_cap %}
+        {% set heats_pct = (detail.initiative.heats_used / detail.initiative.budget_cap * 100) | round(0, 'floor') %}
+        <div class="heats-progress" title="{{ detail.initiative.heats_used }} of {{ detail.initiative.budget_cap }} heats used">
+            <span class="heats-progress-label">{{ detail.initiative.heats_used }}/{{ detail.initiative.budget_cap }}h</span>
+            <div class="heats-progress-track"><div class="heats-progress-fill" style="width: {{ heats_pct }}%"></div></div>
+        </div>
+        {% endif %}
     </div>
     <p class="subtitle">
         project: <a href="/project/{{ project.name }}">{{ project.name }}</a>
@@ -16,16 +29,8 @@
 </header>
 
 <section class="initiative-intent">
-    <h2>Intent</h2>
     <p>{{ detail.initiative.description or "(no description)" }}</p>
 </section>
-
-{% if detail.initiative.heats_used is not none and detail.initiative.budget_cap %}
-<section class="initiative-progress">
-    <h2>Progress</h2>
-    <p>{{ detail.initiative.heats_used }} / {{ detail.initiative.budget_cap }} heats</p>
-</section>
-{% endif %}
 
 <section class="initiative-tasks">
     <h2>Tasks ({{ detail.counts.total }})</h2>
@@ -100,6 +105,7 @@
     <p class="empty">No tasks linked to this initiative yet.</p>
     {% endif %}
 </section>
+</div> {# /.initiative-page #}
 
 <!-- Read-only task drawer (t-364) — click task_id to open; edits stay in Poker. -->
 <div id="task-drawer-backdrop" class="task-drawer-backdrop" onclick="closeTaskDrawer()"></div>
