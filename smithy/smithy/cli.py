@@ -757,7 +757,27 @@ def end_heat(ctx, value, signal, notes, outcome, progress, no_nudge, forge_id,
     # t-422: also nudge Assembly when the task was submitted — that's what
     # closes the merge loop without Anvil hand-driving every merge.
     if not no_nudge:
-        nudge_msg = f"HEAT_DONE: {task_id} {outcome}, value={value}, signal={signal}. Re-prioritize."
+        # t-508: compact human-readable HEAT_DONE format. The old message
+        # ("task, value=0.8, signal=🟢. Re-prioritize.") was opaque from
+        # Marshal's pane — no stage, no initiative, no task desc, no heat
+        # number. The new shape puts identity + context front-and-center
+        # and drops the noise (signal emoji already encodes value; the
+        # "Re-prioritize" suffix was informational-only).
+        #
+        # Look up the task for desc + initiative_id. completed_task is
+        # only set on complete/submitted outcomes; for partial/blocked
+        # fall back to a fresh lookup against the same `state` we just
+        # saved (still in scope).
+        _nudge_task = completed_task
+        if _nudge_task is None and task_id and task_id != "generated":
+            for _t in state.get("queue", []):
+                if _t.get("id") == task_id:
+                    _nudge_task = _t
+                    break
+        nudge_msg = _format_heat_done_nudge(
+            signal=signal, forge_id=forge_id or "", heat=heat,
+            task_id=task_id, stage=stage, task=_nudge_task, notes=notes,
+        )
         nudge_result = _nudge_persona("marshal", nudge_msg, root=root)
         result["nudge"] = nudge_result
         _emit_rig_event(root, "marshal_nudged", actor=forge_id,
@@ -1239,6 +1259,45 @@ def _pop_queue(qpath, rest):
         qpath.write_text("\n".join(rest) + "\n")
     else:
         qpath.unlink(missing_ok=True)
+
+
+def _truncate_for_nudge(text: str, limit: int = 50) -> str:
+    """Collapse whitespace and clip to `limit` chars with `…` for overflow."""
+    if not text:
+        return ""
+    # Collapse internal whitespace so multi-line descs render on one line
+    # in the nudge wire message.
+    collapsed = " ".join(text.split())
+    if len(collapsed) <= limit:
+        return collapsed
+    return collapsed[:limit - 1].rstrip() + "…"
+
+
+def _format_heat_done_nudge(signal: str, forge_id: str, heat: int,
+                            task_id: str, stage: str,
+                            task, notes: str) -> str:
+    """t-508: compact HEAT_DONE nudge format.
+
+    Normal:   HEAT_DONE {signal} {forge_id} h{heat} · {task_id} {stage}/{ini} · "{desc}"
+    No ini:   HEAT_DONE {signal} {forge_id} h{heat} · {task_id} {stage} · "{desc}"
+    No task:  HEAT_DONE {signal} {forge_id} h{heat} · (no task) · "{notes}"
+
+    Signal emoji already encodes the value bracket (🟢 ≥0.7 / 🟡 <0.7 /
+    🔴 rollback); we drop the raw decimal from the wire because a wake-up
+    message reads better as identity + context. Marshal pattern-matches
+    on the 'HEAT_DONE ' prefix — that's preserved (space-separated, no
+    colon — the old ': ' form survives as a substring match too).
+    """
+    forge_tag = forge_id or "(unknown-forge)"
+    if task_id in (None, "generated") or task is None:
+        snippet = _truncate_for_nudge(notes) or "(no notes)"
+        return (f'HEAT_DONE {signal} {forge_tag} h{heat} '
+                f'· (no task) · "{snippet}"')
+    ini = task.get("initiative_id")
+    stage_part = f"{stage}/{ini}" if ini else stage
+    desc = _truncate_for_nudge(task.get("desc") or "") or "(no desc)"
+    return (f'HEAT_DONE {signal} {forge_tag} h{heat} '
+            f'· {task_id} {stage_part} · "{desc}"')
 
 
 def _reconcile_submitted(root):
