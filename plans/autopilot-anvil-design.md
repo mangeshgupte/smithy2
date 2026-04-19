@@ -172,7 +172,7 @@ Anvil interactive mode (human-driven) stays unchanged — this prompt flag switc
 ## Relationship to adjacent work
 
 - **ini-023 Comms** — reports state; autopilot *changes* state. Comms sends 5-min rhythm reports to human; autopilot runs 10-min rhythm actions on rig. Overlap: cron lifecycle (t-482/t-483 can be reused). Divergence: Comms is read-only, autopilot is write-allowed.
-- **ini-024 Liveness** — agents self-heal (Forge claims work, Assembly reconciles jsonl, Marshal maintains next_tasks invariant). Once these land, anomalies A1/A2/A4/A6 from autopilot's matrix become rare or impossible — autopilot's load drops to mostly A3/A8/A9/A10 (the judgment-requiring cases). **Gate autopilot's rollout on at least t-494 + t-495 + t-496 landing** — otherwise autopilot fights the same bugs every tick instead of structural fixes resolving them.
+- **ini-024 Liveness** — agents self-heal (Forge claims work, Assembly reconciles jsonl, Marshal maintains next_tasks invariant). Once these land, anomalies A1/A2/A4/A6 from autopilot's matrix become rare or impossible — autopilot's load drops to mostly A3/A8/A9/A10 (the judgment-requiring cases). **Originally this was autopilot's rollout gate; t-528 (human directive 2026-04-19 "prioritize landing changes for autonomous mode, and enter it quickly") revised it to run autopilot and liveness in parallel during bring-up — see §Rollout.** Autopilot and liveness will redundantly handle some anomalies while liveness lands, which is the accepted cost for earlier autonomy.
 - **Patrol** — autopilot reuses `smithy patrol` JSON output as its primary detector for A4/A6/A7 signals. Any new patrol check (t-491 starvation, t-493 jsonl leak) automatically enriches autopilot's signal.
 
 ## Implementation tickets
@@ -187,9 +187,57 @@ T4. **Deferral file + notification plumbing** — `scripts/autopilot-append-defe
 
 T5. **Bellows render of deferred.md** — new section in Bellows home showing recent deferred entries (severity-colored); click-through to full `deferred.md` viewer. Blocked on t-500 (whitespace) + t-501 (markdown rendering) for proper prose display. ~1 heat.
 
-T6. **Rollout gate + shakedown** — gate on liveness chain (t-494, t-495, t-496) having landed. Run autopilot with `FORGE_AUTOPILOT_ENABLED=0` default; manual `smithy autopilot --once` invocation for shakedown. After 1 week of observation and 0 destructive actions, flip default to enabled. Document the rollout criteria in `plans/autopilot-anvil-design.md` §Rollout. ~0.5 heat (mostly ops).
+T6. **Rollout gate + shakedown** — see §Rollout for the revised (fast-path) gate. Run autopilot with `FORGE_AUTOPILOT_ENABLED=0` default; manual `smithy autopilot --once` invocation for shakedown. After 1 week of observation and 0 destructive actions, flip default to enabled. ~0.5 heat (mostly ops).
 
 **Total budget:** ~5-6 heats across T1-T6.
+
+## Rollout
+
+**Revised 2026-04-19 by t-528** — fast-path rollout. Human directive:
+"prioritize landing changes for autonomous mode, and enter it quickly."
+
+The *original* T6 gate was "wait for the ini-024 liveness chain
+(t-494/t-495/t-496) to land so autopilot isn't fighting bugs that
+structural fixes would resolve." That gate is **relaxed** — autopilot
+and liveness now ship in parallel. Overlap (both systems handling some
+A1/A2/A4/A6 anomalies during the same window) is the accepted cost for
+getting autonomy online sooner; once liveness lands, autopilot's load
+naturally drops to A3/A8/A9/A10 (the judgment-requiring cases) and the
+redundancy disappears.
+
+### Revised gate
+
+1. **Land the autopilot plumbing at P0:**
+   - t-483 — Comms cron install/uninstall *(same cron plumbing
+     autopilot reuses, per §"Relationship to adjacent work")*
+   - t-522 — `autopilot-tick.sh` safety wrapper (this plan's T1)
+   - t-523 — decision-matrix detectors module (T2)
+   - t-524 — Anvil autopilot-mode prompt + action library (T3)
+2. **Manual shakedown** — run `smithy autopilot --once` for ~5 ticks
+   with human observation. Verify (a) no destructive actions, (b) every
+   detected anomaly either resolves inside the allow-list or lands in
+   `deferred.md` with a notification, (c) the tick summary makes sense.
+3. **Flip the default** — if shakedown is clean, set
+   `FORGE_AUTOPILOT_ENABLED=1` in `scripts/start-smithy.sh` so cron
+   picks up autopilot automatically on the next rig start.
+4. **Keep liveness chain in parallel** — t-494/t-495/t-496 continue
+   their own implementation cadence. Autopilot does not block on them
+   and they do not block on autopilot; overlap is acceptable until
+   liveness fully lands and autopilot's anomaly coverage can be pared
+   back (T7+, outside this ticket).
+
+### Pause / override
+
+- `FORGE_AUTOPILOT_ENABLED=0` env disables cron dispatch.
+- `.autopilot-paused` sentinel file at repo root (proposed in Open
+  questions #4 below) is the human-accessible pause button that doesn't
+  require a crontab edit.
+
+### Amendment note
+
+This ticket (t-528) amends t-526's acceptance criteria. Once t-526 is
+dispatched, this amendment is absorbed into its implementation and the
+original §T6 wording becomes stale; delete it then.
 
 ## Open questions
 
