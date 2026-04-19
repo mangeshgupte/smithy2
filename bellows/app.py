@@ -61,6 +61,45 @@ BASE_DIR = Path(__file__).parent
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
 
+
+# t-501 (ini-016): render task.desc as sanitized HTML.
+#
+# XSS strategy:
+#   1. html.escape the input first — neutralizes raw <tag> payloads before
+#      markdown ever sees them, so `<script>…</script>` becomes literal text.
+#   2. Run python-markdown (fenced_code enabled) on the escaped string. The
+#      markdown syntax that matters (**bold**, _italic_, `code`, bullets,
+#      headers, backticks, fences) is all < >-free, so pre-escape doesn't
+#      interfere with structure.
+#   3. Post-process the output: strip href values whose scheme is
+#      javascript:/data:/vbscript: (standard XSS vectors in markdown links),
+#      and stamp rel="noopener noreferrer" on every remaining <a>.
+import html as _html
+import re as _re
+import markdown as _markdown
+
+_UNSAFE_HREF = _re.compile(r'(?i)^\s*(?:javascript|data|vbscript):')
+_A_WITH_HREF = _re.compile(r'<a\s+href="([^"]*)"')
+
+
+def render_task_markdown(text) -> str:
+    """Return sanitized HTML for a task.desc. Empty input → empty string."""
+    if not text:
+        return ""
+    escaped = _html.escape(text, quote=False)
+    html_out = _markdown.markdown(escaped, extensions=["fenced_code"])
+
+    def _sanitize(match: _re.Match) -> str:
+        href = match.group(1)
+        if _UNSAFE_HREF.match(href):
+            return "<a"  # drop the href — link text still renders as plain text
+        return f'<a href="{href}" rel="noopener noreferrer"'
+
+    return _A_WITH_HREF.sub(_sanitize, html_out)
+
+
+templates.env.filters["markdown"] = render_task_markdown
+
 # Where to look for Forge projects
 PROJECTS_DIR = os.environ.get("FORGE_PROJECTS_DIR", str(Path.home() / "vibes"))
 
@@ -501,7 +540,15 @@ async def api_project_task(project_name: str, task_id: str):
     detail = TaskDetail.resolve(project["dir"], task_id)
     if detail is None:
         return JSONResponse({"error": "task not found"}, status_code=404)
-    return detail.to_api_dict()
+    payload = detail.to_api_dict()
+    # t-501: include sanitized markdown HTML so the drawer can render
+    # structured descriptions (bullets, code, bold) instead of stripping
+    # everything via textContent. Server-sanitized: the drawer uses
+    # innerHTML on this field safely.
+    task_obj = payload.get("task") if isinstance(payload, dict) else None
+    if isinstance(task_obj, dict):
+        task_obj["desc_html"] = render_task_markdown(task_obj.get("desc"))
+    return payload
 
 
 @app.get("/api/project/{project_name}/initiative/{initiative_id}")

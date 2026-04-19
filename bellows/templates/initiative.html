@@ -39,7 +39,7 @@
     <tr data-task-id="{{ task.id }}">
         <td class="task-id"><a href="?task={{ task.id }}">{{ task.id }}</a></td>
         <td class="task-stage">{{ task.stage }}</td>
-        <td class="task-desc">{{ task.desc }}</td>
+        <td class="task-desc">{{ task.desc | markdown | safe }}</td>
         <td class="task-priority">M:p{{ task.priority }}</td>
         <td class="task-human">
             {% if task.human_priority is not none %}you:p{{ task.human_priority }}{% else %}you:—{% endif %}
@@ -93,7 +93,7 @@
             <td class="shipped-heat">{% if task.shipped_heat %}h{{ task.shipped_heat }}{% else %}—{% endif %}</td>
             <td class="shipped-signal">{{ task.shipped_signal or "" }}</td>
             <td class="task-stage">{{ task.stage }}</td>
-            <td class="task-desc">{{ task.desc }}</td>
+            <td class="task-desc">{{ task.desc | markdown | safe }}</td>
             <td class="shipped-commit">{% if task.commit_sha %}<code>{{ task.commit_sha }}</code>{% else %}—{% endif %}</td>
         </tr>
         {% endfor %}
@@ -155,7 +155,7 @@ function openTaskDrawer(taskId) {
     drawer.setAttribute('aria-hidden', 'false');
     backdrop.classList.add('show');
     document.getElementById('td-id').textContent = taskId;
-    document.getElementById('td-desc').textContent = 'Loading…';
+    document.getElementById('td-desc').textContent = 'Loading…';  // textContent OK for plain loading state
 
     const url = new URL(window.location.href);
     url.searchParams.set('task', taskId);
@@ -165,7 +165,16 @@ function openTaskDrawer(taskId) {
         .then(r => r.ok ? r.json() : Promise.reject(r))
         .then(data => {
             const t = data.task || {};
-            document.getElementById('td-desc').textContent = t.desc || '—';
+            // t-501: use server-sanitized desc_html so markdown renders (bullets,
+            // bold, code). Falls back to textContent for projects whose API
+            // pre-dates t-501 and doesn't send desc_html. server-side sanitizer
+            // strips raw HTML + unsafe hrefs; innerHTML here is safe.
+            const descEl = document.getElementById('td-desc');
+            if (typeof t.desc_html === 'string' && t.desc_html !== '') {
+                descEl.innerHTML = t.desc_html;
+            } else {
+                descEl.textContent = t.desc || '—';
+            }
             document.getElementById('td-stage').textContent = t.stage || '—';
             document.getElementById('td-status').textContent = t.status || '—';
             document.getElementById('td-priority').textContent = 'p' + (t.priority ?? '—');
