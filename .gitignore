@@ -24,3 +24,7 @@ smithy/smithy.egg-info/
 .assembly-queue.jsonl
 .pre-restart-backups/
 .obsidian/
+
+# t-533: per-rejection full-test-output dumps. Reject reason in
+# state.json carries the file:// pointer; files themselves are local-only.
+.assembly-logs/

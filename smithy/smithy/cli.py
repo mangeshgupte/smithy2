@@ -1409,8 +1409,17 @@ def assembly_tick_cmd(ctx, base, dry_run, tests_cmd):
     tst = run_tests_in_worktree(root, STAGING_WORKTREE, cmd=cmd_override)
     if not tst["passed"]:
         # Don't abort rebase — it already completed. Just reject the merge.
+        # t-533: persist the full (untruncated) test output so the
+        # 3-line tail we stamp into state.json doesn't destroy the
+        # diagnostic trace. Reject reason gets a file:// pointer.
+        log_path = _persist_test_log(
+            root, task_id, tst.get("output_full") or tst.get("output", ""),
+        )
         tail = tst["output"].splitlines()[-3:]
-        _output(_reject(f"tests failed: {'|'.join(tail)[:120]}"))
+        summary = f"tests failed: {'|'.join(tail)[:120]}"
+        if log_path is not None:
+            summary = f"tests failed (see file://{log_path}): {'|'.join(tail)[:80]}"
+        _output(_reject(summary))
         return
 
     # 3. Merge the rebased staging ref into base in the main repo.
@@ -1482,6 +1491,35 @@ def _log(root, forge_id, task_id, outcome, detail):
     }
     with open(path, "a") as f:
         f.write(json.dumps(entry) + "\n")
+
+
+def _persist_test_log(root, tag, full_output):
+    """t-533: write the full, untrimmed test output to
+    `.assembly-logs/<tag>-<ISO-timestamp>.log` at the MAIN repo root.
+
+    `tag` is the task id (single-reject path) or a batch identifier
+    (batched path) — anything that makes the log file findable via the
+    reject reason's `file://` pointer. Tag is sanitised to
+    alnum/hyphen/underscore so it can't escape the directory. Returns
+    the absolute path on success, None on any error; the caller still
+    has the inline-truncated output + a human-readable reject reason
+    as a fallback, so a missing log file is a diagnostic degradation,
+    not a pipeline failure.
+    """
+    if not full_output:
+        return None
+    try:
+        logs_dir = main_repo_root(root) / ".assembly-logs"
+        logs_dir.mkdir(exist_ok=True)
+        ts = datetime.now(timezone.utc).isoformat(timespec="seconds") \
+            .replace(":", "")
+        safe_tag = "".join(c if c.isalnum() or c in "-_" else "-"
+                           for c in str(tag))[:64] or "unknown"
+        path = logs_dir / f"{safe_tag}-{ts}.log"
+        path.write_text(full_output)
+        return str(path)
+    except (OSError, ValueError, Exception):
+        return None
 
 
 def _append_queue(qpath, entry):
@@ -1888,6 +1926,17 @@ def assembly_batch_tick_cmd(ctx, base, idle_timer_s, dry_run):
         _abort(exc)
         return
     if not tst["passed"]:
+        # t-533: persist the full red-run trace BEFORE bisecting — the
+        # truncated inline tail hid every real failure during the
+        # 2026-06-12 gate crisis. The offender's reject reason carries
+        # a file:// pointer to this log.
+        batch_ids = sorted(m["entry"]["task_id"] for m in green)
+        batch_tag = ("batch-" + (batch_ids[0] if batch_ids else "empty")
+                     + (f"+{len(batch_ids) - 1}" if len(batch_ids) > 1 else ""))
+        red_log_path = _persist_test_log(
+            root, batch_tag,
+            tst.get("output_full") or tst.get("output", ""),
+        )
         # t-513 (impl-T3): bisect the red batch down to one offender.
         # N=1 needs no probes — the sole entry is the candidate.
         bs = (bisect_batch(wt, green) if n_batch > 1 else
@@ -1924,13 +1973,17 @@ def assembly_batch_tick_cmd(ctx, base, idle_timer_s, dry_run):
             bisect_info = bs
             e = offender["entry"]
             reason = f"batch-bisect isolated from N={n_batch}"
+            if red_log_path is not None:
+                # t-533: point at the persisted full trace.
+                reason += f" (full trace: file://{red_log_path})"
             _do_assembly_reject(root, e["task_id"], reason)
             _log(root, e["forge_id"], e["task_id"], "rejected", reason)
             rejected_ids.add(e["task_id"])
             green = bs["green_prefix"]
             _emit_rig_event(root, "assembly_batch_bisect", actor="assembly",
                             batch_size=n_batch, narrowed_to=1,
-                            green_landed=len(green), probes=bs["probes"])
+                            green_landed=len(green), probes=bs["probes"],
+                            log_path=red_log_path)
             if not green:
                 # Offender was the first entry — nothing to land.
                 _pop_rows(rejected_ids)
