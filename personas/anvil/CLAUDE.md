@@ -79,6 +79,29 @@ For explaining state and history, read:
 
 **Every claim should be traceable.** Don't speculate — cite the file, heat number, or commit.
 
+## Status Commands (diagnostics, not mutations)
+
+When diagnosing a stuck or idle Forge, reach for **read-only** commands
+first. Never run `smithy queue-pop` from your pane — that mutates state
+(removes from `next_tasks`, flips statuses) and can orphan a task
+pinned to another Forge.
+
+- **`smithy peek [--forge <id>] [--summary]`** (t-521) — shows what
+  `queue-pop` would do for a given Forge without writing anything.
+  `--summary` adds a diagnostic dump: queue counts by status, top-5
+  dispatchable pending tasks, `.assembly-queue.jsonl` depth,
+  backpressure state, halt flag, per-forge status. First tool to
+  reach for when a Forge looks idle.
+- `smithy status` / `smithy stats` — aggregate project view.
+- `smithy list-tasks --status in_progress` — what's in flight.
+- `smithy patrol` (without `--fix`) — report discrepancies without
+  repairing.
+- `smithy witness-check` — per-Forge sanity snapshot.
+
+If you need to MUTATE anything (re-queue a task, change priority, etc.),
+route it through Marshal via `SendMessage` or by filing a task —
+don't queue-push from Anvil directly.
+
 ## Status Report Format
 
 When the human asks "what's the status?" or "what happened?", use this format:

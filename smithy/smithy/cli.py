@@ -2864,6 +2864,161 @@ def queue_pop(ctx, forge_id):
     _err(f"Popped {task_id} ({remaining_len} remaining)")
 
 
+@cli.command("peek")
+@click.option("--forge", "forge_id", default=None,
+              help="Simulate a --forge-filtered queue-pop for this forge id.")
+@click.option("--limit", "limit", default=5, type=int,
+              help="Cap the returned next_tasks list (default 5).")
+@click.option("--summary", "summary", is_flag=True, default=False,
+              help="Include a one-shot diagnostic dump: queue counts by "
+                   "status, top-5 dispatchable pending tasks, assembly queue "
+                   "depth, backpressure state, halt status, forges.")
+@click.pass_context
+def peek_cmd(ctx, forge_id, limit, summary):
+    """t-521: read-only equivalent of queue-pop for diagnostics.
+
+    `queue-pop` mutates state.json (removes from next_tasks, reports
+    stale heads). `peek` returns the same dispatchability analysis with
+    ZERO writes — safe to run from any pane (Anvil, Bellows, a human
+    eyeballing the rig). Same filtering + ordering rules as queue-pop.
+
+    Output JSON:
+      next_tasks        — ordered list of the top N entries in
+                          state.next_tasks (id + status + assigned_forge +
+                          desc snippet for each)
+      would_pop         — the task queue-pop would return for this forge,
+                          or null if nothing matches
+      skipped_other_forge — task_ids that would be skipped because they
+                          are pinned to a different forge
+      skipped_stale     — task_ids that would be dropped because their
+                          queue entry is stale (task missing, not pending)
+      blocked_in_queue  — task_ids in next_tasks whose blocked_by is
+                          unmet (advisory — queue-pop doesn't filter on
+                          deps today; included here for diagnostic value)
+      limit_applied     — the limit in use
+
+    With --summary, also emits:
+      queue_counts      — {status: count} across the full state.queue
+      dispatchable_top5 — top 5 pending + deps-met + unassigned-or-mine
+                          tasks sorted by priority
+      assembly_queue_depth — .assembly-queue.jsonl line count
+      backpressure      — {ok, reason, depth, threshold, n_forges}
+      halt_flag         — bool
+      forges            — [{id, status, current_task}]
+    """
+    root = ctx.obj["root"]
+    if forge_id is None:
+        forge_id = detect_forge_from_cwd(root)
+
+    # No lock — we never write.
+    state = load_state(root)
+    queue_by_id = {t["id"]: t for t in state.get("queue", [])}
+    complete_ids = {t["id"] for t in state.get("queue", [])
+                    if t.get("status") == "complete"}
+
+    next_ids = list(state.get("next_tasks", []))
+    preview = []
+    for tid in next_ids[:limit]:
+        t = queue_by_id.get(tid)
+        preview.append({
+            "id": tid,
+            "status": (t or {}).get("status"),
+            "assigned_forge": (t or {}).get("assigned_forge"),
+            "desc": ((t or {}).get("desc") or "")[:80],
+            "stale": t is None or t.get("status") != "pending",
+        })
+
+    # Mirror queue-pop's walk, but read-only.
+    skipped_stale: list[str] = []
+    skipped_other_forge: list[str] = []
+    blocked_in_queue: list[str] = []
+    would_pop = None
+    for tid in next_ids:
+        t = queue_by_id.get(tid)
+        if not t or t.get("status") != "pending":
+            skipped_stale.append(tid)
+            continue
+        if forge_id is not None:
+            af = t.get("assigned_forge")
+            if af is not None and af != forge_id:
+                skipped_other_forge.append(tid)
+                continue
+        # queue-pop doesn't check blocked_by today — capture as advisory only.
+        deps = t.get("blocked_by") or []
+        if not all(d in complete_ids for d in deps):
+            blocked_in_queue.append(tid)
+        would_pop = t
+        break
+
+    result = {
+        "next_tasks": preview,
+        "would_pop": would_pop,
+        "skipped_other_forge": skipped_other_forge,
+        "skipped_stale": skipped_stale,
+        "blocked_in_queue": blocked_in_queue,
+        "limit_applied": limit,
+        "forge_id": forge_id,
+    }
+
+    if summary:
+        from collections import Counter
+        queue_counts = dict(Counter(
+            (t.get("status") or "unknown") for t in state.get("queue", [])
+        ))
+        # Dispatchable = pending + deps all complete + assigned_forge in
+        # (None, forge_id). Sorted by priority ascending (0 best), then id.
+        dispatchable = []
+        for t in state.get("queue", []):
+            if t.get("status") != "pending":
+                continue
+            if not all(d in complete_ids for d in (t.get("blocked_by") or [])):
+                continue
+            if forge_id is not None:
+                af = t.get("assigned_forge")
+                if af is not None and af != forge_id:
+                    continue
+            dispatchable.append(t)
+        dispatchable.sort(
+            key=lambda t: (int(t.get("priority", 2) or 2), t.get("id", "")))
+        top5 = [
+            {"id": t["id"], "priority": t.get("priority"),
+             "stage": t.get("stage"),
+             "initiative_id": t.get("initiative_id"),
+             "assigned_forge": t.get("assigned_forge"),
+             "desc": (t.get("desc") or "")[:80]}
+            for t in dispatchable[:5]
+        ]
+        assy_queue = main_repo_root(root) / ".assembly-queue.jsonl"
+        assy_depth = 0
+        if assy_queue.exists():
+            try:
+                assy_depth = sum(1 for ln in assy_queue.read_text().splitlines()
+                                 if ln.strip())
+            except OSError:
+                pass
+        bp = _backpressure_check(root, state)
+        parallel = state.get("parallel") or {}
+        forges_out = [
+            {"id": f.get("id"), "status": f.get("status"),
+             "current_task": f.get("current_task")}
+            for f in (parallel.get("forges") or [])
+        ]
+        result["summary"] = {
+            "queue_counts": queue_counts,
+            "dispatchable_top5": top5,
+            "assembly_queue_depth": assy_depth,
+            "backpressure": bp,
+            "halt_flag": bool(parallel.get("halt_flag")),
+            "forges": forges_out,
+        }
+
+    _output(result)
+    _err(
+        f"peek: next_tasks={len(next_ids)} would_pop={(would_pop or {}).get('id','-')}"
+        f" skipped_other={len(skipped_other_forge)} skipped_stale={len(skipped_stale)}"
+    )
+
+
 @cli.command("claim-task")
 @click.option("--forge", "forge_id", required=True,
               help="Forge id claiming the task (must be in parallel.forges[] roster).")
