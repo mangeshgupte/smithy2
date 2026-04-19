@@ -21,18 +21,44 @@ this, `smithy` on PATH resolves to THIS worktree's CLI, so one Forge's
 
 Read the handoff context notes and next steps if present. Then enter the loop.
 
-## Step 1: Pop Next Task
+## Step 1: Pop Next Task (fast path + reconciliation backstop)
+
+### 1a. Fast path — Marshal's push
 
 ```bash
 smithy queue-pop           # Returns next task from queue, or {task: null} if empty
 ```
 
 - **If task returned** → go to Step 3 (Execute). No deliberation.
-- **If queue empty** → go to Step 2 (Idle).
+- **If queue empty** → fall through to 1b.
+
+### 1b. Reconciliation (ini-024 T3)
+
+When `next_tasks` is empty (lost Marshal nudge, Marshal stalled, or a
+patrol-filed task that was never dispatched), **don't immediately
+idle**. Reconcile against truth by asking state.json directly:
+
+```bash
+smithy claim-task --forge <your-id>
+```
+
+`claim-task` atomically flips the highest-priority claimable task
+(`status=pending`, unmet deps are complete, `assigned_forge ∈
+{None, <your-id>}`) to `in_progress` under the state.json lock.
+
+- **Exit 0** — a task was claimed. Use its `task_id` and `stage` for
+  Step 3. Do NOT also run `queue-pop`; the claim already mutated state.
+- **Exit 1** — nothing eligible (empty queue, rig halted, or all
+  pending tasks pinned elsewhere). Go to Step 2 (Idle).
+- **Exit 2** — misconfiguration (your forge id isn't in
+  `parallel.forges[]`). Surface to Marshal via `SendMessage` and idle.
+
+The reconciliation path is why a lost nudge no longer freezes the rig:
+on the very next tick, Forges self-dispatch straight from truth.
 
 ## Step 2: Idle
 
-No queued tasks means no work. Print "Waiting for task..." and wait 30 seconds, then go to Step 1.
+No claimable tasks means no work. Print "Waiting for task..." and wait 30 seconds, then go to Step 1.
 
 Budget is NOT your concern. You don't check it, you don't enforce it. Marshal stops queuing when budget is exhausted. If no tasks come, you idle.
 
@@ -51,7 +77,9 @@ If feedback arrives, create fix tasks: `smithy add-task <stage> "<desc>" --prior
 smithy start-heat <stage> --task <task_id>   # Writes checkpoint, marks task in_progress
 ```
 
-Use the stage and task_id from queue-pop. Do the actual work. Stay focused on the single task.
+Use the stage and `task_id` from whichever produced it — fast path
+(`queue-pop`) or reconciliation (`claim-task`). Do the actual work.
+Stay focused on the single task.
 
 | Stage | What to do |
 |-------|-----------|

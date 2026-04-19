@@ -40,20 +40,51 @@ When Anvil spawns you:
 
 ## The Heat Loop (nudge-driven, always-on)
 
-### Step 1 — Pop the next task
+### Step 1 — Pop the next task (fast path) or reconcile (backstop)
+
+**1a. Fast path — Marshal-dispatched.**
 
 ```bash
 smithy queue-pop             # Returns next task, or {task: null} if empty
 ```
 
 - **Task returned** → go to Step 2.
-- **Queue empty** → idle. Print "Waiting for task..." and stop. You'll be woken by a nudge from Marshal when a task is pushed (via `queue-push` or `set-next-tasks`).
+- **Queue empty** → fall through to 1b.
 
 Before looping, also drain any nudges that arrived mid-heat:
 ```bash
 smithy drain-nudges forge    # Returns JSON array of queued messages from Marshal
 ```
 Queued nudges can contain task assignments, re-prioritization signals, or status pings — inspect them but don't act on stale ones (Marshal's most recent push is authoritative via the queue itself).
+
+**1b. Reconciliation backstop (ini-024 T3) — self-dispatch.**
+
+When `queue-pop` returns empty AND no fresh nudge arrived, don't
+immediately idle — run the reconciliation claim:
+
+```bash
+smithy claim-task --forge <your-id>
+```
+
+This scans `state.queue` directly for a task with `status=pending`,
+`assigned_forge ∈ {None, <your-id>}`, no unmet `blocked_by`, and
+atomically flips it to `in_progress` stamped with your id.
+
+- **Exit 0 + `{"task_id": …, "task": {…}}`** → a task was claimed. Use
+  that task_id and its stage in Step 2 (`start-heat`). Do NOT also
+  run `queue-pop` — the claim already mutated state.
+- **Exit 1 + `{"task": null, "reason": "..."}`** → no eligible work
+  (genuinely empty queue, halt set, or everything pinned to other
+  Forges). Idle: print "Waiting for task..." and wait for a nudge or
+  the next wake tick.
+- **Exit 2 + `{"error": ...}`** → configuration problem (your forge
+  id isn't in `parallel.forges[]`). Surface to Marshal via
+  `SendMessage` and keep idling.
+
+The reconciliation path means a lost Marshal nudge, an empty
+`next_tasks`, or a patrol-filed task without a queue push is no longer
+a rig freeze — on the very next idle tick you pick up the work
+directly from truth (state.json).
 
 ### Step 2 — Execute (~4 minutes)
 
