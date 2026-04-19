@@ -56,8 +56,13 @@ fi
 
 # Always (re-)install smithy editable into the venv. uv pip install
 # is fast on a no-op so this is cheap to keep idempotent.
+# t-529: install the `[test]` extras so the venv carries
+# jinja2/starlette/httpx/fastapi/pydantic/etc. — the same deps
+# Assembly's staging venv needs for tests/test_*.py collection.
+# Forges running pytest locally need them too or they'll hit the
+# same ImportError class.
 echo "installing smithy editable into venv" >&2
-VIRTUAL_ENV="$VENV_DIR" uv pip install --quiet -e "$WORKTREE_ROOT/smithy" >&2
+VIRTUAL_ENV="$VENV_DIR" uv pip install --quiet -e "$WORKTREE_ROOT/smithy[test]" >&2
 
 # Verify smithy.cli is importable and resolves to THIS worktree's
 # source. Run the verify probe with cwd=/tmp (and SMITHY_SKIP_INSTALL_

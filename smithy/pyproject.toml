@@ -9,5 +9,25 @@ description = "Bookkeeping CLI for The Smithy — deterministic state mutations 
 requires-python = ">=3.9"
 dependencies = ["click>=8.0,<8.3"]
 
+[project.optional-dependencies]
+# t-529 (ini-018): UI-test deps declared here so Assembly's staging venv
+# (and every Forge venv) installs them when syncing the smithy package.
+# Previously these lived only in bellows/pyproject.toml, so staging's
+# `uv pip install -e smithy` left tests/test_task_detail_fallback.py and
+# its siblings (test_cockpit_*, test_activity_*, test_ini_*) failing on
+# ImportError at collection — which cascaded every merge into ERROR
+# regardless of the task's own correctness. Keep this list in sync with
+# bellows/pyproject.toml's dependencies.
+test = [
+    "pytest",
+    "fastapi>=0.115.0",
+    "jinja2>=3.1.0",
+    "starlette",
+    "httpx",
+    "pydantic",
+    "python-multipart>=0.0.24",
+    "markdown>=3.5",
+]
+
 [project.scripts]
 smithy = "smithy.cli:cli"
