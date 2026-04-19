@@ -7,10 +7,17 @@
 ## Step 0: Session Start (first heat only)
 
 ```bash
+eval "$(bash scripts/forge-venv-setup.sh)"   # t-461: activate per-Forge venv
 smithy resume              # Restore context from previous session (auto-consumes handoff)
 smithy patrol --fix        # Validate state, auto-repair discrepancies
 smithy sync-stages         # Ensure stage heats match worklog
 ```
+
+The `forge-venv-setup.sh` step is idempotent and only runs once per fresh
+session — it creates `.venv/` via `uv venv` and installs `smithy` editable
+from the worktree's `smithy/` tree, then emits the activation line. After
+this, `smithy` on PATH resolves to THIS worktree's CLI, so one Forge's
+`pip install -e` can never mutate a peer's CLI (see ini-020 phase 2).
 
 Read the handoff context notes and next steps if present. Then enter the loop.
 
