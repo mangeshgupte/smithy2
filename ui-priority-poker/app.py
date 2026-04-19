@@ -665,3 +665,73 @@ async def reject(initiative_id: str):
             break
     _save_state_checked(state, mtime)
     return JSONResponse({"ok": True})
+
+
+# t-443: Multi-forge Poker Task 4/4 — steering-chip endpoint. Persists the
+# three advisory fields (parallelism / affinity / touches) introduced by
+# t-440. Partial updates are supported: only keys present in the body are
+# touched, so chip edits are independent of each other.
+_PARALLELISM_VALUES = {"parallel", "serial"}
+
+
+def _coerce_str_list(value, *, field: str):
+    """Normalize list-typed steering fields. Accepts a list of strings or
+    a comma-separated string (frontend can send either). Raises ValueError
+    on anything else."""
+    if value is None:
+        return None
+    if isinstance(value, list):
+        return [s.strip() for s in value if isinstance(s, str) and s.strip()]
+    if isinstance(value, str):
+        return [s.strip() for s in value.split(",") if s.strip()]
+    raise ValueError(f"{field} must be a list or comma-separated string")
+
+
+@app.post("/api/initiative/{initiative_id}/steering")
+async def update_steering(initiative_id: str, request: Request):
+    """t-443: persist parallelism / affinity / touches from chip edits.
+
+    Body: {parallelism?: "parallel"|"serial", affinity?: [str]|str,
+           touches?: [str]|str}. Omitted keys leave existing values
+    unchanged; explicit empty lists clear a field.
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse({"ok": False, "error": "body must be JSON"},
+                            status_code=400)
+    if not isinstance(body, dict):
+        return JSONResponse({"ok": False, "error": "body must be an object"},
+                            status_code=400)
+
+    state, mtime = _load_state_with_mtime()
+    target = next((i for i in state.get("initiatives", [])
+                   if i["id"] == initiative_id), None)
+    if target is None:
+        return JSONResponse({"ok": False, "error": "initiative not found"},
+                            status_code=404)
+
+    if "parallelism" in body:
+        p = body["parallelism"]
+        if p not in _PARALLELISM_VALUES:
+            return JSONResponse(
+                {"ok": False,
+                 "error": f"parallelism must be one of {sorted(_PARALLELISM_VALUES)}"},
+                status_code=400)
+        target["parallelism"] = p
+
+    for field in ("affinity", "touches"):
+        if field in body:
+            try:
+                coerced = _coerce_str_list(body[field], field=field)
+            except ValueError as e:
+                return JSONResponse({"ok": False, "error": str(e)},
+                                    status_code=400)
+            if coerced is not None:
+                target[field] = coerced
+
+    _save_state_checked(state, mtime)
+    return JSONResponse({"ok": True,
+                         "parallelism": target.get("parallelism"),
+                         "affinity": target.get("affinity", []),
+                         "touches": target.get("touches", [])})

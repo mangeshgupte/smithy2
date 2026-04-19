@@ -76,6 +76,30 @@
                     <span>{{ ini.heats_used }}h{% if ini.budget_cap %}/{{ ini.budget_cap }}{% endif %}</span>
                     <span>{{ ini.task_count }} tasks</span>
                 </div>
+                {# t-443: advisory steering chips — parallelism / affinity / touches #}
+                {% set p = ini.parallelism or 'parallel' %}
+                {% set aff = ini.affinity or [] %}
+                {% set tch = ini.touches or [] %}
+                {% set unset = (ini.parallelism in (None, 'parallel')) and (not aff) and (not tch) %}
+                <div class="card-steering" onclick="event.stopPropagation()">
+                {% if unset %}
+                    <span class="steering-unset" onclick="event.stopPropagation(); editSteering('{{ ini.id }}', 'parallelism', '{{ p }}')"
+                          title="Click to set — currently: parallel · any forge · no contention">parallel · any forge · no contention</span>
+                {% else %}
+                    <span class="chip chip-parallelism chip-{{ p }}"
+                          data-ini="{{ ini.id }}"
+                          onclick="event.stopPropagation(); editSteering('{{ ini.id }}', 'parallelism', '{{ p }}')"
+                          title="Toggle parallelism (currently {{ p }})">{{ p }}</span>
+                    <span class="chip chip-affinity {% if not aff %}chip-empty{% endif %}"
+                          data-ini="{{ ini.id }}"
+                          onclick="event.stopPropagation(); editSteering('{{ ini.id }}', 'affinity', '{{ aff|join(',') }}')"
+                          title="Forge affinity (click to edit)">🔗 {{ aff|join(',') if aff else 'any forge' }}</span>
+                    <span class="chip chip-touches {% if not tch %}chip-empty{% endif %}"
+                          data-ini="{{ ini.id }}"
+                          onclick="event.stopPropagation(); editSteering('{{ ini.id }}', 'touches', '{{ tch|join(',') }}')"
+                          title="Path globs (click to edit)">📁 {{ tch|join(',') if tch else 'no contention' }}</span>
+                {% endif %}
+                </div>
                 <div class="card-summary">{{ ini.description[:120] }}{% if ini.description|length > 120 %}...{% endif %}</div>
                 <div class="card-expanded">
                     <div class="card-full-desc">{{ ini.description }}</div>
@@ -552,6 +576,31 @@
         if (!confirm('Reject this initiative?')) return;
         fetch('/reject/' + id, { method: 'POST' })
             .then(() => location.reload());
+    }
+
+    // t-443: advisory steering-chip edit.
+    // Parallelism toggles parallel↔serial on click; affinity/touches
+    // open a prompt() for a comma-separated list.
+    function editSteering(iniId, field, current) {
+        let body = {};
+        if (field === 'parallelism') {
+            body.parallelism = (current === 'parallel') ? 'serial' : 'parallel';
+        } else {
+            const label = (field === 'affinity')
+                ? 'Forge affinity (comma-separated forge-ids, empty to clear)'
+                : 'Path globs (comma-separated, empty to clear)';
+            const value = prompt(label, current || '');
+            if (value === null) return;  // cancelled
+            body[field] = value;  // server accepts string or list
+        }
+        fetch('/api/initiative/' + iniId + '/steering', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(body),
+        }).then(r => r.json()).then(resp => {
+            if (!resp.ok) { alert(resp.error || 'update failed'); return; }
+            location.reload();
+        }).catch(err => alert('network error: ' + err));
     }
 
     // Kill zone drag-drop
