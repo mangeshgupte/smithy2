@@ -1851,7 +1851,12 @@ class TestRejectCompleteInitiative:
         state = json.loads((project / "state.json").read_text())
         state["initiatives"][0]["status"] = "active"
         (project / "state.json").write_text(json.dumps(state))
-        result = runner.invoke(cli, ["--dir", str(project), "complete-initiative", "ini-001"])
+        # t-503: close now requires --retro (with file) or --force-no-retro.
+        # Use the escape hatch here — the retro-required paths are covered
+        # by test_t503_complete_initiative.py.
+        result = runner.invoke(cli, ["--dir", str(project),
+                                     "complete-initiative", "ini-001",
+                                     "--force-no-retro"])
         assert result.exit_code == 0
         data = json.loads(result.output)
         assert data["initiative"]["status"] == "done"

@@ -187,6 +187,17 @@ def _apply_steerability_defaults(state: dict) -> dict:
         ini.setdefault("parallelism", "parallel")
         ini.setdefault("affinity", [])
         ini.setdefault("touches", [])
+        # t-503 (ini-025): retro + closure fields. All default null on
+        # proposal/approval; set by `smithy complete-initiative` at
+        # closure time. retro_path is the path to plans/ini-<id>-retro.md
+        # (or explicitly null when closed with --force-no-retro);
+        # closed_at is UTC ISO; heat_cost_total snapshots heats_used at
+        # close time (protects against later edits); successor_ini names
+        # the follow-on initiative if the retro spawned one.
+        ini.setdefault("retro_path", None)
+        ini.setdefault("closed_at", None)
+        ini.setdefault("heat_cost_total", None)
+        ini.setdefault("successor_ini", None)
     # t-396 I1: seed the parallel registry. Default is one idle Forge so
     # existing code paths see `parallel.forges[0].id == "forge-01"` without
     # a migration step. halt_flag from I0 lives under the same umbrella.

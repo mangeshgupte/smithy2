@@ -4518,20 +4518,118 @@ def reject_initiative(ctx, initiative_id):
 
 @cli.command("complete-initiative")
 @click.argument("initiative_id")
+@click.option("--retro", "retro_path", default=None,
+              help="Path to the retro document (REQUIRED unless "
+                   "--force-no-retro). Convention: plans/ini-<id>-retro.md. "
+                   "File must exist at close time.")
+@click.option("--successor", "successor_ini", default=None,
+              help="Optional follow-on initiative id — must already exist "
+                   "with status approved or active. Errors on self-ref or "
+                   "ref to complete/rejected initiatives.")
+@click.option("--force-no-retro", is_flag=True, default=False,
+              help="Escape hatch — close without a retro document. Emits "
+                   "a rig-event warning so the skip is visible in audit.")
 @click.pass_context
-def complete_initiative(ctx, initiative_id):
-    """Mark an initiative as done."""
+def complete_initiative(ctx, initiative_id, retro_path, successor_ini,
+                        force_no_retro):
+    """Close an initiative — status → done, record retro + closure metadata.
+
+    t-503 (ini-025): closure is no longer a bare status flip. It captures
+    retro_path, closed_at, heat_cost_total (snapshot from heats_used),
+    and optional successor_ini for a follow-on initiative. Required retro
+    can be overridden with --force-no-retro (audited via rig-event).
+    """
+    from datetime import datetime, timezone
     root = ctx.obj["root"]
     state = load_state(root)
-    for ini in state.get("initiatives", []):
-        if ini["id"] == initiative_id:
-            ini["status"] = "done"
-            save_state(root, state)
-            _output({"initiative": ini})
-            _err(f"Completed {initiative_id}")
-            return
-    _output({"error": f"Initiative {initiative_id} not found"})
-    sys.exit(1)
+
+    # --- locate target ---------------------------------------------------
+    target = None
+    by_id = {ini.get("id"): ini for ini in state.get("initiatives", []) or []}
+    target = by_id.get(initiative_id)
+    if target is None:
+        _output({"error": f"Initiative {initiative_id} not found"})
+        _err(f"Initiative {initiative_id} not found")
+        sys.exit(1)
+
+    # --- idempotency: refuse to re-close a done initiative --------------
+    if target.get("status") == "done":
+        _output({"error": f"{initiative_id} already closed",
+                 "initiative": target})
+        _err(f"{initiative_id} already closed (closed_at="
+             f"{target.get('closed_at')})")
+        sys.exit(1)
+
+    # --- retro argument handling ----------------------------------------
+    if retro_path and force_no_retro:
+        _output({"error": "--retro and --force-no-retro are mutually exclusive"})
+        _err("--retro and --force-no-retro are mutually exclusive")
+        sys.exit(2)
+    if not retro_path and not force_no_retro:
+        _output({"error": "--retro <path> is required (or --force-no-retro to "
+                          "close without one)"})
+        _err(f"{initiative_id}: --retro required (or --force-no-retro escape)")
+        sys.exit(2)
+    if retro_path:
+        retro_file = Path(retro_path)
+        if not retro_file.is_absolute():
+            retro_file = root / retro_file
+        if not retro_file.exists():
+            _output({"error": f"retro file not found: {retro_path}"})
+            _err(f"retro file not found: {retro_path}")
+            sys.exit(1)
+        expected = f"plans/ini-{initiative_id.split('-')[-1]}-retro.md"
+        # Convention warning — just stderr, doesn't block closure.
+        if not retro_path.endswith(expected.split("/")[-1]) \
+                and expected not in str(retro_path):
+            _err(f"warning: retro path doesn't match convention "
+                 f"'{expected}' (got '{retro_path}')")
+
+    # --- successor validation -------------------------------------------
+    if successor_ini:
+        if successor_ini == initiative_id:
+            _output({"error": f"successor cannot reference self: {initiative_id}"})
+            _err(f"successor cannot be self ({initiative_id})")
+            sys.exit(1)
+        succ = by_id.get(successor_ini)
+        if succ is None:
+            _output({"error": f"successor {successor_ini} not found"})
+            _err(f"successor {successor_ini} not found")
+            sys.exit(1)
+        if succ.get("status") not in ("proposed", "approved", "active"):
+            _output({"error": f"successor {successor_ini} has status "
+                              f"'{succ.get('status')}' — must be "
+                              f"approved/active/proposed"})
+            _err(f"successor {successor_ini} has invalid status "
+                 f"'{succ.get('status')}'")
+            sys.exit(1)
+
+    # --- mutate ----------------------------------------------------------
+    target["status"] = "done"
+    target["retro_path"] = retro_path  # None iff --force-no-retro
+    target["closed_at"] = datetime.now(timezone.utc).isoformat()
+    target["heat_cost_total"] = target.get("heats_used") or 0
+    target["successor_ini"] = successor_ini  # None if unspecified
+    save_state(root, state)
+
+    # --- audit trail ----------------------------------------------------
+    event = "initiative_closed"
+    _emit_rig_event(
+        root, event,
+        initiative_id=initiative_id,
+        retro_path=retro_path,
+        closed_at=target["closed_at"],
+        heat_cost_total=target["heat_cost_total"],
+        successor_ini=successor_ini,
+        force_no_retro=bool(force_no_retro),
+    )
+    if force_no_retro:
+        _err(f"warning: {initiative_id} closed with --force-no-retro "
+             f"(rig-event logged)")
+
+    _output({"initiative": target})
+    _err(f"Closed {initiative_id}"
+         + (f" → successor {successor_ini}" if successor_ini else ""))
 
 
 @cli.command("list-initiatives")
