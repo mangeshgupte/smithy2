@@ -603,9 +603,16 @@ def ensure_staging_venv_versioned(wt: Path,
 
     env = dict(_os.environ)
     env["VIRTUAL_ENV"] = str(venv)
+    # t-529: install the `[test]` extras so the staging venv carries
+    # jinja2/starlette/httpx/fastapi/pydantic/etc. that tests/test_*.py
+    # collect-time imports. Without this, every task submit ERRORs on
+    # ImportError regardless of its own correctness — a 5-merge cascade
+    # on 2026-04-19 made this the rig's P0 blocker (see t-529). The
+    # `-e '.../smithy[test]'` form tells uv to resolve the
+    # optional-dependencies.test group in smithy/pyproject.toml.
     r2 = subprocess.run(
         [uv, "pip", "install", "--quiet", "-e",
-         str(wt / "smithy"), "pytest"],
+         f"{wt / 'smithy'}[test]"],
         cwd=str(wt), env=env, capture_output=True, text=True, timeout=180,
     )
     if r2.returncode != 0:
