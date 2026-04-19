@@ -716,7 +716,14 @@ class TestNudgeCommand:
         assert "session not found" in data["reason"]
 
     def test_nudge_queues_when_pane_missing(self, project, runner, monkeypatch):
-        """When session exists but no pane resolves to the persona, queue the nudge."""
+        """When session exists, a registered forge pane is present, but the
+        target persona's pane is absent → queue the nudge (legacy behavior
+        preserved for non-forge personas like anvil/marshal when the
+        session roster DOES contain forges).
+
+        t-489: roster-mismatch (no forge panes at all) now fails loud —
+        tested separately in TestNudgeRosterMismatch.
+        """
         monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
         import subprocess as sp
 
@@ -724,17 +731,18 @@ class TestNudgeCommand:
             if "has-session" in cmd:
                 return sp.CompletedProcess(cmd, 0, stdout="", stderr="")
             if "list-panes" in cmd:
-                # Only anvil + marshal panes present — no forge pane.
+                # A forge pane IS present (session is the right rig),
+                # but the 'anvil' persona's pane is absent.
                 out = (
-                    "%1\t/repo/.worktrees/anvil/personas/anvil\n"
+                    "%1\t/repo/.worktrees/forge-01/personas/forge\n"
                     "%2\t/repo/.worktrees/marshal/personas/marshal\n"
                 )
                 return sp.CompletedProcess(cmd, 0, stdout=out, stderr="")
             return sp.CompletedProcess(cmd, 0, stdout="", stderr="")
 
         monkeypatch.setattr(sp, "run", fake_run)
-        result = runner.invoke(cli, ["--dir", str(project), "nudge", "forge", "hello"])
-        assert result.exit_code == 0
+        result = runner.invoke(cli, ["--dir", str(project), "nudge", "anvil", "hello"])
+        assert result.exit_code == 0, result.output
         data = json.loads(result.output)
         assert data["queued"] is True
         assert "pane" in data["reason"]
@@ -781,6 +789,134 @@ class TestNudgeCommand:
         data = json.loads(result.output)
         assert data["nudged"] is True
         assert data["queued"] is False
+
+
+class TestNudgeRosterMismatch:
+    """t-489: fail-loud when FORGE_SESSION points at the wrong tmux
+    session (pane roster doesn't contain any registered forge id).
+    The silent .smithy-nudge-queue/ fallback let Marshal-pushed tasks
+    sit unserved for ~25 min on 2026-04-18; the fix surfaces an error
+    instead of queueing.
+    """
+
+    def _register_forges(self, project, ids):
+        state = json.loads((project / "state.json").read_text())
+        state.setdefault("parallel", {})["forges"] = [
+            {"id": i, "status": "idle", "current_task": None,
+             "current_heat": None, "started_at": None, "last_heartbeat": None,
+             "worktree": f".worktrees/{i}", "branch": f"{i}/scratch"}
+            for i in ids
+        ]
+        (project / "state.json").write_text(json.dumps(state))
+
+    def test_wrong_session_fails_loud_not_queue(self, project, runner, monkeypatch):
+        """Registered forges + panes without any of them → error, no queue."""
+        monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+        self._register_forges(project, ["forge-quench", "forge-temper"])
+
+        import subprocess as sp
+
+        def fake_run(cmd, **kwargs):
+            if "has-session" in cmd:
+                return sp.CompletedProcess(cmd, 0, stdout="", stderr="")
+            if "list-panes" in cmd:
+                # Stale session: only a generic pane, no forges.
+                out = "%1\t/tmp/random\n"
+                return sp.CompletedProcess(cmd, 0, stdout=out, stderr="")
+            return sp.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+        monkeypatch.setattr(sp, "run", fake_run)
+        result = runner.invoke(
+            cli, ["--dir", str(project), "nudge", "forge-quench", "wake"]
+        )
+        # Non-zero exit on wrong-session
+        assert result.exit_code != 0, result.output
+        data = json.loads(result.output)
+        assert data["nudged"] is False
+        assert data["queued"] is False
+        assert data.get("error") is True
+        assert "no registered-forge panes" in data["reason"]
+        # No jsonl side-channel was written
+        assert not (project / ".smithy-nudge-queue" / "forge-quench.jsonl").exists()
+
+    def test_live_session_selected_among_dual(self, project, runner, monkeypatch):
+        """When pane roster contains a registered forge, the nudge is sent."""
+        monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+        self._register_forges(project, ["forge-quench"])
+
+        import subprocess as sp
+
+        def fake_run(cmd, **kwargs):
+            if "has-session" in cmd:
+                return sp.CompletedProcess(cmd, 0, stdout="", stderr="")
+            if "list-panes" in cmd:
+                out = (
+                    "%1\t/repo/.worktrees/forge-quench/personas/forge\n"
+                    "%2\t/repo/.worktrees/anvil/personas/anvil\n"
+                )
+                return sp.CompletedProcess(cmd, 0, stdout=out, stderr="")
+            if "send-keys" in cmd:
+                return sp.CompletedProcess(cmd, 0, stdout="", stderr="")
+            return sp.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+        monkeypatch.setattr(sp, "run", fake_run)
+        result = runner.invoke(
+            cli, ["--dir", str(project), "nudge", "forge-quench", "wake"]
+        )
+        assert result.exit_code == 0, result.output
+        data = json.loads(result.output)
+        assert data["nudged"] is True
+
+    def test_missing_session_errors_not_silent_jsonl(self, project, runner, monkeypatch):
+        """t-489: when FORGE_SESSION's session does not exist (and no
+        checkpoint → not busy), the caller still needs a visible signal.
+        Prior behaviour silently queued to jsonl. We keep the queue file
+        as the safety net but the CLI exit code and stderr make the
+        failure visible (nudged=False, queued=True, session-not-found).
+        The roster-mismatch case is the one we escalate to error=True.
+        """
+        monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+        self._register_forges(project, ["forge-quench"])
+
+        import subprocess as sp
+
+        def fake_run(cmd, **kwargs):
+            return sp.CompletedProcess(cmd, 1, stdout="", stderr="no session")
+
+        monkeypatch.setattr(sp, "run", fake_run)
+        result = runner.invoke(
+            cli, ["--dir", str(project), "nudge", "forge-quench", "wake"]
+        )
+        # Missing session keeps legacy jsonl queue as a safety net;
+        # wrong-session (roster mismatch) is the one that fails loud.
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["queued"] is True
+        assert "session not found" in data["reason"]
+
+    def test_resolve_pane_direct(self, project, monkeypatch):
+        """Direct test on the (pane_id, reason) contract of _resolve_pane."""
+        monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+        import subprocess as sp
+        from smithy.cli import _resolve_pane
+
+        def fake_run(cmd, **kwargs):
+            if "has-session" in cmd:
+                return sp.CompletedProcess(cmd, 0, stdout="", stderr="")
+            if "list-panes" in cmd:
+                return sp.CompletedProcess(
+                    cmd, 0,
+                    stdout="%1\t/tmp/unrelated\n%2\t/tmp/other\n",
+                    stderr="",
+                )
+            return sp.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+        monkeypatch.setattr(sp, "run", fake_run)
+        pid, reason = _resolve_pane(
+            "smithy2", "forge-quench", forge_ids={"forge-quench"},
+        )
+        assert pid is None
+        assert "no registered-forge panes" in reason
 
 
 class TestDrainNudges:
