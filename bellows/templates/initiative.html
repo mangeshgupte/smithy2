@@ -105,6 +105,22 @@
     <p class="empty">No tasks linked to this initiative yet.</p>
     {% endif %}
 </section>
+
+{# t-505 (ini-025 T3): Retrospective section. Rendered only when
+   retro_md is non-null — null means either no retro_path is set
+   (initiative not yet closed-with-retro) or the file couldn't be
+   loaded (bad path, permission issue). In both cases we omit the
+   section entirely rather than show an empty 'Retrospective' header.
+   t-501 will swap this <pre> for {{ detail.retro_md | markdown }}
+   once the markdown filter lands; until then <pre class="retro-text">
+   + white-space: pre-wrap renders prose acceptably and autoescape
+   handles any HTML embedded in the source file (XSS guard). #}
+{% if detail.retro_md %}
+<section class="initiative-retro">
+    <h2>Retrospective</h2>
+    <pre class="retro-text">{{ detail.retro_md }}</pre>
+</section>
+{% endif %}
 </div> {# /.initiative-page #}
 
 <!-- Read-only task drawer (t-364) — click task_id to open; edits stay in Poker. -->

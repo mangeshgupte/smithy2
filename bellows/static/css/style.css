@@ -1406,3 +1406,29 @@ details.heat-card[open] .heat-summary {
     word-break: break-word;
 }
 .initiative-page .task-drawer .td-worklog li:first-child { border-top: none; }
+
+/* t-505 (ini-025 T3): retrospective section — <pre>-based prose until
+   the t-501 markdown filter lands, at which point the template can swap
+   to `{{ retro_md | markdown }}` and .retro-text's `<pre>`-specific
+   rules become redundant but harmless. */
+.initiative-page .initiative-retro h2 {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    margin-bottom: 16px;
+}
+
+.initiative-page .retro-text {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px 20px;
+    max-width: 68ch;
+    margin: 0;
+}
