@@ -429,6 +429,21 @@ if command -v crontab >/dev/null 2>&1; then
     "$SCRIPT_DIR/_comms-cron.sh" install
 fi
 
+# --- t-522 (ini-026 T1): install the autopilot-tick cron line --------------
+#
+# Same pattern as the comms-tick install above. The Anvil window is
+# created earlier in the script (it's one of the default agents), so by
+# the time we get here the tick wrapper's gate 3 will succeed.
+# FORGE_AUTOPILOT_WINDOW='' opts out — the helper's install path treats
+# that as uninstall, so disabling autopilot doesn't leave a stale cron
+# line firing into a halted rig.
+if command -v crontab >/dev/null 2>&1; then
+  FORGE_ROOT="$FORGE_ROOT" \
+  FORGE_AUTOPILOT_WINDOW="${FORGE_AUTOPILOT_WINDOW-anvil}" \
+  FORGE_AUTOPILOT_INTERVAL="${FORGE_AUTOPILOT_INTERVAL:-10}" \
+    "$SCRIPT_DIR/_autopilot-cron.sh" install
+fi
+
 # --- boot cascade -----------------------------------------------------------
 #
 # Auto-Start every agent directly. Agents are peers (Anvil's CLAUDE.md:
