@@ -151,3 +151,81 @@ def select_task_for_forge(state: dict, forge_id: str) -> dict | None:
         return ini_tasks[0]
 
     return None
+
+
+def claim_task_for_forge(state: dict, forge_id: str) -> dict | None:
+    """ini-024 T2: like `select_task_for_forge` but honours per-task
+    `assigned_forge` pinning. Returns the next task this forge is allowed
+    to start working on immediately, or None.
+
+    A task is claimable when ALL of:
+      - status == "pending"
+      - blocked_by deps are all complete (via `_task_is_ready`)
+      - `assigned_forge` is None OR equal to `forge_id`
+      - its initiative passes the serial/parallel + affinity + touches
+        constraints (same rules as Marshal's `select_task_for_forge`)
+
+    Pure: no state mutation, no IO. The caller is responsible for the
+    CAS write (flip status → in_progress + stamp assigned_forge inside a
+    state.json lock).
+    """
+    queue = state.get("queue") or []
+    complete_ids = {t["id"] for t in queue if t.get("status") == "complete"}
+    in_flight = _in_flight_tasks(state)
+    idle_set = _idle_forges(state)
+
+    in_flight_by_ini: dict = {}
+    for t in in_flight:
+        in_flight_by_ini.setdefault(t.get("initiative_id"), []).append(t)
+
+    initiatives = [
+        i for i in state.get("initiatives") or []
+        if i.get("status") in ("approved", "active")
+    ]
+    initiatives.sort(key=_initiative_rank)
+
+    for ini in initiatives:
+        ini_id = ini.get("id")
+        parallelism = ini.get("parallelism", "parallel")
+        affinity = list(ini.get("affinity") or [])
+
+        if parallelism == "serial" and in_flight_by_ini.get(ini_id):
+            continue
+        if affinity and forge_id not in affinity:
+            if any(fid in idle_set for fid in affinity):
+                continue
+        if parallelism == "serial":
+            ini_touches = _initiative_touches(state, ini_id)
+            collide = any(
+                _touches_overlap(ini_touches, _effective_touches(state, t))
+                for t in in_flight
+            )
+            if collide:
+                continue
+
+        ini_tasks = [
+            t for t in queue
+            if t.get("initiative_id") == ini_id
+            and _task_is_ready(t, complete_ids)
+            and (t.get("assigned_forge") in (None, forge_id))
+        ]
+        if not ini_tasks:
+            continue
+        ini_tasks.sort(key=_task_sort_key)
+        return ini_tasks[0]
+
+    # ini-024: also consider tasks with NO initiative_id — otherwise the
+    # claim path would never pick up ad-hoc tasks that Marshal queues
+    # outside the initiative system (adminstrative fixups, patrol-filed
+    # repair work, etc.).
+    loose = [
+        t for t in queue
+        if (t.get("initiative_id") in (None, ""))
+        and _task_is_ready(t, complete_ids)
+        and (t.get("assigned_forge") in (None, forge_id))
+    ]
+    if loose:
+        loose.sort(key=_task_sort_key)
+        return loose[0]
+
+    return None
