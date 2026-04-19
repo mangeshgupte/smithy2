@@ -6,14 +6,29 @@ onto `main` and merges them. Mild conflicts (append-only collisions on
 `worklog.tsv` and `state.json` task-list) are auto-resolved. Severe
 conflicts abort and reject back to *Marshal*, never to the Forge directly.
 
+**Isolation invariant (t-456 / t-459, ini-018).** Assembly's rebase and
+test run happen in a private staging worktree at
+``.worktrees/_assembly-staging/`` — never inside a Forge's worktree.
+Running in a Forge worktree races whatever branch that Forge currently
+has checked out (Forge loops fast; the branch being merged rarely
+matches what the Forge is now on), which spuriously rejects valid
+submissions. The regression guard is
+``tests/test_t459_assembly_isolation.py``.
+
 Primitives:
     branch_name              → "<forge-id>/<task-id>"
-    rebase_forge_branch      → rebase per-task branch onto main
+    ensure_staging_worktree  → create/reuse .worktrees/_assembly-staging
+    rebase_task_branch       → rebase in staging (t-456; canonical path)
+    rebase_forge_branch      → legacy: rebase in the Forge's worktree.
+                               Kept for CLI surface compatibility but
+                               NOT called from assembly_tick anymore.
     try_auto_resolve         → mild-conflict auto-resolution
     continue_rebase          → after resolutions are staged
     abort_rebase             → bail out of a rebase-in-progress
-    run_tests_in_worktree    → pytest in the Forge's worktree
+    run_tests_in_worktree    → pytest in the target worktree.
+                               assembly_tick now targets staging.
     ff_merge_forge_branch    → merge per-task branch into main
+                               (t-475: pass source_ref=<staging_ref>).
 """
 
 from __future__ import annotations
