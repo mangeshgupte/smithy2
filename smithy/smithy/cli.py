@@ -375,6 +375,77 @@ def _detect_stalled_forges(root, state, stall_s):
     return sorted(stalled, key=lambda x: x["forge_id"])
 
 
+def _detect_starving_forges(state):
+    """t-491 (ini-019): complement to _detect_stalled_forges.
+
+    _detect_stalled_forges catches 'Marshal pushed, Forge ignored' — a
+    Forge-side wedge. It cannot see 'Marshal stopped pushing, queue has
+    work' because that path has no queue_push event to anchor on.
+
+    Observed 2026-04-18 heat 887: forge-anneal idle, next_tasks=[], 9
+    pending tasks in queue, halt off, budget remaining → patrol clean.
+    Marshal had simply stopped dispatching. This detector surfaces that
+    shape from a single state.json snapshot, no event correlation needed.
+
+    Conditions for a forge to be flagged 'starving':
+      - forge.status == 'idle' AND forge.current_task is falsy
+      - parallel.halt_flag is False (otherwise idle is expected)
+      - budget remaining > 0 (otherwise idle is end-of-run)
+      - next_tasks is empty (nothing already dispatched and waiting)
+      - queue has at least one pending task that this forge could take
+        (unassigned, or assigned to this forge)
+
+    The last clause avoids false positives when the queue contains only
+    tasks pinned to a *different* forge — that forge is the one Marshal
+    should dispatch to, not this one.
+
+    Returns a list of dicts: [{forge_id, pending_count, ...}, ...]
+    """
+    parallel = state.get("parallel") or {}
+    if parallel.get("halt_flag"):
+        return []
+
+    budget = state.get("budget") or {}
+    total = budget.get("total_heats", 0) or 0
+    used = budget.get("used", 0) or 0
+    if total > 0 and used >= total:
+        return []
+
+    next_tasks = state.get("next_tasks") or []
+    if next_tasks:
+        # Something is already dispatched — whichever Forge's turn it is
+        # will pick it up. Not starvation.
+        return []
+
+    queue = state.get("queue") or []
+    pending = [t for t in queue if t.get("status") == "pending"]
+    if not pending:
+        return []
+
+    starving = []
+    for forge in parallel.get("forges") or []:
+        fid = forge.get("id")
+        if not fid:
+            continue
+        if forge.get("status") != "idle" or forge.get("current_task"):
+            continue
+        # Count tasks this forge could actually take: unassigned, or
+        # pinned to this forge.
+        eligible = [
+            t for t in pending
+            if not t.get("assigned_forge") or t.get("assigned_forge") == fid
+        ]
+        if not eligible:
+            continue
+        starving.append({
+            "forge_id": fid,
+            "pending_count": len(eligible),
+            "queue_total_pending": len(pending),
+        })
+
+    return sorted(starving, key=lambda x: x["forge_id"])
+
+
 def _emit_rig_event(root, event, **fields):
     """t-425: append one JSON line to rig-events.jsonl.
 
@@ -3818,6 +3889,32 @@ def patrol(ctx, fix):
             f"(threshold {STALL_S}s) — possibly unreachable"
         )
 
+    # t-491 (ini-019) Check #16: forge starvation — the Marshal-side
+    # counterpart of check #12. Catches "queue has work, forges idle,
+    # Marshal not dispatching" (next_tasks empty despite pending tasks).
+    # Pure state.json snapshot; no event correlation required.
+    starving_forges = _detect_starving_forges(state)
+    for item in starving_forges:
+        issues.append(
+            f"{item['forge_id']} starving: {item['pending_count']} pending "
+            f"task(s) available, next_tasks empty — Marshal not dispatching"
+        )
+    # --fix: nudge Marshal so it re-reads state and picks up the
+    # starvation. We don't push a specific task (which task to pick is
+    # Marshal's job) and we don't mutate next_tasks directly — that would
+    # race with Marshal's own dispatch logic. The nudge is idempotent
+    # and cheap; if Marshal is genuinely dead, check #12 / witness-check
+    # will cover it on the Forge side.
+    if fix and starving_forges:
+        msg = (
+            f"PATROL_STARVATION: {len(starving_forges)} forge(s) starving — "
+            f"re-evaluate and dispatch"
+        )
+        nudge_result = _nudge_persona("marshal", msg, root=root)
+        fixes.append(
+            f"nudged marshal ({'sent' if nudge_result.get('nudged') else 'queued'})"
+        )
+
     # 13. t-466: initiative rank invariants. Approved/active initiatives
     # must carry contiguous ranks 1..N; everything else must carry
     # rank=null. Surface violations only — operator runs
@@ -3887,6 +3984,7 @@ def patrol(ctx, fix):
         "checks_run": 15,
         "stuck_forges": sorted(set(stuck_forges)),
         "stalled_forges": stalled_forges,
+        "starving_forges": starving_forges,
     })
     if issues:
         _err(f"Patrol found {len(issues)} issues" + (f", fixed {len(fixes)}" if fixes else ""))
