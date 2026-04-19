@@ -2530,6 +2530,11 @@ def add_task(ctx, stage, desc, priority, blocked_by, initiative_id):
         # landed t-470 in state.json without it and blocked Assembly for
         # every submission afterward.
         "initiative_id": initiative_id,
+        # t-527 (ini-016): created_at ISO timestamp so the Cockpit can
+        # render an "age in minutes" column instead of the less-useful
+        # "heats since first worklog mention". Tasks pre-t-527 lack
+        # this field; readers MUST treat missing as None.
+        "created_at": datetime.now(timezone.utc).isoformat(),
     }
 
     task["human_priority"] = None

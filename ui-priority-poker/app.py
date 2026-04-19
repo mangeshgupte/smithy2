@@ -315,6 +315,10 @@ async def cockpit(request: Request, stage: str = None, status: str = None,
         "filter_initiative": initiative or "",
         "filter_q": q or "",
         "nav_links": nav_links("Cockpit"),
+        # t-527: surface Bellows URL + project name into the cockpit
+        # JS so initiative cells can linkify to
+        # `${BELLOWS}/project/<project>/initiative/<ini-id>`.
+        "url_bellows": URL_BELLOWS,
     })
 
 

@@ -127,7 +127,26 @@
         .c-bulk-bar .c-bulk-clear { margin-left: auto; color: var(--text-muted, #888); }
         .c-check { width: 18px; text-align: center; }
         .c-check input { cursor: pointer; margin: 0; }
+        /* t-527: desc row sits below each task row; muted, preserves
+           whitespace, click toggles the inline panel. */
+        .c-desc-row td.c-desc-cell {
+            color: var(--text-muted, #888);
+            white-space: pre-wrap;
+            padding: 2px 8px 8px;
+            border-top: none;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .c-desc-row td.c-desc-cell:hover { color: var(--text, #ddd); }
+        .c-ini-link { color: var(--link, #6ba); text-decoration: none; }
+        .c-ini-link:hover { text-decoration: underline; }
     </style>
+    <script>
+        // t-527: surface cross-service Bellows URL + project name so
+        // initiative cells in the primary row can link out.
+        window.COCKPIT_BELLOWS_URL = {{ url_bellows | tojson }};
+        window.COCKPIT_PROJECT_NAME = {{ project | tojson }};
+    </script>
 </head>
 <body>
     <nav class="steering-nav">
@@ -193,10 +212,11 @@
                     <th>status</th>
                     <th>M</th>
                     <th>you</th>
-                    <th>reason</th>
+                    <!-- t-527: reason column dropped from the primary
+                         row (still rendered inside the inline panel);
+                         desc now lives in a second tr per task. -->
                     <th>initiative</th>
-                    <th title="Heats since first worklog mention">age</th>
-                    <th>desc</th>
+                    <th title="Minutes since task was filed">age</th>
                     <th></th>
                 </tr>
             </thead>
@@ -238,10 +258,25 @@
         if (body.children.length > 0) return;  // don't blank a populated table
         let html = '';
         for (let i = 0; i < 6; i++) {
+            // t-527: primary row is now 10 cells (was 12). Skeleton
+            // colspan matches to keep the spinner full-width.
             html += '<tr class="c-skeleton">' +
-                '<td colspan="12"><span class="c-skeleton-bar"></span></td></tr>';
+                '<td colspan="10"><span class="c-skeleton-bar"></span></td></tr>';
         }
         body.innerHTML = html;
+    }
+
+    // t-527: Bellows cross-service URL and project name for initiative
+    // links in the primary row. Both injected via the Jinja context in
+    // cockpit.html's <head>.
+    const BELLOWS_URL = (window.COCKPIT_BELLOWS_URL || '').replace(/\/$/, '');
+    const PROJECT_NAME = window.COCKPIT_PROJECT_NAME || '';
+
+    function formatAge(m) {
+        if (m == null) return '—';
+        if (m < 60) return m + 'm';
+        const h = Math.floor(m / 60);
+        return h + 'h';
     }
 
     function loadRows() {
@@ -356,7 +391,7 @@
         tr.className = 'c-section-head';
         tr.dataset.section = key;
         const caret = sectionOpen[key] ? '▾' : '▸';
-        tr.innerHTML = `<td colspan="12"><span class="c-section-caret">${caret}</span>` +
+        tr.innerHTML = `<td colspan="10"><span class="c-section-caret">${caret}</span>` +
                        ` ${label} <span class="c-section-chip">${count}</span></td>`;
         tr.addEventListener('click', () => {
             sectionOpen[key] = !sectionOpen[key];
@@ -377,7 +412,7 @@
             const msg = (data.total === 0)
                 ? 'No tasks in this project yet. Add one via <code>smithy add-task</code>.'
                 : 'No tasks match the current filters. Try widening or <a href="#" onclick="clearFilters();return false;">clear all</a>.';
-            body.innerHTML = `<tr><td colspan="12" class="c-empty">${msg}</td></tr>`;
+            body.innerHTML = `<tr><td colspan="10" class="c-empty">${msg}</td></tr>`;
             return;
         }
         const sections = splitSections(data.rows);
@@ -413,6 +448,13 @@
             const hp = (t.human_priority == null) ? '—' : ('p' + t.human_priority);
             const isOpen = expanded.has(t.id);
             const checked = bulkSelected.has(t.id) ? 'checked' : '';
+            // t-527: primary row drops reason + desc columns. desc
+            // now lives in a second <tr.c-desc-row> below; reason stays
+            // in the inline panel only. initiative_id linkifies to
+            // Bellows when BELLOWS_URL + PROJECT_NAME are present.
+            const iniCell = t.initiative_id
+                ? `<a class="c-ini-link" href="${BELLOWS_URL}/project/${encodeURIComponent(PROJECT_NAME)}/initiative/${encodeURIComponent(t.initiative_id)}" target="_blank" rel="noopener">${t.initiative_id}</a>`
+                : '—';
             tr.innerHTML =
                 `<td class="c-check"><input type="checkbox" data-bulk-id="${t.id}" ${checked} onclick="onBulkCheck(event)"></td>` +
                 `<td class="c-expand ${isOpen ? 'open' : ''}" onclick="toggleInlineExpand(event, '${t.id}')">${isOpen ? '▾' : '▸'}</td>` +
@@ -426,16 +468,26 @@
                   `<button title="priority down" onclick="bumpHP('${t.id}', 1)">↓</button>` +
                   `<button title="clear" onclick="clearHP('${t.id}')">✕</button>` +
                 `</td>` +
-                `<td class="c-reason" title="${(t.priority_reason || '').replace(/"/g, '&quot;')}">${t.priority_reason || '—'}${formatBounce(t)}</td>` +
-                `<td>${t.initiative_id || '—'}</td>` +
-                `<td class="c-age">${t.age_heats == null ? '—' : (t.age_heats + 'h')}</td>` +
-                `<td class="c-desc" title="${(t.desc || '').replace(/"/g, '&quot;')}">${t.desc || ''}</td>` +
+                `<td>${iniCell}</td>` +
+                `<td class="c-age">${formatAge(t.age_minutes)}</td>` +
                 `<td><span class="c-kebab" onclick="toggleDefer('${t.id}', '${t.status}')" title="defer/undefer">${t.status === 'deferred' ? '▶' : '⏸'}</span></td>`;
             // t-546: whole-row click toggles the inline panel (the
             // chevron alone was a 16px target). Guard in the handler
             // keeps links/buttons/checkbox/kebab working unchanged.
             tr.addEventListener('click', e => onRowClickToggle(e, t.id));
             body.appendChild(tr);
+            // Desc row — always visible; click toggles inline panel
+            // for parity with the expand chevron.
+            const descRow = document.createElement('tr');
+            descRow.className = 'c-desc-row';
+            descRow.dataset.taskId = t.id;
+            descRow.dataset.status = t.status;
+            descRow.innerHTML =
+                `<td></td><td></td>` +
+                `<td class="c-desc-cell" colspan="8" onclick="toggleInlineExpand(event, '${t.id}')">` +
+                `${(t.desc || '(no description)').replace(/</g, '&lt;').replace(/>/g, '&gt;')}` +
+                `</td>`;
+            body.appendChild(descRow);
             if (isOpen) {
                 const panel = buildInlinePanel(t);
                 body.appendChild(panel);
@@ -469,6 +521,10 @@
         const valTxt = t.ship_value ? (signal + ' ' + t.ship_value) : (signal || '—');
         const heat = t.ship_heat ? ('h' + t.ship_heat) : '—';
         const sha = t.commit_sha ? `<code class="c-sha">${t.commit_sha}</code>` : '—';
+        // t-527: complete row shape — id + stage + ship metrics, desc
+        // in a second tr below the primary row (same pattern as
+        // pending/deferred rows). Primary row now has 10 cells to match
+        // the new header.
         tr.innerHTML =
             `<td class="c-check"></td>` +
             `<td class="c-expand ${isOpen ? 'open' : ''}" onclick="toggleInlineExpand(event, '${t.id}')">${isOpen ? '▾' : '▸'}</td>` +
@@ -476,10 +532,19 @@
             `<td><span class="c-stage stage-${t.stage}">${t.stage}</span></td>` +
             `<td class="c-ship-val" title="outcome signal + value">${valTxt}</td>` +
             `<td class="c-ship-heat">${heat}</td>` +
-            `<td class="c-ship-sha">${sha}</td>` +
-            `<td class="c-desc" colspan="5" title="${(t.desc || '').replace(/"/g, '&quot;')}">${t.desc || ''}</td>`;
+            `<td class="c-ship-sha" colspan="4">${sha}</td>`;
         tr.addEventListener('click', e => onRowClickToggle(e, t.id));  // t-546
         body.appendChild(tr);
+        const descRow = document.createElement('tr');
+        descRow.className = 'c-desc-row';
+        descRow.dataset.taskId = t.id;
+        descRow.dataset.status = t.status;
+        descRow.innerHTML =
+            `<td></td><td></td>` +
+            `<td class="c-desc-cell" colspan="8" onclick="toggleInlineExpand(event, '${t.id}')">` +
+            `${(t.desc || '(no description)').replace(/</g, '&lt;').replace(/>/g, '&gt;')}` +
+            `</td>`;
+        body.appendChild(descRow);
         if (isOpen) body.appendChild(buildInlinePanel(t));
     }
 
@@ -510,14 +575,16 @@
         const tr = document.createElement('tr');
         tr.className = 'c-inline-panel';
         tr.dataset.panelFor = t.id;
+        // t-527: inline-panel colspan updated to 8 (primary row is now
+        // 10 cells = 2 leading empties + 8-wide body).
         tr.innerHTML =
-            `<td></td><td></td><td colspan="10" class="c-inline-body">
+            `<td></td><td></td><td colspan="8" class="c-inline-body">
                 <div class="c-inline-desc">${(t.desc || '(no description)').replace(/</g,'&lt;')}</div>
                 <dl class="c-inline-dl">
                     <dt>reason</dt><dd>${t.priority_reason || '—'}</dd>
                     <dt>initiative</dt><dd>${t.initiative_id || '—'}</dd>
                     <dt>blocked by</dt><dd>${(t.blocked_by || []).join(', ') || '—'}</dd>
-                    <dt>age</dt><dd>${t.age_heats == null ? '—' : (t.age_heats + ' heats')}</dd>
+                    <dt>age</dt><dd>${formatAge(t.age_minutes)}</dd>
                     <dt>bounces</dt><dd>${formatBounceList(t)}</dd>
                 </dl>
                 <div class="c-inline-history" data-history-for="${t.id}">Loading history…</div>
