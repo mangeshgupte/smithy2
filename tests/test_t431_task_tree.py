@@ -13,7 +13,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from smithy.smithy.task_tree import (
+from smithy.task_tree import (
     build_forest,
     compute_stuck,
     forest_to_json,

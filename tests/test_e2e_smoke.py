@@ -21,7 +21,7 @@ REPO_ROOT = Path(__file__).parent.parent
 def _smithy(dir_path: Path, *args):
     """Invoke smithy CLI with --dir, return (returncode, stdout, stderr)."""
     result = subprocess.run(
-        [sys.executable, "-m", "smithy.smithy.cli", "--dir", str(dir_path), *args],
+        [sys.executable, "-m", "smithy.cli", "--dir", str(dir_path), *args],
         cwd=str(REPO_ROOT),
         capture_output=True, text=True, timeout=10,
     )

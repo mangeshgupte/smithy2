@@ -23,8 +23,8 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
-from smithy.smithy.assembly import staging_path, _STAGING_WORKTREE
-from smithy.smithy.cli import cli as smithy_cli
+from smithy.assembly import staging_path, _STAGING_WORKTREE
+from smithy.cli import cli as smithy_cli
 
 
 def _git(cwd: Path, *args: str) -> subprocess.CompletedProcess:

@@ -18,7 +18,7 @@ import subprocess
 
 import pytest
 
-from smithy.smithy.assembly import rebase_forge_branch, branch_name
+from smithy.assembly import rebase_forge_branch, branch_name
 
 
 TASK = "t-999"

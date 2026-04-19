@@ -109,7 +109,7 @@ def _patrol(project_dir):
     """In-process patrol via CliRunner so the test exercises the
     *merged* smithy.cli, not the system-installed one (the t-467
     rejection-RCA pattern)."""
-    import smithy.smithy.cli as cli_mod
+    import smithy.cli as cli_mod
     from click.testing import CliRunner
     runner = CliRunner(mix_stderr=False)
     result = runner.invoke(cli_mod.cli, ["--dir", str(project_dir), "patrol"])

@@ -7,7 +7,7 @@ no filters offering values that can never match stored data.
 
 from pathlib import Path
 
-from smithy.smithy.state import VALID_TASK_STATUSES
+from smithy.state import VALID_TASK_STATUSES
 
 
 REPO_ROOT = Path(__file__).parent.parent

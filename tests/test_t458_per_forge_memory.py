@@ -30,14 +30,14 @@ def _smithy(dir_path, *args, cwd=None):
     """Invoke smithy CLI. cwd defaults to the REPO_ROOT (for imports); pass
     cwd=<worktree-path> when the command depends on cwd-based detection
     (e.g. detect_forge_from_cwd for memory-write routing). PYTHONPATH is
-    forced to REPO_ROOT so `-m smithy.smithy.cli` resolves regardless of
+    forced to REPO_ROOT so `-m smithy.cli` resolves regardless of
     where cwd points."""
     import os
     env = os.environ.copy()
     env["PYTHONPATH"] = str(REPO_ROOT) + os.pathsep + env.get("PYTHONPATH", "")
     env["SMITHY_SKIP_INSTALL_PATH_CHECK"] = "1"  # quiet the editable-install banner
     r = subprocess.run(
-        [sys.executable, "-m", "smithy.smithy.cli",
+        [sys.executable, "-m", "smithy.cli",
          "--dir", str(dir_path), *args],
         cwd=str(cwd or REPO_ROOT), capture_output=True, text=True,
         timeout=15, env=env,

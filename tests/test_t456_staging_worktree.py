@@ -28,7 +28,7 @@ from pathlib import Path
 
 import pytest
 
-from smithy.smithy.assembly import (
+from smithy.assembly import (
     branch_name,
     ensure_staging_worktree,
     ff_merge_forge_branch,

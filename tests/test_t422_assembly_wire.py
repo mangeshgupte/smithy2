@@ -24,7 +24,7 @@ REPO_ROOT = Path(__file__).parent.parent
 
 def _smithy(dir_path, *args, env=None):
     r = subprocess.run(
-        [sys.executable, "-m", "smithy.smithy.cli", "--dir", str(dir_path), *args],
+        [sys.executable, "-m", "smithy.cli", "--dir", str(dir_path), *args],
         cwd=str(REPO_ROOT), capture_output=True, text=True, timeout=15, env=env,
     )
     return r.returncode, r.stdout, r.stderr
@@ -80,7 +80,7 @@ def rig(tmp_path):
 
 
 def test_assembly_queue_path_resolves_to_main(rig):
-    from smithy.smithy.state import assembly_queue_path
+    from smithy.state import assembly_queue_path
     proj, wt = rig
     assert assembly_queue_path(wt) == proj / ".assembly-queue.jsonl"
     assert assembly_queue_path(proj) == proj / ".assembly-queue.jsonl"
@@ -123,13 +123,13 @@ def test_end_heat_submitted_nudges_assembly(rig):
     proj, wt = rig
     # Write a checkpoint directly so we skip start-heat (branch management
     # tries to run git which we don't need here).
-    from smithy.smithy.state import forge_checkpoint_path, write_checkpoint
+    from smithy.state import forge_checkpoint_path, write_checkpoint
     write_checkpoint(proj, 11, "implementation", "t-422x", forge_id="forge-01")
 
     from click.testing import CliRunner
-    from smithy.smithy.cli import cli
+    from smithy.cli import cli
 
-    with patch("smithy.smithy.cli._nudge_persona") as mock_nudge:
+    with patch("smithy.cli._nudge_persona") as mock_nudge:
         mock_nudge.return_value = {"nudged": True, "queued": False,
                                    "persona": "x", "target": "%0"}
         runner = CliRunner(mix_stderr=False)

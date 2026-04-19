@@ -24,7 +24,7 @@ REPO_ROOT = Path(__file__).parent.parent
 
 def _smithy(dir_path, *args):
     r = subprocess.run(
-        [sys.executable, "-m", "smithy.smithy.cli", "--dir", str(dir_path), *args],
+        [sys.executable, "-m", "smithy.cli", "--dir", str(dir_path), *args],
         cwd=str(REPO_ROOT), capture_output=True, text=True, timeout=15,
     )
     return r.returncode, r.stdout, r.stderr
@@ -85,7 +85,7 @@ def _read_events(proj):
 
 
 def test_emit_rig_event_writes_jsonl(tmp_path):
-    from smithy.smithy.cli import _emit_rig_event
+    from smithy.cli import _emit_rig_event
     _emit_rig_event(tmp_path, "test_event", actor="unit", task_id="t-1",
                     extra={"nested": "fine"})
     rows = [json.loads(ln) for ln in
@@ -100,7 +100,7 @@ def test_emit_rig_event_writes_jsonl(tmp_path):
 
 def test_emit_rig_event_never_raises(tmp_path, monkeypatch):
     """Telemetry must never break execution."""
-    from smithy.smithy.cli import _emit_rig_event
+    from smithy.cli import _emit_rig_event
     # Point main_repo_root resolution at a path that can't be written to.
     bad = tmp_path / "readonly"
     bad.mkdir(mode=0o500)  # no write
@@ -161,7 +161,7 @@ def test_full_cycle_emits_expected_sequence(rig):
 def test_rig_replay_filters_and_pretty_prints(rig):
     proj, _ = rig
     # Write events directly — avoids any subprocess flakiness in test env.
-    from smithy.smithy.cli import _emit_rig_event
+    from smithy.cli import _emit_rig_event
     _emit_rig_event(proj, "forge_started", actor="forge-01", task_id="t-1",
                     stage="implementation", heat=10)
     _emit_rig_event(proj, "queue_pop", actor="forge-01", task_id="t-1")

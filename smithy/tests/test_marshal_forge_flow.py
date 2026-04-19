@@ -10,8 +10,8 @@ from pathlib import Path
 from unittest.mock import patch, MagicMock
 from click.testing import CliRunner
 
-from smithy.smithy.cli import cli, _nudge_persona, _persona_is_busy, _queue_nudge
-from smithy.smithy.state import VALID_STAGES
+from smithy.cli import cli, _nudge_persona, _persona_is_busy, _queue_nudge
+from smithy.state import VALID_STAGES
 
 
 @pytest.fixture
@@ -65,7 +65,7 @@ def _load(project):
 class TestQueuePushNudge:
     """queue-push should add to next_tasks AND nudge forge."""
 
-    @patch("smithy.smithy.cli._nudge_persona")
+    @patch("smithy.cli._nudge_persona")
     def test_push_adds_to_queue_and_nudges(self, mock_nudge, project, runner):
         # t-421: after t-414 the generic "forge" target auto-resolves to the
         # task's assigned_forge (if set) else primary_forge_id(state). The
@@ -82,14 +82,14 @@ class TestQueuePushNudge:
         assert call_args[0][0] == "forge-01"  # resolved primary forge id
         assert "t-001" in call_args[0][1]  # message mentions task
 
-    @patch("smithy.smithy.cli._nudge_persona")
+    @patch("smithy.cli._nudge_persona")
     def test_push_no_nudge_flag(self, mock_nudge, project, runner):
         result = runner.invoke(cli, ["--dir", str(project), "queue-push", "t-001", "--no-nudge"])
         data = json.loads(result.output)
         assert data["nudge"]["reason"] == "skipped (--no-nudge)"
         mock_nudge.assert_not_called()
 
-    @patch("smithy.smithy.cli._nudge_persona")
+    @patch("smithy.cli._nudge_persona")
     def test_push_top_is_default(self, mock_nudge, project, runner):
         """Pushing multiple tasks: latest push goes to top by default."""
         mock_nudge.return_value = {"nudged": True, "queued": False, "persona": "forge", "target": "smithy2:forge"}
@@ -98,7 +98,7 @@ class TestQueuePushNudge:
         state = _load(project)
         assert state["next_tasks"] == ["t-001", "t-002"]
 
-    @patch("smithy.smithy.cli._nudge_persona")
+    @patch("smithy.cli._nudge_persona")
     def test_push_bottom(self, mock_nudge, project, runner):
         mock_nudge.return_value = {"nudged": True, "queued": False, "persona": "forge", "target": "smithy2:forge"}
         runner.invoke(cli, ["--dir", str(project), "queue-push", "t-001"])
@@ -121,7 +121,7 @@ class TestQueuePushNudge:
 class TestQueuePopFIFO:
     """queue-pop should return tasks in FIFO order."""
 
-    @patch("smithy.smithy.cli._nudge_persona")
+    @patch("smithy.cli._nudge_persona")
     def test_pop_returns_first_task(self, mock_nudge, project, runner):
         mock_nudge.return_value = {"nudged": True, "queued": False, "persona": "forge", "target": "smithy2:forge"}
         # Push t-001 then t-002 to bottom
@@ -132,7 +132,7 @@ class TestQueuePopFIFO:
         data = json.loads(result.output)
         assert data["task_id"] == "t-001"
 
-    @patch("smithy.smithy.cli._nudge_persona")
+    @patch("smithy.cli._nudge_persona")
     def test_pop_fifo_ordering(self, mock_nudge, project, runner):
         """Push 3 tasks, pop all 3 — verify FIFO order."""
         mock_nudge.return_value = {"nudged": True, "queued": False, "persona": "forge", "target": "smithy2:forge"}
@@ -151,7 +151,7 @@ class TestQueuePopFIFO:
         data = json.loads(result.output)
         assert data["task"] is None
 
-    @patch("smithy.smithy.cli._nudge_persona")
+    @patch("smithy.cli._nudge_persona")
     def test_pop_decrements_remaining(self, mock_nudge, project, runner):
         mock_nudge.return_value = {"nudged": True, "queued": False, "persona": "forge", "target": "smithy2:forge"}
         runner.invoke(cli, ["--dir", str(project), "queue-push", "t-001"])
@@ -165,7 +165,7 @@ class TestQueuePopFIFO:
 class TestEndHeatNudgesMarshal:
     """end-heat should auto-nudge marshal after completing."""
 
-    @patch("smithy.smithy.cli._nudge_persona")
+    @patch("smithy.cli._nudge_persona")
     def test_end_heat_nudges_marshal(self, mock_nudge, project, runner):
         mock_nudge.return_value = {"nudged": True, "queued": False, "persona": "marshal", "target": "smithy2:marshal"}
         # Start a heat
@@ -182,7 +182,7 @@ class TestEndHeatNudgesMarshal:
         assert "HEAT_DONE" in call_args[0][1]
         assert "t-001" in call_args[0][1]
 
-    @patch("smithy.smithy.cli._nudge_persona")
+    @patch("smithy.cli._nudge_persona")
     def test_end_heat_no_nudge_flag(self, mock_nudge, project, runner):
         runner.invoke(cli, ["--dir", str(project), "start-heat", "implementation", "--task", "t-001"])
         result = runner.invoke(cli, ["--dir", str(project), "end-heat", "0.8", "🟢", "Work done", "--no-nudge"])
@@ -190,7 +190,7 @@ class TestEndHeatNudgesMarshal:
         assert data["nudge"]["reason"] == "skipped (--no-nudge)"
         mock_nudge.assert_not_called()
 
-    @patch("smithy.smithy.cli._nudge_persona")
+    @patch("smithy.cli._nudge_persona")
     def test_end_heat_marks_task_complete(self, mock_nudge, project, runner):
         mock_nudge.return_value = {"nudged": True, "queued": False, "persona": "marshal", "target": "smithy2:marshal"}
         runner.invoke(cli, ["--dir", str(project), "start-heat", "implementation", "--task", "t-001"])
@@ -203,7 +203,7 @@ class TestEndHeatNudgesMarshal:
 class TestSetNextTasksNudgesForge:
     """set-next-tasks should auto-nudge forge."""
 
-    @patch("smithy.smithy.cli._nudge_persona")
+    @patch("smithy.cli._nudge_persona")
     def test_set_next_tasks_nudges_forge(self, mock_nudge, project, runner):
         # t-421: set-next-tasks resolves the target to the top task's
         # assigned_forge or primary_forge_id(state). See test_push above.
@@ -218,7 +218,7 @@ class TestSetNextTasksNudgesForge:
         assert call_args[0][0] == "forge-01"
         assert "t-001" in call_args[0][1]
 
-    @patch("smithy.smithy.cli._nudge_persona")
+    @patch("smithy.cli._nudge_persona")
     def test_set_next_tasks_no_nudge(self, mock_nudge, project, runner):
         result = runner.invoke(cli, ["--dir", str(project), "set-next-tasks", "t-001", "--no-nudge"])
         data = json.loads(result.output)
@@ -297,7 +297,7 @@ class TestNudgeQueueWhenBusy:
 class TestFullDispatchCycle:
     """End-to-end: Marshal pushes tasks → Forge pops and executes → Marshal gets notified."""
 
-    @patch("smithy.smithy.cli._nudge_persona")
+    @patch("smithy.cli._nudge_persona")
     def test_full_cycle(self, mock_nudge, project, runner):
         """Simulate Marshal→Forge→Marshal cycle."""
         # t-421: generic "forge" target now resolves to primary_forge_id;
@@ -342,7 +342,7 @@ class TestFullDispatchCycle:
         assert data["task_id"] == "t-002"
         assert data["remaining"] == 0
 
-    @patch("smithy.smithy.cli._nudge_persona")
+    @patch("smithy.cli._nudge_persona")
     def test_queue_push_then_pop_cycle(self, mock_nudge, project, runner):
         """Marshal uses queue-push, Forge uses queue-pop — verify FIFO."""
         mock_nudge.return_value = {"nudged": True, "queued": False, "persona": "forge", "target": "smithy2:forge"}

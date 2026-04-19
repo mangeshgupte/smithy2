@@ -21,7 +21,7 @@ REPO_ROOT = Path(__file__).parent.parent
 
 def _smithy(dir_path, *args):
     r = subprocess.run(
-        [sys.executable, "-m", "smithy.smithy.cli", "--dir", str(dir_path), *args],
+        [sys.executable, "-m", "smithy.cli", "--dir", str(dir_path), *args],
         cwd=str(REPO_ROOT), capture_output=True, text=True, timeout=15,
     )
     return r.returncode, r.stdout, r.stderr
@@ -69,7 +69,7 @@ def dual_worktree(tmp_path):
 
 def test_state_json_path_resolves_to_main(dual_worktree):
     """t-419: state_json_path(worktree) === main/state.json."""
-    from smithy.smithy.state import state_json_path, main_repo_root
+    from smithy.state import state_json_path, main_repo_root
     proj, wt = dual_worktree
     assert state_json_path(wt) == proj / "state.json"
     assert main_repo_root(wt) == proj
@@ -119,7 +119,7 @@ def test_task_added_from_main_visible_from_worktree(dual_worktree):
 
 def test_save_state_is_atomic(dual_worktree):
     """save_state writes through a temp file — no `.tmp` left behind."""
-    from smithy.smithy.state import load_state, save_state
+    from smithy.state import load_state, save_state
     proj, wt = dual_worktree
     state = load_state(wt)
     state["overall_progress"] = 0.42

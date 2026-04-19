@@ -38,7 +38,7 @@ def _git(cwd, *args):
 
 def _smithy(proj, *args):
     r = subprocess.run(
-        [sys.executable, "-m", "smithy.smithy.cli", "--dir", str(proj), *args],
+        [sys.executable, "-m", "smithy.cli", "--dir", str(proj), *args],
         cwd=str(REPO_ROOT), capture_output=True, text=True, timeout=60,
     )
     return r.returncode, r.stdout, r.stderr
@@ -48,13 +48,13 @@ def _smithy(proj, *args):
 
 class TestBatchWindowDecision:
     def test_depth_zero_idles(self):
-        from smithy.smithy.cli import _batch_window_decision
+        from smithy.cli import _batch_window_decision
         r = _batch_window_decision([], datetime.now(timezone.utc))
         assert r["action"] == "idle"
         assert r["depth"] == 0
 
     def test_depth_ge_2_fires_immediately(self):
-        from smithy.smithy.cli import _batch_window_decision
+        from smithy.cli import _batch_window_decision
         entries = [
             {"task_id": "t-1", "submitted_at": "2026-04-19T00:00:00+00:00"},
             {"task_id": "t-2", "submitted_at": "2026-04-19T00:00:05+00:00"},
@@ -64,7 +64,7 @@ class TestBatchWindowDecision:
         assert r["depth"] == 2
 
     def test_singleton_waits_when_fresh(self):
-        from smithy.smithy.cli import _batch_window_decision
+        from smithy.cli import _batch_window_decision
         now = datetime(2026, 4, 19, 0, 1, 0, tzinfo=timezone.utc)
         entries = [{"task_id": "t-1",
                     "submitted_at": (now - timedelta(seconds=5)).isoformat()}]
@@ -73,7 +73,7 @@ class TestBatchWindowDecision:
         assert r["depth"] == 1
 
     def test_singleton_fires_after_timeout(self):
-        from smithy.smithy.cli import _batch_window_decision
+        from smithy.cli import _batch_window_decision
         now = datetime(2026, 4, 19, 0, 5, 0, tzinfo=timezone.utc)
         entries = [{"task_id": "t-1",
                     "submitted_at": (now - timedelta(seconds=120)).isoformat()}]
@@ -83,7 +83,7 @@ class TestBatchWindowDecision:
 
     def test_singleton_missing_timestamp_fires(self):
         """Defensive: no submitted_at → fire rather than lock forever."""
-        from smithy.smithy.cli import _batch_window_decision
+        from smithy.cli import _batch_window_decision
         r = _batch_window_decision([{"task_id": "t-x"}],
                                    datetime.now(timezone.utc))
         assert r["action"] == "go"
@@ -118,7 +118,7 @@ def batch_rig(tmp_path):
 
     # Staging worktree — ensure_staging_worktree will do this lazily but
     # we pre-create to keep the test cheap.
-    from smithy.smithy.assembly import ensure_staging_worktree
+    from smithy.assembly import ensure_staging_worktree
     r = ensure_staging_worktree(proj, base="main")
     assert r["status"] == "ready", r
     return proj
@@ -126,7 +126,7 @@ def batch_rig(tmp_path):
 
 class TestRunBatch:
     def test_n2_clean_merges_stack_linearly(self, batch_rig):
-        from smithy.smithy.assembly import run_batch
+        from smithy.assembly import run_batch
         entries = [
             {"forge_id": "forge-01", "task_id": "t-a",
              "branch": "forge-01/t-a", "submitted_at": "2026-04-19T00:00:00+00:00"},
@@ -145,7 +145,7 @@ class TestRunBatch:
     def test_missing_branch_is_severe_not_fatal(self, batch_rig):
         """Branch `forge-01/t-missing` doesn't exist — mark severe and
         keep processing the rest. Task spec §(d) severe-skip semantics."""
-        from smithy.smithy.assembly import run_batch
+        from smithy.assembly import run_batch
         entries = [
             {"forge_id": "forge-01", "task_id": "t-a",
              "branch": "forge-01/t-a", "submitted_at": "2026-04-19T00:00:00+00:00"},
@@ -166,7 +166,7 @@ class TestRunBatch:
 
 class TestVenvMarkerReuse:
     def test_hash_returns_str_on_real_repo(self, batch_rig):
-        from smithy.smithy.assembly import smithy_tree_hash
+        from smithy.assembly import smithy_tree_hash
         # No `smithy/` subtree in our minimal rig — ls-tree succeeds
         # but output is empty; hash of empty is still deterministic.
         h = smithy_tree_hash(batch_rig, "HEAD")
@@ -174,7 +174,7 @@ class TestVenvMarkerReuse:
         assert len(h) == 16
 
     def test_hash_differs_when_smithy_tree_changes(self, batch_rig):
-        from smithy.smithy.assembly import smithy_tree_hash
+        from smithy.assembly import smithy_tree_hash
         # Add something under smithy/ and commit — hash must change.
         (batch_rig / "smithy").mkdir()
         (batch_rig / "smithy" / "f.py").write_text("x = 1\n")
@@ -191,7 +191,7 @@ class TestVenvMarkerReuse:
         """Skip the `uv venv` path — just verify the reuse short-circuit
         returns status=reused when a valid venv + matching marker exist.
         """
-        from smithy.smithy.assembly import ensure_staging_venv_versioned
+        from smithy.assembly import ensure_staging_venv_versioned
         wt = tmp_path
         venv = wt / ".venv"
         (venv / "bin").mkdir(parents=True)
@@ -287,15 +287,15 @@ class TestAssemblyBatchTickCLI:
         # We don't have a good way to inject a mocked test runner into
         # the subprocess-backed CLI. Instead, drive the green path +
         # test-result branch via a direct Python import + patch.
-        from smithy.smithy import cli as cli_mod
+        from smithy import cli as cli_mod
         from click.testing import CliRunner
         try:
             runner = CliRunner(mix_stderr=False)
         except TypeError:
             runner = CliRunner()
 
-        with patch("smithy.smithy.assembly.run_batch_tests") as mt, \
-             patch("smithy.smithy.assembly.ensure_staging_venv_versioned") as mv:
+        with patch("smithy.assembly.run_batch_tests") as mt, \
+             patch("smithy.assembly.ensure_staging_venv_versioned") as mv:
             mv.return_value = {"status": "reused",
                                "path": "/usr/bin/python3",  # unused on red
                                "recreated": False}
@@ -342,15 +342,15 @@ class TestAssemblyBatchTickCLI:
             json.dumps(t2_row),
         ]) + "\n")
 
-        from smithy.smithy import cli as cli_mod
+        from smithy import cli as cli_mod
         from click.testing import CliRunner
         try:
             runner = CliRunner(mix_stderr=False)
         except TypeError:
             runner = CliRunner()
 
-        with patch("smithy.smithy.assembly.run_batch_tests") as mt, \
-             patch("smithy.smithy.assembly.ensure_staging_venv_versioned") as mv:
+        with patch("smithy.assembly.run_batch_tests") as mt, \
+             patch("smithy.assembly.ensure_staging_venv_versioned") as mv:
             mv.return_value = {"status": "reused",
                                "path": "/usr/bin/python3",
                                "recreated": False}
@@ -401,15 +401,15 @@ class TestAssemblyBatchTickCLI:
         (tick_rig / "state.json").write_text(json.dumps(s, indent=2))
         qp.write_text("\n".join(rows) + "\n")
 
-        from smithy.smithy import cli as cli_mod
+        from smithy import cli as cli_mod
         from click.testing import CliRunner
         try:
             runner = CliRunner(mix_stderr=False)
         except TypeError:
             runner = CliRunner()
 
-        with patch("smithy.smithy.assembly.run_batch_tests") as mt, \
-             patch("smithy.smithy.assembly.ensure_staging_venv_versioned") as mv:
+        with patch("smithy.assembly.run_batch_tests") as mt, \
+             patch("smithy.assembly.ensure_staging_venv_versioned") as mv:
             result = runner.invoke(
                 cli_mod.cli,
                 ["--dir", str(tick_rig), "assembly-batch-tick"],
@@ -428,7 +428,7 @@ class TestAssemblyBatchTickCLI:
         so the ASSEMBLY_REJECTED nudge payload stays compact. We mock
         run_batch to return a single severe with a 200-char detail and
         assert the stored reason shape."""
-        from smithy.smithy import cli as cli_mod
+        from smithy import cli as cli_mod
         from click.testing import CliRunner
         try:
             runner = CliRunner(mix_stderr=False)
@@ -446,7 +446,7 @@ class TestAssemblyBatchTickCLI:
 
         pre_q = [t["id"] for t in json.loads((tick_rig / "state.json").read_text())["queue"]]
 
-        with patch("smithy.smithy.assembly.run_batch") as mrb:
+        with patch("smithy.assembly.run_batch") as mrb:
             mrb.return_value = {
                 "status": "ok",
                 "merged": [{"entry": {"forge_id": "forge-01",
@@ -492,15 +492,15 @@ class TestAssemblyBatchTickCLI:
         rows[0]["submitted_at"] = "2000-01-01T00:00:00+00:00"
         qp.write_text(json.dumps(rows[0]) + "\n")
 
-        from smithy.smithy import cli as cli_mod
+        from smithy import cli as cli_mod
         from click.testing import CliRunner
         try:
             runner = CliRunner(mix_stderr=False)
         except TypeError:
             runner = CliRunner()
 
-        with patch("smithy.smithy.assembly.run_batch_tests") as mt, \
-             patch("smithy.smithy.assembly.ensure_staging_venv_versioned") as mv:
+        with patch("smithy.assembly.run_batch_tests") as mt, \
+             patch("smithy.assembly.ensure_staging_venv_versioned") as mv:
             mv.return_value = {"status": "reused",
                                "path": "/usr/bin/python3",
                                "recreated": False}

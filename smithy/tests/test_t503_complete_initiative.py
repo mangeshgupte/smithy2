@@ -24,8 +24,8 @@ from datetime import datetime, timezone
 import pytest
 from click.testing import CliRunner
 
-from smithy.smithy.cli import cli
-from smithy.smithy.state import VALID_STAGES
+from smithy.cli import cli
+from smithy.state import VALID_STAGES
 
 
 @pytest.fixture
@@ -300,7 +300,7 @@ class TestSchemaDefaults:
         # load_state applies steerability defaults via setdefault on every
         # load (it's idempotent). Pre-migration state with none of the new
         # keys must come back with all four keys set to None.
-        from smithy.smithy.state import load_state
+        from smithy.state import load_state
         state = json.loads((project / "state.json").read_text())
         for ini in state["initiatives"]:
             for key in ("retro_path", "closed_at",
@@ -320,7 +320,7 @@ class TestSchemaDefaults:
     def test_existing_values_preserved_by_backfill(self, project):
         """setdefault must not clobber already-set values (e.g. ini-004
         has retro_path + closed_at from the fixture)."""
-        from smithy.smithy.state import load_state
+        from smithy.state import load_state
         loaded = load_state(project)
         ini = next(i for i in loaded["initiatives"] if i["id"] == "ini-004")
         assert ini["retro_path"] == "plans/ini-004-retro.md"

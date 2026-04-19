@@ -80,9 +80,9 @@ def test_assembly_reject_nudges_marshal_live(proj):
     """_do_assembly_reject must call _nudge_persona('marshal', ...)
     — not just _queue_nudge. Before t-424 the reject path only wrote
     to the file queue, which Marshal never polls."""
-    from smithy.smithy import cli
+    from smithy import cli
 
-    with patch("smithy.smithy.cli._nudge_persona") as mock_nudge:
+    with patch("smithy.cli._nudge_persona") as mock_nudge:
         mock_nudge.return_value = {
             "nudged": True, "queued": False, "persona": "marshal",
             "target": "%0",
@@ -107,10 +107,10 @@ def test_assembly_merge_direct_call_nudges_marshal_live(proj):
     nudge lived in assembly_tick alone, so any caller that drove a
     merge directly (smithy assembly-merge CLI, future batch path)
     completed the state change without waking Marshal."""
-    from smithy.smithy import cli
+    from smithy import cli
 
-    with patch("smithy.smithy.cli._nudge_persona") as mock_nudge, \
-         patch("smithy.smithy.cli._rebind_smithy_install",
+    with patch("smithy.cli._nudge_persona") as mock_nudge, \
+         patch("smithy.cli._rebind_smithy_install",
                return_value={"status": "skipped"}):
         mock_nudge.return_value = {
             "nudged": True, "queued": False, "persona": "marshal",
@@ -150,7 +150,7 @@ def test_assembly_tick_merge_nudges_marshal_live(proj, tmp_path, monkeypatch):
     # Stub the assembly module helpers so the tick runs "clean".
     # t-475: assembly_tick now uses rebase_task_branch + source_ref, so
     # stubs mirror the new signatures.
-    from smithy.smithy import assembly as asm_mod
+    from smithy import assembly as asm_mod
     monkeypatch.setattr(asm_mod, "rebase_task_branch",
                         lambda root, fid, tid, base="main":
                             {"status": "clean",
@@ -172,8 +172,8 @@ def test_assembly_tick_merge_nudges_marshal_live(proj, tmp_path, monkeypatch):
     monkeypatch.setattr(asm_mod, "branch_name",
                         lambda fid, tid: f"{fid}/{tid}")
 
-    from smithy.smithy.cli import cli
-    with patch("smithy.smithy.cli._nudge_persona") as mock_nudge:
+    from smithy.cli import cli
+    with patch("smithy.cli._nudge_persona") as mock_nudge:
         mock_nudge.return_value = {
             "nudged": True, "queued": False, "persona": "marshal",
             "target": "%0",

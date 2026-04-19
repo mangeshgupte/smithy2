@@ -53,7 +53,7 @@ def _write_worklog(p: Path, n: int):
 
 def _patrol(project_dir: Path, fix: bool = False) -> dict:
     """In-process patrol via CliRunner (matches test_t467 pattern)."""
-    import smithy.smithy.cli as cli_mod
+    import smithy.cli as cli_mod
     from click.testing import CliRunner
     runner = CliRunner(mix_stderr=False)
     args = ["--dir", str(project_dir), "patrol"]
@@ -66,7 +66,7 @@ def _patrol(project_dir: Path, fix: bool = False) -> dict:
 
 def _sync_stages(project_dir: Path, force_down: bool = False) -> dict:
     """In-process sync-stages."""
-    import smithy.smithy.cli as cli_mod
+    import smithy.cli as cli_mod
     from click.testing import CliRunner
     runner = CliRunner(mix_stderr=False)
     args = ["--dir", str(project_dir), "sync-stages"]
@@ -86,7 +86,7 @@ class TestWorklogPathHelper:
         state_json_path() / assembly_queue_path() — the asymmetry that
         caused the drift was that this composition didn't exist; reads
         used the bare ctx.obj['root'] which can resolve to a worktree."""
-        from smithy.smithy.state import worklog_path, main_repo_root
+        from smithy.state import worklog_path, main_repo_root
         # Outside a git context, main_repo_root falls back to project_dir.
         # The relevant invariant is that worklog_path always equals
         # `main_repo_root(p) / "worklog.tsv"` for the same p.
@@ -118,7 +118,7 @@ class TestWorklogPathHelper:
         if r.returncode != 0:
             pytest.skip(f"worktree add failed: {r.stderr}")
 
-        from smithy.smithy.state import worklog_path
+        from smithy.state import worklog_path
         # Called with the worktree path; must resolve to main/worklog.tsv.
         assert worklog_path(wt) == main / "worklog.tsv"
 

@@ -16,13 +16,7 @@ Six scenario tests match the acceptance list in the task spec:
 Plus: multi-forge mix, assigned_forge scoping, and --fix behaviour.
 """
 
-# t-491 retry: namespace-form import (per t-489 / t-502 pattern). Under
-# Assembly's staging pytest, bare `from smithy.cli import …` resolves
-# via the system editable .pth bound to MAIN — so a symbol added on this
-# branch (_detect_starving_forges) isn't visible and collection fails
-# with ImportError. `smithy.smithy.cli` routes through the namespace
-# package path and loads the rebased source.
-from smithy.smithy.cli import _detect_starving_forges
+from smithy.cli import _detect_starving_forges
 
 
 def _state(*, forges, queue, next_tasks=None, halt=False,
