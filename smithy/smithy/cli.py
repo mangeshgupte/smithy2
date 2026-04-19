@@ -3074,6 +3074,28 @@ def patrol(ctx, fix):
     for issue in _validate_ranks(state):
         issues.append(f"initiative rank: {issue}")
 
+    # 14. t-467: per-worktree venv health. After ini-020 phase 2 every
+    # Forge + Marshal worktree must carry its own .venv/ (created by
+    # scripts/forge-venv-setup.sh, run automatically by start-smithy.sh
+    # before Claude boots). A missing .venv/ means the pane's smithy CLI
+    # falls back to the global install — exactly the t-460 stale-binary
+    # hazard ini-020 was built to retire. No auto-fix: re-creating the
+    # venv from patrol would race with whatever shell that pane is
+    # running. Operator runs `bash scripts/forge-venv-setup.sh` from the
+    # worktree. _-prefixed reserved worktrees (e.g. _assembly-staging,
+    # _merge-tXXX) are skipped — they're transient and not Claude-hosted.
+    wt_base = main_root / ".worktrees"
+    if wt_base.exists():
+        for wt_dir in sorted(wt_base.iterdir()):
+            if not wt_dir.is_dir() or wt_dir.name.startswith("_"):
+                continue
+            if not (wt_dir / ".venv").exists():
+                issues.append(
+                    f"{wt_dir.name}/.venv missing — run "
+                    f"`bash scripts/forge-venv-setup.sh` from that worktree "
+                    f"(t-467: pane will silently use the global install)"
+                )
+
     # Save fixes if any
     if fix and fixes:
         save_state(root, state)
@@ -3082,7 +3104,7 @@ def patrol(ctx, fix):
         "issues": issues,
         "fixes": fixes,
         "clean": len(issues) == 0,
-        "checks_run": 13,
+        "checks_run": 14,
         "stuck_forges": sorted(set(stuck_forges)),
         "stalled_forges": stalled_forges,
     })

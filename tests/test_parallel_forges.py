@@ -177,7 +177,10 @@ def test_patrol_clean_after_sandbox_run(sandbox):
     data = json.loads(out)
     # Post-run there should be no per-Forge witness issues. Other non-witness
     # checks may surface (e.g. stage sums) but no 'forge-' issues.
-    forge_issues = [i for i in data["issues"] if "forge-" in i.lower()]
+    # t-467 check #14 (.venv missing) is a different category from witness;
+    # the sandbox doesn't create .venv/, so filter those out.
+    forge_issues = [i for i in data["issues"]
+                    if "forge-" in i.lower() and "/.venv missing" not in i]
     assert forge_issues == [], f"unexpected forge issues: {forge_issues}"
     assert data["stuck_forges"] == []
 

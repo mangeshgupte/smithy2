@@ -117,7 +117,12 @@ if (( DRY_RUN )); then
   echo "session: $FORGE_SESSION"
   echo "launcher: ${FORGE_CLAUDE:-<none>}"
   for p in "${PANES[@]}"; do
-    printf "  %s\n" "$p"
+    workdir="${p##*|}"
+    venv_tag=""
+    if [[ "$workdir" == *"/.worktrees/"* ]]; then
+      venv_tag=" [+venv]"
+    fi
+    printf "  %s%s\n" "$p" "$venv_tag"
   done
   if [[ -n "$FORGE_UI_WINDOW" ]]; then
     echo "ui-window: $FORGE_UI_WINDOW"
@@ -239,11 +244,23 @@ ALL_IDS=("$ANVIL_ID" "$MARSHAL_ID" "$ASSEMBLY_ID" "${FORGE_PANE_IDS[@]}")
 for idx in "${!PANES[@]}"; do
   entry="${PANES[$idx]}"
   title="${entry%%|*}"
+  workdir="${entry##*|}"
   pid="${ALL_IDS[$idx]}"
   tmux select-pane -t "$pid" -T "$title"
   if [[ -n "$FORGE_CLAUDE" ]]; then
-    # Pane already started in workdir via -c; just run the launcher.
-    tmux send-keys -t "$pid" "$FORGE_CLAUDE" C-m
+    # t-467: panes whose cwd is under .worktrees/ (marshal + every forge)
+    # get venv-setup + activation BEFORE Claude boots, so any smithy
+    # command issued during startup resolves to the worktree's editable
+    # install rather than the (possibly stale) global one. Anvil and
+    # Assembly run on main and use the global install, so they get the
+    # bare launcher.
+    if [[ "$workdir" == *"/.worktrees/"* ]]; then
+      cmd="eval \"\$(bash $FORGE_ROOT/scripts/forge-venv-setup.sh)\" && $FORGE_CLAUDE"
+    else
+      cmd="$FORGE_CLAUDE"
+    fi
+    # Pane already started in workdir via -c; run the launcher.
+    tmux send-keys -t "$pid" "$cmd" C-m
   fi
 done
 
