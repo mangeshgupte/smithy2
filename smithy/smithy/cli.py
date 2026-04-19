@@ -2084,6 +2084,7 @@ def status(ctx):
         }
 
     pending = [t for t in state.get("queue", []) if t["status"] == "pending"]
+    bp = _backpressure_check(root, state)
 
     _output({
         "project": state.get("project", "unknown"),
@@ -2093,7 +2094,20 @@ def status(ctx):
         "overall_progress": state.get("overall_progress", 0),
         "stages": stages_summary,
         "pending_tasks": len(pending),
+        # t-516: surface Assembly-queue backpressure in status so
+        # tuning is informed, not guessed.
+        "assembly_queue": {
+            "depth": bp["depth"],
+            "threshold": bp["threshold"],
+            "multiplier": bp["multiplier"],
+            "n_forges": bp["n_forges"],
+            "backpressured": not bp["ok"],
+        },
     })
+    _err(
+        f"Assembly queue: {bp['depth']}/{bp['threshold']} "
+        f"(multiplier={bp['multiplier']})"
+    )
 
 
 @cli.command("stats")
@@ -2297,26 +2311,57 @@ def _assembly_queue_depth(root) -> int:
         return 0
 
 
+_DEFAULT_BACKPRESSURE_MULTIPLIER = 4
+
+
+def _backpressure_multiplier(state) -> int:
+    """t-516: resolve the backpressure multiplier with precedence
+    FORGE_BACKPRESSURE_MULTIPLIER env > state.parallel.backpressure_multiplier
+    > default (4). Rejects non-positive or non-integer values by falling
+    through to the next layer so a typo can't accidentally 0-out the
+    threshold."""
+    import os
+    for source in (
+        os.environ.get("FORGE_BACKPRESSURE_MULTIPLIER"),
+        (state.get("parallel") or {}).get("backpressure_multiplier"),
+    ):
+        if source is None or source == "":
+            continue
+        try:
+            v = int(source)
+        except (TypeError, ValueError):
+            continue
+        if v >= 1:
+            return v
+    return _DEFAULT_BACKPRESSURE_MULTIPLIER
+
+
 def _backpressure_check(root, state) -> dict:
     """Return {"ok": bool, "depth": int, "n_forges": int,
-               "threshold": int, "reason": str | None}.
+               "multiplier": int, "threshold": int, "reason": str | None}.
 
     `ok=False` means Marshal's dispatch path should refuse and surface
-    the reason. Threshold = 2 * max(1, n_forges) — small-enough to stop
-    pile-ups but wide-enough that a single slow merge doesn't starve
-    a two-Forge rig.
+    the reason. Threshold = multiplier * max(1, n_forges). The
+    multiplier defaults to 4 (t-516); override per-rig via
+    `state.parallel.backpressure_multiplier` or per-run via the
+    FORGE_BACKPRESSURE_MULTIPLIER env var.
     """
     parallel = state.get("parallel") or {}
     n_forges = len((parallel.get("forges") or []))
-    threshold = 2 * max(1, n_forges)
+    multiplier = _backpressure_multiplier(state)
+    threshold = multiplier * max(1, n_forges)
     depth = _assembly_queue_depth(root)
     if depth >= threshold:
         return {"ok": False, "depth": depth, "n_forges": n_forges,
-                "threshold": threshold,
-                "reason": f"assembly-queue backpressure (depth={depth}, "
-                          f"threshold={threshold}, n_forges={n_forges})"}
+                "multiplier": multiplier, "threshold": threshold,
+                "reason": (
+                    f"assembly-queue backpressure (depth={depth}, "
+                    f"threshold={threshold} [multiplier={multiplier} "
+                    f"× forges={n_forges}])"
+                )}
     return {"ok": True, "depth": depth, "n_forges": n_forges,
-            "threshold": threshold, "reason": None}
+            "multiplier": multiplier, "threshold": threshold,
+            "reason": None}
 
 
 @cli.command("set-next-tasks")

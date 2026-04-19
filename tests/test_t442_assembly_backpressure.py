@@ -1,10 +1,11 @@
 """t-442 (ini-018 Task 3/4): Assembly-queue back-pressure.
 
 Marshal's dispatch path (queue-pop, set-next-tasks) must refuse to
-hand work to a Forge when `.assembly-queue.jsonl` depth ≥ 2·N where N
-is the number of registered Forges. The refusal must carry a
-`backpressure` string in the reason so the operator can diagnose why
-nothing is dispatching.
+hand work to a Forge when `.assembly-queue.jsonl` depth ≥ M·N where N
+is the number of registered Forges and M is the backpressure
+multiplier (default 4 as of t-516; was 2 pre-t-516). The refusal
+must carry a `backpressure` string in the reason so the operator can
+diagnose why nothing is dispatching.
 
 Patrol check #9 (t-423) watches the *same* file for a different
 purpose (stale rows) and must continue to run independently; depth
@@ -89,7 +90,7 @@ def _invoke(project, *args):
 
 class TestQueuePopBackpressure:
     def test_below_threshold_dispatches(self, tmp_path):
-        """N=2 forges, depth=3 (<2·N=4) → pop proceeds."""
+        """N=2 forges, depth=3 (<4·N=8 post-t-516) → pop proceeds."""
         project = _bootstrap(
             tmp_path, n_forges=2, queue_depth=3,
             queue=[_pending_task("t-100")], next_tasks=["t-100"])
@@ -99,9 +100,9 @@ class TestQueuePopBackpressure:
         assert payload["task_id"] == "t-100"
 
     def test_at_threshold_refuses(self, tmp_path):
-        """N=2 forges, depth=4 (==2·N) → refuse, queue untouched."""
+        """N=2 forges, depth=8 (==4·N post-t-516) → refuse, queue untouched."""
         project = _bootstrap(
-            tmp_path, n_forges=2, queue_depth=4,
+            tmp_path, n_forges=2, queue_depth=8,
             queue=[_pending_task("t-100")], next_tasks=["t-100"])
         r = _invoke(project, "queue-pop")
         assert r.exit_code == 0, r.output
@@ -109,34 +110,35 @@ class TestQueuePopBackpressure:
         assert payload["task"] is None
         assert payload["dispatched"] is False
         assert "backpressure" in payload["reason"]
-        assert payload["depth"] == 4
-        assert payload["threshold"] == 4
+        assert payload["depth"] == 8
+        assert payload["threshold"] == 8
         # Task must remain in next_tasks — Forge will retry later.
         state = json.loads((project / "state.json").read_text())
         assert state["next_tasks"] == ["t-100"]
 
     def test_above_threshold_refuses(self, tmp_path):
-        """N=2, depth=7 → also refuse (same branch)."""
+        """N=2, depth=9 (>4·N) → also refuse (same branch)."""
         project = _bootstrap(
-            tmp_path, n_forges=2, queue_depth=7,
+            tmp_path, n_forges=2, queue_depth=9,
             queue=[_pending_task("t-100")], next_tasks=["t-100"])
         r = _invoke(project, "queue-pop")
         payload = json.loads(r.output)
         assert payload["dispatched"] is False
         assert "backpressure" in payload["reason"]
-        assert payload["depth"] == 7
+        assert payload["depth"] == 9
 
-    def test_zero_forges_uses_threshold_of_2(self, tmp_path):
+    def test_zero_forges_uses_threshold_of_multiplier(self, tmp_path):
         """Safety floor: `max(1, n_forges)` so a rig with no Forges
-        registered still has a non-zero threshold. depth=2 at N=0 should
-        refuse (2 >= 2*max(1,0)=2)."""
+        registered still has a non-zero threshold. With default
+        multiplier=4 (t-516): depth=4 at N=0 should refuse
+        (4 >= 4*max(1,0)=4)."""
         project = _bootstrap(
-            tmp_path, n_forges=0, queue_depth=2,
+            tmp_path, n_forges=0, queue_depth=4,
             queue=[_pending_task("t-100")], next_tasks=["t-100"])
         r = _invoke(project, "queue-pop")
         payload = json.loads(r.output)
         assert payload["dispatched"] is False
-        assert payload["threshold"] == 2
+        assert payload["threshold"] == 4
 
     def test_missing_assembly_queue_file_treated_as_depth_zero(self, tmp_path):
         """If the jsonl hasn't been created yet, dispatch proceeds."""
@@ -154,7 +156,7 @@ class TestQueuePopBackpressure:
 
 class TestSetNextTasksBackpressure:
     def test_below_threshold_sets(self, tmp_path):
-        """N=3 forges, depth=4 (<2·N=6) → set proceeds."""
+        """N=3 forges, depth=4 (<4·N=12 post-t-516) → set proceeds."""
         project = _bootstrap(
             tmp_path, n_forges=3, queue_depth=4,
             queue=[_pending_task("t-100"), _pending_task("t-101")])
@@ -164,21 +166,22 @@ class TestSetNextTasksBackpressure:
         assert state["next_tasks"] == ["t-100", "t-101"]
 
     def test_at_threshold_refuses(self, tmp_path):
-        """N=3, depth=6 (==2·N) → refuse, state unchanged."""
+        """N=3, depth=12 (==4·N post-t-516) → refuse, state unchanged."""
         project = _bootstrap(
-            tmp_path, n_forges=3, queue_depth=6,
+            tmp_path, n_forges=3, queue_depth=12,
             queue=[_pending_task("t-100")])
         r = _invoke(project, "set-next-tasks", "t-100", "--no-nudge")
         assert r.exit_code != 0, r.output
         payload = json.loads(r.output)
         assert "backpressure" in payload["error"]
-        assert payload["depth"] == 6
-        assert payload["threshold"] == 6
+        assert payload["depth"] == 12
+        assert payload["threshold"] == 12
         # Pre-existing state untouched.
         state = json.loads((project / "state.json").read_text())
         assert state["next_tasks"] == []
 
     def test_above_threshold_refuses(self, tmp_path):
+        """N=1, depth=5 (>4·N=4 post-t-516) → refuse."""
         project = _bootstrap(
             tmp_path, n_forges=1, queue_depth=5,
             queue=[_pending_task("t-100")])
