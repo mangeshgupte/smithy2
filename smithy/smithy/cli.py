@@ -4406,6 +4406,367 @@ def comms_snapshot(ctx, window_minutes):
     )
 
 
+# t-486 (ini-023 T7): push triggers.
+#
+# Triggers evaluated per §7 of plans/comms-persona-design.md: halt toggle,
+# patrol issue-count jump, repeated rejections, budget floor, assembly
+# queue back-pressure, all-forges-idle-across-cycles. Thresholds live in
+# `state.parallel.comms.thresholds` (falling back to COMMS_DEFAULT_THRESHOLDS
+# when missing). Idempotency is rising-edge: a trigger that stayed true
+# last wake is suppressed; it re-fires only after clearing then re-tripping.
+# Prior-state is stored in `personas/comms/.fired.jsonl` (append-only,
+# read from tail — one row per evaluation per trigger).
+
+COMMS_DEFAULT_THRESHOLDS = {
+    "patrol_jump_delta": 3,           # issue count jumped by >= N
+    "repeat_rejection_count": 3,       # same task_id rejected >= N times in window
+    "repeat_rejection_window_min": 30,
+    "budget_low_pct": 10.0,            # remaining budget fraction (%)
+    "queue_backpressure_factor": 2.0,  # depth > factor * n_forges
+    "all_idle_consecutive_cycles": 2,  # all forges idle for >= N wakes
+}
+
+
+def _comms_thresholds(state):
+    """Merge state.parallel.comms.thresholds over COMMS_DEFAULT_THRESHOLDS.
+    Missing keys use the defaults; never raises on a malformed shape."""
+    cfg = ((state.get("parallel") or {})
+           .get("comms") or {}).get("thresholds") or {}
+    out = dict(COMMS_DEFAULT_THRESHOLDS)
+    if isinstance(cfg, dict):
+        for k, v in cfg.items():
+            if k in out and isinstance(v, (int, float)):
+                out[k] = v
+    return out
+
+
+def _comms_fired_path(root):
+    return root / "personas" / "comms" / ".fired.jsonl"
+
+
+def _comms_last_states(root):
+    """Read `.fired.jsonl` tail and return {trigger: last_row_dict}.
+    Malformed / missing → empty dict. Only the most recent row per
+    trigger survives; older rows are historical and don't affect
+    rising-edge detection."""
+    fp = _comms_fired_path(root)
+    if not fp.exists():
+        return {}
+    try:
+        lines = fp.read_text().splitlines()
+    except OSError:
+        return {}
+    last = {}
+    for ln in lines:
+        if not ln.strip():
+            continue
+        try:
+            row = json.loads(ln)
+        except json.JSONDecodeError:
+            continue
+        tr = row.get("trigger")
+        if tr:
+            last[tr] = row
+    return last
+
+
+def _evaluate_comms_triggers(state, snapshot, last_states, thresholds, root):
+    """Core trigger evaluation. Pure-ish: no subprocess / no filesystem
+    writes. Returns a list of dicts per trigger:
+      {
+        "trigger": str,
+        "condition": bool,              # tripped this evaluation?
+        "fired": bool,                  # rising-edge (should osascript)
+        "body": str,                    # one-line notification body
+        "metric": <numeric context>     # for delta detection next cycle
+      }
+    """
+    results = []
+
+    # --- halt_toggle: halt_flag changed since last evaluation ----------
+    halt_now = bool(snapshot.get("halt_flag"))
+    prior = last_states.get("halt_toggle") or {}
+    halt_prev = prior.get("metric") if isinstance(prior.get("metric"), bool) else None
+    toggled = (halt_prev is not None and halt_now != halt_prev)
+    # Suppress if we've already fired for this transition (same state as
+    # the last recorded row AND the last row already fired).
+    already_fired = bool(prior.get("fired"))
+    fired_halt = toggled and not (halt_prev == halt_now and already_fired)
+    results.append({
+        "trigger": "halt_toggle",
+        "condition": toggled,
+        "fired": fired_halt,
+        "body": f"Halt flag {'ON' if halt_now else 'OFF'}",
+        "metric": halt_now,
+    })
+
+    # --- patrol_jump: issue count jumped by >= delta -------------------
+    # Use the most recent patrol count available via state.
+    patrol_count = _patrol_issue_count(root)
+    prior = last_states.get("patrol_jump") or {}
+    prev_count = prior.get("metric")
+    delta_threshold = thresholds["patrol_jump_delta"]
+    jumped = (isinstance(prev_count, int)
+              and patrol_count - prev_count >= delta_threshold)
+    # Rising-edge: fire only when the last recorded row wasn't already
+    # a fire for the same (or larger) count.
+    fired_patrol = jumped and not (prior.get("fired") and
+                                   prior.get("metric") == patrol_count)
+    results.append({
+        "trigger": "patrol_jump",
+        "condition": jumped,
+        "fired": fired_patrol,
+        "body": f"Patrol issues jumped {prev_count or 0} → {patrol_count}",
+        "metric": patrol_count,
+    })
+
+    # --- repeat_rejections: same task_id >= N rejections in window -----
+    window = thresholds["repeat_rejection_window_min"]
+    min_count = thresholds["repeat_rejection_count"]
+    worst = _repeat_reject_worst(root, window_minutes=window)
+    tripped_reject = worst is not None and worst["count"] >= min_count
+    prior = last_states.get("repeat_rejections") or {}
+    # Rising edge: fire only if wasn't tripped last time, or the worst
+    # task_id changed.
+    prev_task = prior.get("metric") if isinstance(prior.get("metric"), str) else None
+    fired_reject = tripped_reject and (
+        not prior.get("fired") or prev_task != (worst["task_id"] if worst else None)
+    )
+    results.append({
+        "trigger": "repeat_rejections",
+        "condition": tripped_reject,
+        "fired": fired_reject,
+        "body": (f"{worst['task_id']} rejected {worst['count']}× in {window}m"
+                 if worst else "no repeated rejections"),
+        "metric": worst["task_id"] if worst else None,
+    })
+
+    # --- budget_low: remaining fraction < threshold --------------------
+    budget = snapshot.get("budget") or {}
+    total = budget.get("total") or 0
+    remaining = budget.get("remaining") or 0
+    pct_remaining = (100.0 * remaining / total) if total else 100.0
+    below = pct_remaining < thresholds["budget_low_pct"]
+    prior = last_states.get("budget_low") or {}
+    fired_budget = below and not prior.get("fired")
+    results.append({
+        "trigger": "budget_low",
+        "condition": below,
+        "fired": fired_budget,
+        "body": f"Budget {pct_remaining:.1f}% remaining ({remaining}/{total})",
+        "metric": round(pct_remaining, 1),
+    })
+
+    # --- queue_backpressure: assembly_queue_depth > factor * n_forges --
+    depth = snapshot.get("assembly_queue_depth") or 0
+    n_forges = (snapshot.get("forges") or {}).get("total") or 1
+    ceiling = thresholds["queue_backpressure_factor"] * n_forges
+    over = depth > ceiling
+    prior = last_states.get("queue_backpressure") or {}
+    fired_bp = over and not prior.get("fired")
+    results.append({
+        "trigger": "queue_backpressure",
+        "condition": over,
+        "fired": fired_bp,
+        "body": f"Assembly-queue depth {depth} > 2×{n_forges} forges",
+        "metric": depth,
+    })
+
+    # --- all_forges_idle: all forges idle N consecutive cycles ---------
+    forges = (state.get("parallel") or {}).get("forges") or []
+    all_idle_now = bool(forges) and all(
+        f.get("status") == "idle" for f in forges
+    )
+    prior = last_states.get("all_forges_idle") or {}
+    # Use `metric` as the running consecutive-cycle counter. Reset to 0
+    # when not all-idle; otherwise += 1.
+    prev_streak = prior.get("metric") if isinstance(prior.get("metric"), int) else 0
+    streak = (prev_streak + 1) if all_idle_now else 0
+    need = int(thresholds["all_idle_consecutive_cycles"])
+    tripped = streak >= need
+    fired_idle = tripped and not prior.get("fired")
+    results.append({
+        "trigger": "all_forges_idle",
+        "condition": tripped,
+        "fired": fired_idle,
+        "body": f"All {len(forges)} forges idle for {streak} cycles",
+        "metric": streak,
+    })
+
+    return results
+
+
+def _patrol_issue_count(root):
+    """Run `smithy patrol` and return its `issues` length. Cheap: no
+    --fix, no state mutation. Returns 0 on any error — a trigger that
+    can't read its source is silent, not loud."""
+    import subprocess as _sp
+    import sys as _sys
+    try:
+        r = _sp.run(
+            [_sys.executable, "-m", "smithy.smithy.cli",
+             "--dir", str(root), "patrol"],
+            capture_output=True, text=True, timeout=30,
+        )
+        if r.returncode != 0:
+            return 0
+        data = json.loads(r.stdout)
+        return len(data.get("issues") or [])
+    except (json.JSONDecodeError, OSError, Exception):
+        return 0
+
+
+def _repeat_reject_worst(root, window_minutes):
+    """Scan worklog for rejected rows in the window. Returns
+    {task_id, count} for the task_id with the most rejections, or None
+    if no task has any rejection in the window."""
+    from datetime import datetime, timedelta, timezone
+    wl = root / "worklog.tsv"
+    if not wl.exists():
+        return None
+    cutoff = datetime.now(timezone.utc) - timedelta(minutes=window_minutes)
+    counts = {}
+    try:
+        lines = wl.read_text().splitlines()
+    except OSError:
+        return None
+    for line in lines[1:]:  # skip header
+        parts = line.split("\t")
+        if len(parts) < 5:
+            continue
+        ts_raw, _heat, _stage, task_id, outcome = parts[:5]
+        if outcome != "rejected":
+            continue
+        try:
+            ts = datetime.fromisoformat(ts_raw.replace("Z", "+00:00"))
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=timezone.utc)
+        except ValueError:
+            continue
+        if ts < cutoff:
+            continue
+        counts[task_id] = counts.get(task_id, 0) + 1
+    if not counts:
+        return None
+    task_id, count = max(counts.items(), key=lambda kv: kv[1])
+    return {"task_id": task_id, "count": count}
+
+
+def _fire_macos_notification(title, body):
+    """Best-effort `osascript` notification; silent failure on
+    non-macOS (missing osascript, permissions denied). Returns True on
+    success, False otherwise."""
+    import subprocess as _sp
+    import shutil as _sh
+    if _sh.which("osascript") is None:
+        return False
+    # Guard against AppleScript string-escaping: drop quotes + newlines
+    # from body + title before inlining. They're prose, not data.
+    safe_body = body.replace('"', "'").replace("\n", " ")[:200]
+    safe_title = title.replace('"', "'").replace("\n", " ")[:100]
+    script = f'display notification "{safe_body}" with title "{safe_title}"'
+    try:
+        r = _sp.run(["osascript", "-e", script],
+                    capture_output=True, text=True, timeout=10)
+        return r.returncode == 0
+    except (_sp.TimeoutExpired, OSError):
+        return False
+
+
+@cli.command("comms-push-triggers")
+@click.option("--window-minutes", type=int, default=30,
+              help="Recency window for rejection scanning.")
+@click.option("--dry-run", is_flag=True, default=False,
+              help="Evaluate triggers but don't fire or persist state.")
+@click.pass_context
+def comms_push_triggers_cmd(ctx, window_minutes, dry_run):
+    """t-486 (ini-023 T7): evaluate Comms push triggers and fire macOS
+    notifications on rising edges. Persistent prior-state in
+    personas/comms/.fired.jsonl.
+
+    Comms's wake loop calls this AFTER the report section has been
+    written. Output is a single JSON with `{fired: [...], evaluated: [
+    ...]}` so the operator (or tests) can see what tripped.
+    """
+    from datetime import datetime, timezone
+    root = ctx.obj["root"]
+    state = load_state(root)
+    thresholds = _comms_thresholds(state)
+
+    # Inline snapshot fields we need — avoid a second subprocess call.
+    budget = state.get("budget") or {}
+    used = budget.get("used", 0) or 0
+    total = budget.get("total_heats", 0) or 0
+    assy_queue = main_repo_root(root) / ".assembly-queue.jsonl"
+    assy_depth = 0
+    if assy_queue.exists():
+        try:
+            assy_depth = sum(
+                1 for line in assy_queue.read_text().splitlines()
+                if line.strip()
+            )
+        except OSError:
+            pass
+    parallel = state.get("parallel") or {}
+    forges = parallel.get("forges") or []
+    snapshot = {
+        "halt_flag": bool(parallel.get("halt_flag")),
+        "assembly_queue_depth": assy_depth,
+        "forges": {"total": len(forges)},
+        "budget": {"total": total, "used": used,
+                   "remaining": total - used if total else None},
+    }
+
+    last = _comms_last_states(root)
+    triggers = _evaluate_comms_triggers(state, snapshot, last, thresholds, root)
+
+    # Find the most recent report file for the file:// link.
+    report_link = ""
+    reports_dir = root / "personas" / "comms" / "reports"
+    if reports_dir.is_dir():
+        reports = sorted(reports_dir.glob("*.md"), reverse=True)
+        if reports:
+            report_link = f"file://{reports[0].resolve()}"
+
+    fired_now = []
+    for t in triggers:
+        if t["fired"] and not dry_run:
+            body = t["body"]
+            if report_link:
+                body = f"{body} · {report_link}"
+            ok = _fire_macos_notification("Smithy", body)
+            t["osascript_ok"] = ok
+            fired_now.append(t["trigger"])
+
+    # Persist prior-state rows — one per trigger — so the next wake can
+    # do rising-edge detection. Skip persistence on --dry-run.
+    if not dry_run:
+        fp = _comms_fired_path(root)
+        fp.parent.mkdir(parents=True, exist_ok=True)
+        ts = datetime.now(timezone.utc).isoformat()
+        with open(fp, "a") as f:
+            for t in triggers:
+                f.write(json.dumps({
+                    "ts": ts,
+                    "trigger": t["trigger"],
+                    "condition": t["condition"],
+                    "fired": t["fired"],
+                    "metric": t["metric"],
+                }) + "\n")
+
+    _output({
+        "fired": fired_now,
+        "evaluated": [{"trigger": t["trigger"],
+                        "condition": t["condition"],
+                        "fired": t["fired"]}
+                       for t in triggers],
+        "thresholds": thresholds,
+        "report_link": report_link,
+    })
+    _err(f"Comms push: fired {len(fired_now)}/{len(triggers)}"
+         + (f" {fired_now}" if fired_now else ""))
+
+
 @cli.command("sessions")
 @click.pass_context
 def sessions(ctx):
