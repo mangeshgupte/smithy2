@@ -1896,6 +1896,35 @@ def queue_push(ctx, task_id, top, no_nudge, target_persona, assigned_forge):
     _output(result)
 
 
+@cli.command("dispatch-next")
+@click.option("--forge", "forge_id", required=True,
+              help="Forge id to dispatch for (walk initiatives from this "
+                   "forge's perspective).")
+@click.pass_context
+def dispatch_next_cmd(ctx, forge_id):
+    """t-441 (ini-018): advisory — pick the next task an idle forge should
+    take, by walking initiatives with the multi-forge-poker constraints
+    (parallelism / affinity / touches). Pure: does NOT pop, push, or
+    mutate state. Marshal uses this to decide what to queue-push next.
+    """
+    from .dispatch import select_task_for_forge
+    root = ctx.obj["root"]
+    state = load_state(root)
+    task = select_task_for_forge(state, forge_id)
+    if task is None:
+        _output({"task": None, "forge_id": forge_id,
+                 "message": "no eligible task"})
+        return
+    _output({
+        "forge_id":      forge_id,
+        "task_id":       task["id"],
+        "initiative_id": task.get("initiative_id"),
+        "stage":         task.get("stage"),
+        "priority":      task.get("priority"),
+        "desc":          (task.get("desc") or "")[:200],
+    })
+
+
 @cli.command("queue-pop")
 @click.option("--forge", "forge_id", default=None,
               help="t-400 I5: Only pop tasks unassigned or assigned to this forge.")
