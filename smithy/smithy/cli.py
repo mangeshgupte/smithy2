@@ -4592,6 +4592,27 @@ def patrol(ctx, fix):
     except Exception:
         pass
 
+    # 16. t-507: Assembly staging venv health. When Assembly is enabled,
+    # `.worktrees/_assembly-staging/.venv/` must exist so the staging
+    # pytest imports `smithy` from the rebased task branch's source,
+    # not bare python3's main-bound editable install (the t-460 /
+    # t-502 hazard). `ensure_staging_venv` auto-bootstraps at test time;
+    # this patrol check surfaces drift between ticks. No auto-fix —
+    # bootstrap is Assembly's responsibility and running uv from
+    # patrol would race with whatever shell is active in that pane.
+    assembly_cfg = (state.get("parallel") or {}).get("assembly") or {}
+    if assembly_cfg.get("enabled"):
+        staging_venv = main_root / ".worktrees" / "_assembly-staging" / ".venv"
+        if not staging_venv.exists():
+            issues.append(
+                "_assembly-staging/.venv missing — Assembly's staging "
+                "pytest will fall back to system python3 and import "
+                "smithy from MAIN (t-460); ensure_staging_venv "
+                "bootstraps on next assembly-tick, or force with "
+                "`uv venv .venv && uv pip install -e smithy` inside "
+                ".worktrees/_assembly-staging/"
+            )
+
     # Save fixes if any
     if fix and fixes:
         save_state(root, state)
@@ -4600,7 +4621,7 @@ def patrol(ctx, fix):
         "issues": issues,
         "fixes": fixes,
         "clean": len(issues) == 0,
-        "checks_run": 15,
+        "checks_run": 16,
         "stuck_forges": sorted(set(stuck_forges)),
         "stalled_forges": stalled_forges,
         "starving_forges": starving_forges,
