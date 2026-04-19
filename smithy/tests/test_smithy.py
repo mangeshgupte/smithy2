@@ -1504,7 +1504,10 @@ class TestSyncStages:
     """Tests for sync-stages command."""
 
     def test_sync_stages_from_worklog(self, project, runner):
-        """sync-stages recalculates stage heats from worklog entries."""
+        """sync-stages recalculates stage heats from worklog entries.
+        t-454: --force-down to opt out of the monotonic guard (project
+        fixture starts at budget.used=10; this test sets it to 3 by
+        recomputing absolute from a 3-row worklog)."""
         # Add worklog entries
         worklog = "timestamp\theat\tstage\ttask_id\toutcome\tvalue\tsignal\tnotes\n"
         worklog += "2026-04-10T10:00:00\t1\timplementation\tt-001\tcomplete\t0.8\t🟢\tnote\n"
@@ -1512,7 +1515,8 @@ class TestSyncStages:
         worklog += "2026-04-10T10:10:00\t3\timplementation\tt-001\tcomplete\t0.7\t🟡\tnote\n"
         (project / "worklog.tsv").write_text(worklog)
 
-        result = runner.invoke(cli, ["--dir", str(project), "sync-stages"])
+        result = runner.invoke(cli, ["--dir", str(project), "sync-stages",
+                                     "--force-down"])
         assert result.exit_code == 0
         data = json.loads(result.output)
         assert data["new_used"] == 3
@@ -1522,8 +1526,10 @@ class TestSyncStages:
         assert state["stages"]["testing"]["heats"] == 1
 
     def test_sync_stages_empty_worklog(self, project, runner):
-        """sync-stages with header-only worklog zeroes everything."""
-        result = runner.invoke(cli, ["--dir", str(project), "sync-stages"])
+        """sync-stages with header-only worklog zeroes everything.
+        t-454: --force-down to opt out of the monotonic guard."""
+        result = runner.invoke(cli, ["--dir", str(project), "sync-stages",
+                                     "--force-down"])
         assert result.exit_code == 0
         data = json.loads(result.output)
         assert data["new_used"] == 0
