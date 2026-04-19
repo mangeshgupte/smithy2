@@ -965,6 +965,17 @@ def _do_assembly_merge(root, task_id, sha, resolution):
     append_worklog(root, state["budget"]["used"], "implementation", task_id,
                    outcome, 0.0, signal, f"merge sha={sha[:12]}")
 
+    # t-478: nudge Marshal at the submitted→complete transition, not in
+    # assembly_tick. Any caller that drives a merge through
+    # _do_assembly_merge directly (smithy assembly-merge CLI, future
+    # batch path) needs the wake-up too — putting it here makes the
+    # nudge unconditional. Symmetric with _do_assembly_reject above.
+    # t-424: fire both a durable file-queue row AND a live tmux event.
+    merged_msg = (f"ASSEMBLY_MERGED: {task_id} merged "
+                  f"(sha={sha[:12]}). Re-prioritize downstream.")
+    _queue_nudge(root, "marshal", merged_msg)
+    _nudge_persona("marshal", merged_msg, root=root)
+
     # t-460: rebind the global editable smithy install to MAIN whenever
     # a merge touches smithy/* code. Prevents stale-binary rejects where
     # Assembly's pytest collects against a worktree's old smithy package
@@ -1182,13 +1193,9 @@ def assembly_tick_cmd(ctx, base, dry_run, tests_cmd):
                         task_id=task_id, branch=push.get("branch"),
                         remote=push.get("remote"),
                         reason=push.get("reason"))
-    # Nudge Marshal: a task just merged, graph may have opened up.
-    # t-424: fire BOTH a durable file-queue row and a live tmux event
-    # (see _do_assembly_reject above for the reasoning).
-    merged_msg = (f"ASSEMBLY_MERGED: {task_id} merged on {base} "
-                  f"(sha={mr['sha'][:12]}). Re-prioritize downstream.")
-    _queue_nudge(root, "marshal", merged_msg)
-    _nudge_persona("marshal", merged_msg, root=root)
+    # t-478: Marshal nudge moved into _do_assembly_merge so any caller
+    # that bypasses assembly_tick (smithy assembly-merge, future batch
+    # path) still wakes Marshal at the submitted→complete transition.
     _pop_queue(qpath, rest)
     _emit_rig_event(root, "assembly_tick_merged", actor="assembly",
                     forge_id=forge_id, task_id=task_id,
