@@ -2205,6 +2205,160 @@ def set_next_tasks(ctx, task_ids, no_nudge):
     _output(result)
 
 
+# --- t-497 (ini-024 T4): Marshal next_tasks invariant ---------------------
+#
+# Invariant: if next_tasks is empty AND at least one idle forge exists AND
+# pending eligible tasks exist AND halt_flag is False AND budget remains,
+# next_tasks MUST be repopulated with one eligible task per idle forge
+# (de-duplicated). Marshal calls `smithy reconcile-next-tasks` every idle
+# tick — both on nudge and on the idle timer — so a Marshal hiccup no
+# longer freezes the rig. Correctness lives in Forge reconciliation
+# (t-495/t-496); this is the optimization layer.
+#
+# Design details: plans/liveness-reconciliation-design.md §Marshal.
+
+
+@cli.command("reconcile-next-tasks")
+@click.option("--dry-run", is_flag=True, default=False,
+              help="Compute the repopulation but don't write state.")
+@click.option("--no-nudge", is_flag=True, default=False,
+              help="Skip the auto-nudge to the first idle forge.")
+@click.pass_context
+def reconcile_next_tasks(ctx, dry_run, no_nudge):
+    """t-497: repopulate next_tasks when the invariant is unmet.
+
+    Invariant: next_tasks is empty AND ≥1 idle forge AND eligible pending
+    tasks exist AND halt is off AND budget remains → populate up to N
+    entries (N = idle forges) via the existing priority-walk.
+
+    Idempotent. Runs every Marshal idle tick. No-op in the common case.
+    """
+    root = ctx.obj["root"]
+    state = load_state(root)
+
+    # --- invariant preconditions ----------------------------------------
+    reasons = []
+    parallel = state.get("parallel") or {}
+    if parallel.get("halt_flag"):
+        reasons.append("halt_flag=true")
+
+    budget = state.get("budget") or {}
+    total = budget.get("total_heats", 0) or 0
+    used = budget.get("used", 0) or 0
+    if total > 0 and used >= total:
+        reasons.append("budget exhausted")
+
+    current_next = list(state.get("next_tasks") or [])
+    if current_next:
+        reasons.append(f"next_tasks already populated ({len(current_next)})")
+
+    forges = parallel.get("forges") or []
+    idle_forges = [f for f in forges
+                   if f.get("status") == "idle" and not f.get("current_task")]
+    if not idle_forges:
+        reasons.append("no idle forges")
+
+    queue = state.get("queue") or []
+    if not any(t.get("status") == "pending" for t in queue):
+        reasons.append("no pending tasks")
+
+    if reasons:
+        _output({"repopulated": False, "next_tasks": current_next,
+                 "skip_reasons": reasons})
+        _err(f"reconcile: no-op ({', '.join(reasons)})")
+        return
+
+    # --- pick one eligible task per idle forge --------------------------
+    #
+    # `select_task_for_forge` already encodes the full constraint walk
+    # (stage balance, priority, blocked_by, affinity, touches, serial /
+    # parallel). Reusing it keeps the invariant aligned with Marshal's
+    # existing priority logic — there's one ranking algorithm, not two.
+    from smithy.dispatch import select_task_for_forge
+
+    # We pick one task per idle forge by iterating: after picking for
+    # forge-A, mark that task as in_progress in an in-memory copy of
+    # state so the next walk for forge-B sees it as unavailable and
+    # picks the next best option. Without this step, every unpinned
+    # forge would pick the same top-priority task and only one would
+    # survive the de-dup filter. The mutation is to a deep copy — the
+    # caller's state dict is untouched until the final save below.
+    import copy
+    scratch = copy.deepcopy(state)
+    scratch_queue_by_id = {t["id"]: t for t in scratch.get("queue") or []}
+
+    picked = []
+    # Visit idle forges in a stable order so the rig stays deterministic.
+    for forge in sorted(idle_forges, key=lambda f: f.get("id", "")):
+        fid = forge.get("id")
+        if not fid:
+            continue
+        task = select_task_for_forge(scratch, fid)
+        if task is None:
+            continue
+        tid = task.get("id")
+        if not tid:
+            continue
+        picked.append(tid)
+        # Mark the picked task in-flight in the scratch state so the
+        # next forge's walk can't pick it again.
+        if tid in scratch_queue_by_id:
+            scratch_queue_by_id[tid]["status"] = "in_progress"
+            scratch_queue_by_id[tid]["assigned_forge"] = fid
+
+    if not picked:
+        # Pending tasks exist but none are dispatchable right now (every
+        # initiative may be serial-blocked, or affinity-pinned elsewhere).
+        # Invariant is technically satisfied — there's nothing for these
+        # forges to do. No-op.
+        _output({"repopulated": False, "next_tasks": [],
+                 "skip_reasons": ["no eligible pending tasks for idle forges"]})
+        _err("reconcile: no-op (nothing dispatchable)")
+        return
+
+    if dry_run:
+        _output({"repopulated": False, "next_tasks": picked,
+                 "dry_run": True,
+                 "idle_forges": [f.get("id") for f in idle_forges]})
+        _err(f"reconcile (dry-run): would populate {len(picked)} task(s)")
+        return
+
+    # --- write + audit ---------------------------------------------------
+    state["next_tasks"] = picked
+    save_state(root, state)
+
+    _emit_rig_event(
+        root, "next_tasks_reconciled", actor="marshal",
+        task_ids=picked,
+        idle_forges=[f.get("id") for f in idle_forges],
+        count=len(picked),
+    )
+
+    result = {"repopulated": True, "next_tasks": picked,
+              "count": len(picked),
+              "idle_forges": [f.get("id") for f in idle_forges]}
+
+    # --- auto-nudge (fast path after the correctness path) -------------
+    #
+    # Nudge the forge assigned to the top task (or the primary forge if
+    # unassigned). This mirrors set-next-tasks's nudge behaviour so
+    # reconciliation and manual dispatch converge on the same cadence.
+    if not no_nudge:
+        queue_map = {t["id"]: t for t in queue}
+        top_task = queue_map.get(picked[0], {})
+        target = top_task.get("assigned_forge") or primary_forge_id(state)
+        msg = (f"Queue reconciled. {len(picked)} task(s) ready. "
+               f"Top: {picked[0]} — {top_task.get('desc','')[:60]}")
+        nudge_result = _nudge_persona(target, msg, root=root)
+        result["nudge"] = nudge_result
+        _emit_rig_event(root, "nudge_sent", actor="marshal", target=target,
+                        task_id=picked[0],
+                        nudged=nudge_result.get("nudged"))
+
+    _output(result)
+    _err(f"reconcile: populated {len(picked)} task(s): {', '.join(picked)}")
+
+
 @cli.command("queue")
 @click.pass_context
 def queue_show(ctx):
