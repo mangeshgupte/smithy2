@@ -1447,6 +1447,218 @@ def _reconcile_submitted(root):
     return None
 
 
+def _batch_window_decision(entries: list, now, idle_timer_s: int = 60) -> dict:
+    """ini-020 §(c): decide whether the batcher should fire. Returns
+    {"action": "go" | "wait" | "idle", "depth": int, ...}.
+
+    - depth >= 2 → go immediately.
+    - depth == 1 → go only if the singleton is >= idle_timer_s old;
+      else wait (a sibling may land).
+    - depth == 0 → idle.
+    """
+    depth = len(entries)
+    if depth == 0:
+        return {"action": "idle", "depth": 0}
+    if depth >= 2:
+        return {"action": "go", "depth": depth}
+    # depth == 1
+    try:
+        sub_at = datetime.fromisoformat(entries[0].get("submitted_at", ""))
+    except (TypeError, ValueError):
+        # No / bad timestamp → fire to avoid permanent wait.
+        return {"action": "go", "depth": 1, "reason": "missing timestamp"}
+    age_s = (now - sub_at).total_seconds()
+    if age_s >= idle_timer_s:
+        return {"action": "go", "depth": 1, "age_s": age_s,
+                "reason": "singleton idle timeout"}
+    return {"action": "wait", "depth": 1, "age_s": age_s,
+            "idle_timer_s": idle_timer_s}
+
+
+@cli.command("assembly-batch-tick")
+@click.option("--base", default="main", help="Base branch (default main).")
+@click.option("--idle-timer-s", type=int, default=60,
+              help="Singleton wait threshold before N=1 fallback fires.")
+@click.option("--dry-run", is_flag=True, default=False)
+@click.pass_context
+def assembly_batch_tick_cmd(ctx, base, idle_timer_s, dry_run):
+    """ini-020 impl-T1 (t-511) MVP: batch-drain .assembly-queue.jsonl
+    through the staging worktree with one pytest run on green, reset
+    + defer on red. Retains the legacy single-task `assembly-tick`
+    path (impl-T5 will retire it).
+    """
+    from .assembly import (
+        ensure_staging_worktree, _STAGING_WORKTREE,
+        run_batch, run_batch_tests, ensure_staging_venv_versioned,
+        smithy_tree_hash, staging_path, reset_staging_to,
+        delete_forge_branch,
+    )
+    import subprocess as _sp
+
+    root = ctx.obj["root"]
+    qpath = assembly_queue_path(root)
+    if not qpath.exists() or qpath.stat().st_size == 0:
+        _output({"status": "empty"})
+        return
+
+    entries = []
+    for ln in qpath.read_text().splitlines():
+        if not ln.strip():
+            continue
+        try:
+            entries.append(json.loads(ln))
+        except json.JSONDecodeError:
+            continue
+
+    now = datetime.now(timezone.utc)
+    window = _batch_window_decision(entries, now, idle_timer_s=idle_timer_s)
+    if window["action"] != "go":
+        _output({"status": window["action"], **window})
+        return
+
+    if dry_run:
+        _output({"status": "would_process", "window": window,
+                 "entries": entries})
+        return
+
+    # 1. Merge each entry into staging sequentially.
+    batch = run_batch(root, entries, base=base)
+    if batch.get("status") != "ok":
+        _output({"status": "error",
+                 "detail": batch.get("detail", "run_batch failed")})
+        return
+    green = [m for m in batch["merged"]
+             if m["status"] in ("clean", "mild")]
+    severe = [m for m in batch["merged"] if m["status"] == "severe"]
+
+    if not green:
+        _emit_rig_event(root, "assembly_batch_merged", actor="assembly",
+                        batch_size=0, batch_outcome="no_green",
+                        severe_count=len(severe))
+        _output({"status": "no_green", "severe_count": len(severe),
+                 "severe": [m.get("detail", "?") for m in severe]})
+        return
+
+    wt = staging_path(root)
+
+    # 2. Venv: reuse if smithy hash unchanged, else recreate.
+    smithy_hash = smithy_tree_hash(wt)
+    venv_info = ensure_staging_venv_versioned(wt, smithy_hash=smithy_hash)
+    if venv_info["status"] == "error":
+        # Revert staging so we don't leave a half-merged tip across ticks.
+        reset_staging_to(wt, base)
+        _emit_rig_event(root, "assembly_batch_merged", actor="assembly",
+                        batch_size=len(green), batch_outcome="venv_error")
+        _output({"status": "venv_error",
+                 "detail": venv_info.get("detail", "?")})
+        return
+
+    # 3. Single pytest run post-merge on staging's tip.
+    tst = run_batch_tests(wt)
+    if not tst["passed"]:
+        # Red: reset staging, LEAVE queue intact, emit event. Per t-511
+        # MVP scope, we do NOT assembly-reject — impl-T3 (bisect) is
+        # the correct place for that.
+        reset_staging_to(wt, base)
+        _emit_rig_event(root, "assembly_batch_merged", actor="assembly",
+                        batch_size=len(green),
+                        batch_outcome="red_deferred",
+                        returncode=tst.get("returncode"))
+        _output({
+            "status": "red_deferred",
+            "batch_size": len(green),
+            "returncode": tst.get("returncode"),
+            "output_tail": tst.get("output", "")[-400:],
+        })
+        return
+
+    # 4. On-green: fast-forward-equivalent merge staging tip into main.
+    staging_tip = batch.get("staging_tip") or \
+        _sp.run(["git", "rev-parse", "HEAD"], cwd=str(wt),
+                capture_output=True, text=True).stdout.strip()
+    co = _sp.run(["git", "checkout", base], cwd=str(root),
+                 capture_output=True, text=True)
+    if co.returncode != 0:
+        _output({"status": "error",
+                 "detail": f"main checkout: {co.stderr.strip()}"})
+        return
+    mr = _sp.run(
+        ["git", "merge", "--no-ff", "--no-edit",
+         "-m", f"[assembly] batch merge {len(green)} task(s) → {base}",
+         staging_tip],
+        cwd=str(root), capture_output=True, text=True,
+    )
+    if mr.returncode != 0:
+        _output({"status": "error",
+                 "detail": f"main merge: {mr.stderr.strip()}"})
+        return
+
+    # 5. Per-entry state flip + branch cleanup + audit log.
+    for m in green:
+        e = m["entry"]
+        _do_assembly_merge(root, e["task_id"], m["sha"],
+                           resolution=(m["status"] == "mild"))
+        _log(root, e["forge_id"], e["task_id"], "merged", m["sha"])
+        delete_forge_branch(root, e["forge_id"], e["task_id"], force=True)
+
+    # 6. Advisory push (t-438 semantics — never fails the batch).
+    push_status = "skipped"
+    push_reason = ""
+    try:
+        pr = _sp.run(["git", "push", "origin", base],
+                     cwd=str(root), capture_output=True, text=True, timeout=30)
+        push_status = "ok" if pr.returncode == 0 else "failed"
+        if pr.returncode != 0:
+            tail = (pr.stderr or pr.stdout or "").strip().splitlines()
+            push_reason = (tail[-1] if tail else "")[:200]
+    except (subprocess.TimeoutExpired, Exception) as exc:
+        push_status = "failed"
+        push_reason = str(exc)[:200]
+
+    # 7. Atomic pop of the N green entries (leave severe rows in queue
+    # so Marshal / impl-T2 can retry them). Re-read the jsonl under the
+    # same invariants `_pop_queue` relies on (no lock collision because
+    # Assembly is singleton per rig).
+    popped_ids = {m["entry"]["task_id"] for m in green}
+    if qpath.exists():
+        keep = []
+        for ln in qpath.read_text().splitlines():
+            if not ln.strip():
+                continue
+            try:
+                row = json.loads(ln)
+            except json.JSONDecodeError:
+                keep.append(ln)
+                continue
+            if row.get("task_id") in popped_ids:
+                continue
+            keep.append(ln)
+        if keep:
+            qpath.write_text("\n".join(keep) + "\n")
+        else:
+            qpath.write_text("")
+
+    # 8. Telemetry.
+    _emit_rig_event(
+        root, "assembly_batch_merged", actor="assembly",
+        batch_size=len(green), batch_outcome="green",
+        severe_count=len(severe),
+        venv_recreated=bool(venv_info.get("recreated")),
+        push_status=push_status,
+    )
+
+    _output({
+        "status": "merged",
+        "batch_size": len(green),
+        "merged_ids": sorted(popped_ids),
+        "severe_count": len(severe),
+        "venv": {"status": venv_info["status"],
+                 "recreated": venv_info.get("recreated", False)},
+        "push": {"status": push_status, "reason": push_reason},
+        "staging_tip": staging_tip,
+    })
+
+
 @cli.command("forge-spawn")
 @click.argument("forge_id")
 @click.option("--base", default="main", help="Base branch for the worktree.")
