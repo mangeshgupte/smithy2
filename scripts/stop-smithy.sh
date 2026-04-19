@@ -27,6 +27,14 @@
 #   FORGE_STOP_WAIT  seconds to wait after /exit before kill (default: 5)
 #   FORGE_UI_WINDOW  ui-window name (default: ui) — set to "" to disable
 #                    the SIGINT pre-step entirely
+#   FORGE_COMMS_WINDOW
+#                    t-481 (ini-023 T2): comms-window name (default: comms).
+#                    Informational — mirrors start-smithy.sh. The comms
+#                    pane is a Claude TUI, so the generic /exit fan-out
+#                    below (which enumerates every pane in the session via
+#                    `tmux list-panes -s`) already tears it down; no
+#                    dedicated pre-step is needed. Setting this variable
+#                    has no effect on stop behaviour.
 
 set -euo pipefail
 
@@ -47,7 +55,9 @@ Usage:
   scripts/stop-smithy.sh -h|--help   this message
 
 Env: FORGE_SESSION (default: forge), FORGE_STOP_WAIT seconds (default: 5),
-     FORGE_UI_WINDOW (default: ui; set to "" to disable SIGINT pre-step).
+     FORGE_UI_WINDOW (default: ui; set to "" to disable SIGINT pre-step),
+     FORGE_COMMS_WINDOW (default: comms; informational — /exit fan-out
+     tears down the comms pane regardless).
 EOF
 }
 
