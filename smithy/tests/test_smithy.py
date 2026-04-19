@@ -5,9 +5,9 @@ import pytest
 from pathlib import Path
 from click.testing import CliRunner
 
-from smithy.cli import cli
-from smithy.state import validate_state, VALID_STAGES
-from smithy.allocator import compute_benefits, compute_targets, pick_stage
+from smithy.smithy.cli import cli
+from smithy.smithy.state import validate_state, VALID_STAGES
+from smithy.smithy.allocator import compute_benefits, compute_targets, pick_stage
 
 
 @pytest.fixture
@@ -609,12 +609,12 @@ class TestNudgeHelpers:
     """Tests for _nudge_queue_path, _queue_nudge, _persona_is_busy."""
 
     def test_nudge_queue_path(self, tmp_path):
-        from smithy.cli import _nudge_queue_path
+        from smithy.smithy.cli import _nudge_queue_path
         p = _nudge_queue_path(tmp_path, "forge")
         assert p == tmp_path / ".smithy-nudge-queue" / "forge.jsonl"
 
     def test_queue_nudge_creates_dir_and_file(self, tmp_path):
-        from smithy.cli import _queue_nudge
+        from smithy.smithy.cli import _queue_nudge
         result = _queue_nudge(tmp_path, "forge", "hello forge")
         queue_file = tmp_path / ".smithy-nudge-queue" / "forge.jsonl"
         assert queue_file.exists()
@@ -626,7 +626,7 @@ class TestNudgeHelpers:
         assert "timestamp" in entry
 
     def test_queue_nudge_appends(self, tmp_path):
-        from smithy.cli import _queue_nudge
+        from smithy.smithy.cli import _queue_nudge
         _queue_nudge(tmp_path, "forge", "msg1")
         _queue_nudge(tmp_path, "forge", "msg2")
         queue_file = tmp_path / ".smithy-nudge-queue" / "forge.jsonl"
@@ -636,16 +636,16 @@ class TestNudgeHelpers:
         assert json.loads(lines[1])["message"] == "msg2"
 
     def test_persona_is_busy_no_checkpoint(self, tmp_path):
-        from smithy.cli import _persona_is_busy
+        from smithy.smithy.cli import _persona_is_busy
         assert _persona_is_busy(tmp_path, "forge") is False
 
     def test_persona_is_busy_with_checkpoint(self, tmp_path):
-        from smithy.cli import _persona_is_busy
+        from smithy.smithy.cli import _persona_is_busy
         (tmp_path / ".forge-checkpoint.json").write_text("{}")
         assert _persona_is_busy(tmp_path, "forge") is True
 
     def test_persona_is_busy_generic(self, tmp_path):
-        from smithy.cli import _persona_is_busy
+        from smithy.smithy.cli import _persona_is_busy
         (tmp_path / ".marshal-checkpoint.json").write_text("{}")
         assert _persona_is_busy(tmp_path, "marshal") is True
 
@@ -661,7 +661,7 @@ class TestNudgePytestBackstop:
         _nudge_persona returns the sentinel without touching subprocess."""
         import os
         from unittest.mock import patch
-        from smithy.cli import _nudge_persona
+        from smithy.smithy.cli import _nudge_persona
         assert os.environ.get("PYTEST_CURRENT_TEST"), \
             "pytest should set PYTEST_CURRENT_TEST for every test"
         with patch("subprocess.run") as mock_run:
@@ -673,7 +673,7 @@ class TestNudgePytestBackstop:
 
     def test_skips_even_with_root_arg(self, tmp_path):
         """Backstop fires before the busy-check branch too."""
-        from smithy.cli import _nudge_persona
+        from smithy.smithy.cli import _nudge_persona
         (tmp_path / ".marshal-checkpoint.json").write_text("{}")  # would normally queue
         result = _nudge_persona("marshal", "hi", root=tmp_path)
         assert result["reason"] == "pytest context, nudge skipped"
@@ -905,7 +905,7 @@ class TestNudgeRosterMismatch:
         """Direct test on the (pane_id, reason) contract of _resolve_pane."""
         monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
         import subprocess as sp
-        from smithy.cli import _resolve_pane
+        from smithy.smithy.cli import _resolve_pane
 
         def fake_run(cmd, **kwargs):
             if "has-session" in cmd:
@@ -934,7 +934,7 @@ class TestRunTestsInWorktreeVenv:
     """
 
     def test_prefers_venv_python_when_present(self, tmp_path, monkeypatch):
-        from smithy.assembly import run_tests_in_worktree
+        from smithy.smithy.assembly import run_tests_in_worktree
         import subprocess as sp
 
         # Fake worktree with a .venv/bin/python3 shim.
@@ -955,7 +955,7 @@ class TestRunTestsInWorktreeVenv:
         assert captured["cmd"][0] == str(venv_py), captured["cmd"]
 
     def test_falls_back_to_bare_python3_when_no_venv(self, tmp_path, monkeypatch):
-        from smithy.assembly import run_tests_in_worktree
+        from smithy.smithy.assembly import run_tests_in_worktree
         import subprocess as sp
 
         # No .venv/ in the worktree.
@@ -973,7 +973,7 @@ class TestRunTestsInWorktreeVenv:
 
     def test_explicit_cmd_override_respected(self, tmp_path, monkeypatch):
         """--tests-cmd / cmd override should NOT be rewritten."""
-        from smithy.assembly import run_tests_in_worktree
+        from smithy.smithy.assembly import run_tests_in_worktree
         import subprocess as sp
 
         wt = tmp_path / ".worktrees" / "forge-test"
@@ -1007,7 +1007,7 @@ class TestDrainNudges:
 
     def test_drain_reads_and_clears(self, project, runner):
         """Queue file with entries — should return them and delete the file."""
-        from smithy.cli import _queue_nudge
+        from smithy.smithy.cli import _queue_nudge
         _queue_nudge(project, "forge", "msg1")
         _queue_nudge(project, "forge", "msg2")
 
@@ -1037,7 +1037,7 @@ class TestDrainNudges:
 
     def test_drain_per_persona_isolation(self, project, runner):
         """Draining forge's queue should not affect marshal's queue."""
-        from smithy.cli import _queue_nudge
+        from smithy.smithy.cli import _queue_nudge
         _queue_nudge(project, "forge", "forge-msg")
         _queue_nudge(project, "marshal", "marshal-msg")
 
@@ -1465,7 +1465,7 @@ class TestSteerabilitySchema:
 
     def test_load_backfills_defaults_on_legacy_state(self, project):
         """A state.json written before t-312 gets null defaults at load time."""
-        from smithy.state import load_state
+        from smithy.smithy.state import load_state
         state = json.loads((project / "state.json").read_text())
         # Ensure fresh legacy shape (no new fields present)
         for t in state["queue"]:
@@ -1484,7 +1484,7 @@ class TestSteerabilitySchema:
 
     def test_save_emits_nulls_for_forward_compat(self, project):
         """Saved state.json includes new fields even when null."""
-        from smithy.state import load_state, save_state
+        from smithy.smithy.state import load_state, save_state
         state = load_state(project)
         save_state(project, state)
         raw = json.loads((project / "state.json").read_text())
@@ -1494,7 +1494,7 @@ class TestSteerabilitySchema:
 
     def test_round_trip_preserves_values(self, project):
         """Non-null human_priority + reason survive save→load."""
-        from smithy.state import load_state, save_state
+        from smithy.smithy.state import load_state, save_state
         state = load_state(project)
         state["queue"][0]["human_priority"] = 0
         state["queue"][0]["priority_reason"] = "ini-009 rank=1"
@@ -1505,7 +1505,7 @@ class TestSteerabilitySchema:
 
     def test_priority_reason_length_cap(self, project):
         """priority_reason > 40 chars fails validation."""
-        from smithy.state import load_state, save_state
+        from smithy.smithy.state import load_state, save_state
         state = load_state(project)
         state["queue"][0]["priority_reason"] = "x" * 41
         errors = [e for e in __import__("smithy.state", fromlist=["validate_state"]).validate_state(state) if "priority_reason" in e]
@@ -1513,7 +1513,7 @@ class TestSteerabilitySchema:
 
     def test_human_priority_type_validation(self, project):
         """human_priority must be int or null."""
-        from smithy.state import load_state, validate_state
+        from smithy.smithy.state import load_state, validate_state
         state = load_state(project)
         state["queue"][0]["human_priority"] = "high"
         errors = [e for e in validate_state(state) if "human_priority" in e]
@@ -1521,7 +1521,7 @@ class TestSteerabilitySchema:
 
     def test_viewed_at_type_validation(self, project):
         """viewed_at must be ISO str or null."""
-        from smithy.state import load_state, validate_state
+        from smithy.smithy.state import load_state, validate_state
         state = load_state(project)
         state.setdefault("initiatives", []).append({
             "id": "ini-001", "theme_id": "", "title": "x", "status": "proposed",
@@ -1532,7 +1532,7 @@ class TestSteerabilitySchema:
 
     def test_clear_human_priority_helper(self, project):
         """clear_human_priority nulls both fields, returns True on change."""
-        from smithy.state import load_state, clear_human_priority
+        from smithy.smithy.state import load_state, clear_human_priority
         state = load_state(project)
         state["queue"][0]["human_priority"] = 1
         state["queue"][0]["priority_reason"] = "r"
@@ -1544,7 +1544,7 @@ class TestSteerabilitySchema:
 
     def test_clear_human_priority_unknown_task(self, project):
         """Clearing an unknown task id returns False, no mutation."""
-        from smithy.state import load_state, clear_human_priority
+        from smithy.smithy.state import load_state, clear_human_priority
         state = load_state(project)
         assert clear_human_priority(state, "t-ghost") is False
 
@@ -1915,7 +1915,7 @@ class TestSchemaVersionAndConcurrency:
     """retro §6 #2: schema_version + mtime precondition on state.json writes."""
 
     def _minimal_state(self):
-        from smithy.state import VALID_STAGES
+        from smithy.smithy.state import VALID_STAGES
         return {
             "budget": {"total_heats": 10, "used": 0, "started_at": "2026-04-11T00:00:00Z"},
             "stages": {s: {"target": 0.16, "heats": 0, "progress": 0, "value_ema": 0.5}
@@ -1927,7 +1927,7 @@ class TestSchemaVersionAndConcurrency:
 
     def test_save_stamps_schema_version(self, tmp_path):
         """save_state injects schema_version if missing."""
-        from smithy.state import save_state, SCHEMA_VERSION
+        from smithy.smithy.state import save_state, SCHEMA_VERSION
         state = self._minimal_state()
         assert "schema_version" not in state
         save_state(tmp_path, state)
@@ -1937,7 +1937,7 @@ class TestSchemaVersionAndConcurrency:
 
     def test_save_preserves_existing_schema_version(self, tmp_path):
         """save_state doesn't overwrite an already-present schema_version."""
-        from smithy.state import save_state, SCHEMA_VERSION
+        from smithy.smithy.state import save_state, SCHEMA_VERSION
         state = self._minimal_state()
         state["schema_version"] = SCHEMA_VERSION  # pre-stamped
         save_state(tmp_path, state)
@@ -1947,22 +1947,22 @@ class TestSchemaVersionAndConcurrency:
 
     def test_check_schema_version_accepts_missing(self, tmp_path):
         """Missing version is fine — save_state will stamp it."""
-        from smithy.state import check_schema_version
+        from smithy.smithy.state import check_schema_version
         check_schema_version({})  # no raise
 
     def test_check_schema_version_accepts_current(self):
-        from smithy.state import check_schema_version, SCHEMA_VERSION
+        from smithy.smithy.state import check_schema_version, SCHEMA_VERSION
         check_schema_version({"schema_version": SCHEMA_VERSION})
 
     def test_check_schema_version_rejects_future(self):
         """Future version means file written by newer code — refuse."""
-        from smithy.state import check_schema_version, SCHEMA_VERSION
+        from smithy.smithy.state import check_schema_version, SCHEMA_VERSION
         import pytest
         with pytest.raises(RuntimeError, match="newer than this"):
             check_schema_version({"schema_version": SCHEMA_VERSION + 1})
 
     def test_load_with_mtime_returns_tuple(self, tmp_path):
-        from smithy.state import save_state, load_state_with_mtime
+        from smithy.smithy.state import save_state, load_state_with_mtime
         save_state(tmp_path, self._minimal_state())
         state, mtime = load_state_with_mtime(tmp_path)
         assert isinstance(state, dict)
@@ -1970,7 +1970,7 @@ class TestSchemaVersionAndConcurrency:
         assert mtime > 0
 
     def test_save_checked_succeeds_when_unchanged(self, tmp_path):
-        from smithy.state import save_state, load_state_with_mtime, save_state_checked
+        from smithy.smithy.state import save_state, load_state_with_mtime, save_state_checked
         save_state(tmp_path, self._minimal_state())
         state, mtime = load_state_with_mtime(tmp_path)
         state["overall_progress"] = 0.5
@@ -1980,7 +1980,7 @@ class TestSchemaVersionAndConcurrency:
 
     def test_save_checked_raises_on_concurrent_write(self, tmp_path):
         """If another writer touched the file since load, save_checked refuses."""
-        from smithy.state import save_state, load_state_with_mtime, save_state_checked, ConcurrentWriteError
+        from smithy.smithy.state import save_state, load_state_with_mtime, save_state_checked, ConcurrentWriteError
         import pytest
         save_state(tmp_path, self._minimal_state())
         state, mtime = load_state_with_mtime(tmp_path)
@@ -1992,6 +1992,6 @@ class TestSchemaVersionAndConcurrency:
 
     def test_save_checked_allows_first_write(self, tmp_path):
         """If state.json doesn't exist yet, save_checked writes without precondition."""
-        from smithy.state import save_state_checked
+        from smithy.smithy.state import save_state_checked
         save_state_checked(tmp_path, self._minimal_state(), expected_mtime=0.0)
         assert (tmp_path / "state.json").exists()
