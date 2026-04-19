@@ -23,8 +23,8 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from click.testing import CliRunner
 
-from smithy.cli import cli
-from smithy.state import VALID_STAGES
+from smithy.smithy.cli import cli
+from smithy.smithy.state import VALID_STAGES
 
 
 @pytest.fixture
