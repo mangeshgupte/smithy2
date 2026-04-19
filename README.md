@@ -208,18 +208,21 @@ A FastAPI dashboard for managing Forge projects from a browser: morning
 briefings, decision queues, initiative board, activity sparklines, direct
 commands.
 
-```bash
-cd bellows && uv run uvicorn app:app --port 8080
-```
-
 ## Steering UIs
 
 Three standalone FastAPI apps, each a different steering metaphor.
 
+`scripts/start-smithy.sh` (t-477) launches Bellows + all three steering
+UIs as a single tmux window named `ui` — one pane per uvicorn — so
+start/stop are symmetric with `scripts/stop-smithy.sh --ui-only`
+(t-468). Set `FORGE_UI_WINDOW=""` to skip the ui window entirely. To
+run an individual service by hand:
+
 ```bash
-cd ui-priority-poker && uvicorn app:app --port 8001
-cd ui-intent-editor  && uvicorn app:app --port 8003
-cd ui-timeline       && uvicorn app:app --port 8004
+cd bellows           && uv run uvicorn app:app --port 8080
+cd ui-priority-poker && uv run uvicorn app:app --port 8001
+cd ui-intent-editor  && uv run uvicorn app:app --port 8003
+cd ui-timeline       && uv run uvicorn app:app --port 8004
 ```
 
 | UI | Port | What it does |
