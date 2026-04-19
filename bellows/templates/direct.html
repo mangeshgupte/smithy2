@@ -131,7 +131,7 @@
     <div class="task-item">
         <span class="task-id">{{ task.id }}</span>
         <span class="heat-stage stage-{{ task.stage }}">{{ task.stage }}</span>
-        <span class="task-desc">{{ task.desc }}</span>
+        <span class="task-desc">{{ task.desc | markdown | safe }}</span>
     </div>
     {% endfor %}
 </section>
