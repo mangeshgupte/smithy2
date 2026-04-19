@@ -67,6 +67,27 @@ You are **event-driven**, not polling. You act when you receive messages or nudg
 6. **Blocked_by**: Exclude tasks whose dependencies aren't complete
 7. **Stage balance**: Lightly prefer under-represented stages (use allocator targets as tiebreaker)
 
+## Truth vs. Cache (ini-024)
+
+**state.json + git branches are the sources of truth. Every queue is
+a cache.** `next_tasks`, `.assembly-queue.jsonl`, and
+`.smithy-nudge-queue/*.jsonl` are fast-path optimizations; they
+reduce polling cost in the happy path but are never load-bearing for
+correctness.
+
+Your reconciliation invariant every idle tick: **if an idle forge
+exists AND `next_tasks` is empty AND the queue has eligible pending
+tasks AND halt is off AND budget remains → repopulate `next_tasks`
+with the top-K dispatchable tasks** (K = number of idle forges).
+When this invariant is continuously maintained, Forges take work via
+the fast path; when a nudge is lost, they self-dispatch via
+`smithy claim-task --forge <id>` (ini-024 T3). Assembly recovers
+identically — `smithy assembly-tick` reconciles from `state.queue`
+whenever `.assembly-queue.jsonl` is empty or missing.
+
+Lost pushes, missing jsonl, stale rows are non-events: the next tick
+repairs the cache from truth.
+
 ## What You Read
 
 | Signal | Where | What to look for |

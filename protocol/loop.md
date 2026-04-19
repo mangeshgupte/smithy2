@@ -4,6 +4,26 @@
 
 **RULE: Never directly edit state.json or worklog.tsv.** All state mutations go through `smithy` commands. If you need a state change and no command exists, flag it — don't work around it.
 
+## Truth vs. Cache (ini-024)
+
+**`state.json` task status + git branches are the sources of truth.**
+
+All queues are caches / fast-path optimizations on top of that truth:
+
+- `next_tasks` in state.json — Marshal's dispatch hint (fast path for Forge)
+- `.assembly-queue.jsonl` — submission hint (fast path for Assembly)
+- `.smithy-nudge-queue/*.jsonl` — durable nudge fallback (fast path for missed tmux wakes)
+
+Every agent's idle tick performs a reconciliation pass regardless of cache state. If there's work (a `pending` task I can claim, a `submitted` branch I can merge, an idle forge + pending queue I can re-prioritize), **do it** — even when the cache looks empty or stale. Lost nudges, missing jsonl, stale queue rows, partial writes are **non-events**: agents converge on next tick.
+
+Concretely:
+
+- **Forge** — when `smithy queue-pop` returns empty, call `smithy claim-task --forge <my-id>` before idling (ini-024 T2 / T3). The claim path reads truth (state.queue + git branches) and atomically flips a task to `in_progress`.
+- **Assembly** — when `.assembly-queue.jsonl` is empty or missing, `smithy assembly-tick` scans `state.queue` for `status=submitted` tasks whose per-task branch exists in git and processes the first one (ini-024 T1). Missing jsonl is a non-event.
+- **Marshal** — maintains the invariant "idle forge + empty `next_tasks` + eligible pending + halt off + budget remaining → repopulate". If an earlier push was lost, the next tick repairs the queue.
+
+Queue files never become load-bearing for correctness; they exist only because touching disk is cheaper than a full truth-scan at every wake.
+
 ## Step 0: Session Start (first heat only)
 
 ```bash

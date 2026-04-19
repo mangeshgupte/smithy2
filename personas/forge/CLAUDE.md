@@ -38,6 +38,27 @@ When Anvil spawns you:
    now auto-detects your Forge id from the worktree's cwd if omitted.
 7. Enter the heat loop.
 
+## Truth vs. Cache (ini-024)
+
+**state.json task status + your per-task branches in git are the
+sources of truth. Every queue file is a cache.** `next_tasks` (the
+queue Marshal pushes to), `.assembly-queue.jsonl` (Assembly's
+submission hint), and `.smithy-nudge-queue/*.jsonl` (durable nudge
+fallback) are fast-path optimizations — they save you a full scan on
+the happy path. They are not load-bearing for correctness.
+
+If a nudge is lost, `next_tasks` is stale, or Marshal stops pushing,
+**you don't freeze** — you reconcile. The Step 1 loop below enforces
+it: after `queue-pop` returns empty, call `smithy claim-task --forge
+<my-id>` to self-dispatch from truth (state.queue + branches +
+assigned_forge pinning). That atomically flips the next eligible
+`pending` task to `in_progress` and stamps your forge id. See
+ini-024 T2 / T3 for the design.
+
+Lost nudges, missing jsonl files, partial writes, and deferred pushes
+are all non-events. On the next idle tick, you pick up the work from
+truth.
+
 ## The Heat Loop (nudge-driven, always-on)
 
 ### Step 1 — Pop the next task (fast path) or reconcile (backstop)
