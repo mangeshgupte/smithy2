@@ -3484,6 +3484,271 @@ def _recent_worklog_outcomes(root, tail=30, window_minutes=30):
     return counts, merged_recent
 
 
+def _initiatives_moved(state, root, window_minutes):
+    """t-485 (ini-023 T6): per-initiative movement snapshot.
+
+    For each active/approved initiative, emit:
+      id, title, status, rank, heats_used, budget_cap,
+      last_merged_tasks (task_ids landed in the window),
+      in_flight_count (pending+in_progress+submitted in this initiative),
+      momentum: "green" (>=1 merged in window) / "yellow" (submitted but
+        nothing merged) / "red" (rejections in window and no merges) /
+        "gray" (no activity).
+
+    The LLM composes the narrative diff against the last comms report
+    section; this function only surfaces the current-state numbers.
+    """
+    from datetime import datetime, timedelta, timezone
+    wl = root / "worklog.tsv"
+    cutoff = datetime.now(timezone.utc) - timedelta(minutes=window_minutes)
+    # Build {task_id: [outcome, outcome, ...]} for the window from worklog.
+    task_outcomes_in_window = {}
+    if wl.exists():
+        for line in wl.read_text().splitlines()[1:]:  # skip header
+            parts = line.split("\t")
+            if len(parts) < 5:
+                continue
+            ts_raw, _heat, _stage, task_id, outcome = parts[:5]
+            try:
+                ts = datetime.fromisoformat(ts_raw.replace("Z", "+00:00"))
+                if ts.tzinfo is None:
+                    ts = ts.replace(tzinfo=timezone.utc)
+            except ValueError:
+                continue
+            if ts < cutoff:
+                continue
+            task_outcomes_in_window.setdefault(task_id, []).append(outcome)
+
+    queue = state.get("queue") or []
+    tasks_by_ini = {}
+    for t in queue:
+        ini = t.get("initiative_id")
+        if ini:
+            tasks_by_ini.setdefault(ini, []).append(t)
+
+    initiatives = [
+        i for i in (state.get("initiatives") or [])
+        if i.get("status") in ("approved", "active")
+    ]
+    out = []
+    for ini in initiatives:
+        ini_id = ini.get("id")
+        ini_tasks = tasks_by_ini.get(ini_id, [])
+        in_flight = sum(1 for t in ini_tasks
+                        if t.get("status") in ("pending", "in_progress",
+                                                "submitted"))
+        merged_here, rejected_here, submitted_here = [], [], []
+        for t in ini_tasks:
+            tid = t.get("id")
+            outs = task_outcomes_in_window.get(tid, [])
+            if any(o == "merged" for o in outs):
+                merged_here.append(tid)
+            elif any(o == "rejected" for o in outs):
+                rejected_here.append(tid)
+            elif any(o == "submitted" for o in outs):
+                submitted_here.append(tid)
+        if merged_here:
+            momentum = "green"
+        elif submitted_here and not rejected_here:
+            momentum = "yellow"
+        elif rejected_here:
+            momentum = "red"
+        else:
+            momentum = "gray"
+        out.append({
+            "id": ini_id,
+            "title": ini.get("title", ""),
+            "status": ini.get("status"),
+            "rank": ini.get("rank"),
+            "heats_used": ini.get("heats_used", 0),
+            "budget_cap": ini.get("budget_cap"),
+            "in_flight": in_flight,
+            "last_merged_tasks": merged_here,
+            "last_rejected_tasks": rejected_here,
+            "last_submitted_tasks": submitted_here,
+            "momentum": momentum,
+        })
+    return out
+
+
+def _detect_bottlenecks(state, root, window_minutes, active_forges=None):
+    """t-485 (ini-023 T6): surface rig health warnings.
+
+    Detectors (return list of {type, headline, explanation, cost_heats,
+    suggested_action}):
+      (a) ≥3 rejections of the same task_id within `window_minutes` in
+          the worklog — retry-loop pattern.
+      (b) task in_progress with a checkpoint file whose mtime is
+          >30min old — likely hung forge / zombie heat.
+      (c) assembly queue depth > n_forges — Assembly is saturated and
+          Forges will back-pressure on submits.
+      (d) status=submitted task with no merge/reject row in the last 5
+          worklog entries overall AND no jsonl row — zombie submit.
+    Empty list when the rig is healthy.
+    """
+    from datetime import datetime, timedelta, timezone
+    out = []
+    window_cutoff = datetime.now(timezone.utc) - timedelta(minutes=window_minutes)
+    stuck_cutoff = datetime.now(timezone.utc) - timedelta(minutes=30)
+    wl = root / "worklog.tsv"
+
+    # Parse worklog once.
+    worklog_rows = []
+    if wl.exists():
+        for line in wl.read_text().splitlines()[1:]:
+            parts = line.split("\t")
+            if len(parts) < 5:
+                continue
+            ts_raw, heat, stage, tid, outcome = parts[:5]
+            try:
+                ts = datetime.fromisoformat(ts_raw.replace("Z", "+00:00"))
+                if ts.tzinfo is None:
+                    ts = ts.replace(tzinfo=timezone.utc)
+            except ValueError:
+                continue
+            worklog_rows.append({"ts": ts, "task_id": tid, "outcome": outcome})
+
+    # (a) retry loop.
+    rejection_counts = {}
+    for row in worklog_rows:
+        if row["ts"] >= window_cutoff and row["outcome"] == "rejected":
+            rejection_counts[row["task_id"]] = rejection_counts.get(
+                row["task_id"], 0) + 1
+    for tid, n in rejection_counts.items():
+        if n >= 3:
+            out.append({
+                "type": "retry_loop",
+                "headline": f"{tid} rejected {n}× in last {window_minutes}min",
+                "explanation": (
+                    f"Assembly has rejected {tid} {n} times in the recent "
+                    "window. The pattern usually means the rebase surfaces "
+                    "a test delta the branch can't close on its own — a "
+                    "stale editable install, a fixture drift, or a real "
+                    "code conflict the Forge keeps re-applying."
+                ),
+                "cost_heats": n,
+                "suggested_action": (
+                    "Pull the most recent rejection detail from "
+                    "assembly-log.jsonl, hand-review the diff, and either "
+                    "repin to a different Forge or split into smaller "
+                    "commits."
+                ),
+            })
+
+    # (b) stuck in-flight: task in_progress + checkpoint mtime > 30min.
+    stuck = []
+    parallel = state.get("parallel") or {}
+    forge_ids = {f.get("id") for f in (parallel.get("forges") or [])}
+    for t in state.get("queue", []):
+        if t.get("status") != "in_progress":
+            continue
+        fid = t.get("assigned_forge")
+        if not fid:
+            continue
+        cp_name = (f".forge-checkpoint.json"
+                   if fid == (list(forge_ids)[0] if forge_ids else "")
+                   else f".forge-checkpoint-{fid}.json")
+        cp_path = root / cp_name
+        if not cp_path.exists():
+            continue
+        try:
+            mtime = datetime.fromtimestamp(cp_path.stat().st_mtime,
+                                            tz=timezone.utc)
+        except OSError:
+            continue
+        if mtime < stuck_cutoff:
+            minutes_stuck = int(
+                (datetime.now(timezone.utc) - mtime).total_seconds() / 60)
+            stuck.append((t.get("id"), fid, minutes_stuck))
+    for tid, fid, m in stuck:
+        out.append({
+            "type": "stuck_in_progress",
+            "headline": f"{tid} on {fid} has been in_progress for {m}min",
+            "explanation": (
+                f"{fid}'s checkpoint file hasn't been touched in {m}min, "
+                "longer than any normal heat. Either the pane is wedged "
+                "waiting on stdin or the Forge crashed mid-heat."
+            ),
+            "cost_heats": 1,
+            "suggested_action": (
+                "Inspect the pane (scripts/forge-status.sh), then reap "
+                "the checkpoint via `smithy patrol --fix` to return the "
+                "task to pending."
+            ),
+        })
+
+    # (c) assembly saturation.
+    assy_queue = main_repo_root(root) / ".assembly-queue.jsonl"
+    depth = 0
+    if assy_queue.exists():
+        try:
+            depth = sum(1 for line in assy_queue.read_text().splitlines()
+                        if line.strip())
+        except OSError:
+            pass
+    n_forges = active_forges if active_forges is not None else len(
+        parallel.get("forges") or [])
+    if depth > n_forges and n_forges > 0:
+        out.append({
+            "type": "assembly_saturated",
+            "headline": f"Assembly queue depth {depth} exceeds {n_forges} forges",
+            "explanation": (
+                f"The .assembly-queue.jsonl is {depth} items deep but "
+                f"only {n_forges} Forges are running. Submits will "
+                "backpressure and Forges may idle until Assembly drains."
+            ),
+            "cost_heats": depth - n_forges,
+            "suggested_action": (
+                "Check Assembly's pane for a hung tick; if idle, "
+                "`smithy assembly-tick` manually or wait for the nudge."
+            ),
+        })
+
+    # (d) zombie submit: status=submitted AND task_id missing from recent
+    # worklog rows AND no matching jsonl entry.
+    jsonl_tids = set()
+    if assy_queue.exists():
+        try:
+            for line in assy_queue.read_text().splitlines():
+                if not line.strip():
+                    continue
+                try:
+                    entry = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                tid = entry.get("task_id")
+                if tid:
+                    jsonl_tids.add(tid)
+        except OSError:
+            pass
+    recent_wl_tids = {row["task_id"] for row in worklog_rows[-5:]}
+    for t in state.get("queue", []):
+        if t.get("status") != "submitted":
+            continue
+        tid = t.get("id")
+        if tid in jsonl_tids:
+            continue  # Assembly will pick it up from the jsonl.
+        if tid in recent_wl_tids:
+            continue  # Recent submit row suggests it's still moving.
+        out.append({
+            "type": "zombie_submit",
+            "headline": f"{tid} is submitted but missing from jsonl + recent worklog",
+            "explanation": (
+                f"{tid} has status=submitted in state.json but no row in "
+                ".assembly-queue.jsonl and nothing in the last 5 worklog "
+                "entries. Post-ini-024 T1 this self-heals on the next "
+                "assembly-tick, but it's worth surfacing."
+            ),
+            "cost_heats": 1,
+            "suggested_action": (
+                "Run `smithy assembly-tick` — reconciliation will pick "
+                "it up from state.queue + git branches."
+            ),
+        })
+
+    return out
+
+
 @cli.command("comms-snapshot")
 @click.option("--window-minutes", type=int, default=30,
               help="Recency window for 'last N-min' counters (default 30).")
@@ -3553,6 +3818,11 @@ def comms_snapshot(ctx, window_minutes):
         "worklog_tail_30": counts,
         "tasks_merged_in_window": merged_recent,
         "window_minutes": window_minutes,
+        # t-485 (ini-023 T6): narrative-section inputs.
+        "initiatives_moved": _initiatives_moved(state, root, window_minutes),
+        "bottlenecks": _detect_bottlenecks(
+            state, root, window_minutes=60, active_forges=len(forges),
+        ),
     }
     _output(snapshot)
     _err(
