@@ -2155,6 +2155,79 @@ def queue_pop(ctx, forge_id):
     _err(f"Popped {task_id} ({remaining_len} remaining)")
 
 
+@cli.command("claim-task")
+@click.option("--forge", "forge_id", required=True,
+              help="Forge id claiming the task (must be in parallel.forges[] roster).")
+@click.pass_context
+def claim_task_cmd(ctx, forge_id):
+    """ini-024 T2: atomic pending → in_progress claim.
+
+    Finds the highest-priority claimable task for `forge_id` (same
+    ordering as Marshal's dispatch, but honours per-task `assigned_forge`
+    pinning) and CAS-flips its status to `in_progress`, stamping
+    `assigned_forge`. Writes state.json under the shared lock so two
+    sibling Forges racing for the same task cannot both win.
+
+    Intended as the correctness backstop for Forge reconciliation (T3):
+    when the next_tasks queue is empty or stale, a Forge can claim work
+    directly from truth (state.queue) instead of waiting for a Marshal
+    push that may never arrive.
+
+    Exit codes:
+      0 — task claimed; stdout = {"task_id": ..., "task": {...}}
+      1 — no eligible task (halted rig, empty queue, all pinned to
+          someone else); stdout = {"task": null, "reason": "..."}
+      2 — usage error (forge not in roster); stderr + non-zero rc
+    """
+    from .dispatch import claim_task_for_forge
+    root = ctx.obj["root"]
+
+    with state_lock(root):
+        state = load_state(root)
+        parallel = state.get("parallel") or {}
+
+        roster = {f.get("id") for f in parallel.get("forges") or []}
+        if roster and forge_id not in roster:
+            _output({"error": f"forge {forge_id!r} not in parallel.forges[] roster",
+                     "roster": sorted(roster)})
+            _err(f"forge {forge_id!r} not in roster: {sorted(roster)}")
+            sys.exit(2)
+
+        if parallel.get("halt_flag"):
+            _output({"task": None, "reason": "halted",
+                     "halt_flag": True})
+            _err(f"claim-task {forge_id}: rig halted")
+            sys.exit(1)
+
+        task = claim_task_for_forge(state, forge_id)
+        if task is None:
+            _output({"task": None, "reason": "no eligible task"})
+            _err(f"claim-task {forge_id}: no eligible task")
+            sys.exit(1)
+
+        task_id = task["id"]
+        # CAS: re-verify status inside the lock before flipping. Between
+        # claim_task_for_forge's read and this write we hold the lock,
+        # so in practice this is defensive rather than load-bearing —
+        # but it also protects against future non-locked helpers.
+        for t in state.get("queue", []):
+            if t["id"] == task_id:
+                if t.get("status") != "pending":
+                    _output({"task": None,
+                             "reason": f"race: {task_id} is now {t['status']!r}"})
+                    _err(f"claim-task {forge_id}: lost race on {task_id}")
+                    sys.exit(1)
+                t["status"] = "in_progress"
+                t["assigned_forge"] = forge_id
+                break
+        save_state(root, state)
+
+    _emit_rig_event(root, "claim_task", actor=forge_id,
+                    task_id=task_id, forge_id=forge_id)
+    _output({"task_id": task_id, "task": task})
+    _err(f"Claimed {task_id} for {forge_id}")
+
+
 @cli.command("queue-clear")
 @click.pass_context
 def queue_clear(ctx):
