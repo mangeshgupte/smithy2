@@ -43,6 +43,10 @@
 #                    (read-only by discipline, matches Anvil's posture) and
 #                    wakes on cron-driven `scripts/nudge.sh comms` — it is
 #                    NOT part of the boot Start cascade.
+#   FORGE_COMMS_INTERVAL
+#                    t-483 (ini-023 T4): minute cadence for the crontab
+#                    entry that wakes Comms. Default: 5 (i.e. "*/5 * * * *").
+#                    Must be 1..59. Ignored when FORGE_COMMS_WINDOW=''.
 
 set -euo pipefail
 
@@ -50,6 +54,7 @@ FORGE_SESSION="${FORGE_SESSION:-forge}"
 FORGE_CLAUDE="${FORGE_CLAUDE-claude --dangerously-skip-permissions}"
 FORGE_UI_WINDOW="${FORGE_UI_WINDOW-ui}"
 FORGE_COMMS_WINDOW="${FORGE_COMMS_WINDOW-comms}"
+FORGE_COMMS_INTERVAL="${FORGE_COMMS_INTERVAL:-5}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 FORGE_ROOT="${FORGE_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 
@@ -143,6 +148,8 @@ if (( DRY_RUN )); then
   if [[ -n "$FORGE_COMMS_WINDOW" ]]; then
     echo "comms-window: $FORGE_COMMS_WINDOW"
     printf "  comms|%s/personas/anvil\n" "$FORGE_ROOT"
+    printf "  cron: */%s * * * * %s/scripts/comms-tick.sh\n" \
+      "$FORGE_COMMS_INTERVAL" "$FORGE_ROOT"
   fi
   exit 0
 fi
@@ -338,6 +345,21 @@ if [[ -n "$FORGE_COMMS_WINDOW" ]]; then
   if [[ -n "$FORGE_CLAUDE" ]]; then
     tmux send-keys -t "$COMMS_ID" "$FORGE_CLAUDE" C-m
   fi
+fi
+
+# --- t-483 (ini-023 T4): install the comms-tick cron line ------------------
+#
+# Runs after the comms window exists, exports FORGE_ROOT so the helper
+# points the cron line at the canonical absolute path. Idempotent —
+# _comms-cron.sh strips any prior comms-tick entry before appending
+# (safe to call on every start-smithy run, including --force). Opt-out
+# symmetry: with FORGE_COMMS_WINDOW='' the helper removes any stale
+# entry instead of installing.
+if command -v crontab >/dev/null 2>&1; then
+  FORGE_ROOT="$FORGE_ROOT" \
+  FORGE_COMMS_WINDOW="$FORGE_COMMS_WINDOW" \
+  FORGE_COMMS_INTERVAL="$FORGE_COMMS_INTERVAL" \
+    "$SCRIPT_DIR/_comms-cron.sh" install
 fi
 
 # --- boot cascade -----------------------------------------------------------
