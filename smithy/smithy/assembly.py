@@ -562,11 +562,56 @@ def reset_staging_to(wt: Path, ref: str) -> dict:
     return {"status": "ready"}
 
 
+# t-531: Assembly's staging venv needs every third-party import the
+# top-level `tests/` tree reaches for. `pytest` alone wasn't enough —
+# `tests/test_task_detail_fallback.py` (and other bellows-adjacent
+# tests) use `starlette.testclient.TestClient` which requires
+# `starlette` + `httpx` at collect time, so pytest errors out on
+# import before any assertion runs.
+#
+# The list below is the canonical set derived from a repo-wide
+# `from X import …` scan of `tests/` on 2026-04-19. Add new entries
+# here when a test starts importing something new; the tree-hash
+# marker encodes this string so a change invalidates cached venvs
+# automatically.
+#
+# Not using a `[test]` extras group on `smithy/pyproject.toml` on
+# purpose: these deps are the *rig's* test harness, not smithy-the-
+# library's. Keeping them here prevents `pip install smithy` from
+# dragging in FastAPI adjacent packages for downstream users.
+_STAGING_VENV_DEPS = (
+    "pytest",
+    "starlette",
+    "httpx",       # TestClient needs httpx>=0.20
+    "markdown",    # bellows (+ t-501 render_task_markdown test paths)
+    "fastapi",     # bellows imports (FastAPI app under test)
+    "jinja2",      # bellows template rendering
+    "python-multipart",  # bellows form handling
+)
+
+
+def _staging_venv_deps_hash() -> str:
+    """Stable digest of the staging-venv deps tuple. Mixed into the
+    cached-venv marker so a deps-list edit invalidates the cache
+    without the caller having to think about it."""
+    import hashlib
+    return hashlib.sha256(
+        "\n".join(_STAGING_VENV_DEPS).encode("utf-8")
+    ).hexdigest()[:12]
+
+
 def ensure_staging_venv_versioned(wt: Path,
                                   smithy_hash: str | None = None) -> dict:
-    """ini-020 §(b): create/reuse staging's .venv based on `smithy/`
-    tree hash. Reuse when hash matches the stored marker; otherwise
-    rebuild from scratch and bump recreate_count.
+    """ini-020 §(b) + t-531: create/reuse staging's .venv based on
+    `smithy/` tree hash *and* the pinned test-deps list. Reuse when the
+    combined hash matches the stored marker; otherwise rebuild from
+    scratch.
+
+    Installs: `smithy` (editable from staging's smithy/ tree) plus the
+    contents of `_STAGING_VENV_DEPS` — the third-party imports that
+    `tests/` reaches for at collect time. See the module-level comment
+    on `_STAGING_VENV_DEPS` for the rationale and the process for
+    adding new deps.
 
     Returns:
       {"status": "reused"   | "created" | "recreated" | "error",
@@ -579,9 +624,18 @@ def ensure_staging_venv_versioned(wt: Path,
     venv = wt / ".venv"
     marker = venv / ".smithy-tree-hash"
     py = venv / "bin" / "python3"
+    deps_hash = _staging_venv_deps_hash()
+    # Marker stores `<smithy_hash>:<deps_hash>` so a deps edit busts
+    # the cache even when smithy/ is byte-identical. Back-compat with
+    # pre-t-531 markers that only stored the smithy hash — they'll
+    # look stale and trigger one rebuild, which is safe.
+    current_marker = (
+        f"{smithy_hash}:{deps_hash}" if smithy_hash is not None
+        else f":{deps_hash}"
+    )
     stored = marker.read_text().strip() if marker.exists() else None
     if (venv.exists() and py.exists() and smithy_hash is not None
-            and stored == smithy_hash):
+            and stored == current_marker):
         return {"status": "reused", "path": str(py), "recreated": False}
 
     uv = _sh.which("uv")
@@ -605,7 +659,7 @@ def ensure_staging_venv_versioned(wt: Path,
     env["VIRTUAL_ENV"] = str(venv)
     r2 = subprocess.run(
         [uv, "pip", "install", "--quiet", "-e",
-         str(wt / "smithy"), "pytest"],
+         str(wt / "smithy"), *_STAGING_VENV_DEPS],
         cwd=str(wt), env=env, capture_output=True, text=True, timeout=180,
     )
     if r2.returncode != 0:
@@ -613,7 +667,7 @@ def ensure_staging_venv_versioned(wt: Path,
                 "detail": f"uv pip install: {r2.stderr.strip()}"}
 
     if smithy_hash is not None:
-        marker.write_text(smithy_hash)
+        marker.write_text(current_marker)
 
     return {"status": "recreated" if recreated else "created",
             "path": str(py), "recreated": recreated}
