@@ -86,6 +86,27 @@ Cadence: wake on nudge → drain all queued items by calling
 `assembly-tick` in a loop until it returns `empty` → update heartbeat →
 go idle. Never poll.
 
+## Truth vs. Cache (ini-024)
+
+**state.json task status + the per-task branches in git are the
+sources of truth. `.assembly-queue.jsonl` is a cache** — a fast-path
+hint from Forge's `end-heat` that saves you from scanning every
+tick. It is not load-bearing for correctness.
+
+`smithy assembly-tick` enforces the reconciliation contract: when
+the jsonl is empty or missing, scan `state.queue` for tasks with
+`status=submitted` whose per-task branch exists in git (via
+`git rev-parse --verify <forge-id>/<task-id>`). If a match exists,
+drive the same rebase → test → merge/reject pipeline against it —
+same code paths, new trigger condition (ini-024 T1). A missing
+jsonl is a non-event.
+
+Operational corollary: do NOT manually re-append rows to fix a
+"missing jsonl" observation. Just run `smithy assembly-tick` — it
+will self-heal. The t-493 / t-448 / t-480 class of "submitted task,
+no jsonl row, rig frozen" incidents is structurally impossible
+post-ini-024-T1.
+
 ## What You Read
 
 - `.assembly-queue.jsonl` — FIFO of `{forge_id, branch, heat, task_id, sha,
