@@ -36,12 +36,20 @@
 #                    Default: "ui". Set to "" to skip the ui window
 #                    entirely — symmetric with stop-smithy.sh's --ui-only
 #                    opt-out (t-468).
+#   FORGE_COMMS_WINDOW
+#                    t-481 (ini-023 T2): name of the tmux window that hosts
+#                    the Comms telegrapher persona. Default: "comms". Set to
+#                    "" to skip entirely. Comms runs from personas/anvil/
+#                    (read-only by discipline, matches Anvil's posture) and
+#                    wakes on cron-driven `scripts/nudge.sh comms` — it is
+#                    NOT part of the boot Start cascade.
 
 set -euo pipefail
 
 FORGE_SESSION="${FORGE_SESSION:-forge}"
 FORGE_CLAUDE="${FORGE_CLAUDE-claude --dangerously-skip-permissions}"
 FORGE_UI_WINDOW="${FORGE_UI_WINDOW-ui}"
+FORGE_COMMS_WINDOW="${FORGE_COMMS_WINDOW-comms}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 FORGE_ROOT="${FORGE_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 
@@ -131,6 +139,10 @@ if (( DRY_RUN )); then
       workdir="${rest%|*}"; port="${rest##*|}"
       printf "  %s|%s/%s|port=%s\n" "$title" "$FORGE_ROOT" "$workdir" "$port"
     done
+  fi
+  if [[ -n "$FORGE_COMMS_WINDOW" ]]; then
+    echo "comms-window: $FORGE_COMMS_WINDOW"
+    printf "  comms|%s/personas/anvil\n" "$FORGE_ROOT"
   fi
   exit 0
 fi
@@ -301,6 +313,33 @@ if [[ -n "$FORGE_UI_WINDOW" ]]; then
     >/dev/null 2>&1 || true
 fi
 
+# --- t-481 (ini-023 T2): comms window --------------------------------------
+#
+# Comms is the telegrapher persona (see plans/comms-persona-design.md §2):
+# a single pane that reads the shared record and writes a structured
+# report on cron cadence. Intentionally NOT part of the Start cascade —
+# Comms's CLAUDE.md clears context on every wake and re-loads its role,
+# so initial "Start" would be a no-op. The first real wake comes from
+# `scripts/nudge.sh comms "report now"` (cron, t-482+).
+#
+# Cwd is personas/anvil/ (read-only by discipline; matches Anvil's
+# posture). Comms loads `personas/comms/CLAUDE.md` + IDENTITY.md
+# explicitly at each wake — cwd only needs to be a read-only directory,
+# not the comms persona dir.
+#
+# Skipped entirely when FORGE_COMMS_WINDOW='' (operator opt-out,
+# symmetric with FORGE_UI_WINDOW).
+if [[ -n "$FORGE_COMMS_WINDOW" ]]; then
+  COMMS_ID=$(tmux new-window -t "$FORGE_SESSION" \
+    -n "$FORGE_COMMS_WINDOW" \
+    -c "$FORGE_ROOT/personas/anvil" \
+    -P -F '#{pane_id}')
+  tmux select-pane -t "$COMMS_ID" -T "comms"
+  if [[ -n "$FORGE_CLAUDE" ]]; then
+    tmux send-keys -t "$COMMS_ID" "$FORGE_CLAUDE" C-m
+  fi
+fi
+
 # --- boot cascade -----------------------------------------------------------
 #
 # Auto-Start every agent directly. Agents are peers (Anvil's CLAUDE.md:
@@ -319,5 +358,8 @@ if [[ -n "$FORGE_CLAUDE" && "$DRY_RUN" -eq 0 ]]; then
   ) &
 fi
 
+# Return focus to main:0 so the human's control lands there regardless of
+# which extra windows (ui, comms) were created after.
+tmux select-window -t "${FORGE_SESSION}:main"
 tmux select-pane -t "$ANVIL_ID"
 attach_or_switch
