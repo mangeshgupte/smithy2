@@ -101,6 +101,38 @@ def test_assembly_reject_nudges_marshal_live(proj):
         assert "flaky" in call.args[1]
 
 
+def test_assembly_merge_direct_call_nudges_marshal_live(proj):
+    """t-478: _do_assembly_merge must nudge Marshal at the
+    submitted→complete transition, not in assembly_tick. Pre-t-478 the
+    nudge lived in assembly_tick alone, so any caller that drove a
+    merge directly (smithy assembly-merge CLI, future batch path)
+    completed the state change without waking Marshal."""
+    from smithy.smithy import cli
+
+    with patch("smithy.smithy.cli._nudge_persona") as mock_nudge, \
+         patch("smithy.smithy.cli._rebind_smithy_install",
+               return_value={"status": "skipped"}):
+        mock_nudge.return_value = {
+            "nudged": True, "queued": False, "persona": "marshal",
+            "target": "%0",
+        }
+        result = cli._do_assembly_merge(proj, "t-under-merge",
+                                        "deadbeefcafe1234", resolution=False)
+        assert "error" not in result, result
+        assert result["status"] == "complete"
+
+        assert mock_nudge.called, (
+            "merge path did not call _nudge_persona — Marshal gets no "
+            "live event for this merge (the t-478 regression)"
+        )
+        marshal_calls = [c for c in mock_nudge.call_args_list
+                         if c.args[0] == "marshal"]
+        assert marshal_calls, "no marshal nudge in merge path"
+        msg = marshal_calls[0].args[1]
+        assert "ASSEMBLY_MERGED" in msg, msg
+        assert "t-under-merge" in msg, msg
+
+
 def test_assembly_tick_merge_nudges_marshal_live(proj, tmp_path, monkeypatch):
     """On a clean merge, assembly-tick must nudge Marshal live via
     _nudge_persona with an ASSEMBLY_MERGED message. We stub out the
