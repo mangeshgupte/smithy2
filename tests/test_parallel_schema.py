@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from smithy.smithy.state import (
+from smithy.state import (
     DEFAULT_FORGE_ID,
     forge_checkpoint_path,
     forge_nudge_queue_path,
@@ -21,7 +21,7 @@ REPO_ROOT = Path(__file__).parent.parent
 
 def _smithy(dir_path, *args):
     r = subprocess.run(
-        [sys.executable, "-m", "smithy.smithy.cli", "--dir", str(dir_path), *args],
+        [sys.executable, "-m", "smithy.cli", "--dir", str(dir_path), *args],
         cwd=str(REPO_ROOT), capture_output=True, text=True, timeout=10,
     )
     return r.returncode, r.stdout, r.stderr

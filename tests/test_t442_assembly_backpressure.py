@@ -19,7 +19,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from smithy.smithy.cli import cli as smithy_cli
+from smithy.cli import cli as smithy_cli
 
 
 def _bootstrap(tmp_path: Path, *, n_forges: int, queue_depth: int,

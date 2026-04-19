@@ -14,7 +14,7 @@ Acceptance (from task):
       preserved); this module adds that assertion explicitly.
 """
 
-from smithy.smithy.cli import _format_heat_done_nudge, _truncate_for_nudge
+from smithy.cli import _format_heat_done_nudge, _truncate_for_nudge
 
 
 # -------------------- truncation helper --------------------------------

@@ -27,7 +27,7 @@ REPO_ROOT = Path(__file__).parent.parent
 def _smithy(dir_path, *args, env=None):
     """Invoke smithy in a subprocess with PYTHONPATH set to REPO_ROOT.
 
-    `python -m smithy.smithy.cli` requires namespace traversal of the
+    `python -m smithy.cli` requires namespace traversal of the
     outer `smithy/` dir. The global editable install only maps the
     inner `smithy` as `smithy`, so without REPO_ROOT on PYTHONPATH the
     subprocess raises ModuleNotFoundError — which is why Assembly
@@ -42,7 +42,7 @@ def _smithy(dir_path, *args, env=None):
         f"{REPO_ROOT}{os.pathsep}{existing}" if existing else str(REPO_ROOT)
     )
     r = subprocess.run(
-        [sys.executable, "-m", "smithy.smithy.cli", "--dir", str(dir_path), *args],
+        [sys.executable, "-m", "smithy.cli", "--dir", str(dir_path), *args],
         cwd=str(REPO_ROOT), capture_output=True, text=True, timeout=30, env=env,
     )
     return r.returncode, r.stdout, r.stderr
@@ -176,7 +176,7 @@ def test_state_lock_context_manager_is_exclusive(proj):
     """
     sys.path.insert(0, str(REPO_ROOT))
     try:
-        from smithy.smithy.state import state_lock
+        from smithy.state import state_lock
     finally:
         sys.path.pop(0)
 

@@ -5,7 +5,7 @@ must pin staging pytest to `<staging>/.venv/bin/python3` — bare
 `python3` imports `smithy` from the global editable install (bound to
 MAIN per t-460), which hides any branch-local symbol.
 
-Imports use the namespace form (`from smithy.smithy.assembly import …`)
+Imports use the namespace form (`from smithy.assembly import …`)
 per t-502's recommendation — that form resolves through cwd's package
 directory, not the `.pth` installed one, so tests under Assembly's
 staging-pytest subprocess (bare `/usr/bin/python3` with click 8.1)
@@ -22,7 +22,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from smithy.smithy import cli as cli_mod
+from smithy import cli as cli_mod
 
 
 REPO_ROOT = Path(__file__).parent.parent
@@ -43,7 +43,7 @@ def project(tmp_path):
     """
     proj = tmp_path / "proj"
     r = subprocess.run(
-        [sys.executable, "-m", "smithy.smithy.cli",
+        [sys.executable, "-m", "smithy.cli",
          "--dir", str(tmp_path), "init", "proj", "--target", str(proj)],
         cwd=str(REPO_ROOT), capture_output=True, text=True, timeout=30,
     )
@@ -63,14 +63,14 @@ def project(tmp_path):
 
 class TestEnsureStagingVenv:
     def test_returns_none_when_staging_missing(self, tmp_path):
-        from smithy.smithy.assembly import ensure_staging_venv
+        from smithy.assembly import ensure_staging_venv
         # No .worktrees/_assembly-staging at all.
         assert ensure_staging_venv(tmp_path) is None
 
     def test_returns_none_when_staging_source_absent(self, tmp_path):
         """Staging dir exists but lacks smithy/pyproject.toml →
         no-op. That's the "git worktree add hasn't happened yet" shape."""
-        from smithy.smithy.assembly import ensure_staging_venv
+        from smithy.assembly import ensure_staging_venv
         (tmp_path / ".worktrees" / "_assembly-staging").mkdir(parents=True)
         assert ensure_staging_venv(tmp_path) is None
 
@@ -83,7 +83,7 @@ class TestRunTestsInWorktreeStagingBranch:
         picks the venv python (not bare python3) when the target is
         `_assembly-staging`. The test substitutes a shim python binary
         and mocks subprocess.run to capture `cmd`."""
-        from smithy.smithy import assembly as asm
+        from smithy import assembly as asm
         staging = tmp_path / ".worktrees" / "_assembly-staging"
         (staging / ".venv" / "bin").mkdir(parents=True)
         venv_py = staging / ".venv" / "bin" / "python3"
@@ -107,7 +107,7 @@ class TestRunTestsInWorktreeStagingBranch:
         bootstrap returns None and the caller falls back to bare
         `python3`. Assembly will still surface the divergence — but
         loudly, through pytest output, not a subprocess crash."""
-        from smithy.smithy import assembly as asm
+        from smithy import assembly as asm
         # Staging dir exists but has no smithy/pyproject.toml →
         # ensure_staging_venv returns None.
         (tmp_path / ".worktrees" / "_assembly-staging").mkdir(parents=True)

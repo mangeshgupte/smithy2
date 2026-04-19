@@ -19,7 +19,7 @@ REPO_ROOT = Path(__file__).parent.parent
 
 def _smithy(dir_path, *args):
     r = subprocess.run(
-        [sys.executable, "-m", "smithy.smithy.cli", "--dir", str(dir_path), *args],
+        [sys.executable, "-m", "smithy.cli", "--dir", str(dir_path), *args],
         cwd=str(REPO_ROOT), capture_output=True, text=True, timeout=10,
     )
     return r.returncode, r.stdout, r.stderr
@@ -146,7 +146,7 @@ def test_blocked_by_cross_forge_does_not_autoclear_on_submitted(rig):
             t["status"] = "submitted"
     _write_state(rig, s)
 
-    from smithy.smithy.cli import _pick_priority_signal
+    from smithy.cli import _pick_priority_signal
     state_now = _state(rig)
     tb = next(t for t in state_now["queue"] if t["id"] == "t-b")
     sig = _pick_priority_signal(state_now, tb)

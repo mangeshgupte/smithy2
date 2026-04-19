@@ -18,8 +18,8 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
-from smithy.smithy.cli import cli as smithy_cli
-from smithy.smithy.state import VALID_STAGES
+from smithy.cli import cli as smithy_cli
+from smithy.state import VALID_STAGES
 
 
 def _git(cwd: Path, *args: str) -> subprocess.CompletedProcess:

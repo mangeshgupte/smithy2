@@ -51,7 +51,7 @@ def local_repo(tmp_path):
 def test_ff_merge_pushes_on_success(local_repo):
     """`ff_merge_forge_branch` runs `git push origin main` after a
     clean merge; result["push"]["status"] == "ok" on success."""
-    from smithy.smithy.assembly import ff_merge_forge_branch
+    from smithy.assembly import ff_merge_forge_branch
     origin, work = local_repo
     # Create + switch to a per-task branch, commit one change.
     _git(work, "checkout", "-b", "forge-01/t-push", "main")
@@ -76,7 +76,7 @@ def test_ff_merge_returns_success_when_push_fails(local_repo):
     """Push failure must NOT fail the merge — ff_merge returns status
     'merged' with result["push"]["status"] == "failed" and the merge
     commit lands locally."""
-    from smithy.smithy.assembly import ff_merge_forge_branch
+    from smithy.assembly import ff_merge_forge_branch
     origin, work = local_repo
     _git(work, "checkout", "-b", "forge-01/t-push", "main")
     (work / "y.txt").write_text("y\n")
@@ -100,7 +100,7 @@ def test_ff_merge_returns_success_when_push_fails(local_repo):
 def test_ff_merge_disable_push_flag(local_repo):
     """Passing push_remote='' skips the push entirely — used by
     assembly-tick tests that don't care about remote state."""
-    from smithy.smithy.assembly import ff_merge_forge_branch
+    from smithy.assembly import ff_merge_forge_branch
     origin, work = local_repo
     _git(work, "checkout", "-b", "forge-01/t-skip", "main")
     (work / "z.txt").write_text("z\n")
@@ -120,14 +120,14 @@ def test_patrol_check_10_warns_on_origin_drift(tmp_path, monkeypatch):
     """Simulate `git rev-list --count origin/main..main` returning
     a number ≥5. Patrol's check #10 must surface an issue, and
     `checks_run` bumps to 10."""
-    import smithy.smithy.cli as cli_mod
+    import smithy.cli as cli_mod
     from click.testing import CliRunner
 
     # Scaffold a minimal project so the earlier patrol checks don't
     # choke on missing state.
     proj = tmp_path / "drift"
     rc = subprocess.run(
-        ["python3", "-m", "smithy.smithy.cli", "--dir", str(tmp_path),
+        ["python3", "-m", "smithy.cli", "--dir", str(tmp_path),
          "init", "drift", "--target", str(proj)],
         cwd=str(REPO_ROOT), capture_output=True, text=True, timeout=10,
     )

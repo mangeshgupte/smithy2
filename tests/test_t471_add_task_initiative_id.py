@@ -18,7 +18,7 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
-from smithy.smithy.cli import cli as smithy_cli
+from smithy.cli import cli as smithy_cli
 
 
 def _bootstrap_project(tmp_path: Path) -> Path:
@@ -69,7 +69,7 @@ def test_add_task_without_initiative_sets_null_field(tmp_path):
 def test_state_defaults_backfill_missing_initiative_id(tmp_path):
     """A legacy task persisted without initiative_id gets the field
     populated (as None) on the next load → save cycle."""
-    from smithy.smithy.state import load_state, save_state
+    from smithy.state import load_state, save_state
 
     project = _bootstrap_project(tmp_path)
     # Hand-write a task missing the field (simulates t-470's pre-fix row)

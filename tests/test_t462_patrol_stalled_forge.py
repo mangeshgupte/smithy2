@@ -63,7 +63,7 @@ def root(tmp_path):
 
 def test_fresh_push_within_grace_is_not_flagged(root):
     """Case (a): push is 30s old, threshold is 120s → no flag."""
-    from smithy.smithy.cli import _detect_stalled_forges
+    from smithy.cli import _detect_stalled_forges
     state = _make_state({"forge-temper": "idle"}, {"t-1": "forge-temper"})
     _write_events(root, [
         {"ts": _iso(-30), "event": "queue_push", "actor": "marshal",
@@ -74,7 +74,7 @@ def test_fresh_push_within_grace_is_not_flagged(root):
 
 def test_stale_push_idle_forge_no_pop_is_flagged(root):
     """Case (b): canonical stall — push 300s old, no pop, forge idle."""
-    from smithy.smithy.cli import _detect_stalled_forges
+    from smithy.cli import _detect_stalled_forges
     state = _make_state({"forge-temper": "idle"}, {"t-2": "forge-temper"})
     _write_events(root, [
         {"ts": _iso(-300), "event": "queue_push", "actor": "marshal",
@@ -90,7 +90,7 @@ def test_stale_push_idle_forge_no_pop_is_flagged(root):
 
 def test_stale_push_resolved_by_later_pop_is_not_flagged(root):
     """Case (c): push is stale but the forge popped after → no stall."""
-    from smithy.smithy.cli import _detect_stalled_forges
+    from smithy.cli import _detect_stalled_forges
     state = _make_state({"forge-temper": "idle"}, {"t-3": "forge-temper"})
     _write_events(root, [
         {"ts": _iso(-300), "event": "queue_push", "actor": "marshal",
@@ -105,7 +105,7 @@ def test_stale_push_resolved_by_later_pop_is_not_flagged(root):
 def test_busy_forge_not_flagged_even_with_stale_push(root):
     """Case (d): forge is busy (mid-heat), stale push is fine — the
     forge is actively working, just hasn't hit queue_pop yet."""
-    from smithy.smithy.cli import _detect_stalled_forges
+    from smithy.cli import _detect_stalled_forges
     state = _make_state({"forge-temper": "busy"}, {"t-4": "forge-temper"})
     _write_events(root, [
         {"ts": _iso(-300), "event": "queue_push", "actor": "marshal",
@@ -117,7 +117,7 @@ def test_busy_forge_not_flagged_even_with_stale_push(root):
 def test_forge_started_also_resolves_the_push(root):
     """forge_started is equivalent to queue_pop as a resolution signal —
     it means the forge picked the task up."""
-    from smithy.smithy.cli import _detect_stalled_forges
+    from smithy.cli import _detect_stalled_forges
     state = _make_state({"forge-temper": "idle"}, {"t-5": "forge-temper"})
     _write_events(root, [
         {"ts": _iso(-300), "event": "queue_push", "actor": "marshal",
@@ -130,7 +130,7 @@ def test_forge_started_also_resolves_the_push(root):
 
 def test_missing_rig_events_returns_empty(root):
     """No rig-events.jsonl yet → no stalled forges, no crash."""
-    from smithy.smithy.cli import _detect_stalled_forges
+    from smithy.cli import _detect_stalled_forges
     state = _make_state({"forge-temper": "idle"})
     assert not (root / "rig-events.jsonl").exists()
     assert _detect_stalled_forges(root, state, stall_s=120) == []
@@ -139,7 +139,7 @@ def test_missing_rig_events_returns_empty(root):
 def test_push_for_unassigned_task_is_ignored(root):
     """queue_push for a task not in the queue (e.g. already completed
     and pruned) shouldn't produce a phantom stalled-forge entry."""
-    from smithy.smithy.cli import _detect_stalled_forges
+    from smithy.cli import _detect_stalled_forges
     # Empty task_to_forge — the pushed task t-ghost isn't assigned.
     state = _make_state({"forge-temper": "idle"}, {})
     _write_events(root, [
@@ -151,7 +151,7 @@ def test_push_for_unassigned_task_is_ignored(root):
 
 def test_multiple_forges_one_stalled_one_healthy(root):
     """Mixed scenario: temper has a stale push, quench just popped."""
-    from smithy.smithy.cli import _detect_stalled_forges
+    from smithy.cli import _detect_stalled_forges
     state = _make_state(
         {"forge-temper": "idle", "forge-quench": "idle"},
         {"t-a": "forge-temper", "t-b": "forge-quench"},

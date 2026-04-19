@@ -19,7 +19,7 @@ from pathlib import Path
 
 import pytest
 
-from smithy.smithy.cli import (
+from smithy.cli import (
     _format_assembly_queue_nudge,
     _format_assembly_attempt_nudge,
     _format_assembly_merged_nudge,
@@ -32,7 +32,7 @@ REPO_ROOT = Path(__file__).parent.parent
 
 def _smithy(dir_path, *args):
     r = subprocess.run(
-        [sys.executable, "-m", "smithy.smithy.cli", "--dir", str(dir_path), *args],
+        [sys.executable, "-m", "smithy.cli", "--dir", str(dir_path), *args],
         cwd=str(REPO_ROOT), capture_output=True, text=True, timeout=60,
     )
     return r.returncode, r.stdout, r.stderr

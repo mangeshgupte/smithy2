@@ -17,7 +17,7 @@ import pytest
 
 
 def test_pane_agent_worktree_wins_over_personas():
-    from smithy.smithy.cli import _pane_agent
+    from smithy.cli import _pane_agent
     # forge-quench pane's typical cwd: inside worktree AND personas/forge.
     # t-414: worktree match wins so per-forge routing is possible.
     assert _pane_agent(
@@ -26,31 +26,31 @@ def test_pane_agent_worktree_wins_over_personas():
 
 
 def test_pane_agent_personas_fallback():
-    from smithy.smithy.cli import _pane_agent
+    from smithy.cli import _pane_agent
     # Anvil/Assembly live outside .worktrees/ → personas/<name> fallback.
     assert _pane_agent("/Users/x/smithy2/personas/anvil") == "anvil"
     assert _pane_agent("/Users/x/smithy2/personas/assembly") == "assembly"
 
 
 def test_pane_agent_returns_none_for_unrelated_paths():
-    from smithy.smithy.cli import _pane_agent
+    from smithy.cli import _pane_agent
     assert _pane_agent("/tmp/some-random-dir") is None
 
 
 def test_forge_session_defaults_to_forge(monkeypatch):
-    from smithy.smithy.cli import _forge_session
+    from smithy.cli import _forge_session
     monkeypatch.delenv("FORGE_SESSION", raising=False)
     assert _forge_session() == "forge"
 
 
 def test_forge_session_honors_env(monkeypatch):
-    from smithy.smithy.cli import _forge_session
+    from smithy.cli import _forge_session
     monkeypatch.setenv("FORGE_SESSION", "rig-alt")
     assert _forge_session() == "rig-alt"
 
 
 def test_resolve_pane_missing_session_returns_reason(monkeypatch):
-    from smithy.smithy.cli import _resolve_pane
+    from smithy.cli import _resolve_pane
     # Force a session name that almost certainly doesn't exist.
     pid, reason = _resolve_pane("nope-session-xyz-t414", "marshal")
     assert pid is None
@@ -58,7 +58,7 @@ def test_resolve_pane_missing_session_returns_reason(monkeypatch):
 
 
 def test_all_personas_includes_dynamic_forge_ids():
-    from smithy.smithy.cli import _all_personas
+    from smithy.cli import _all_personas
     state = {
         "parallel": {
             "forges": [
@@ -79,7 +79,7 @@ def test_all_personas_includes_dynamic_forge_ids():
 
 def test_validate_persona_accepts_registered_forge():
     import click
-    from smithy.smithy.cli import _validate_persona
+    from smithy.cli import _validate_persona
     state = {"parallel": {"forges": [{"id": "forge-quench"}]}}
     # No exception for a registered forge id.
     _validate_persona(state, "forge-quench")

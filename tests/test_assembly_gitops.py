@@ -7,7 +7,7 @@ import subprocess
 
 import pytest
 
-from smithy.smithy.assembly import (
+from smithy.assembly import (
     rebase_forge_branch, continue_rebase, abort_rebase,
     run_tests_in_worktree, ff_merge_forge_branch,
     try_auto_resolve, branch_name,

@@ -19,15 +19,8 @@ from unittest.mock import patch
 import pytest
 from click.testing import CliRunner
 
-# Root-cause fix for the t-479 Assembly reject loop: import via
-# `smithy.smithy.*` (namespace form) so pytest — run by Assembly from the
-# staging worktree — resolves these modules from the REBASED source tree.
-# The bare `smithy.*` form falls through to the globally-installed editable,
-# which is bound to main and doesn't have the escalate commands on the task
-# branch. Every other test file in this repo uses the namespace form for the
-# same reason; t-479's first landing used the plain form and rejected twice.
-from smithy.smithy.cli import cli
-from smithy.smithy.state import VALID_STAGES
+from smithy.cli import cli
+from smithy.state import VALID_STAGES
 
 
 @pytest.fixture
@@ -96,7 +89,7 @@ def _read_entries(project):
 class TestMarshalEscalateCreate:
     """Acceptance (b): Marshal escalates instead of blocking."""
 
-    @patch("smithy.smithy.cli._nudge_persona")
+    @patch("smithy.cli._nudge_persona")
     def test_escalate_writes_entry(self, mock_nudge, project, runner):
         mock_nudge.return_value = {"nudged": True, "persona": "anvil",
                                    "target": "%0"}
@@ -124,7 +117,7 @@ class TestMarshalEscalateCreate:
         assert len(entries) == 1
         assert entries[0]["id"] == entry["id"]
 
-    @patch("smithy.smithy.cli._nudge_persona")
+    @patch("smithy.cli._nudge_persona")
     def test_escalate_nudges_anvil(self, mock_nudge, project, runner):
         mock_nudge.return_value = {"nudged": True, "persona": "anvil",
                                    "target": "%0"}
@@ -141,7 +134,7 @@ class TestMarshalEscalateCreate:
         assert "MARSHAL_ESCALATE" in args[1]
         assert "initiative constraint unclear" in args[1]
 
-    @patch("smithy.smithy.cli._nudge_persona")
+    @patch("smithy.cli._nudge_persona")
     def test_escalate_no_nudge_flag(self, mock_nudge, project, runner):
         result = runner.invoke(cli, [
             "--dir", str(project), "marshal-escalate",
@@ -153,7 +146,7 @@ class TestMarshalEscalateCreate:
         data = json.loads(result.stdout)
         assert data["nudge"] is None
 
-    @patch("smithy.smithy.cli._nudge_persona")
+    @patch("smithy.cli._nudge_persona")
     def test_escalate_appends_multiple(self, mock_nudge, project, runner):
         mock_nudge.return_value = {"nudged": True}
         for i in range(3):
@@ -182,7 +175,7 @@ class TestMarshalEscalateCreate:
 class TestMarshalEscalateResolve:
     """Acceptance (c): round-trip resolve marks entry + nudges Marshal."""
 
-    @patch("smithy.smithy.cli._nudge_persona")
+    @patch("smithy.cli._nudge_persona")
     def test_resolve_flips_status(self, mock_nudge, project, runner):
         mock_nudge.return_value = {"nudged": True}
 
@@ -210,7 +203,7 @@ class TestMarshalEscalateResolve:
         assert len(entries) == 1
         assert entries[0]["status"] == "resolved"
 
-    @patch("smithy.smithy.cli._nudge_persona")
+    @patch("smithy.cli._nudge_persona")
     def test_resolve_nudges_marshal(self, mock_nudge, project, runner):
         mock_nudge.return_value = {"nudged": True}
 
@@ -241,7 +234,7 @@ class TestMarshalEscalateResolve:
         data = json.loads(r.stdout)
         assert data["error"] == "not found"
 
-    @patch("smithy.smithy.cli._nudge_persona")
+    @patch("smithy.cli._nudge_persona")
     def test_resolve_idempotent_on_already_resolved(self, mock_nudge,
                                                     project, runner):
         mock_nudge.return_value = {"nudged": True}
@@ -268,7 +261,7 @@ class TestMarshalEscalateResolve:
 
 
 class TestMarshalEscalateList:
-    @patch("smithy.smithy.cli._nudge_persona")
+    @patch("smithy.cli._nudge_persona")
     def test_list_filters_open(self, mock_nudge, project, runner):
         mock_nudge.return_value = {"nudged": True}
         # Create 2, resolve 1

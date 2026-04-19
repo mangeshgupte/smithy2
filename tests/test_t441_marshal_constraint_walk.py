@@ -14,7 +14,7 @@ Fixtures per `plans/multi-forge-poker-plan.md §Task 2`:
 """
 from __future__ import annotations
 
-from smithy.smithy.dispatch import select_task_for_forge
+from smithy.dispatch import select_task_for_forge
 
 
 def _task(id, ini, *, status="pending", priority=2, blocked_by=None,

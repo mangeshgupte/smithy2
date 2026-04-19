@@ -12,7 +12,7 @@ REPO_ROOT = Path(__file__).parent.parent
 
 def _smithy(dir_path: Path, *args):
     r = subprocess.run(
-        [sys.executable, "-m", "smithy.smithy.cli", "--dir", str(dir_path), *args],
+        [sys.executable, "-m", "smithy.cli", "--dir", str(dir_path), *args],
         cwd=str(REPO_ROOT), capture_output=True, text=True, timeout=10,
     )
     return r.returncode, r.stdout, r.stderr
@@ -256,7 +256,7 @@ def test_blocked_by_does_not_clear_on_submitted(scaffolded):
     # Try to queue-push t-bbb — if blocked_by were considered clear, it would
     # succeed and a dependent would race the pending merge. queue-push doesn't
     # enforce blocked_by, but the priority signal should not be blocked-deps-clear.
-    from smithy.smithy.cli import _pick_priority_signal
+    from smithy.cli import _pick_priority_signal
     state_now = _state(scaffolded)
     tbbb = next(t for t in state_now["queue"] if t["id"] == "t-bbb")
     sig = _pick_priority_signal(state_now, tbbb)
@@ -266,7 +266,7 @@ def test_blocked_by_does_not_clear_on_submitted(scaffolded):
 
 def test_submitted_status_validates(scaffolded):
     """validate_state accepts 'submitted' as a task status."""
-    from smithy.smithy.state import validate_state
+    from smithy.state import validate_state
     s = _state(scaffolded)
     for t in s["queue"]:
         if t["id"] == "t-aaa":
