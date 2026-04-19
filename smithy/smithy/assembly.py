@@ -261,9 +261,21 @@ def abort_rebase(project_dir: Path, forge_id: str) -> dict:
 
 def run_tests_in_worktree(project_dir: Path, forge_id: str,
                           cmd: list | None = None) -> dict:
-    """Run pytest (or a custom command) in the Forge's worktree."""
+    """Run pytest (or a custom command) in the Forge's worktree.
+
+    t-489: prefer the worktree's `.venv/bin/python3` over system
+    `python3` when it exists. Without this, bare `python3 -m pytest`
+    imports `smithy` via the global editable install (typically bound
+    to MAIN by t-460), so any test that exercises a symbol newly added
+    on the worktree's branch fails with AttributeError / TypeError and
+    Assembly rejects the submit — even though the worktree's own
+    `.venv` would have resolved correctly.
+    """
     wt = _worktree(project_dir, forge_id)
-    cmd = cmd or ["python3", "-m", "pytest", "-q"]
+    if cmd is None:
+        venv_py = wt / ".venv" / "bin" / "python3"
+        py = str(venv_py) if venv_py.exists() else "python3"
+        cmd = [py, "-m", "pytest", "-q"]
     r = subprocess.run(cmd, cwd=str(wt), capture_output=True, text=True,
                        timeout=600)
     return {

@@ -51,7 +51,11 @@ def project(tmp_path):
 
 @pytest.fixture
 def runner():
-    return CliRunner(mix_stderr=False)
+    # t-489: click >= 8.2 removed `mix_stderr`.
+    try:
+        return CliRunner(mix_stderr=False)
+    except TypeError:
+        return CliRunner()
 
 
 def _load(project):

@@ -44,7 +44,14 @@ def project(tmp_path):
 
 @pytest.fixture
 def runner():
-    return CliRunner(mix_stderr=False)
+    # t-489: click >= 8.2 removed `mix_stderr` (stderr is separated by
+    # default now). Try the pre-8.2 arg; fall back to the no-arg
+    # constructor so Assembly's venv (which doesn't pin click) and
+    # older pins (click < 8.2) both work.
+    try:
+        return CliRunner(mix_stderr=False)
+    except TypeError:
+        return CliRunner()
 
 
 class TestValidate:
@@ -917,6 +924,74 @@ class TestNudgeRosterMismatch:
         )
         assert pid is None
         assert "no registered-forge panes" in reason
+
+
+class TestRunTestsInWorktreeVenv:
+    """t-489: `run_tests_in_worktree` must prefer `<wt>/.venv/bin/python3`
+    over bare `python3` when present, so Assembly's pytest subprocess
+    imports `smithy` from the worktree's editable install rather than
+    the system (t-460-bound) one.
+    """
+
+    def test_prefers_venv_python_when_present(self, tmp_path, monkeypatch):
+        from smithy.assembly import run_tests_in_worktree
+        import subprocess as sp
+
+        # Fake worktree with a .venv/bin/python3 shim.
+        wt = tmp_path / ".worktrees" / "forge-test"
+        (wt / ".venv" / "bin").mkdir(parents=True)
+        venv_py = wt / ".venv" / "bin" / "python3"
+        venv_py.write_text("#!/bin/sh\nexit 0\n")
+        venv_py.chmod(0o755)
+
+        captured = {}
+
+        def fake_run(cmd, **kwargs):
+            captured["cmd"] = cmd
+            return sp.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+        monkeypatch.setattr(sp, "run", fake_run)
+        run_tests_in_worktree(tmp_path, "forge-test")
+        assert captured["cmd"][0] == str(venv_py), captured["cmd"]
+
+    def test_falls_back_to_bare_python3_when_no_venv(self, tmp_path, monkeypatch):
+        from smithy.assembly import run_tests_in_worktree
+        import subprocess as sp
+
+        # No .venv/ in the worktree.
+        wt = tmp_path / ".worktrees" / "forge-test"
+        wt.mkdir(parents=True)
+        captured = {}
+
+        def fake_run(cmd, **kwargs):
+            captured["cmd"] = cmd
+            return sp.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+        monkeypatch.setattr(sp, "run", fake_run)
+        run_tests_in_worktree(tmp_path, "forge-test")
+        assert captured["cmd"][0] == "python3"
+
+    def test_explicit_cmd_override_respected(self, tmp_path, monkeypatch):
+        """--tests-cmd / cmd override should NOT be rewritten."""
+        from smithy.assembly import run_tests_in_worktree
+        import subprocess as sp
+
+        wt = tmp_path / ".worktrees" / "forge-test"
+        (wt / ".venv" / "bin").mkdir(parents=True)
+        (wt / ".venv" / "bin" / "python3").write_text("")
+
+        captured = {}
+
+        def fake_run(cmd, **kwargs):
+            captured["cmd"] = cmd
+            return sp.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+        monkeypatch.setattr(sp, "run", fake_run)
+        run_tests_in_worktree(
+            tmp_path, "forge-test",
+            cmd=["python3", "-c", "print('custom')"],
+        )
+        assert captured["cmd"] == ["python3", "-c", "print('custom')"]
 
 
 class TestDrainNudges:

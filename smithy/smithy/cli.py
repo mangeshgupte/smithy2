@@ -145,9 +145,19 @@ def _run_presubmit_tests(root, forge_id, tests_cmd=None, timeout_s=600):
     )
     wt = main_repo_root(root) / ".worktrees" / (forge_id or "")
     cwd = wt if (forge_id and wt.exists() and (wt / ".git").exists()) else root
+    # t-489: if the default command starts with bare `python3`, rewrite
+    # it to the cwd's `.venv/bin/python3` when present so the pytest
+    # subprocess imports `smithy` from the worktree's own editable
+    # install, not the system's (main-bound) one. An explicit override
+    # via --tests-cmd / SMITHY_TESTS_CMD is respected verbatim.
+    argv = shlex.split(cmd)
+    if tests_cmd is None and argv and argv[0] == "python3":
+        venv_py = Path(cwd) / ".venv" / "bin" / "python3"
+        if venv_py.exists():
+            argv[0] = str(venv_py)
     try:
         r = subprocess.run(
-            shlex.split(cmd), cwd=str(cwd),
+            argv, cwd=str(cwd),
             capture_output=True, text=True, timeout=timeout_s,
         )
     except subprocess.TimeoutExpired:
