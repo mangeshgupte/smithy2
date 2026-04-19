@@ -1612,11 +1612,52 @@ def assembly_batch_tick_cmd(ctx, base, idle_timer_s, dry_run):
              if m["status"] in ("clean", "mild")]
     severe = [m for m in batch["merged"] if m["status"] == "severe"]
 
+    # 1b. t-512 (impl-T2): per-task assembly-reject for every severe
+    # entry. Each rejection flips state to pending (+5 human_priority),
+    # fires the ASSEMBLY_REJECTED nudge to Marshal, appends a worklog
+    # reject row. The batch continues on the green subset (if any).
+    # Reason is derived from run_batch's `detail` (which already carries
+    # the conflicting-file list for merge conflicts or a one-line git
+    # error for other severe cases). Truncate to 80 chars so the nudge
+    # payload stays compact — per the task spec §(f).
+    rejected_ids = set()
+    for m in severe:
+        e = m["entry"]
+        raw = m.get("detail") or "severe conflict"
+        reason = raw if len(raw) <= 80 else (raw[:77] + "...")
+        _do_assembly_reject(root, e["task_id"], reason)
+        _log(root, e["forge_id"], e["task_id"], "rejected", reason)
+        rejected_ids.add(e["task_id"])
+
+    # 1c. When the whole batch was rejected, skip the test + on-green
+    # machinery entirely. The green subset is empty, staging is already
+    # back at the last-good tip (`main` in this case, since run_batch
+    # resets to main before doing any merge work), so there's nothing
+    # to reset here — just pop the jsonl rows and emit telemetry.
     if not green:
+        if rejected_ids and qpath.exists():
+            keep = []
+            for ln in qpath.read_text().splitlines():
+                if not ln.strip():
+                    continue
+                try:
+                    row = json.loads(ln)
+                except json.JSONDecodeError:
+                    keep.append(ln)
+                    continue
+                if row.get("task_id") in rejected_ids:
+                    continue
+                keep.append(ln)
+            if keep:
+                qpath.write_text("\n".join(keep) + "\n")
+            else:
+                qpath.write_text("")
+        outcome = "all_rejected" if severe else "no_green"
         _emit_rig_event(root, "assembly_batch_merged", actor="assembly",
-                        batch_size=0, batch_outcome="no_green",
+                        batch_size=0, batch_outcome=outcome,
                         severe_count=len(severe))
-        _output({"status": "no_green", "severe_count": len(severe),
+        _output({"status": outcome, "severe_count": len(severe),
+                 "rejected_ids": sorted(rejected_ids),
                  "severe": [m.get("detail", "?") for m in severe]})
         return
 
@@ -1696,11 +1737,11 @@ def assembly_batch_tick_cmd(ctx, base, idle_timer_s, dry_run):
         push_status = "failed"
         push_reason = str(exc)[:200]
 
-    # 7. Atomic pop of the N green entries (leave severe rows in queue
-    # so Marshal / impl-T2 can retry them). Re-read the jsonl under the
-    # same invariants `_pop_queue` relies on (no lock collision because
-    # Assembly is singleton per rig).
-    popped_ids = {m["entry"]["task_id"] for m in green}
+    # 7. Atomic pop of the N green entries + any severe entries we
+    # already assembly-rejected above (t-512 impl-T2). Re-read the
+    # jsonl under the same invariants `_pop_queue` relies on (no lock
+    # collision because Assembly is singleton per rig).
+    popped_ids = {m["entry"]["task_id"] for m in green} | rejected_ids
     if qpath.exists():
         keep = []
         for ln in qpath.read_text().splitlines():
@@ -1719,10 +1760,12 @@ def assembly_batch_tick_cmd(ctx, base, idle_timer_s, dry_run):
         else:
             qpath.write_text("")
 
-    # 8. Telemetry.
+    # 8. Telemetry. t-512: partial_reject when the batch had any
+    # severe-rejected entries alongside the green ones.
+    outcome = "partial_reject" if severe else "green"
     _emit_rig_event(
         root, "assembly_batch_merged", actor="assembly",
-        batch_size=len(green), batch_outcome="green",
+        batch_size=len(green), batch_outcome=outcome,
         severe_count=len(severe),
         venv_recreated=bool(venv_info.get("recreated")),
         push_status=push_status,
@@ -1730,8 +1773,10 @@ def assembly_batch_tick_cmd(ctx, base, idle_timer_s, dry_run):
 
     _output({
         "status": "merged",
+        "outcome": outcome,
         "batch_size": len(green),
-        "merged_ids": sorted(popped_ids),
+        "merged_ids": sorted({m["entry"]["task_id"] for m in green}),
+        "rejected_ids": sorted(rejected_ids),
         "severe_count": len(severe),
         "venv": {"status": venv_info["status"],
                  "recreated": venv_info.get("recreated", False)},
