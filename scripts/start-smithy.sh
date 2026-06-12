@@ -27,9 +27,26 @@
 #
 # Environment:
 #   FORGE_SESSION    session name (default: forge)
-#   FORGE_CLAUDE     launcher to run in each pane
+#   FORGE_CLAUDE     global default launcher. Every persona's launcher
+#                    defaults to this when no per-persona override is set.
 #                    (default: claude --dangerously-skip-permissions)
 #                    Set to "" to leave panes empty.
+#   FORGE_ANVIL_CLAUDE / FORGE_MARSHAL_CLAUDE / FORGE_ASSEMBLY_CLAUDE
+#   FORGE_FORGE_CLAUDE / FORGE_COMMS_CLAUDE
+#                    t-537 (ini-018): per-persona launcher overrides.
+#                    Each defaults to $FORGE_CLAUDE; set to customize
+#                    the model / flags for a single persona. Assembly
+#                    defaults to `claude --dangerously-skip-permissions
+#                    --model sonnet` because its work is ~90%
+#                    bookkeeping; the remaining 10% judgment path is
+#                    within Sonnet's reach. Rollback to Opus via
+#                    `FORGE_ASSEMBLY_CLAUDE='claude --dangerously-skip-
+#                    permissions --model opus'` if the reject-loop
+#                    detector (t-534) flags a classification-quality
+#                    regression.
+#                    FORGE_FORGE_CLAUDE applies to every pane whose
+#                    title starts with "forge-" (forge-quench,
+#                    forge-temper, forge-anneal, …).
 #   FORGE_ROOT       project root (default: script's ../ — the smithy2 checkout)
 #   FORGE_UI_WINDOW  t-477: name of the second tmux window that hosts the
 #                    four uvicorns (bellows + three steering UIs).
@@ -52,6 +69,37 @@ set -euo pipefail
 
 FORGE_SESSION="${FORGE_SESSION:-forge}"
 FORGE_CLAUDE="${FORGE_CLAUDE-claude --dangerously-skip-permissions}"
+# t-537 (ini-018): per-persona launcher override. Each persona's launcher
+# defaults to FORGE_CLAUDE; set the per-persona var to override.
+# Assembly downshifts to Sonnet by default — its work is ~90% bookkeeping
+# (drain loops, pytest monitoring, reject logging); the ~10% judgment
+# cases (mild conflict classification, reject parsing) are well within
+# Sonnet's reach. Meta-pattern recognition that needs Opus-tier reasoning
+# is owned by observability (reject-loop detector, Marshal/Anvil patrol),
+# not Assembly itself. Rollback: set FORGE_ASSEMBLY_CLAUDE='claude
+# --dangerously-skip-permissions --model opus' if the reject-loop
+# detector flags a classification-quality regression.
+FORGE_ANVIL_CLAUDE="${FORGE_ANVIL_CLAUDE-$FORGE_CLAUDE}"
+FORGE_MARSHAL_CLAUDE="${FORGE_MARSHAL_CLAUDE-$FORGE_CLAUDE}"
+FORGE_ASSEMBLY_CLAUDE="${FORGE_ASSEMBLY_CLAUDE-claude --dangerously-skip-permissions --model sonnet}"
+FORGE_FORGE_CLAUDE="${FORGE_FORGE_CLAUDE-$FORGE_CLAUDE}"
+FORGE_COMMS_CLAUDE="${FORGE_COMMS_CLAUDE-$FORGE_CLAUDE}"
+
+# _persona_launcher <title> — echo the right launcher command for the
+# given pane title. Defaults to $FORGE_CLAUDE when no persona-specific
+# override is set. Forge pane titles are verb-named (forge-quench,
+# forge-temper, forge-anneal, …) so we resolve any title starting with
+# "forge-" to FORGE_FORGE_CLAUDE.
+_persona_launcher() {
+  case "$1" in
+    anvil)     printf '%s' "$FORGE_ANVIL_CLAUDE" ;;
+    marshal)   printf '%s' "$FORGE_MARSHAL_CLAUDE" ;;
+    assembly)  printf '%s' "$FORGE_ASSEMBLY_CLAUDE" ;;
+    comms)     printf '%s' "$FORGE_COMMS_CLAUDE" ;;
+    forge-*)   printf '%s' "$FORGE_FORGE_CLAUDE" ;;
+    *)         printf '%s' "$FORGE_CLAUDE" ;;
+  esac
+}
 FORGE_UI_WINDOW="${FORGE_UI_WINDOW-ui}"
 FORGE_COMMS_WINDOW="${FORGE_COMMS_WINDOW-comms}"
 FORGE_COMMS_INTERVAL="${FORGE_COMMS_INTERVAL:-5}"
@@ -78,7 +126,8 @@ Usage:
   scripts/start-smithy.sh --dry-run    print planned panes and exit
   scripts/start-smithy.sh -h|--help    this message
 
-Env: FORGE_SESSION, FORGE_CLAUDE, FORGE_ROOT (see header).
+Env: FORGE_SESSION, FORGE_CLAUDE, FORGE_ROOT, FORGE_{ANVIL,MARSHAL,
+ASSEMBLY,FORGE,COMMS}_CLAUDE per-persona overrides (see header).
 EOF
 }
 
@@ -129,13 +178,22 @@ done
 if (( DRY_RUN )); then
   echo "session: $FORGE_SESSION"
   echo "launcher: ${FORGE_CLAUDE:-<none>}"
+  # t-537: surface the per-persona launcher when it differs from the
+  # global FORGE_CLAUDE — helpful for operators confirming Assembly
+  # is on Sonnet (or has been overridden via FORGE_ASSEMBLY_CLAUDE).
   for p in "${PANES[@]}"; do
+    title="${p%%|*}"
     workdir="${p##*|}"
     venv_tag=""
     if [[ "$workdir" == *"/.worktrees/"* ]]; then
       venv_tag=" [+venv]"
     fi
-    printf "  %s%s\n" "$p" "$venv_tag"
+    pl="$(_persona_launcher "$title")"
+    if [[ "$pl" != "$FORGE_CLAUDE" ]]; then
+      printf "  %s%s  launcher=%s\n" "$p" "$venv_tag" "$pl"
+    else
+      printf "  %s%s\n" "$p" "$venv_tag"
+    fi
   done
   if [[ -n "$FORGE_UI_WINDOW" ]]; then
     echo "ui-window: $FORGE_UI_WINDOW"
@@ -266,7 +324,10 @@ for idx in "${!PANES[@]}"; do
   workdir="${entry##*|}"
   pid="${ALL_IDS[$idx]}"
   tmux select-pane -t "$pid" -T "$title"
-  if [[ -n "$FORGE_CLAUDE" ]]; then
+  # t-537: resolve per-persona launcher — Assembly defaults to Sonnet,
+  # others to FORGE_CLAUDE unless FORGE_<PERSONA>_CLAUDE is set.
+  launcher="$(_persona_launcher "$title")"
+  if [[ -n "$launcher" ]]; then
     # t-467: panes whose cwd is under .worktrees/ (marshal + every forge)
     # get venv-setup + activation BEFORE Claude boots, so any smithy
     # command issued during startup resolves to the worktree's editable
@@ -274,9 +335,9 @@ for idx in "${!PANES[@]}"; do
     # Assembly run on main and use the global install, so they get the
     # bare launcher.
     if [[ "$workdir" == *"/.worktrees/"* ]]; then
-      cmd="eval \"\$(bash $FORGE_ROOT/scripts/forge-venv-setup.sh)\" && $FORGE_CLAUDE"
+      cmd="eval \"\$(bash $FORGE_ROOT/scripts/forge-venv-setup.sh)\" && $launcher"
     else
-      cmd="$FORGE_CLAUDE"
+      cmd="$launcher"
     fi
     # Pane already started in workdir via -c; run the launcher.
     tmux send-keys -t "$pid" "$cmd" C-m
@@ -342,8 +403,10 @@ if [[ -n "$FORGE_COMMS_WINDOW" ]]; then
     -c "$FORGE_ROOT/personas/anvil" \
     -P -F '#{pane_id}')
   tmux select-pane -t "$COMMS_ID" -T "comms"
-  if [[ -n "$FORGE_CLAUDE" ]]; then
-    tmux send-keys -t "$COMMS_ID" "$FORGE_CLAUDE" C-m
+  # t-537: Comms gets its own launcher too (defaults to FORGE_CLAUDE).
+  comms_launcher="$(_persona_launcher comms)"
+  if [[ -n "$comms_launcher" ]]; then
+    tmux send-keys -t "$COMMS_ID" "$comms_launcher" C-m
   fi
 fi
 
