@@ -732,3 +732,12 @@ All 6 stages now have at least 1 heat. 6 human ideas received, all implemented. 
 
 **Handing off:** rig halted at 2026-04-18T16:22:11Z. 140 heats remaining of 1043 budget. Origin synced. All worktrees clean. Next session starts with the t-431/t-426 debug and the multi-forge Poker design's implementation fanout (plans from t-430's brief).
 
+
+
+**⚠️ Initiative ini-015 (Marshal agent) has reached its budget cap (25 heats).**
+
+
+**⚠️ Initiative ini-015 (Marshal agent) has reached its budget cap (25 heats).**
+
+
+**⚠️ Initiative ini-019 (Forge Observability) has reached its budget cap (25 heats).**

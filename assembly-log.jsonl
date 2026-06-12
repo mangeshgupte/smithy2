@@ -71,3 +71,168 @@
 {"ts": "2026-04-18T21:21:36+00:00", "forge_id": "forge-anneal", "task_id": "t-461", "outcome": "merged", "detail": "874e48af078bfd1393f5955c018dda007aef4daa"}
 {"ts": "2026-04-18T21:21:36+00:00", "forge_id": "forge-anneal", "task_id": "t-461", "outcome": "push_ok", "detail": "main"}
 {"ts": "2026-04-18T21:28:07+00:00", "forge_id": "forge-temper", "task_id": "t-466", "outcome": "rejected", "detail": "merge failed: error: Your local changes to the following files would be overwritten by merge:\n\tpersonas/anvil/memory/MEMORY.md\nPlease "}
+{"ts": "2026-04-18T21:31:58+00:00", "forge_id": "forge-temper", "task_id": "t-466", "outcome": "rejected", "detail": "severe conflict in personas/anvil/memory/MEMORY.md"}
+{"ts": "2026-04-18T21:33:17+00:00", "forge_id": "forge-anneal", "task_id": "t-468", "outcome": "merged", "detail": "aae973628451509964333b495b8b6f84e588ca91"}
+{"ts": "2026-04-18T21:33:17+00:00", "forge_id": "forge-anneal", "task_id": "t-468", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-18T21:38:04+00:00", "forge_id": "forge-temper", "task_id": "t-447", "outcome": "merged", "detail": "3d22611f4e8fba65090c61714a5be4cce24c377e"}
+{"ts": "2026-04-18T21:38:04+00:00", "forge_id": "forge-temper", "task_id": "t-447", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-18T22:02:07+00:00", "forge_id": "forge-quench", "task_id": "t-431", "outcome": "rejected", "detail": "tests failed: =========================== short test summary info ============================|FAILED tests/test_t447_initiative_id_in"}
+{"ts": "2026-04-18T22:12:49+00:00", "forge_id": "forge-anneal", "task_id": "t-449", "outcome": "merged", "detail": "012e3877d8c7f9ef080cf884f38302c85bec1264"}
+{"ts": "2026-04-18T22:12:49+00:00", "forge_id": "forge-anneal", "task_id": "t-449", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-18T22:15:06+00:00", "forge_id": "forge-quench", "task_id": "t-471", "outcome": "merged", "detail": "bb3582009dc1a26a503c583a1a3be6dde02e13aa"}
+{"ts": "2026-04-18T22:15:06+00:00", "forge_id": "forge-quench", "task_id": "t-471", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-18T22:16:47+00:00", "forge_id": "forge-anneal", "task_id": "t-451", "outcome": "rejected", "detail": "tests failed: FAILED smithy/tests/test_smithy_up.py::test_up_dry_run_lists_panes - Assertio...|FAILED smithy/tests/test_smithy_up.py::"}
+{"ts": "2026-04-18T22:18:47+00:00", "forge_id": "forge-temper", "task_id": "t-470", "outcome": "merged", "detail": "e4bfbc2b69f5113f8a66bf23d837d84e4b5a7337"}
+{"ts": "2026-04-18T22:18:47+00:00", "forge_id": "forge-temper", "task_id": "t-470", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-18T22:21:04+00:00", "forge_id": "forge-quench", "task_id": "t-456", "outcome": "merged", "detail": "a9fc0566a78323e06e74d305fc1626f1b934bf58"}
+{"ts": "2026-04-18T22:21:04+00:00", "forge_id": "forge-quench", "task_id": "t-456", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-18T22:23:04+00:00", "forge_id": "forge-quench", "task_id": "t-431", "outcome": "merged", "detail": "b17b3f730e37c335e498e13e421a9675c8f3b762"}
+{"ts": "2026-04-18T22:23:04+00:00", "forge_id": "forge-quench", "task_id": "t-431", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-18T22:24:33+00:00", "forge_id": "forge-anneal", "task_id": "t-452", "outcome": "merged", "detail": "e25c49e2e4372447560fadf1dd846662ca161e96"}
+{"ts": "2026-04-18T22:24:33+00:00", "forge_id": "forge-anneal", "task_id": "t-452", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-18T22:26:22+00:00", "forge_id": "forge-anneal", "task_id": "t-451", "outcome": "merged", "detail": "4887a1a716d22b239362d2ae0b68a6ab5c96bfed"}
+{"ts": "2026-04-18T22:26:22+00:00", "forge_id": "forge-anneal", "task_id": "t-451", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-18T22:28:30+00:00", "forge_id": "forge-temper", "task_id": "t-467", "outcome": "rejected", "detail": "tests failed: FAILED tests/test_t467_venv_preboot.py::TestPatrolVenvCheck::test_checks_run_advances_to_13|FAILED tests/test_t467_venv_"}
+{"ts": "2026-04-18T22:30:08+00:00", "forge_id": "forge-quench", "task_id": "t-472", "outcome": "rejected", "detail": "tests failed: FAILED tests/test_t472_teammate_idle_hook.py::test_hook_source_reads_queue_not_tasks|FAILED tests/test_t472_teammate_idl"}
+{"ts": "2026-04-18T22:31:45+00:00", "forge_id": "forge-temper", "task_id": "t-448", "outcome": "rejected", "detail": "tests failed: =========================== short test summary info ============================|FAILED tests/test_witness_per_forge.py:"}
+{"ts": "2026-04-18T22:33:21+00:00", "forge_id": "forge-anneal", "task_id": "t-466", "outcome": "merged", "detail": "b9cf487e550c44d797e402379707c7f4972c1741"}
+{"ts": "2026-04-18T22:33:21+00:00", "forge_id": "forge-anneal", "task_id": "t-466", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-18T22:35:45+00:00", "forge_id": "forge-anneal", "task_id": "t-453", "outcome": "merged", "detail": "2f62f3d0fa616e05906033e9b02859935cba398f"}
+{"ts": "2026-04-18T22:35:45+00:00", "forge_id": "forge-anneal", "task_id": "t-453", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-18T22:37:14+00:00", "forge_id": "forge-quench", "task_id": "t-473", "outcome": "merged", "detail": "993562d5395e218869ccd6033942d2e88fdba08c"}
+{"ts": "2026-04-18T22:37:14+00:00", "forge_id": "forge-quench", "task_id": "t-473", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-18T22:37:26+00:00", "forge_id": "forge-temper", "task_id": "t-467", "outcome": "rejected", "detail": "severe conflict in smithy/smithy/cli.py,tests/test_t438_origin_push.py"}
+{"ts": "2026-04-18T22:40:28+00:00", "forge_id": "forge-quench", "task_id": "t-472", "outcome": "rejected", "detail": "tests failed: FAILED tests/test_t472_teammate_idle_hook.py::test_hook_source_reads_queue_not_tasks|FAILED tests/test_t472_teammate_idl"}
+{"ts": "2026-04-18T22:43:26+00:00", "forge_id": "forge-temper", "task_id": "t-448", "outcome": "rejected", "detail": "tests failed: =========================== short test summary info ============================|FAILED tests/test_witness_per_forge.py:"}
+{"ts": "2026-04-18T22:47:58+00:00", "forge_id": "forge-temper", "task_id": "t-467", "outcome": "rejected", "detail": "tests failed: FAILED tests/test_t467_venv_preboot.py::TestDryRunTagsVenvPanes::test_marshal_and_forges_tagged|FAILED tests/test_t467_v"}
+{"ts": "2026-04-18T22:49:33+00:00", "forge_id": "forge-quench", "task_id": "t-475", "outcome": "merged", "detail": "5823f0488f00bf6febd2bdba6db74d009558abfe"}
+{"ts": "2026-04-18T22:49:33+00:00", "forge_id": "forge-quench", "task_id": "t-475", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-18T22:53:20+00:00", "forge_id": "forge-quench", "task_id": "t-461", "outcome": "rejected", "detail": "rebase error: checkout _merge-t-461: error: Your local changes to the following files would be overwritten by checkout:\n\tstate.json\nPl"}
+{"ts": "2026-04-18T22:56:57+00:00", "forge_id": "forge-temper", "task_id": "t-454", "outcome": "merged", "detail": "beb6a7378a6b4722f55ad03be6ab40a909e17520"}
+{"ts": "2026-04-18T22:56:57+00:00", "forge_id": "forge-temper", "task_id": "t-454", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-18T22:58:34+00:00", "forge_id": "forge-quench", "task_id": "t-472", "outcome": "rejected", "detail": "tests failed: FAILED smithy/tests/test_smithy.py::TestSyncStages::test_sync_stages_from_worklog|FAILED smithy/tests/test_smithy.py::Te"}
+{"ts": "2026-04-19T01:07:21+00:00", "forge_id": "forge-quench", "task_id": "t-441", "outcome": "rejected", "detail": "tests failed: FAILED smithy/tests/test_smithy.py::TestSyncStages::test_sync_stages_from_worklog|FAILED smithy/tests/test_smithy.py::Te"}
+{"ts": "2026-04-19T01:08:45+00:00", "forge_id": "forge-quench", "task_id": "t-442", "outcome": "rejected", "detail": "tests failed: FAILED smithy/tests/test_smithy.py::TestSyncStages::test_sync_stages_from_worklog|FAILED smithy/tests/test_smithy.py::Te"}
+{"ts": "2026-04-19T01:12:09+00:00", "forge_id": "forge-quench", "task_id": "t-459", "outcome": "rejected", "detail": "tests failed: FAILED smithy/tests/test_smithy.py::TestSyncStages::test_sync_stages_from_worklog|FAILED smithy/tests/test_smithy.py::Te"}
+{"ts": "2026-04-19T01:13:32+00:00", "forge_id": "forge-anneal", "task_id": "t-443", "outcome": "rejected", "detail": "tests failed: FAILED smithy/tests/test_smithy.py::TestSyncStages::test_sync_stages_from_worklog|FAILED smithy/tests/test_smithy.py::Te"}
+{"ts": "2026-04-19T01:17:01+00:00", "forge_id": "forge-temper", "task_id": "t-476", "outcome": "rejected", "detail": "rebase error: source branch 'forge-temper/t-476' not found"}
+{"ts": "2026-04-19T01:17:00+00:00", "forge_id": "forge-temper", "task_id": "t-476", "outcome": "merged", "detail": "bacfb2793ab523cdeb4841b7ef64e847d447602a"}
+{"ts": "2026-04-19T01:17:00+00:00", "forge_id": "forge-temper", "task_id": "t-476", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-19T01:18:14+00:00", "forge_id": "assembly", "task_id": "t-476", "outcome": "note", "detail": "spurious 01:17:01 reject corrected; ff-merge via anvil directive bypassed queue-pop, leaving stale queue row that tick then re-processed. True outcome: merged @ bacfb279."}
+{"ts": "2026-04-19T01:24:01+00:00", "forge_id": "forge-temper", "task_id": "t-477", "outcome": "merged", "detail": "712121c800a5a0eb6aabca7d9adc79d2b2353d5d"}
+{"ts": "2026-04-19T01:24:01+00:00", "forge_id": "forge-temper", "task_id": "t-477", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-19T01:29:09+00:00", "forge_id": "forge-quench", "task_id": "t-441", "outcome": "merged", "detail": "532cbae65db78671a81fc919534a2f2320ec548f"}
+{"ts": "2026-04-19T01:29:09+00:00", "forge_id": "forge-quench", "task_id": "t-441", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-19T01:32:40+00:00", "forge_id": "forge-quench", "task_id": "t-459", "outcome": "merged", "detail": "9458050e22e876f1d79a95412dccb226b87a8209"}
+{"ts": "2026-04-19T01:32:40+00:00", "forge_id": "forge-quench", "task_id": "t-459", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-19T01:34:57+00:00", "forge_id": "forge-temper", "task_id": "t-478", "outcome": "merged", "detail": "93fd15e9b16accce71372ee19a7b3e61f8bbfee9"}
+{"ts": "2026-04-19T01:34:57+00:00", "forge_id": "forge-temper", "task_id": "t-478", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-19T01:36:48+00:00", "forge_id": "forge-quench", "task_id": "t-461", "outcome": "merged", "detail": "c2c80cb6d8e9e72ab47f3396d201a4bf13667c35"}
+{"ts": "2026-04-19T01:36:48+00:00", "forge_id": "forge-quench", "task_id": "t-461", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-19T01:38:47+00:00", "forge_id": "forge-anneal", "task_id": "t-442", "outcome": "merged", "detail": "996005e4297665e2ebce3f59edbdf528d766fc87"}
+{"ts": "2026-04-19T01:38:47+00:00", "forge_id": "forge-anneal", "task_id": "t-442", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-19T01:40:25+00:00", "forge_id": "forge-anneal", "task_id": "t-443", "outcome": "merged", "detail": "22e96cd566273cb5ee92ca76f34d644c4cd0fa67"}
+{"ts": "2026-04-19T01:40:25+00:00", "forge_id": "forge-anneal", "task_id": "t-443", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-19T01:42:03+00:00", "forge_id": "forge-temper", "task_id": "t-467", "outcome": "merged", "detail": "15732bf215a9c8571f0eb715edd6482f9732b1a8"}
+{"ts": "2026-04-19T01:42:03+00:00", "forge_id": "forge-temper", "task_id": "t-467", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-19T02:22:17+00:00", "forge_id": "forge-quench", "task_id": "t-480", "outcome": "rejected", "detail": "tests failed: =========================== short test summary info ============================|FAILED tests/test_start_smithy_ui.py::T"}
+{"ts": "2026-04-19T02:30:51+00:00", "forge_id": "forge-quench", "task_id": "t-479", "outcome": "rejected", "detail": "tests failed: FAILED smithy/tests/test_marshal_escalate.py::TestMarshalEscalateList::test_list_empty|FAILED tests/test_start_smithy_ui"}
+{"ts": "2026-04-19T02:36:32+00:00", "forge_id": "forge-quench", "task_id": "t-480", "outcome": "rejected", "detail": "tests failed: =========================== short test summary info ============================|FAILED tests/test_start_smithy_ui.py::T"}
+{"ts": "2026-04-19T02:48:51+00:00", "forge_id": "forge-anneal", "task_id": "t-490", "outcome": "merged", "detail": "402f5b2fb13c2cfa5e56f2f72894ad4cf408d51d"}
+{"ts": "2026-04-19T02:48:51+00:00", "forge_id": "forge-anneal", "task_id": "t-490", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-19T02:54:20+00:00", "forge_id": "forge-quench", "task_id": "t-479", "outcome": "rejected", "detail": "tests failed: FAILED smithy/tests/test_marshal_escalate.py::TestMarshalEscalateList::test_list_filters_open|FAILED smithy/tests/test_m"}
+{"ts": "2026-04-19T04:03:12+00:00", "forge_id": "forge-temper", "task_id": "t-489", "outcome": "rejected", "detail": "tests failed: FAILED smithy/tests/test_smithy.py::TestNudgeRosterMismatch::test_wrong_session_fails_loud_not_queue|FAILED smithy/tests"}
+{"ts": "2026-04-19T06:35:26+00:00", "forge_id": "forge-temper", "task_id": "t-489", "outcome": "rejected", "detail": "tests failed: FAILED smithy/tests/test_smithy.py::TestNudgeRosterMismatch::test_resolve_pane_direct|FAILED smithy/tests/test_smithy.py"}
+{"ts": "2026-04-19T06:41:44+00:00", "forge_id": "forge-anneal", "task_id": "t-479", "outcome": "merged", "detail": "11bbf70faea13a9fa748f194ebd90e847b819c89"}
+{"ts": "2026-04-19T06:41:44+00:00", "forge_id": "forge-anneal", "task_id": "t-479", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-19T06:45:13+00:00", "forge_id": "forge-quench", "task_id": "t-481", "outcome": "merged", "detail": "0dfdab078b19e1710b2c0d355efb3871e47af97d"}
+{"ts": "2026-04-19T06:45:13+00:00", "forge_id": "forge-quench", "task_id": "t-481", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-19T06:48:56+00:00", "forge_id": "forge-quench", "task_id": "t-482", "outcome": "merged", "detail": "480381a6798f5191f86705ee17594f5b7e00f822"}
+{"ts": "2026-04-19T06:48:56+00:00", "forge_id": "forge-quench", "task_id": "t-482", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-19T06:54:33+00:00", "forge_id": "forge-quench", "task_id": "t-483", "outcome": "merged", "detail": "6ce819bedaa716046d5154bfe4ec9e42b99a8110"}
+{"ts": "2026-04-19T06:54:33+00:00", "forge_id": "forge-quench", "task_id": "t-483", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-19T06:56:03+00:00", "forge_id": "forge-quench", "task_id": "t-491", "outcome": "rejected", "detail": "tests failed: ERROR smithy/tests/test_t491_starvation.py|!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!"}
+{"ts": "2026-04-19T06:59:59+00:00", "forge_id": "forge-anneal", "task_id": "t-494", "outcome": "merged", "detail": "ece7c887844ec698bd281ec8dcdf1f51780274ab"}
+{"ts": "2026-04-19T06:59:59+00:00", "forge_id": "forge-anneal", "task_id": "t-494", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-19T07:01:52+00:00", "forge_id": "forge-quench", "task_id": "t-491", "outcome": "rejected", "detail": "tests failed: ERROR smithy/tests/test_t491_starvation.py|!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!"}
+{"ts": "2026-04-19T07:03:58+00:00", "forge_id": "forge-anneal", "task_id": "t-492", "outcome": "merged", "detail": "879f6491df2f77c0e2a83e37a094d0c3043b507f"}
+{"ts": "2026-04-19T07:03:58+00:00", "forge_id": "forge-anneal", "task_id": "t-492", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-19T07:08:12+00:00", "forge_id": "forge-quench", "task_id": "t-484", "outcome": "rejected", "detail": "tests failed: FAILED smithy/tests/test_t484_comms_snapshot.py::TestWorklog::test_window_minutes_flag_narrows|FAILED smithy/tests/test_"}
+{"ts": "2026-04-19T07:09:54+00:00", "forge_id": "forge-temper", "task_id": "t-493", "outcome": "rejected", "detail": "tests failed: FAILED tests/test_assembly_tick.py::test_reconcile_missing_jsonl_file_is_handled|FAILED tests/test_assembly_tick.py::tes"}
+{"ts": "2026-04-19T07:11:56+00:00", "forge_id": "forge-anneal", "task_id": "t-495", "outcome": "merged", "detail": "b53951a2e2bd4c1f353d3086c663f9f8c7d138de"}
+{"ts": "2026-04-19T07:11:56+00:00", "forge_id": "forge-anneal", "task_id": "t-495", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-19T07:13:38+00:00", "forge_id": "forge-quench", "task_id": "t-499", "outcome": "merged", "detail": "025a6920dc2ab0b0cf192e6ee5c8fa9eb19913c7"}
+{"ts": "2026-04-19T07:13:38+00:00", "forge_id": "forge-quench", "task_id": "t-499", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-19T07:15:31+00:00", "forge_id": "forge-quench", "task_id": "t-484", "outcome": "rejected", "detail": "tests failed: FAILED smithy/tests/test_t484_comms_snapshot.py::TestWorklog::test_window_minutes_flag_narrows|FAILED smithy/tests/test_"}
+{"ts": "2026-04-19T07:17:46+00:00", "forge_id": "forge-temper", "task_id": "t-500", "outcome": "merged", "detail": "a915dac88a06dbdbdb6c2b9ebb876f716d51542e"}
+{"ts": "2026-04-19T07:17:46+00:00", "forge_id": "forge-temper", "task_id": "t-500", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-19T07:19:48+00:00", "forge_id": "forge-anneal", "task_id": "t-502", "outcome": "merged", "detail": "597c276d327ad36b1a7ac4fd89b22f217de6edf3"}
+{"ts": "2026-04-19T07:19:48+00:00", "forge_id": "forge-anneal", "task_id": "t-502", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-19T07:21:34+00:00", "forge_id": "forge-temper", "task_id": "t-493", "outcome": "rejected", "detail": "tests failed: FAILED smithy/tests/test_smithy.py::TestPatrolZombieSubmitted::test_fix_rebuilds_entry_when_branch_exists|FAILED smithy/"}
+{"ts": "2026-04-19T07:23:17+00:00", "forge_id": "forge-anneal", "task_id": "t-496", "outcome": "merged", "detail": "1e0949a9f46ae8c4581770f0697b8e1c7fbe0d39"}
+{"ts": "2026-04-19T07:23:17+00:00", "forge_id": "forge-anneal", "task_id": "t-496", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-19T07:25:29+00:00", "forge_id": "forge-quench", "task_id": "t-503", "outcome": "rejected", "detail": "tests failed: FAILED smithy/tests/test_t503_complete_initiative.py::TestErrors::test_unknown_initiative_errors|FAILED smithy/tests/tes"}
+{"ts": "2026-04-19T07:27:42+00:00", "forge_id": "forge-quench", "task_id": "t-505", "outcome": "merged", "detail": "f2b3ccbe1da01307c6d430895dde1bc986379f46"}
+{"ts": "2026-04-19T07:27:42+00:00", "forge_id": "forge-quench", "task_id": "t-505", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-19T07:29:44+00:00", "forge_id": "forge-quench", "task_id": "t-497", "outcome": "rejected", "detail": "tests failed: FAILED smithy/tests/test_t497_reconcile_next_tasks.py::TestDryRun::test_dry_run_does_not_write|FAILED smithy/tests/test_"}
+{"ts": "2026-04-19T07:31:47+00:00", "forge_id": "forge-anneal", "task_id": "t-501", "outcome": "merged", "detail": "378ee4c0f3441c12cef287e0acd94288b2ee8fb4"}
+{"ts": "2026-04-19T07:31:47+00:00", "forge_id": "forge-anneal", "task_id": "t-501", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-19T07:33:27+00:00", "forge_id": "forge-temper", "task_id": "t-507", "outcome": "rejected", "detail": "tests failed: FAILED smithy/tests/test_smithy.py::TestStagingVenvBootstrap::test_run_tests_in_worktree_uses_staging_venv_when_present|"}
+{"ts": "2026-04-19T07:35:05+00:00", "forge_id": "forge-anneal", "task_id": "t-508", "outcome": "merged", "detail": "83858d2178be929a3c41713f32e6a4a0ae04e381"}
+{"ts": "2026-04-19T07:35:05+00:00", "forge_id": "forge-anneal", "task_id": "t-508", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-19T07:43:19+00:00", "forge_id": "forge-quench", "task_id": "t-516", "outcome": "rejected", "detail": "tests failed: ERROR smithy/tests/test_t516_backpressure_multiplier.py|!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!"}
+{"ts": "2026-04-19T07:45:19+00:00", "forge_id": "forge-anneal", "task_id": "t-510", "outcome": "merged", "detail": "17f982b3ab94fd6f2f193e6471db3c2252bf1363"}
+{"ts": "2026-04-19T07:45:19+00:00", "forge_id": "forge-anneal", "task_id": "t-510", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-19T07:54:49+00:00", "forge_id": "forge-temper", "task_id": "t-511", "outcome": "merged", "detail": "097f4b273d47f23e276efd9079f0eb2fd3130c44"}
+{"ts": "2026-04-19T07:54:49+00:00", "forge_id": "forge-temper", "task_id": "t-511", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-19T07:58:29+00:00", "forge_id": "forge-anneal", "task_id": "t-489", "outcome": "merged", "detail": "610dc4c7ea6ff072ce21dac6f4349ee6b4447ec8"}
+{"ts": "2026-04-19T07:58:29+00:00", "forge_id": "forge-anneal", "task_id": "t-489", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-19T07:58:29+00:00", "forge_id": "forge-quench", "task_id": "t-493", "outcome": "rejected", "detail": "severe conflict in smithy/smithy/assembly.py,smithy/smithy/cli.py,smithy/tests/test_smithy.py,tests/test_t438_origin_push.py"}
+{"ts": "2026-04-19T08:06:07+00:00", "forge_id": "forge-quench", "task_id": "t-493", "outcome": "rejected", "detail": "tests failed: FAILED smithy/tests/test_smithy.py::TestAssemblyQueuePopRace::test_pop_preserves_concurrent_append|FAILED smithy/tests/t"}
+{"ts": "2026-04-19T08:11:32+00:00", "forge_id": "forge-quench", "task_id": "t-520", "outcome": "merged", "detail": "08c680d24146cfc702973136bdde9d72f8958fca"}
+{"ts": "2026-04-19T08:11:32+00:00", "forge_id": "forge-quench", "task_id": "t-520", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-19T08:13:47+00:00", "forge_id": "forge-quench", "task_id": "t-491", "outcome": "merged", "detail": "06f94972190e8be9b42eac8e3a603bcb204e9787"}
+{"ts": "2026-04-19T08:13:47+00:00", "forge_id": "forge-quench", "task_id": "t-491", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-19T08:15:44+00:00", "forge_id": "forge-quench", "task_id": "t-497", "outcome": "merged", "detail": "c75e5c5a781f60ef41650a64c3b7a88411e1d662"}
+{"ts": "2026-04-19T08:15:44+00:00", "forge_id": "forge-quench", "task_id": "t-497", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-19T08:17:34+00:00", "forge_id": "forge-quench", "task_id": "t-503", "outcome": "merged", "detail": "3101033158443a383523a0114ac27fc8e626784c"}
+{"ts": "2026-04-19T08:17:34+00:00", "forge_id": "forge-quench", "task_id": "t-503", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-19T08:19:49+00:00", "forge_id": "forge-anneal", "task_id": "t-484", "outcome": "merged", "detail": "4c0babd2b4ccf68aa438056c453a56de67d0efb0"}
+{"ts": "2026-04-19T08:19:49+00:00", "forge_id": "forge-anneal", "task_id": "t-484", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-19T08:24:12+00:00", "forge_id": "forge-anneal", "task_id": "t-498", "outcome": "merged", "detail": "860367f95dbd336157142be8a93ab7c6ec1b43f3"}
+{"ts": "2026-04-19T08:24:12+00:00", "forge_id": "forge-anneal", "task_id": "t-498", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-19T08:26:11+00:00", "forge_id": "forge-temper", "task_id": "t-512", "outcome": "merged", "detail": "f1feff2c05c1d9aaf1dc454b15cb4e1637dd0374"}
+{"ts": "2026-04-19T08:26:11+00:00", "forge_id": "forge-temper", "task_id": "t-512", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-19T08:30:25+00:00", "forge_id": "forge-anneal", "task_id": "t-485", "outcome": "merged", "detail": "578bc56c54150d4d9b053abeb43b6fc10bc3c6fd"}
+{"ts": "2026-04-19T08:30:25+00:00", "forge_id": "forge-anneal", "task_id": "t-485", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-19T08:33:55+00:00", "forge_id": "forge-temper", "task_id": "t-507", "outcome": "merged", "detail": "634149ba6e7eb5ab42da4e72d4429728c1a8f8e5"}
+{"ts": "2026-04-19T08:33:55+00:00", "forge_id": "forge-temper", "task_id": "t-507", "outcome": "push_ok", "detail": "main"}
+{"ts": "2026-04-19T08:34:08+00:00", "forge_id": "forge-anneal", "task_id": "t-521", "outcome": "rejected", "detail": "tests failed: ERROR tests/test_task_detail_fallback.py|!!!!!!!!!!!!!!!!!!! Interrupted: 19 errors during collection !!!!!!!!!!!!!!!!!!"}
+{"ts": "2026-04-19T08:41:41+00:00", "forge_id": "forge-anneal", "task_id": "t-516", "outcome": "rejected", "detail": "tests failed: ERROR tests/test_task_detail_fallback.py|!!!!!!!!!!!!!!!!!!! Interrupted: 19 errors during collection !!!!!!!!!!!!!!!!!!"}
+{"ts": "2026-04-19T08:44:33+00:00", "forge_id": "forge-temper", "task_id": "t-486", "outcome": "rejected", "detail": "tests failed: ERROR tests/test_task_detail_fallback.py|!!!!!!!!!!!!!!!!!!! Interrupted: 19 errors during collection !!!!!!!!!!!!!!!!!!"}
+{"ts": "2026-04-19T08:44:34+00:00", "forge_id": "forge-anneal", "task_id": "t-516", "outcome": "rejected", "detail": "tests failed: ERROR tests/test_task_detail_fallback.py|!!!!!!!!!!!!!!!!!!! Interrupted: 19 errors during collection !!!!!!!!!!!!!!!!!!"}
+{"ts": "2026-04-19T08:44:34+00:00", "forge_id": "forge-anneal", "task_id": "t-521", "outcome": "rejected", "detail": "tests failed: ERROR tests/test_task_detail_fallback.py|!!!!!!!!!!!!!!!!!!! Interrupted: 19 errors during collection !!!!!!!!!!!!!!!!!!"}
+{"ts": "2026-04-19T08:44:35+00:00", "forge_id": "forge-quench", "task_id": "t-528", "outcome": "rejected", "detail": "tests failed: ERROR tests/test_task_detail_fallback.py|!!!!!!!!!!!!!!!!!!! Interrupted: 19 errors during collection !!!!!!!!!!!!!!!!!!"}
+{"ts": "2026-04-19T08:46:06+00:00", "forge_id": "forge-quench", "task_id": "t-493", "outcome": "rejected", "detail": "tests failed: ERROR tests/test_task_detail_fallback.py|!!!!!!!!!!!!!!!!!!! Interrupted: 19 errors during collection !!!!!!!!!!!!!!!!!!"}
+{"ts": "2026-04-19T08:48:38+00:00", "forge_id": "forge-anneal", "task_id": "t-504", "outcome": "rejected", "detail": "tests failed: /Users/mangesh/vibes/smithy2/.worktrees/_assembly-staging/.venv/bin/python3: No module named pytest"}
+{"ts": "2026-04-19T08:57:19+00:00", "forge_id": "forge-quench", "task_id": "t-529", "outcome": "rejected", "detail": "tests failed: ERROR tests/test_task_detail_fallback.py::TestDrawerE2E::test_api_task_endpoint_wired_from_page|ERROR tests/test_task_de"}
+{"ts": "2026-04-19T09:00:54+00:00", "forge_id": "forge-anneal", "task_id": "t-531", "outcome": "rejected", "detail": "tests failed: ERROR tests/test_task_detail_fallback.py::TestDrawerE2E::test_api_task_endpoint_wired_from_page|ERROR tests/test_task_de"}
+{"ts": "2026-04-19T09:05:10+00:00", "forge_id": "forge-quench", "task_id": "t-532", "outcome": "rejected", "detail": "tests failed: ERROR tests/test_task_detail_fallback.py::TestDrawerE2E::test_api_task_endpoint_wired_from_page|ERROR tests/test_task_de"}
+{"ts": "2026-04-19T09:15:37+00:00", "forge_id": "forge-quench", "task_id": "t-522", "outcome": "rejected", "detail": "severe conflict in plans/autopilot-anvil-design.md"}
+{"ts": "2026-04-19T09:18:03+00:00", "forge_id": "forge-anneal", "task_id": "t-522", "outcome": "rejected", "detail": "tests failed: ERROR tests/test_task_detail_fallback.py::TestDrawerE2E::test_api_task_endpoint_wired_from_page|ERROR tests/test_task_de"}
+{"ts": "2026-04-19T09:20:27+00:00", "forge_id": "forge-quench", "task_id": "t-528", "outcome": "rejected", "detail": "tests failed: ERROR tests/test_task_detail_fallback.py::TestDrawerE2E::test_api_task_endpoint_wired_from_page|ERROR tests/test_task_de"}
+{"ts": "2026-04-19T09:22:30+00:00", "forge_id": "forge-temper", "task_id": "t-530", "outcome": "rejected", "detail": "tests failed: ERROR tests/test_task_detail_fallback.py::TestDrawerE2E::test_api_task_endpoint_wired_from_page|ERROR tests/test_task_de"}
+{"ts": "2026-04-19T09:24:34+00:00", "forge_id": "forge-quench", "task_id": "t-519", "outcome": "rejected", "detail": "tests failed: ERROR tests/test_task_detail_fallback.py::TestDrawerE2E::test_api_task_endpoint_wired_from_page|ERROR tests/test_task_de"}
+{"ts": "2026-04-19T09:26:35+00:00", "forge_id": "forge-quench", "task_id": "t-534", "outcome": "rejected", "detail": "tests failed: ERROR tests/test_t505_initiative_retro_render.py::TestPathTraversal::test_escape_via_parent_ref_rejected|ERROR tests/tes"}
+{"ts": "2026-04-19T09:28:35+00:00", "forge_id": "forge-temper", "task_id": "t-533", "outcome": "rejected", "detail": "tests failed: ERROR tests/test_t455_normalize_hp.py::TestAssemblyReject::test_garbage_hp_coerces_and_bumps|ERROR tests/test_t455_norma"}
+{"ts": "2026-04-19T09:30:39+00:00", "forge_id": "forge-anneal", "task_id": "t-535", "outcome": "rejected", "detail": "tests failed: ERROR tests/test_t455_normalize_hp.py::TestAssemblyReject::test_garbage_hp_coerces_and_bumps|ERROR tests/test_t455_norma"}
+{"ts": "2026-04-19T09:32:42+00:00", "forge_id": "forge-anneal", "task_id": "t-522", "outcome": "rejected", "detail": "tests failed: ERROR tests/test_t455_normalize_hp.py::TestAssemblyReject::test_garbage_hp_coerces_and_bumps|ERROR tests/test_t455_norma"}
+{"ts": "2026-04-19T09:34:45+00:00", "forge_id": "forge-quench", "task_id": "t-486", "outcome": "rejected", "detail": "tests failed: ERROR tests/test_t455_normalize_hp.py::TestAssemblyReject::test_garbage_hp_coerces_and_bumps|ERROR tests/test_t455_norma"}
+{"ts": "2026-04-19T09:36:47+00:00", "forge_id": "forge-anneal", "task_id": "t-504", "outcome": "rejected", "detail": "tests failed: ERROR tests/test_t455_normalize_hp.py::TestAssemblyReject::test_garbage_hp_coerces_and_bumps|ERROR tests/test_t455_norma"}
+{"ts": "2026-04-19T09:38:52+00:00", "forge_id": "forge-temper", "task_id": "t-513", "outcome": "rejected", "detail": "tests failed: ERROR tests/test_t455_normalize_hp.py::TestAssemblyReject::test_garbage_hp_coerces_and_bumps|ERROR tests/test_t455_norma"}
+{"ts": "2026-04-19T09:40:58+00:00", "forge_id": "forge-anneal", "task_id": "t-527", "outcome": "rejected", "detail": "tests failed: =========================== short test summary info ============================|FAILED tests/test_t531_staging_venv_dep"}
+{"ts": "2026-04-19T09:43:03+00:00", "forge_id": "forge-anneal", "task_id": "t-536", "outcome": "rejected", "detail": "tests failed: =========================== short test summary info ============================|FAILED tests/test_t531_staging_venv_dep"}
+{"ts": "2026-04-19T09:46:45+00:00", "forge_id": "forge-anneal", "task_id": "t-487", "outcome": "rejected", "detail": "tests failed: =========================== short test summary info ============================|FAILED tests/test_t531_staging_venv_dep"}
+{"ts": "2026-04-19T09:48:55+00:00", "forge_id": "forge-anneal", "task_id": "t-537", "outcome": "rejected", "detail": "tests failed: FAILED tests/test_t537_persona_model_tier.py::test_default_assembly_launcher_uses_sonnet|FAILED tests/test_t537_persona_"}
+{"ts": "2026-06-12T23:44:44+00:00", "forge_id": "forge-temper", "task_id": "t-540", "outcome": "rejected", "detail": "tests failed: FAILED tests/test_steering_retro.py::TestSteeringRetro::test_pin_then_ship_computes_lag|FAILED tests/test_t531_staging_v"}
+{"ts": "2026-06-12T23:46:51+00:00", "forge_id": "forge-anneal", "task_id": "t-516", "outcome": "rejected", "detail": "merge failed: error: Your local changes to the following files would be overwritten by merge:\n\ttests/test_t531_staging_venv_deps.py\nPl"}

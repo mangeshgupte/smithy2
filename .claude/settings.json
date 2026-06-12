@@ -42,9 +42,9 @@
   },
   "permissions": {
     "allow": [
-      "Read **",
-      "Write **",
-      "Edit **",
+      "Read",
+      "Write",
+      "Edit",
       "Bash(git *)",
       "Bash(ls *)",
       "Bash(mkdir *)",

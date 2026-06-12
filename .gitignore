@@ -19,3 +19,8 @@ smithy/smithy.egg-info/
 # Runtime coordination artifacts — local, not version-tracked
 .smithy-nudge-queue/
 .state.json.lock
+
+# Assembly runtime queue + restart backups + editor config — local only
+.assembly-queue.jsonl
+.pre-restart-backups/
+.obsidian/
