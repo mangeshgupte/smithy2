@@ -477,11 +477,13 @@
             tr.addEventListener('click', e => onRowClickToggle(e, t.id));
             body.appendChild(tr);
             // Desc row — always visible; click toggles inline panel
-            // for parity with the expand chevron.
+            // for parity with the expand chevron. data-desc-for, NOT
+            // data-task-id: every row-query (pendingRows, keyboard nav,
+            // panel toggle) selects on data-task-id and must keep
+            // matching only primary rows.
             const descRow = document.createElement('tr');
             descRow.className = 'c-desc-row';
-            descRow.dataset.taskId = t.id;
-            descRow.dataset.status = t.status;
+            descRow.dataset.descFor = t.id;
             descRow.innerHTML =
                 `<td></td><td></td>` +
                 `<td class="c-desc-cell" colspan="8" onclick="toggleInlineExpand(event, '${t.id}')">` +
@@ -537,8 +539,7 @@
         body.appendChild(tr);
         const descRow = document.createElement('tr');
         descRow.className = 'c-desc-row';
-        descRow.dataset.taskId = t.id;
-        descRow.dataset.status = t.status;
+        descRow.dataset.descFor = t.id;  // not data-task-id — see renderRow
         descRow.innerHTML =
             `<td></td><td></td>` +
             `<td class="c-desc-cell" colspan="8" onclick="toggleInlineExpand(event, '${t.id}')">` +

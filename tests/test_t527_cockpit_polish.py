@@ -138,6 +138,18 @@ def test_cockpit_template_no_longer_has_desc_column_header(cockpit_html):
     assert "<th>desc</th>" not in cockpit_html
 
 
+def test_cockpit_desc_row_does_not_carry_task_id_dataset(cockpit_html):
+    """Regression (heat 1220): desc rows must NOT set dataset.taskId /
+    dataset.status. pendingRows(), keyboard nav (focusRow / altMoveFocused),
+    and the inline-panel toggle all select on `tr[data-task-id]` and assume
+    one match per task — a desc row carrying data-task-id duplicates every
+    task in DnD reorder arrays and adds phantom keyboard-focus stops."""
+    # Desc rows identify via data-desc-for instead.
+    assert "descRow.dataset.descFor" in cockpit_html
+    assert "descRow.dataset.taskId" not in cockpit_html
+    assert "descRow.dataset.status" not in cockpit_html
+
+
 def test_cockpit_desc_row_click_toggles_inline_panel(cockpit_html):
     """The desc row's td wires an onclick to toggleInlineExpand so the
     user can click the desc line to see full detail."""
