@@ -33,6 +33,19 @@ REPO_ROOT = Path(__file__).parent.parent
 SCRIPT = REPO_ROOT / "scripts" / "start-smithy.sh"
 
 
+def _pane_line(stdout, title):
+    """Find the dry-run pane line for `title`, anchored on the
+    `<title>|<workdir>` prefix. A bare substring match is unsafe: when
+    the repo checkout lives under a path that itself contains the
+    persona name (e.g. Assembly's `_assembly-staging` worktree), every
+    pane's workdir matches and the first line wins."""
+    return next(
+        (ln for ln in stdout.splitlines()
+         if ln.strip().startswith(f"{title}|")),
+        None,
+    )
+
+
 def _dry_run(env_overrides=None):
     env = os.environ.copy()
     env["NO_COLOR"] = "1"
@@ -63,10 +76,7 @@ def test_default_assembly_launcher_uses_sonnet():
     assert r.returncode == 0, f"stderr={r.stderr}\nstdout={r.stdout}"
     # Assembly pane dry-run line surfaces the per-persona launcher
     # when it differs from FORGE_CLAUDE.
-    assembly_line = next(
-        (ln for ln in r.stdout.splitlines() if "assembly" in ln),
-        None,
-    )
+    assembly_line = _pane_line(r.stdout, "assembly")
     assert assembly_line, f"no assembly pane in dry-run output:\n{r.stdout}"
     assert "launcher=" in assembly_line
     assert "--model sonnet" in assembly_line
@@ -81,10 +91,7 @@ def test_assembly_env_override_replaces_default():
             "claude --dangerously-skip-permissions --model opus"
     })
     assert r.returncode == 0, r.stderr
-    assembly_line = next(
-        (ln for ln in r.stdout.splitlines() if "assembly" in ln),
-        None,
-    )
+    assembly_line = _pane_line(r.stdout, "assembly")
     assert assembly_line
     assert "--model opus" in assembly_line
     assert "--model sonnet" not in assembly_line
@@ -99,10 +106,7 @@ def test_assembly_override_to_match_global_hides_launcher_suffix():
         "FORGE_ASSEMBLY_CLAUDE": "claude --dangerously-skip-permissions"
     })
     assert r.returncode == 0
-    assembly_line = next(
-        (ln for ln in r.stdout.splitlines() if "assembly" in ln),
-        None,
-    )
+    assembly_line = _pane_line(r.stdout, "assembly")
     assert assembly_line
     assert "launcher=" not in assembly_line
 
