@@ -278,7 +278,12 @@ class TestNudgeQueueWhenBusy:
         assert result["nudged"] is False
         assert result["queued"] is True
         assert result["reason"] == "persona mid-heat, nudge queued"
-        mock_run.assert_not_called()  # should NOT have tried tmux
+        # Should NOT have tried tmux. (t-542: the busy-check itself now
+        # shells out to `git rev-parse` to anchor checkpoint paths at the
+        # main repo root, so assert on tmux specifically, not call count.)
+        tmux_calls = [c for c in mock_run.call_args_list
+                      if c.args and "tmux" in str(c.args[0])]
+        assert tmux_calls == [], f"unexpected tmux invocations: {tmux_calls}"
         # Verify file was written
         queue_path = project / ".smithy-nudge-queue" / "forge.jsonl"
         assert queue_path.exists()

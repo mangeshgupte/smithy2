@@ -506,8 +506,45 @@ def start_heat(ctx, stage, task_id, forge_id, reuse_scratch):
     root = ctx.obj["root"]
     # t-409 H1: resolve forge id — explicit flag wins, else detect from cwd,
     # else fall back to primary (lets main-root smoke-runs still work).
+    explicit_forge = forge_id is not None
+    detected_forge = None
     if forge_id is None:
-        forge_id = detect_forge_from_cwd(root) or primary_forge_id(root)
+        detected_forge = detect_forge_from_cwd(root)
+        forge_id = detected_forge or primary_forge_id(root)
+
+    # t-542: the task's `assigned_forge` pin is truth — cwd detection is
+    # a heuristic that fails when a pane invokes smithy from outside its
+    # worktree (observed h1222: forge-anneal's start-heat fell back to
+    # primary and clobbered forge-quench's .forge-checkpoint.json).
+    # Cross-check the pin BEFORE any checkpoint write:
+    #   - pin matches resolution → proceed;
+    #   - pin set, resolution came from the primary FALLBACK (no explicit
+    #     flag, no cwd match) → adopt the pin;
+    #   - pin set and contradicts an explicit flag or a positive cwd
+    #     detection → refuse; that's another forge's task.
+    if task_id:
+        try:
+            _peek = load_state(root)
+        except Exception:
+            _peek = {}
+        _t = next((t for t in _peek.get("queue", []) or []
+                   if t.get("id") == task_id), None)
+        pinned = _t.get("assigned_forge") if _t else None
+        if pinned and pinned != forge_id:
+            if explicit_forge or detected_forge:
+                _output({
+                    "error": f"Task {task_id} is pinned to {pinned} but this "
+                             f"start-heat resolved forge_id={forge_id} "
+                             f"({'--forge flag' if explicit_forge else 'cwd detection'}). "
+                             "Refusing — a cross-forge write would clobber "
+                             "another Forge's checkpoint.",
+                    "pinned_forge": pinned,
+                    "resolved_forge": forge_id,
+                })
+                sys.exit(1)
+            forge_id = pinned
+            _err(f"forge_id adopted from task pin: {pinned} "
+                 "(cwd detection failed; primary fallback overridden, t-542)")
 
     # t-473: reject ghost-submit-producing invocations. A `start-heat`
     # without `--task` from within a Forge worktree writes
@@ -649,6 +686,28 @@ def end_heat(ctx, value, signal, notes, outcome, progress, no_nudge, forge_id,
     # "complete" end-heat is really a "submitted" hand-off. Read the
     # config OUTSIDE the state lock — it doesn't change during a heat.
     state_peek = load_state(root)
+
+    # t-542: poisoned-checkpoint guard. If the checkpoint we just read
+    # carries a task pinned to a DIFFERENT forge, a cross-write happened
+    # (another forge's start-heat resolved to our path). Completing it
+    # would attribute their heat to us and delete their recovery state —
+    # refuse and point at patrol instead.
+    if task_id and task_id != "generated":
+        _t = next((t for t in state_peek.get("queue", []) or []
+                   if t.get("id") == task_id), None)
+        _pin = _t.get("assigned_forge") if _t else None
+        if _pin and _pin != forge_id:
+            _output({
+                "error": f"Checkpoint at {cp_path.name} carries task "
+                         f"{task_id} pinned to {_pin}, not {forge_id} — "
+                         "cross-forge checkpoint write suspected. Refusing "
+                         "to end this heat; run `smithy patrol --fix` and "
+                         "re-check which forge owns the task.",
+                "checkpoint_task": task_id,
+                "pinned_forge": _pin,
+                "resolved_forge": forge_id,
+            })
+            sys.exit(1)
     assembly_enabled = (
         (state_peek.get("parallel") or {}).get("assembly", {}).get("enabled", False)
     )
@@ -943,20 +1002,26 @@ def shutdown_status_cmd(ctx):
     root = ctx.obj["root"]
     state = load_state(root)
     parallel = state.get("parallel") or {}
-    cp = root / ".forge-checkpoint.json"
-    checkpoint = None
-    if cp.exists():
-        try:
-            checkpoint = json.loads(cp.read_text())
-        except Exception:
-            checkpoint = {"error": "unreadable"}
+    # t-542: quiesce means NO forge is mid-heat — check every roster
+    # entry's per-Forge checkpoint (main-root anchored), not just the
+    # primary's legacy file at a possibly-worktree `root`.
+    forge_ids = [f.get("id") for f in (parallel.get("forges") or []) if f.get("id")]
+    checkpoints = {}
+    for fid in forge_ids or [primary_forge_id(root)]:
+        cp = forge_checkpoint_path(root, fid)
+        if cp.exists():
+            try:
+                checkpoints[fid] = json.loads(cp.read_text())
+            except Exception:
+                checkpoints[fid] = {"error": "unreadable"}
     halted = bool(parallel.get("halt_flag"))
-    quiesced = halted and checkpoint is None
+    quiesced = halted and not checkpoints
     _output({
         "halt_flag": halted,
         "halted_at": parallel.get("halted_at"),
         "reason": parallel.get("halt_reason"),
-        "checkpoint": checkpoint,
+        "checkpoint": checkpoints.get(primary_forge_id(root)),
+        "checkpoints": checkpoints,
         "quiesced": quiesced,
     })
 
@@ -2527,17 +2592,17 @@ def _queue_nudge(root, persona, message):
 
 
 def _persona_is_busy(root, persona):
-    """Check if a persona has an active checkpoint (mid-heat)."""
-    # Forge uses .forge-checkpoint.json; extend for other personas if needed
+    """Check if a persona has an active checkpoint (mid-heat).
+
+    t-542: per-Forge personas (forge-quench, forge-temper, …) resolve
+    through `forge_checkpoint_path` — the old `.{persona}-checkpoint.json`
+    guess never matched the real `.forge-checkpoint-<id>.json` name, so
+    mid-heat Forges looked idle and got nudged/preempted."""
+    if persona == "forge" or persona.startswith("forge-"):
+        fid = None if persona == "forge" else persona
+        return forge_checkpoint_path(root, fid).exists()
     cp_path = root / f".{persona}-checkpoint.json"
-    if cp_path.exists():
-        return True
-    # Fallback: forge's canonical checkpoint name
-    if persona == "forge":
-        alt = root / ".forge-checkpoint.json"
-        if alt.exists():
-            return True
-    return False
+    return cp_path.exists()
 
 
 def _pane_agent(path):
@@ -3867,17 +3932,16 @@ def _detect_bottlenecks(state, root, window_minutes, active_forges=None):
     # (b) stuck in-flight: task in_progress + checkpoint mtime > 30min.
     stuck = []
     parallel = state.get("parallel") or {}
-    forge_ids = {f.get("id") for f in (parallel.get("forges") or [])}
     for t in state.get("queue", []):
         if t.get("status") != "in_progress":
             continue
         fid = t.get("assigned_forge")
         if not fid:
             continue
-        cp_name = (f".forge-checkpoint.json"
-                   if fid == (list(forge_ids)[0] if forge_ids else "")
-                   else f".forge-checkpoint-{fid}.json")
-        cp_path = root / cp_name
+        # t-542: was `list(forge_ids)[0]` — set iteration order made the
+        # "primary" nondeterministic, mis-attributing checkpoints. Use
+        # the canonical resolver (roster order + main-root anchoring).
+        cp_path = forge_checkpoint_path(root, fid)
         if not cp_path.exists():
             continue
         try:

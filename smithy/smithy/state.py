@@ -537,7 +537,10 @@ def main_repo_root(project_dir: Path) -> Path:
             ["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
             cwd=project_dir, capture_output=True, text=True, check=True,
         ).stdout.strip()
-        if out:
+        # t-542: only trust output that names a real directory — a
+        # mocked/garbled subprocess result must fall back to project_dir
+        # rather than anchor checkpoint paths at a junk location.
+        if out and Path(out).is_dir():
             return Path(out).parent
     except Exception:
         pass
