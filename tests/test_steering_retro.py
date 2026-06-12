@@ -54,12 +54,16 @@ class TestSteeringRetro:
 
     def test_pin_then_ship_computes_lag(self, tmp_path):
         _seed(tmp_path)
+        # 2099 dates keep the rows inside any --since window — this
+        # test originally used 2026-04-11 (the week it was written) and
+        # silently aged out of "--since 30d" a month later. Same
+        # convention as the other tests in this file.
         _write_steering(tmp_path, [
-            ("2026-04-11T10:00:00Z", 10, "bellows-poker", "t-001",
+            ("2099-04-11T10:00:00Z", 10, "bellows-poker", "t-001",
              "human_priority", "null", "0", "poker-drawer"),
         ])
         _write_worklog(tmp_path, [
-            ("2026-04-11T11:00:00Z", 15, "implementation", "t-001",
+            ("2099-04-11T11:00:00Z", 15, "implementation", "t-001",
              "complete", 0.8, "🟢", "shipped"),
         ])
         runner = CliRunner()
