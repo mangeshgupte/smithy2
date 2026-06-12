@@ -20,7 +20,7 @@ This module asserts:
 import hashlib
 from unittest.mock import patch
 
-from smithy.smithy.assembly import (
+from smithy.assembly import (
     _STAGING_VENV_DEPS,
     _staging_venv_deps_hash,
     ensure_staging_venv_versioned,
@@ -63,7 +63,7 @@ def test_deps_hash_changes_when_tuple_changes(monkeypatch):
     """Insert a fake extra dep and confirm the hash shifts — proves the
     cache-invalidation mechanism tracks edits to the tuple."""
     original = _staging_venv_deps_hash()
-    with patch("smithy.smithy.assembly._STAGING_VENV_DEPS",
+    with patch("smithy.assembly._STAGING_VENV_DEPS",
                _STAGING_VENV_DEPS + ("some-new-dep",)):
         assert _staging_venv_deps_hash() != original
 
@@ -108,7 +108,7 @@ def test_install_invocation_passes_all_deps(tmp_path, monkeypatch):
             venv_py.write_text("#!/bin/sh\nexit 0\n")
         return orig_run(cmd, *a, **kw)
 
-    monkeypatch.setattr("smithy.smithy.assembly.subprocess.run", fake_run_side)
+    monkeypatch.setattr("smithy.assembly.subprocess.run", fake_run_side)
     monkeypatch.setattr("shutil.which", fake_which)
 
     res = ensure_staging_venv_versioned(tmp_path, smithy_hash="abc")
@@ -147,7 +147,7 @@ def test_marker_contains_both_hashes_after_install(tmp_path, monkeypatch):
             venv_py.write_text("#!/bin/sh\nexit 0\n")
         return FakeCP()
 
-    monkeypatch.setattr("smithy.smithy.assembly.subprocess.run", fake_run)
+    monkeypatch.setattr("smithy.assembly.subprocess.run", fake_run)
     monkeypatch.setattr("shutil.which", lambda n: "/fake/uv" if n == "uv" else None)
 
     ensure_staging_venv_versioned(tmp_path, smithy_hash="smithy-hash-123")
@@ -181,7 +181,7 @@ def test_reuse_when_smithy_and_deps_both_match(tmp_path, monkeypatch):
             stderr = ""
         return CP()
 
-    monkeypatch.setattr("smithy.smithy.assembly.subprocess.run", fake_run)
+    monkeypatch.setattr("smithy.assembly.subprocess.run", fake_run)
     monkeypatch.setattr("shutil.which",
                          lambda n: "/fake/uv" if n == "uv" else None)
 
@@ -214,7 +214,7 @@ def test_recreate_when_only_deps_changed(tmp_path, monkeypatch):
             stderr = ""
         return CP()
 
-    monkeypatch.setattr("smithy.smithy.assembly.subprocess.run", fake_run)
+    monkeypatch.setattr("smithy.assembly.subprocess.run", fake_run)
     monkeypatch.setattr("shutil.which",
                          lambda n: "/fake/uv" if n == "uv" else None)
 
