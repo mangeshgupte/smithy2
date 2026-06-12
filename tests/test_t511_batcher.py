@@ -201,7 +201,7 @@ class TestVenvMarkerReuse:
         # t-531: marker format now encodes `<smithy_hash>:<deps_hash>`.
         # Pre-t-531 markers (smithy hash only) intentionally look stale
         # and trigger one free rebuild.
-        from smithy.smithy.assembly import _staging_venv_deps_hash
+        from smithy.assembly import _staging_venv_deps_hash
         (venv / ".smithy-tree-hash").write_text(
             f"abcd1234:{_staging_venv_deps_hash()}"
         )

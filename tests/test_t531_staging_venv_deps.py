@@ -10,8 +10,9 @@ This module asserts:
   (a) `_STAGING_VENV_DEPS` contains at least pytest + starlette + httpx
       (the incident set), plus fastapi + jinja2 + markdown + python-
       multipart (canonical bellows-adjacent set)
-  (b) the install call in `ensure_staging_venv_versioned` passes every
-      entry of the tuple to `uv pip install`
+  (b) the install call in `ensure_staging_venv_versioned` installs the
+      editable smithy with the `[test]` extras group (t-529 form), which
+      resolves the dep set declared in smithy/pyproject.toml
   (c) the cache marker mixes the deps hash in, so editing the deps
       tuple invalidates a previously-good venv
   (d) reuse path still kicks in when neither smithy nor deps changed
@@ -68,13 +69,15 @@ def test_deps_hash_changes_when_tuple_changes(monkeypatch):
         assert _staging_venv_deps_hash() != original
 
 
-# ---------- (b) install call passes every dep to uv pip install -----------
+# ---------- (b) install call uses the editable [test]-extras form ---------
 
 
 def test_install_invocation_passes_all_deps(tmp_path, monkeypatch):
     """Mock out `uv venv` and `uv pip install` so no real network
-    happens; assert the pip-install command contains every dep + the
-    editable smithy path."""
+    happens; assert the pip-install command is the t-529 editable
+    `<staging>/smithy[test]` form — the extras group in
+    smithy/pyproject.toml is what carries the test deps now, not
+    per-dep args on the install line."""
     # Minimal staging worktree shape — the function only needs
     # `<wt>/smithy/pyproject.toml` to exist for the install line to
     # make sense, but its internals don't actually check (they just
@@ -119,14 +122,15 @@ def test_install_invocation_passes_all_deps(tmp_path, monkeypatch):
         c for c in recorded_cmds
         if len(c) >= 2 and c[1] == "pip"
     )
-    # '-e' editable install + staging smithy path
+    # '-e' editable install + staging smithy path with [test] extras —
+    # uv resolves the optional-dependencies.test group from
+    # smithy/pyproject.toml (kept in sync with _STAGING_VENV_DEPS,
+    # which still drives the cache-marker hash).
     assert "-e" in install_cmd
-    assert any(str(tmp_path / "smithy") in x for x in install_cmd)
-    # Every dep in the tuple must appear on the install line.
-    for dep in _STAGING_VENV_DEPS:
-        assert dep in install_cmd, (
-            f"dep {dep!r} missing from install command: {install_cmd}"
-        )
+    assert f"{tmp_path / 'smithy'}[test]" in install_cmd, (
+        f"editable [test]-extras spec missing from install command: "
+        f"{install_cmd}"
+    )
 
 
 # ---------- (c) marker format encodes both hashes -------------------------
