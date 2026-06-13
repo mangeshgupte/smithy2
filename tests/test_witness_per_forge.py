@@ -85,8 +85,16 @@ def test_one_zombie_flags_only_itself(rig):
 
 
 def test_orphan_checkpoint_detected_and_fixable(rig):
-    # forge-02 has a checkpoint but is marked idle → orphan.
-    (rig / ".forge-checkpoint-forge-02.json").write_text('{"task_id":"t-x"}')
+    # forge-02 has a STALE checkpoint but is marked idle → orphan.
+    # t-544: a fresh-mtime checkpoint is treated as a live heat (the
+    # registry is a lagging cache) and is repaired, not reaped — so age
+    # the file past the 30min freshness window to make a real orphan.
+    import os
+    import time
+    cp = rig / ".forge-checkpoint-forge-02.json"
+    cp.write_text('{"task_id":"t-x"}')
+    old = time.time() - 7200
+    os.utime(cp, (old, old))
     _set_forge(rig, "forge-02", status="idle", last_heartbeat=None)
 
     rc, out, _ = _smithy(rig, "patrol")
@@ -94,7 +102,7 @@ def test_orphan_checkpoint_detected_and_fixable(rig):
     assert any("forge-02" in i and "orphan" in i for i in data["issues"])
 
     rc, out, _ = _smithy(rig, "patrol", "--fix")
-    assert not (rig / ".forge-checkpoint-forge-02.json").exists()
+    assert not cp.exists()
 
 
 def test_busy_without_checkpoint_flagged(rig):
