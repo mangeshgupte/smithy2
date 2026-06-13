@@ -13,30 +13,30 @@
                            padding: 12px; background: var(--surface, #1a1a1a);
                            border: 1px solid var(--border, #333); border-radius: 6px;
                            margin-bottom: 12px; }
-        .cockpit-filters label { display: flex; flex-direction: column; gap: 2px;
+        .cockpit-filters label { display: flex; flex-direction: column; gap: 4px;
                                  font-size: 13px; color: var(--text-muted, #aaa); }
         .cockpit-filters select, .cockpit-filters input {
-            padding: 4px 6px; background: var(--surface-hover, #222);
+            padding: 4px 8px; background: var(--surface-hover, #222);
             border: 1px solid var(--border, #333); color: var(--text, #ddd);
             border-radius: 3px; font: inherit; min-width: 120px;
         }
         .cockpit-stats { font-size: 14px; color: var(--text-muted, #888); margin: 4px 0 8px 0; }
         .cockpit-table { width: 100%; border-collapse: collapse; font-size: 14px;
                          font-family: var(--font-mono, monospace); }
-        .cockpit-table th { text-align: left; padding: 6px 8px;
+        .cockpit-table th { text-align: left; padding: 8px;
                             border-bottom: 1px solid var(--border, #333);
                             color: var(--text-muted, #888); font-weight: normal; }
-        .cockpit-table td { padding: 5px 8px; border-bottom: 1px solid var(--surface-hover, #222);
+        .cockpit-table td { padding: 4px 8px; border-bottom: 1px solid var(--surface-hover, #222);
                             vertical-align: top; }
         .cockpit-table tr.deferred-row { opacity: 0.6; }
         .cockpit-table tr:hover { background: var(--surface, #1a1a1a); }
         .c-expand { cursor: pointer; color: var(--text-muted, #888); width: 16px; }
         .c-id a { color: var(--yellow, #c89c2a); text-decoration: none; }
-        .c-stage { font-size: 12px; text-transform: uppercase; padding: 1px 5px;
+        .c-stage { font-size: 12px; text-transform: uppercase; padding: 2px 4px;
                    border-radius: 2px; background: var(--surface-hover, #222); }
         .c-hp { white-space: nowrap; }
         .c-hp button { font: inherit; background: transparent; border: 1px solid transparent;
-                       color: var(--text-muted, #888); cursor: pointer; padding: 0 3px;
+                       color: var(--text-muted, #888); cursor: pointer; padding: 0 4px;
                        border-radius: 2px; }
         .c-hp button:hover { border-color: var(--border, #333); color: var(--text, #ddd); }
         .c-desc { max-width: 360px; overflow: hidden; text-overflow: ellipsis;
@@ -44,8 +44,18 @@
         .c-reason { max-width: 140px; overflow: hidden; text-overflow: ellipsis;
                     white-space: nowrap; color: var(--text-muted, #aaa); font-size: 13px; }
         .c-kebab { cursor: pointer; color: var(--text-muted, #888); padding: 0 4px; }
+        /* t-556: numeric columns (priority, hp, age, heat) right-align,
+           headers matching cells. */
+        .cockpit-table th.c-num, .cockpit-table td.c-num { text-align: right; }
+        .cockpit-table .c-hp, .cockpit-table .c-age,
+        .cockpit-table .c-ship-heat { text-align: right; }
+        /* t-556: chevron, id, stage badge vertically centered in rows. */
+        .cockpit-table td.c-expand, .cockpit-table td.c-id,
+        .cockpit-table td.c-stage-cell { vertical-align: middle; }
+        /* t-556: filter bar controls share one baseline. */
+        .cockpit-filters button { padding: 4px 8px; font: inherit; }
         /* t-548: bounce badge — rejected-task heat pair in the reason cell. */
-        .c-bounce { color: var(--red, #c66); font-size: 12px; margin-left: 6px;
+        .c-bounce { color: var(--red, #c66); font-size: 12px; margin-left: 8px;
                     white-space: nowrap; }
         .c-empty { padding: 32px; text-align: center; color: var(--text-muted, #888); }
         .c-empty a { color: var(--yellow, #c89c2a); }
@@ -60,23 +70,23 @@
         .c-expand.open { color: var(--yellow, #c89c2a); }
         tr.c-inline-panel { background: var(--surface, #141414); }
         tr.c-inline-panel:hover { background: var(--surface, #141414); }
-        .c-inline-body { padding: 10px 16px 14px !important; }
+        .c-inline-body { padding: 12px 8px 16px !important; }
         .c-inline-desc { font-size: 15px; margin-bottom: 8px; color: var(--text, #ddd);
                          white-space: pre-wrap; }
         .c-inline-dl { display: grid; grid-template-columns: max-content 1fr;
-                       gap: 2px 12px; margin: 0 0 10px 0; font-size: 13px; }
+                       gap: 4px 12px; margin: 0 0 12px 0; font-size: 13px; }
         .c-inline-dl dt { color: var(--text-muted, #888); }
         .c-inline-dl dd { margin: 0; color: var(--text, #ddd); }
         .c-inline-history { font-size: 13px; color: var(--text-muted, #aaa); }
         .c-inline-history ul { margin: 4px 0 0 16px; padding: 0; }
         .c-inline-history li { margin: 1px 0; }
         /* t-390: section headers — dense, muted, click to collapse. */
-        tr.c-section-head td { padding: 10px 8px 4px; border-bottom: none;
+        tr.c-section-head td { padding: 12px 8px 4px; border-bottom: none;
                                font-size: 12px; text-transform: uppercase;
                                letter-spacing: 0.08em; color: var(--text-muted, #888);
                                cursor: pointer; user-select: none; }
         tr.c-section-head:hover td { color: var(--text, #ddd); }
-        .c-section-chip { display: inline-block; margin-left: 6px; padding: 0 5px;
+        .c-section-chip { display: inline-block; margin-left: 8px; padding: 0 4px;
                           background: var(--surface-hover, #222); color: var(--text, #ddd);
                           border-radius: 8px; font-size: 12px; }
         .c-section-caret { display: inline-block; width: 10px; }
@@ -86,17 +96,17 @@
         .c-ship-val { white-space: nowrap; }
         .c-ship-heat { color: var(--text-muted, #888); font-size: 13px; }
         .c-ship-sha { font-size: 13px; }
-        .c-ship-sha code { background: var(--surface-hover, #222); padding: 1px 4px;
+        .c-ship-sha code { background: var(--surface-hover, #222); padding: 2px 4px;
                            border-radius: 2px; color: var(--yellow, #c89c2a); }
         /* t-392: undo toast. Fixed bottom-right, auto-dismisses in 6s. */
         .c-toast { position: fixed; right: 16px; bottom: 16px;
                    background: var(--surface, #1a1a1a); border: 1px solid var(--border, #333);
                    padding: 8px 12px; border-radius: 4px; font-size: 14px;
-                   display: flex; align-items: center; gap: 10px; z-index: 1000;
+                   display: flex; align-items: center; gap: 8px; z-index: 1000;
                    box-shadow: 0 4px 14px rgba(0,0,0,0.4); }
         .c-toast[hidden] { display: none; }
         .c-toast button { background: transparent; border: 1px solid var(--yellow, #c89c2a);
-                          color: var(--yellow, #c89c2a); padding: 2px 8px; border-radius: 2px;
+                          color: var(--yellow, #c89c2a); padding: 4px 8px; border-radius: 2px;
                           cursor: pointer; font: inherit; }
         .c-toast button:hover { background: var(--yellow, #c89c2a); color: #000; }
         /* t-546: whole row is a click target for expand/collapse.
@@ -120,7 +130,7 @@
         .c-bulk-bar[hidden] { display: none; }
         .c-bulk-bar button { font: inherit; background: transparent;
                              border: 1px solid var(--border, #333);
-                             color: var(--text, #ddd); padding: 3px 10px;
+                             color: var(--text, #ddd); padding: 4px 8px;
                              border-radius: 2px; cursor: pointer; }
         .c-bulk-bar button:hover { border-color: var(--yellow, #c89c2a);
                                    color: var(--yellow, #c89c2a); }
@@ -132,7 +142,7 @@
         .c-desc-row td.c-desc-cell {
             color: var(--text-muted, #888);
             white-space: pre-wrap;
-            padding: 2px 8px 8px;
+            padding: 4px 8px 8px;
             border-top: none;
             cursor: pointer;
             font-size: 12px;
@@ -210,13 +220,13 @@
                     <th>id</th>
                     <th>stage</th>
                     <th>status</th>
-                    <th>M</th>
-                    <th>you</th>
+                    <th class="c-num">M</th>
+                    <th class="c-num">you</th>
                     <!-- t-527: reason column dropped from the primary
                          row (still rendered inside the inline panel);
                          desc now lives in a second tr per task. -->
                     <th>initiative</th>
-                    <th title="Minutes since task was filed">age</th>
+                    <th class="c-num" title="Minutes since task was filed">age</th>
                     <th></th>
                 </tr>
             </thead>
@@ -459,9 +469,9 @@
                 `<td class="c-check"><input type="checkbox" data-bulk-id="${t.id}" ${checked} onclick="onBulkCheck(event)"></td>` +
                 `<td class="c-expand ${isOpen ? 'open' : ''}" onclick="toggleInlineExpand(event, '${t.id}')">${isOpen ? '▾' : '▸'}</td>` +
                 `<td class="c-id"><a href="#" onclick="openDrawer('${t.id}');return false;">${t.id}</a></td>` +
-                `<td><span class="c-stage stage-${t.stage}">${t.stage}</span></td>` +
+                `<td class="c-stage-cell"><span class="c-stage stage-${t.stage}">${t.stage}</span></td>` +
                 `<td>${t.status}</td>` +
-                `<td>p${t.priority == null ? '?' : t.priority}</td>` +
+                `<td class="c-num">p${t.priority == null ? '?' : t.priority}</td>` +
                 `<td class="c-hp">` +
                   `<button title="priority up" onclick="bumpHP('${t.id}', -1)">↑</button>` +
                   `<span>${hp}</span>` +
@@ -534,7 +544,7 @@
             `<td class="c-check"></td>` +
             `<td class="c-expand ${isOpen ? 'open' : ''}" onclick="toggleInlineExpand(event, '${t.id}')">${isOpen ? '▾' : '▸'}</td>` +
             `<td class="c-id"><a href="#" onclick="openDrawer('${t.id}');return false;">${t.id}</a></td>` +
-            `<td><span class="c-stage stage-${t.stage}">${t.stage}</span></td>` +
+            `<td class="c-stage-cell"><span class="c-stage stage-${t.stage}">${t.stage}</span></td>` +
             `<td class="c-ship-val" title="outcome signal + value">${valTxt}</td>` +
             `<td class="c-ship-heat">${heat}</td>` +
             `<td class="c-ship-sha" colspan="4">${sha}</td>`;
