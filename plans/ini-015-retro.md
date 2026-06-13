@@ -14,9 +14,47 @@ Replaced the wavefront allocator (a deterministic PI controller picking next-tas
 
 *Sequenced by task id; see appendix for full task-by-task breakdown with merge shas.*
 
-<TODO: Forge data fill — enumerate 32 complete tasks under ini-015 with format:>
-<TODO:   - **t-XXX** (stage) — one-line desc — sha=abcd1234>
-<TODO: Source: `smithy list-tasks --initiative ini-015 --status complete`; per-task merge sha from git log grep of `[assembly] merge forge-*/t-XXX`.>
+*32 tasks under the original initiative window (2026-04-11 → 04-19), plus 2 maintenance tasks filed under ini-015 after the first closure draft. Merge-sha column is `—` for t-241–t-262: their work landed in untagged `[stage] description` commits on 2026-04-11, before the `[stage] t-XXX:` commit convention was adopted at t-263 (itself an ini-015 deliverable).*
+
+**Original initiative (32):**
+
+- **t-241** (implementation) — Marshal: persona scaffold — sha=—
+- **t-242** (implementation) — Marshal: CLI + communication protocol — sha=—
+- **t-243** (editing) — Marshal: update Forge protocol — sha=—
+- **t-244** (implementation) — Marshal: Bellows + steering UI integration — sha=—
+- **t-245** (testing) — Prioritizer: end-to-end test — sha=—
+- **t-247** (implementation) — Hook file I/O in state.py — sha=—
+- **t-248** (implementation) — Hook CLI commands — sha=—
+- **t-249** (implementation) — Wire hook into end-heat and patrol — sha=—
+- **t-250** (editing) — Update Forge protocol and persona for hook model — sha=—
+- **t-251** (implementation) — Create Marshal persona — sha=—
+- **t-252** (implementation) — Create dispatch channels + .gitignore update — sha=—
+- **t-253** (testing) — Hook mechanism tests — sha=—
+- **t-254** (implementation) — smithy list-tasks command — sha=—
+- **t-255** (implementation) — smithy set-priority command — sha=—
+- **t-256** (implementation) — smithy set-next-tasks command — sha=—
+- **t-257** (editing) — Forge always-on loop — sha=—
+- **t-258** (implementation) — Marshal hook mechanism — sha=—
+- **t-259** (editing) — Marshal always-on loop — sha=—
+- **t-260** (implementation) — Generalize hook mechanism — sha=—
+- **t-261** (implementation) — Hook queue: allow multiple hooked tasks — sha=—
+- **t-262** (implementation) — Unified task queue: collapse hook + next_tasks into one mechanism — sha=—
+- **t-263** (implementation) — smithy nudge command + tmux session convention — sha=`5353411`
+- **t-264** (implementation) — Wire nudge into queue-push — sha=—
+- **t-265** (implementation) — Wire nudge into Marshal→Forge dispatch — sha=—
+- **t-266** (implementation) — Nudge queue for busy sessions — sha=—
+- **t-275** (testing) — Integration test Marshal+Forge flow end-to-end — queue-push triggers nudge, Forge pop… — sha=`3dbf81f`
+- **t-276** (editing) — Marshal persona CLAUDE.md final pass — ensure startup, message-driven loop, and prior… — sha=`863ad75`
+- **t-277** (editing) — Anvil persona CLAUDE.md — update for Agent Teams spawn protocol, remove dispatch refe… — sha=`e6c6fc1`
+- **t-295** (editing) — Forge persona CLAUDE.md update — align with Agent Teams architecture, SendMessage pat… — sha=`b238c43`
+- **t-303** (marketing) — Marshal retrospective — Agent Teams experiment from the prioritizer seat: what worked… — sha=`3acb8c6`
+- **t-308** (editing) — Delete legacy dispatch/ directory (5 files: anvil-to-forge.md etc.) + remove any CLI… — sha=`78c712f`
+- **t-479** (implementation) — Marshal: never block on stdin — escalate to inbox.md + nudge Anvil, then proceed with… — sha=`11bbf70`
+
+**Late-filed maintenance under ini-015 (2):**
+
+- **t-530** (implementation) — set-next-tasks only nudges the top task's assigned forge, leaving other pinned forges… — sha=`1ac0438`
+- **t-534** (implementation) — Marshal reject-loop detector: stop re-dispatching a task that's failed 3 times with t… — sha=`034fc56`
 
 ## What worked (keep doing)
 
@@ -55,13 +93,49 @@ Replaced the wavefront allocator (a deterministic PI controller picking next-tas
 
 ## Metrics appendix
 
-<TODO: Forge data fill — task-by-task table with columns:>
-<TODO:   | id | stage | heats_consumed | outcome (merged/abandoned) | merge_sha |>
-<TODO: Source: filter worklog.tsv to task_ids under ini-015, aggregate heats per task,>
-<TODO:   look up merge sha from git log; flag any task with >3 rejection cycles as noteworthy.>
+| id | stage | heats | outcome | merge_sha |
+|----|-------|------:|---------|-----------|
+| t-241 | implementation | 1 | merged | — |
+| t-242 | implementation | 1 | merged | — |
+| t-243 | editing | 1 | merged | — |
+| t-244 | implementation | 1 | merged | — |
+| t-245 | testing | 1 | merged | — |
+| t-247 | implementation | 1 | merged | — |
+| t-248 | implementation | 1 | merged | — |
+| t-249 | implementation | 1 | merged | — |
+| t-250 | editing | 1 | merged | — |
+| t-251 | implementation | 1 | merged | — |
+| t-252 | implementation | 1 | merged | — |
+| t-253 | testing | 1 | merged | — |
+| t-254 | implementation | 1 | merged | — |
+| t-255 | implementation | 1 | merged | — |
+| t-256 | implementation | 1 | merged | — |
+| t-257 | editing | 1 | merged | — |
+| t-258 | implementation | 1 | merged | — |
+| t-259 | editing | 1 | merged | — |
+| t-260 | implementation | 0 | merged | — |
+| t-261 | implementation | 0 | merged | — |
+| t-262 | implementation | 1 | merged | — |
+| t-263 | implementation | 0 | merged | `5353411` |
+| t-264 | implementation | 0 | merged | — |
+| t-265 | implementation | 1 | merged | — |
+| t-266 | implementation | 1 | merged | — |
+| t-275 | testing | 1 | merged | `3dbf81f` |
+| t-276 | editing | 1 | merged | `863ad75` |
+| t-277 | editing | 1 | merged | `e6c6fc1` |
+| t-295 | editing | 1 | merged | `b238c43` |
+| t-303 | marketing | 0 | merged | `3acb8c6` |
+| t-308 | editing | 0 | merged | `78c712f` |
+| t-479 | implementation | 5 | merged | `11bbf70` |
+| t-530 | implementation | 2 | merged | `1ac0438` |
+| t-534 | implementation | 3 | merged | `034fc56` |
+| **total** | **34 tasks** | **35** | **0 abandoned** | — |
 
-<TODO: Summary row at bottom:>
-<TODO:   | total | 32 tasks | X heats | 0 abandoned | — |>
+**Window & cadence.**
 
-<TODO: Also include: earliest task start date (from first worklog entry under ini-015),>
-<TODO:   latest merge date, calendar days elapsed, merge:reject cycle ratio.>
+- Earliest worklog entry under ini-015: **2026-04-11**.
+- Latest merge (late-filed t-534): **2026-06-12**. Original-window close: **2026-04-19**.
+- Calendar span (original window): **~8 days** (2026-04-11 → 04-19); the two maintenance tasks landed weeks later under the still-open initiative.
+- Reject cycles: **5** total across 34 tasks (merge:reject ≈ **34:5**, ~15% of tasks saw ≥1 reject); no task exceeded 3 reject cycles.
+
+> **Data-fill note (t-506).** Figures are reconciled against current state, which has drifted from the prose header above. Current `state.json`: ini-015 `heats_used=33`, `budget_cap=40`, `status=active`, **34** complete tasks — vs the header's *28 heats / budget 25 / 32 tasks / closed 2026-04-19* (Anvil's original-closure draft). The header reflects the first closure attempt; the initiative was later reopened, its cap raised to 40, and two maintenance tasks (t-530, t-534) added. Per-task `heats` count distinct Forge work-heat worklog rows (sum 35) and so differ slightly from the initiative's charged `heats_used` (33); attribution is approximate for the pre-per-task-branch era. **Anvil should reconcile the header numbers before `smithy complete-initiative ini-015` runs.**
