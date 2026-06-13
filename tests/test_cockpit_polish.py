@@ -91,7 +91,8 @@ class TestCockpitTemplatePolish:
         # t-527: age column title changed from "Heats since first worklog
         # mention" to "Minutes since task was filed" when semantics shifted
         # from heats-based to created_at-based.
-        assert "<th title=\"Minutes since task was filed\">age</th>" in html
+        # t-556 added class="c-num" for right-alignment.
+        assert "<th class=\"c-num\" title=\"Minutes since task was filed\">age</th>" in html
 
     def test_empty_state_copy(self, poker):
         html = poker.get("/cockpit").text
