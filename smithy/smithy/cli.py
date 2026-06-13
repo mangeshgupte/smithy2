@@ -5740,6 +5740,84 @@ def sync_stages(ctx, force_down):
     _err(f"Synced stages from {total_heats} worklog entries")
 
 
+# --- t-488 (ini-023 T9): comms cron + window patrol probes -----------
+#
+# Three thin subprocess probes + one pure decision helper. The probes
+# return a None sentinel when crontab/tmux are unavailable (CI, headless,
+# no rig) so patrol silently skips rather than false-flagging. The pure
+# helper (`_comms_patrol_issues`) holds all the logic and is unit-tested
+# directly; the probes are tested with PATH-shimmed fake crontab/tmux.
+
+def _comms_window_name() -> str:
+    """t-481 comms window name. Empty string = operator opted out, which
+    disables both the cron line and this patrol check."""
+    import os
+    return os.environ.get("FORGE_COMMS_WINDOW", "comms")
+
+
+def _rig_session_live(session: str) -> bool:
+    """tmux has-session for the rig. False if tmux is unavailable."""
+    import subprocess as _sp
+    try:
+        r = _sp.run(["tmux", "has-session", "-t", session],
+                    capture_output=True, text=True, timeout=5)
+        return r.returncode == 0
+    except (OSError, _sp.SubprocessError):
+        return False
+
+
+def _crontab_has_comms() -> bool | None:
+    """Whether the managed comms-tick.sh cron line is installed. None when
+    `crontab` is unavailable so the caller skips instead of false-flagging.
+    "no crontab for user" (exit 1) reads as not-installed (False)."""
+    import subprocess as _sp
+    try:
+        r = _sp.run(["crontab", "-l"], capture_output=True, text=True,
+                    timeout=5)
+    except (OSError, _sp.SubprocessError):
+        return None
+    text = r.stdout if r.returncode == 0 else ""
+    return "/scripts/comms-tick.sh" in text
+
+
+def _tmux_window_exists(session: str, window: str) -> bool | None:
+    """Whether `window` exists in `session`. None when tmux can't list
+    windows (tmux missing / session gone)."""
+    import subprocess as _sp
+    try:
+        r = _sp.run(["tmux", "list-windows", "-t", session,
+                     "-F", "#{window_name}"],
+                    capture_output=True, text=True, timeout=5)
+    except (OSError, _sp.SubprocessError):
+        return None
+    if r.returncode != 0:
+        return None
+    return window in [w.strip() for w in r.stdout.splitlines() if w.strip()]
+
+
+def _comms_patrol_issues(window, session_live, halt_flag,
+                         cron_installed, window_exists) -> list:
+    """Pure decision: which comms-health issues to surface. Empty list
+    when comms is disabled, the rig is down/halted, or a probe was
+    inconclusive (None). `cron_installed`/`window_exists` are tri-state
+    (True / False / None); only an explicit False is an issue.
+    """
+    if not window or halt_flag or not session_live:
+        return []
+    out = []
+    if cron_installed is False:
+        out.append(
+            "comms-tick.sh cron line missing while rig is up — Comms will "
+            "never be woken (`scripts/_comms-cron.sh install`)"
+        )
+    if window_exists is False:
+        out.append(
+            f"comms tmux window '{window}' missing while rig is up — "
+            f"the Comms pane is gone (relaunch via start-smithy.sh)"
+        )
+    return out
+
+
 @cli.command("patrol")
 @click.option("--fix", is_flag=True, help="Auto-fix simple discrepancies")
 @click.pass_context
@@ -6236,6 +6314,40 @@ def patrol(ctx, fix):
                 f"({br}@{entry['sha'][:8]})"
             )
 
+    # 18. t-488 (ini-023 T9): comms cron + window health. Scoped as
+    # patrol check #15 in the ticket; the patrol grew to 17 checks
+    # meanwhile, so it lands as #18. When the rig is up (FORGE_SESSION
+    # live + halt_flag false) and comms is enabled (FORGE_COMMS_WINDOW
+    # non-empty), the comms-tick.sh cron line MUST be installed AND the
+    # comms tmux window MUST exist — otherwise Comms silently stops
+    # reporting. tmux/crontab unavailable (CI, headless): the probes
+    # return None and `_comms_patrol_issues` skips silently.
+    _comms_window = _comms_window_name()
+    _halt = bool((state.get("parallel") or {}).get("halt_flag"))
+    _session = _forge_session()
+    _session_live = _rig_session_live(_session)
+    if _comms_window and not _halt and _session_live:
+        _cron_ok = _crontab_has_comms()
+        _win_ok = _tmux_window_exists(_session, _comms_window)
+        comms_issues = _comms_patrol_issues(
+            _comms_window, _session_live, _halt, _cron_ok, _win_ok)
+        issues.extend(comms_issues)
+        if fix and comms_issues:
+            import subprocess as _sp5
+            if _cron_ok is False:
+                helper = main_root / "scripts" / "_comms-cron.sh"
+                cr = _sp5.run(["bash", str(helper), "install"],
+                              capture_output=True, text=True, timeout=15)
+                if cr.returncode == 0:
+                    fixes.append("Reinstalled comms-tick.sh cron line")
+            if _win_ok is False:
+                wr = _sp5.run(["tmux", "new-window", "-t", _session,
+                               "-n", _comms_window],
+                              capture_output=True, text=True, timeout=5)
+                if wr.returncode == 0:
+                    fixes.append(
+                        f"Relaunched comms tmux window '{_comms_window}'")
+
     # Save fixes if any
     if fix and fixes:
         save_state(root, state)
@@ -6244,7 +6356,7 @@ def patrol(ctx, fix):
         "issues": issues,
         "fixes": fixes,
         "clean": len(issues) == 0,
-        "checks_run": 17,
+        "checks_run": 18,
         "stuck_forges": sorted(set(stuck_forges)),
         "stalled_forges": stalled_forges,
         "starving_forges": starving_forges,
