@@ -6,20 +6,22 @@
     <title>Queue Cockpit — {{ project }}</title>
     <link rel="stylesheet" href="/static/style.css">
     <style>
-        .cockpit-page { max-width: 1400px; margin: 0 auto; padding: 16px; }
+        /* t-547: full-viewport width — no max-width cap or centering;
+           slim side padding. Human feedback: wasted space left/right. */
+        .cockpit-page { padding: 16px 12px; }
         .cockpit-filters { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap;
                            padding: 12px; background: var(--surface, #1a1a1a);
                            border: 1px solid var(--border, #333); border-radius: 6px;
                            margin-bottom: 12px; }
         .cockpit-filters label { display: flex; flex-direction: column; gap: 2px;
-                                 font-size: 11px; color: var(--text-muted, #aaa); }
+                                 font-size: 13px; color: var(--text-muted, #aaa); }
         .cockpit-filters select, .cockpit-filters input {
             padding: 4px 6px; background: var(--surface-hover, #222);
             border: 1px solid var(--border, #333); color: var(--text, #ddd);
             border-radius: 3px; font: inherit; min-width: 120px;
         }
-        .cockpit-stats { font-size: 12px; color: var(--text-muted, #888); margin: 4px 0 8px 0; }
-        .cockpit-table { width: 100%; border-collapse: collapse; font-size: 12px;
+        .cockpit-stats { font-size: 14px; color: var(--text-muted, #888); margin: 4px 0 8px 0; }
+        .cockpit-table { width: 100%; border-collapse: collapse; font-size: 14px;
                          font-family: var(--font-mono, monospace); }
         .cockpit-table th { text-align: left; padding: 6px 8px;
                             border-bottom: 1px solid var(--border, #333);
@@ -30,7 +32,7 @@
         .cockpit-table tr:hover { background: var(--surface, #1a1a1a); }
         .c-expand { cursor: pointer; color: var(--text-muted, #888); width: 16px; }
         .c-id a { color: var(--yellow, #c89c2a); text-decoration: none; }
-        .c-stage { font-size: 10px; text-transform: uppercase; padding: 1px 5px;
+        .c-stage { font-size: 12px; text-transform: uppercase; padding: 1px 5px;
                    border-radius: 2px; background: var(--surface-hover, #222); }
         .c-hp { white-space: nowrap; }
         .c-hp button { font: inherit; background: transparent; border: 1px solid transparent;
@@ -40,11 +42,11 @@
         .c-desc { max-width: 360px; overflow: hidden; text-overflow: ellipsis;
                   white-space: nowrap; }
         .c-reason { max-width: 140px; overflow: hidden; text-overflow: ellipsis;
-                    white-space: nowrap; color: var(--text-muted, #aaa); font-size: 11px; }
+                    white-space: nowrap; color: var(--text-muted, #aaa); font-size: 13px; }
         .c-kebab { cursor: pointer; color: var(--text-muted, #888); padding: 0 4px; }
         .c-empty { padding: 32px; text-align: center; color: var(--text-muted, #888); }
         .c-empty a { color: var(--yellow, #c89c2a); }
-        .c-age { color: var(--text-muted, #888); font-size: 11px; white-space: nowrap; }
+        .c-age { color: var(--text-muted, #888); font-size: 13px; white-space: nowrap; }
         .c-skeleton td { padding: 8px; }
         .c-skeleton-bar { display: block; height: 10px; background: var(--surface-hover, #222);
                           border-radius: 2px; animation: c-skel 1.2s infinite; }
@@ -56,37 +58,37 @@
         tr.c-inline-panel { background: var(--surface, #141414); }
         tr.c-inline-panel:hover { background: var(--surface, #141414); }
         .c-inline-body { padding: 10px 16px 14px !important; }
-        .c-inline-desc { font-size: 13px; margin-bottom: 8px; color: var(--text, #ddd);
+        .c-inline-desc { font-size: 15px; margin-bottom: 8px; color: var(--text, #ddd);
                          white-space: pre-wrap; }
         .c-inline-dl { display: grid; grid-template-columns: max-content 1fr;
-                       gap: 2px 12px; margin: 0 0 10px 0; font-size: 11px; }
+                       gap: 2px 12px; margin: 0 0 10px 0; font-size: 13px; }
         .c-inline-dl dt { color: var(--text-muted, #888); }
         .c-inline-dl dd { margin: 0; color: var(--text, #ddd); }
-        .c-inline-history { font-size: 11px; color: var(--text-muted, #aaa); }
+        .c-inline-history { font-size: 13px; color: var(--text-muted, #aaa); }
         .c-inline-history ul { margin: 4px 0 0 16px; padding: 0; }
         .c-inline-history li { margin: 1px 0; }
         /* t-390: section headers — dense, muted, click to collapse. */
         tr.c-section-head td { padding: 10px 8px 4px; border-bottom: none;
-                               font-size: 10px; text-transform: uppercase;
+                               font-size: 12px; text-transform: uppercase;
                                letter-spacing: 0.08em; color: var(--text-muted, #888);
                                cursor: pointer; user-select: none; }
         tr.c-section-head:hover td { color: var(--text, #ddd); }
         .c-section-chip { display: inline-block; margin-left: 6px; padding: 0 5px;
                           background: var(--surface-hover, #222); color: var(--text, #ddd);
-                          border-radius: 8px; font-size: 10px; }
+                          border-radius: 8px; font-size: 12px; }
         .c-section-caret { display: inline-block; width: 10px; }
         /* t-391: Complete-section row shape — dimmer, smaller, shipped metadata. */
         tr.c-complete-row td { color: var(--text-muted, #aaa); }
         .c-complete-row .c-id a { color: var(--text-muted, #888); }
         .c-ship-val { white-space: nowrap; }
-        .c-ship-heat { color: var(--text-muted, #888); font-size: 11px; }
-        .c-ship-sha { font-size: 11px; }
+        .c-ship-heat { color: var(--text-muted, #888); font-size: 13px; }
+        .c-ship-sha { font-size: 13px; }
         .c-ship-sha code { background: var(--surface-hover, #222); padding: 1px 4px;
                            border-radius: 2px; color: var(--yellow, #c89c2a); }
         /* t-392: undo toast. Fixed bottom-right, auto-dismisses in 6s. */
         .c-toast { position: fixed; right: 16px; bottom: 16px;
                    background: var(--surface, #1a1a1a); border: 1px solid var(--border, #333);
-                   padding: 8px 12px; border-radius: 4px; font-size: 12px;
+                   padding: 8px 12px; border-radius: 4px; font-size: 14px;
                    display: flex; align-items: center; gap: 10px; z-index: 1000;
                    box-shadow: 0 4px 14px rgba(0,0,0,0.4); }
         .c-toast[hidden] { display: none; }
@@ -111,7 +113,7 @@
                       padding: 8px 12px; margin-bottom: 8px;
                       background: var(--surface, #1a1a1a);
                       border: 1px solid var(--yellow, #c89c2a); border-radius: 4px;
-                      font-size: 12px; }
+                      font-size: 14px; }
         .c-bulk-bar[hidden] { display: none; }
         .c-bulk-bar button { font: inherit; background: transparent;
                              border: 1px solid var(--border, #333);
