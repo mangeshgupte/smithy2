@@ -7,8 +7,8 @@ The reporting stack has 5 pull layers (L0–L4) plus one sync push escalation (L
 **Format**: 🟢/🟡/🔴 + 1-line summary (in worklog.tsv and dashboard)
 
 **Classification** (from `protocol/logging.md`):
-- 🟢 Green: value ≥ 0.7, completed normally, no uncertainty
-- 🟡 Yellow: value < 0.7, progress stalled, or moderate uncertainty
+- 🟢 Green: productivity ≥ 0.7, completed normally, no uncertainty
+- 🟡 Yellow: productivity < 0.7, progress stalled, or moderate uncertainty
 - 🔴 Red: rollback, blocked > 5 heats, high uncertainty, or intent deviation
 
 **When to read**: Always visible in the dashboard. Human scans for yellow/red — green means "fine, skip."

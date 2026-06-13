@@ -132,14 +132,14 @@ smithy end-heat <value> <signal> "<notes>" [--outcome complete|partial|blocked]
 
 This atomically: increments budget.used, updates stage heats + value_ema + integral, appends worklog, marks task complete, updates overall_progress, deletes checkpoint, and auto-nudges Marshal.
 
-**Self-assessment** (the `value` argument):
+**Self-assessment** — productivity (passed as the `value` CLI argument):
 - 0.9-1.0: Major breakthrough
 - 0.7-0.8: Solid progress
 - 0.5-0.6: Some friction
 - 0.3-0.4: Mostly setup
 - 0.1-0.2: Stuck
 
-**Signal**: 🟢 (normal), 🟡 (value < 0.7 or stalled), 🔴 (rollback or blocked)
+**Signal**: 🟢 (normal), 🟡 (productivity < 0.7 or stalled), 🔴 (rollback or blocked)
 
 **Nudge cycle**: `end-heat` auto-nudges Marshal (unless `--no-nudge`). Marshal sees the nudge, re-prioritizes, calls `set-next-tasks` which auto-nudges Forge. The cycle is nudge-driven, not poll-driven.
 

@@ -179,7 +179,7 @@ end-heat ──► nudge Marshal ──► Marshal re-prioritizes ──► queu
 ```
 Neither side polls. Anvil only intervenes for steering changes or human requests.
 
-**Value** (self-assessment):
+**Productivity** (self-assessment — the `value` CLI argument):
 - `0.9–1.0` — major breakthrough
 - `0.7–0.8` — solid progress
 - `0.5–0.6` — some friction
@@ -188,7 +188,7 @@ Neither side polls. Anvil only intervenes for steering changes or human requests
 
 **Signal**:
 - `🟢` — normal / good progress
-- `🟡` — value < 0.7 or stalled
+- `🟡` — productivity < 0.7 or stalled
 - `🔴` — rollback, blocked, or regression
 
 Be honest. The allocator depends on accurate signals.
@@ -201,7 +201,7 @@ After `end-heat`, use the `SendMessage` tool to notify Marshal:
 SendMessage(to: "Marshal", message: """
 TASK_COMPLETE: t-XXX
 Commit: <hash>
-Value: 🟢/🟡/🔴 (N.N)
+Productivity: 🟢/🟡/🔴 (N.N)
 Summary: <what was done>
 Notes: <anything Marshal should know — proposed tasks, blockers, surprises>
 """)
