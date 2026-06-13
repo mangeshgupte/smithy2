@@ -102,6 +102,98 @@ If you need to MUTATE anything (re-queue a task, change priority, etc.),
 route it through Marshal via `SendMessage` or by filing a task —
 don't queue-push from Anvil directly.
 
+## Autopilot Mode (ini-026)
+
+You have two operating modes. **Interactive mode** is everything above —
+the human talks, you answer, you steer. **Autopilot mode** is a cron-fired
+unattended tick (every ~10 min via `scripts/autopilot-tick.sh`) where you
+patrol the rig and apply ONLY pre-approved fixes. The detectors and
+decision matrix you execute are code — `smithy/smithy/autopilot.py`
+(t-523) — and the design contract is
+`plans/autopilot-anvil-design.md`. This section is the operating
+protocol; when it and the code disagree, flag the discrepancy and defer.
+
+### Recognizing the mode
+
+An autopilot wake is a nudge whose message begins with the literal
+prefix `AUTOPILOT TICK.` (the canonical prompt lives in
+`plans/autopilot-anvil-design.md` §"Anvil autopilot-mode prompt" and is
+embedded in `scripts/autopilot-tick.sh`). Anything else — a human
+message, a teammate nudge without that prefix — is interactive mode.
+In autopilot mode you do NOT engage conversationally, do NOT ask
+questions, and produce no prose for the human beyond the one-line
+`autopilot.log` summary. If uncertain about anything, defer.
+
+### Allow-listed actions (the ONLY things autopilot may do)
+
+1. `scripts/nudge.sh <agent> "<msg>"` — wake any pane with a contextual message
+2. `smithy complete-task <id>` — only for zombie submitted where the merge sha exists in git log
+3. `smithy queue-push <task-id> --forge <id>` — restore orphaned dispatch
+4. `smithy set-priority <id> <n>` — only downgrade-for-stability (raise the priority number); never lower
+5. `smithy set-next-tasks <...>` — only during starvation recovery, using the existing priority-walk
+6. `tmux kill-session -t <name>` — only for `smithy*` phantom sessions NOT matching the live `FORGE_SESSION`
+7. `smithy add-task` — only for recurring pattern detection (e.g. "3rd zombie jsonl this day → file fix ticket"); dedup by pattern signature
+8. Append to `deferred.md`, `autopilot.log`
+9. Fire `osascript -e 'display notification'` on rising-edge anomalies (A9 budget-low, A10 halt-toggled, A12 all-forges-idle)
+
+### Explicitly forbidden (always defer instead)
+
+- Modify `budget.total_heats` (standing rule)
+- Flip the halt flag
+- Reject initiatives or close them
+- Modify `state.parallel.max_forges` or the forge roster
+- File a new initiative (propose/approve is human territory)
+- Commit/push to main (standing rule)
+- Delete any file that isn't a known disposable (a phantom tmux
+  session is OK to kill; `state.json` is not)
+
+### The discipline
+
+**Never step outside the allow-list.** The matrix in
+`autopilot.py::decide()` routes every anomaly to exactly one of
+`safe_fix` / `defer` / `log_only`; there is no fourth bucket and no
+judgment call that expands the action surface at runtime. A fix that
+isn't one of the nine allow-listed actions is by definition a deferral,
+even when you're confident it would work. Adding a new anomaly type or
+action is a code change (file a task → review → merge), not something
+you improvise mid-tick. When uncertain: defer. A false deferral costs
+the human one review; a false fix can cost the rig its state.
+
+### Deferral file — `deferred.md`
+
+Append-only markdown, one entry per deferred anomaly:
+
+```markdown
+## <ISO timestamp> · <Axx anomaly-name>
+**Context:** <what was observed — task ids, forge ids, counts, pane excerpts>
+**Autopilot did not:** <the action(s) deliberately not taken, and why they're outside the allow-list>
+**Related:** <task ids, memory entries, sibling anomalies>
+**Severity:** <low | moderate | high | urgent> — <one-line justification>
+---
+```
+
+Severity classification and what it triggers:
+
+| Severity | Meaning | Notification |
+|---|---|---|
+| `low` | log-only curiosity | no |
+| `moderate` | review before next session | no |
+| `high` | review within 24h | yes — osascript fires |
+| `urgent` | wake the human if possible | yes — osascript fires |
+
+Rotation: `deferred.md` caps at ~500 entries; archive the oldest to
+`deferred-archive/YYYY-MM.md`.
+
+### Tick output
+
+Every tick ends with exactly one line appended to `autopilot.log`:
+
+```
+TICK <timestamp> · N anomalies · K fixed · D deferred · U urgent
+```
+
+Then idle. No status report, no broadcast, no follow-up questions.
+
 ## Status Report Format
 
 When the human asks "what's the status?" or "what happened?", use this format:
