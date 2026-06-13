@@ -3027,10 +3027,29 @@ def _forge_session():
     return os.environ.get("FORGE_SESSION", "forge")
 
 
+# t-554: pane titles that identify rig personas. start-smithy.sh stamps
+# these via `select-pane -T`; anything else (tmux's default title is the
+# HOSTNAME) is ignored for identification purposes.
+_PERSONA_TITLES = {"anvil", "marshal", "assembly", "comms"}
+
+
 def _resolve_pane(session, persona, forge_ids=None):
     """t-414: return (pane_id, reason). pane_id is the tmux id of the pane
-    whose cwd maps to `persona` via _pane_agent; reason is a short string
-    explaining why resolution failed (None on success).
+    that maps to `persona`; reason is a short string explaining why
+    resolution failed (None on success).
+
+    t-554: resolution is START-PATH-first. `pane_current_path` tracks
+    the pane's foreground process cwd, which flaps to e.g. the repo
+    root during any Bash call the agent runs there — a nudge fired in
+    that window missed the pane and detoured to the jsonl queue
+    (observed 2026-06-12, quench→marshal during Marshal's per-cycle
+    patrol). `pane_start_path` is the directory the pane was CREATED
+    with (start-smithy.sh's per-persona workdir) and never changes, so
+    it's the stable identity. Stamped titles are matched second — note
+    the Claude Code TUI overwrites pane titles with its status line, so
+    in the live rig titles are NOT stable; they only help on rigs with
+    allow-rename off or non-TUI panes. The legacy current-path scan
+    stays as the final fallback.
 
     t-489: if `forge_ids` (the set of registered `parallel.forges[].id`s)
     is provided AND the session has panes but none of them map to any
@@ -3053,9 +3072,12 @@ def _resolve_pane(session, persona, forge_ids=None):
     )
     if chk.returncode != 0:
         return None, f"tmux session not found ('{session}')"
+    # Title is LAST in the format so an embedded tab in a TUI-written
+    # title can't shift the path fields.
     ls = subprocess.run(
         ["tmux", "list-panes", "-t", session, "-s",
-         "-F", "#{pane_id}\t#{pane_current_path}"],
+         "-F", "#{pane_id}\t#{pane_start_path}\t#{pane_current_path}"
+               "\t#{pane_title}"],
         capture_output=True, text=True,
     )
     if ls.returncode != 0:
@@ -3064,13 +3086,21 @@ def _resolve_pane(session, persona, forge_ids=None):
     pane_rows = []
     pane_agents = set()
     for line in ls.stdout.splitlines():
-        if "\t" not in line:
+        if line.count("\t") < 3:
             continue
-        pid, path = line.split("\t", 1)
-        pane_rows.append((pid, path))
-        a = _pane_agent(path)
-        if a:
-            pane_agents.add(a)
+        pid, start_path, cur_path, title = line.split("\t", 3)
+        pane_rows.append((pid, start_path, cur_path, title))
+        for p in (start_path, cur_path):
+            a = _pane_agent(p)
+            if a:
+                pane_agents.add(a)
+        # t-554: a stamped persona title identifies the pane even while
+        # its cwd is mid-flap. Junk titles (hostname default, TUI status
+        # lines) are excluded.
+        if title and (title in _PERSONA_TITLES
+                      or title.startswith("forge-")
+                      or (forge_ids and title in forge_ids)):
+            pane_agents.add(title)
 
     # t-489 roster-mismatch guard: a forge-ready tmux session is
     # characterised by having at least one pane whose _pane_agent maps
@@ -3093,8 +3123,17 @@ def _resolve_pane(session, persona, forge_ids=None):
                 f"wrong session? set FORGE_SESSION to the live rig"
             )
 
-    for pid, path in pane_rows:
-        if _pane_agent(path) == persona:
+    # t-554: start-path match wins — set at pane creation, never flaps.
+    for pid, start_path, _cur, _title in pane_rows:
+        if _pane_agent(start_path) == persona:
+            return pid, None
+    # Stamped title (rigs where titles survive — see docstring caveat).
+    for pid, _start, _cur, title in pane_rows:
+        if title == persona:
+            return pid, None
+    # Legacy fallback: foreground cwd scan.
+    for pid, _start, cur_path, _title in pane_rows:
+        if _pane_agent(cur_path) == persona:
             return pid, None
     return None, f"no pane for persona '{persona}' in session '{session}'"
 
@@ -3102,9 +3141,11 @@ def _resolve_pane(session, persona, forge_ids=None):
 def _nudge_persona(persona, message, root=None):
     """Send a message to a persona's pane in the FORGE_SESSION tmux session.
 
-    Panes are resolved by `pane_current_path` via `_resolve_pane`. If the
-    persona is mid-heat (checkpoint exists), queues the nudge to
-    .smithy-nudge-queue/<persona>.jsonl instead of sending via tmux.
+    Panes are resolved by `pane_start_path` first (stable), then
+    stamped title, then `pane_current_path`, via `_resolve_pane`
+    (t-554). If the persona is mid-heat (checkpoint exists), queues the
+    nudge to .smithy-nudge-queue/<persona>.jsonl instead of sending
+    via tmux.
 
     Message text and Enter are two separate send-keys calls — the Claude
     Code TUI input box sometimes swallows a combined "text\\nEnter" so we
