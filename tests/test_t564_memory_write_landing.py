@@ -114,13 +114,23 @@ def test_worktree_memory_write_commits_and_start_heat_proceeds(rig):
     assert rc == 0, f"start-heat blocked after memory-write: {out}{err}"
 
 
-def test_main_checkout_memory_write_does_not_commit(rig):
+def test_main_checkout_memory_write_is_refused(rig):
+    """t-568 (option-A point 2) supersedes t-564's write-only contract:
+    on a seeded rig (init scaffolds the README marker now) a
+    main-checkout memory-write is an exit-2 error — never a commit,
+    never a silent dirty file."""
     proj, _wt = rig
     head_before = _git(proj, "rev-parse", "HEAD").stdout.strip()
+    # Snapshot the tree first: the rig registers a linked worktree under
+    # .worktrees/ that surfaces as untracked noise — what we care about
+    # is that the refused write changes NOTHING, not that status is empty.
+    status_before = _git(proj, "status", "--porcelain").stdout.strip()
     rc, out, err = _smithy(proj, "memory-write", "main-side note",
                            cwd=proj)
-    assert rc == 0, err
+    assert rc == 2, f"expected refusal, got rc={rc}: {out}{err}"
     body = json.loads(out[out.index("{"):])
-    assert body["committed"] is False
+    assert "error" in body
     assert _git(proj, "rev-parse", "HEAD").stdout.strip() == head_before, \
         "memory-write committed on the MAIN checkout (Assembly-only-to-main)"
+    assert _git(proj, "status", "--porcelain").stdout.strip() == status_before, \
+        "refused write still dirtied the main checkout"
