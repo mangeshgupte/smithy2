@@ -801,3 +801,52 @@ def run_batch_tests(wt: Path, timeout_s: int = 600,
                        text=True, timeout=timeout_s)
     return {"passed": r.returncode == 0, "returncode": r.returncode,
             "output": (r.stdout + r.stderr)[-4000:]}
+
+
+def bisect_batch(wt: Path, merged: list, run_tests=None) -> dict:
+    """ini-020 impl-T3 (t-513): binary-search a red batch for the
+    offending entry.
+
+    Precondition: the caller just observed a red post-merge run at the
+    full batch tip, so the prefix through merged[-1] is known-red and
+    the empty prefix (base, before any batch merge) is assumed green.
+
+    Invariant: the prefix through merged[good] is green, the prefix
+    through merged[bad] is red. Each probe hard-resets staging to
+    merged[mid]["sha"] — the accumulated staging tip after that entry's
+    merge — and reruns the suite. ceil(log2(N)) probes worst case.
+
+    Purely a staging-worktree operation; main is never touched.
+
+    Returns:
+      {"status": "isolated", "offender_index": i, "offender": merged[i],
+       "green_prefix": merged[:i], "probes": k}
+      {"status": "error", "detail": "...", "probes": k} — a probe
+       failed (reset error or pytest timeout). Caller aborts the
+       bisect, resets staging, and leaves the queue intact (§d).
+    """
+    if run_tests is None:
+        run_tests = run_batch_tests
+    good, bad = -1, len(merged) - 1
+    probes = 0
+    while bad - good > 1:
+        mid = (bad + good) // 2
+        rs = reset_staging_to(wt, merged[mid]["sha"])
+        if rs["status"] != "ready":
+            return {"status": "error", "probes": probes,
+                    "detail": f"reset to {merged[mid]['sha']}: "
+                              f"{rs.get('detail', '?')}"}
+        probes += 1
+        try:
+            t = run_tests(wt)
+        except subprocess.TimeoutExpired:
+            return {"status": "error", "probes": probes,
+                    "detail": f"pytest timeout at probe {probes} "
+                              f"(prefix index {mid})"}
+        if t["passed"]:
+            good = mid
+        else:
+            bad = mid
+    return {"status": "isolated", "offender_index": bad,
+            "offender": merged[bad], "green_prefix": merged[:bad],
+            "probes": probes}

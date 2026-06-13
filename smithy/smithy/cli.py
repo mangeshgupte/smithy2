@@ -1749,16 +1749,17 @@ def _batch_window_decision(entries: list, now, idle_timer_s: int = 60) -> dict:
 @click.option("--dry-run", is_flag=True, default=False)
 @click.pass_context
 def assembly_batch_tick_cmd(ctx, base, idle_timer_s, dry_run):
-    """ini-020 impl-T1 (t-511) MVP: batch-drain .assembly-queue.jsonl
-    through the staging worktree with one pytest run on green, reset
-    + defer on red. Retains the legacy single-task `assembly-tick`
-    path (impl-T5 will retire it).
+    """ini-020 impl-T1 (t-511) + impl-T3 (t-513): batch-drain
+    .assembly-queue.jsonl through the staging worktree with one pytest
+    run on green; on red, bisect to the offending entry (with one
+    flaky retry), reject it, and land the green prefix. Retains the
+    legacy single-task `assembly-tick` path (impl-T5 will retire it).
     """
     from .assembly import (
         ensure_staging_worktree, _STAGING_WORKTREE,
         run_batch, run_batch_tests, ensure_staging_venv_versioned,
         smithy_tree_hash, staging_path, reset_staging_to,
-        delete_forge_branch,
+        delete_forge_branch, bisect_batch,
     )
     import subprocess as _sp
 
@@ -1776,6 +1777,26 @@ def assembly_batch_tick_cmd(ctx, base, idle_timer_s, dry_run):
             entries.append(json.loads(ln))
         except json.JSONDecodeError:
             continue
+
+    def _pop_rows(ids):
+        """Drop rows whose task_id ∈ ids from .assembly-queue.jsonl.
+        Unparseable rows are kept (same invariant as `_pop_queue`); no
+        lock needed because Assembly is singleton per rig."""
+        if not ids or not qpath.exists():
+            return
+        keep = []
+        for ln in qpath.read_text().splitlines():
+            if not ln.strip():
+                continue
+            try:
+                row = json.loads(ln)
+            except json.JSONDecodeError:
+                keep.append(ln)
+                continue
+            if row.get("task_id") in ids:
+                continue
+            keep.append(ln)
+        qpath.write_text("\n".join(keep) + "\n" if keep else "")
 
     now = datetime.now(timezone.utc)
     window = _batch_window_decision(entries, now, idle_timer_s=idle_timer_s)
@@ -1821,23 +1842,7 @@ def assembly_batch_tick_cmd(ctx, base, idle_timer_s, dry_run):
     # resets to main before doing any merge work), so there's nothing
     # to reset here — just pop the jsonl rows and emit telemetry.
     if not green:
-        if rejected_ids and qpath.exists():
-            keep = []
-            for ln in qpath.read_text().splitlines():
-                if not ln.strip():
-                    continue
-                try:
-                    row = json.loads(ln)
-                except json.JSONDecodeError:
-                    keep.append(ln)
-                    continue
-                if row.get("task_id") in rejected_ids:
-                    continue
-                keep.append(ln)
-            if keep:
-                qpath.write_text("\n".join(keep) + "\n")
-            else:
-                qpath.write_text("")
+        _pop_rows(rejected_ids)
         outcome = "all_rejected" if severe else "no_green"
         _emit_rig_event(root, "assembly_batch_merged", actor="assembly",
                         batch_size=0, batch_outcome=outcome,
@@ -1862,28 +1867,88 @@ def assembly_batch_tick_cmd(ctx, base, idle_timer_s, dry_run):
         return
 
     # 3. Single pytest run post-merge on staging's tip.
-    tst = run_batch_tests(wt)
-    if not tst["passed"]:
-        # Red: reset staging, LEAVE queue intact, emit event. Per t-511
-        # MVP scope, we do NOT assembly-reject — impl-T3 (bisect) is
-        # the correct place for that.
+    n_batch = len(green)
+    flaky = False
+    bisect_info = None
+
+    def _abort(detail, probes=0):
+        """§(d): abort the tick — reset staging to base, LEAVE the
+        queue intact (everything re-batches next tick), emit
+        batch_outcome=aborted."""
         reset_staging_to(wt, base)
         _emit_rig_event(root, "assembly_batch_merged", actor="assembly",
-                        batch_size=len(green),
-                        batch_outcome="red_deferred",
-                        returncode=tst.get("returncode"))
-        _output({
-            "status": "red_deferred",
-            "batch_size": len(green),
-            "returncode": tst.get("returncode"),
-            "output_tail": tst.get("output", "")[-400:],
-        })
-        return
+                        batch_size=n_batch, batch_outcome="aborted",
+                        probes=probes)
+        _output({"status": "aborted", "detail": str(detail)[:200],
+                 "probes": probes})
 
-    # 4. On-green: fast-forward-equivalent merge staging tip into main.
-    staging_tip = batch.get("staging_tip") or \
-        _sp.run(["git", "rev-parse", "HEAD"], cwd=str(wt),
-                capture_output=True, text=True).stdout.strip()
+    try:
+        tst = run_batch_tests(wt)
+    except Exception as exc:
+        _abort(exc)
+        return
+    if not tst["passed"]:
+        # t-513 (impl-T3): bisect the red batch down to one offender.
+        # N=1 needs no probes — the sole entry is the candidate.
+        bs = (bisect_batch(wt, green) if n_batch > 1 else
+              {"status": "isolated", "offender_index": 0,
+               "offender": green[0], "green_prefix": [], "probes": 0})
+        if bs["status"] != "isolated":
+            _abort(bs.get("detail", "bisect failed"),
+                   probes=bs.get("probes", 0))
+            return
+        offender = bs["offender"]
+
+        # Flaky retry: one rerun at the offender's accumulated sha
+        # before declaring it guilty. A pass means the red was flaky —
+        # do NOT reject; land the WHOLE batch. Only one retry; a
+        # second red confirms a real failure.
+        retry = None
+        rs = reset_staging_to(wt, offender["sha"])
+        if rs["status"] == "ready":
+            try:
+                retry = run_batch_tests(wt)
+            except Exception as exc:
+                _abort(exc, probes=bs["probes"])
+                return
+        if retry is not None and retry["passed"]:
+            flaky = True
+            _emit_rig_event(root, "flaky_test_observed", actor="assembly",
+                            batch_size=n_batch,
+                            offender_candidate=offender["entry"]["task_id"],
+                            returncode=tst.get("returncode"))
+        else:
+            # Confirmed offender: per-task reject (t-512 shape), land
+            # the green prefix, leave post-offender entries queued —
+            # they re-batch next tick without the offender.
+            bisect_info = bs
+            e = offender["entry"]
+            reason = f"batch-bisect isolated from N={n_batch}"
+            _do_assembly_reject(root, e["task_id"], reason)
+            _log(root, e["forge_id"], e["task_id"], "rejected", reason)
+            rejected_ids.add(e["task_id"])
+            green = bs["green_prefix"]
+            _emit_rig_event(root, "assembly_batch_bisect", actor="assembly",
+                            batch_size=n_batch, narrowed_to=1,
+                            green_landed=len(green), probes=bs["probes"])
+            if not green:
+                # Offender was the first entry — nothing to land.
+                _pop_rows(rejected_ids)
+                reset_staging_to(wt, base)
+                _output({"status": "bisect_rejected",
+                         "offender": e["task_id"],
+                         "green_landed": 0,
+                         "probes": bs["probes"],
+                         "rejected_ids": sorted(rejected_ids)})
+                return
+
+    # 4. On-green: fast-forward-equivalent merge the landing tip into
+    # main. After a bisect that's the green prefix's accumulated sha;
+    # otherwise (clean green or flaky-forgiven) the full batch tip.
+    staging_tip = (green[-1]["sha"] if bisect_info else
+                   batch.get("staging_tip") or
+                   _sp.run(["git", "rev-parse", "HEAD"], cwd=str(wt),
+                           capture_output=True, text=True).stdout.strip())
     co = _sp.run(["git", "checkout", base], cwd=str(root),
                  capture_output=True, text=True)
     if co.returncode != 0:
@@ -1932,38 +1997,24 @@ def assembly_batch_tick_cmd(ctx, base, idle_timer_s, dry_run):
         if push_status == "failed":
             _log(root, "assembly", "batch", "push_failed", push_reason)
 
-    # 7. Atomic pop of the N green entries + any severe entries we
-    # already assembly-rejected above (t-512 impl-T2). Re-read the
-    # jsonl under the same invariants `_pop_queue` relies on (no lock
-    # collision because Assembly is singleton per rig).
-    popped_ids = {m["entry"]["task_id"] for m in green} | rejected_ids
-    if qpath.exists():
-        keep = []
-        for ln in qpath.read_text().splitlines():
-            if not ln.strip():
-                continue
-            try:
-                row = json.loads(ln)
-            except json.JSONDecodeError:
-                keep.append(ln)
-                continue
-            if row.get("task_id") in popped_ids:
-                continue
-            keep.append(ln)
-        if keep:
-            qpath.write_text("\n".join(keep) + "\n")
-        else:
-            qpath.write_text("")
+    # 7. Atomic pop of the landed entries + everything we assembly-
+    # rejected above (severe merges from 1b, bisect offender from 3).
+    # Post-offender entries after a bisect are NOT in either set, so
+    # their rows survive and re-batch next tick.
+    _pop_rows({m["entry"]["task_id"] for m in green} | rejected_ids)
 
     # 8. Telemetry. t-512: partial_reject when the batch had any
-    # severe-rejected entries alongside the green ones.
-    outcome = "partial_reject" if severe else "green"
+    # severe-rejected entries alongside the green ones; t-513:
+    # bisect_partial when a bisect landed a green prefix.
+    outcome = ("bisect_partial" if bisect_info
+               else "partial_reject" if severe else "green")
     _emit_rig_event(
         root, "assembly_batch_merged", actor="assembly",
         batch_size=len(green), batch_outcome=outcome,
         severe_count=len(severe),
         venv_recreated=bool(venv_info.get("recreated")),
         push_status=push_status,
+        flaky=flaky,
     )
 
     _output({
@@ -1973,6 +2024,7 @@ def assembly_batch_tick_cmd(ctx, base, idle_timer_s, dry_run):
         "merged_ids": sorted({m["entry"]["task_id"] for m in green}),
         "rejected_ids": sorted(rejected_ids),
         "severe_count": len(severe),
+        "flaky": flaky,
         "venv": {"status": venv_info["status"],
                  "recreated": venv_info.get("recreated", False)},
         "push": {"status": push_status, "reason": push_reason},
