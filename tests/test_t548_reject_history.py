@@ -145,8 +145,10 @@ class TestCockpitTemplate:
         assert "function formatBounce" in cockpit_html
         assert "function formatBounceList" in cockpit_html
 
-    def test_reason_cell_renders_badge(self, cockpit_html):
-        assert "${t.priority_reason || '—'}${formatBounce(t)}" in cockpit_html
+    def test_desc_row_renders_badge(self, cockpit_html):
+        """t-565: the badge moved from the (removed) reason cell into the
+        always-visible desc row."""
+        assert "${formatBounce(t)}" in cockpit_html
 
     def test_inline_panel_lists_bounces(self, cockpit_html):
         assert "<dt>bounces</dt><dd>${formatBounceList(t)}</dd>" in cockpit_html

@@ -96,6 +96,13 @@ class TaskSummary:
     # rejected_heat, reason} dicts appended by _do_assembly_reject.
     submitted_heat: Optional[int] = None
     reject_history: list = field(default_factory=list)
+    # t-527 (ini-016): whole-minutes since task.created_at. None when the
+    # task predates t-527 and has no created_at stamp. The Cockpit
+    # renders "Nm" or "Nh" depending on magnitude.
+    age_minutes: Optional[int] = None
+    # t-527: raw created_at passthrough so downstream readers / tests
+    # can derive their own deltas.
+    created_at: Optional[str] = None
 
     def to_dict(self) -> dict:
         return {
@@ -109,6 +116,8 @@ class TaskSummary:
             "last_worklog_ts": self.last_worklog_ts,
             "submitted_heat": self.submitted_heat,
             "reject_history": self.reject_history,
+            "age_minutes": self.age_minutes,
+            "created_at": self.created_at,
         }
 
     @classmethod
@@ -125,7 +134,26 @@ class TaskSummary:
             blocked_by=row.get("blocked_by", []) or [],
             submitted_heat=row.get("submitted_heat"),
             reject_history=row.get("reject_history", []) or [],
+            created_at=row.get("created_at"),
+            age_minutes=_compute_age_minutes(row.get("created_at")),
         )
+
+
+def _compute_age_minutes(created_at):
+    """t-527: whole minutes since an ISO8601 created_at timestamp,
+    or None if the stamp is missing / unparseable. UTC-normalized so
+    tasks filed under one timezone read correctly from any other."""
+    if not created_at:
+        return None
+    from datetime import datetime, timezone
+    try:
+        ts = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+    except (ValueError, AttributeError):
+        return None
+    if ts.tzinfo is None:
+        ts = ts.replace(tzinfo=timezone.utc)
+    delta = datetime.now(timezone.utc) - ts
+    return max(0, int(delta.total_seconds() // 60))
 
 
 @dataclass

@@ -88,7 +88,10 @@ class TestCockpitAPIAge:
 class TestCockpitTemplatePolish:
     def test_age_column_header(self, poker):
         html = poker.get("/cockpit").text
-        assert "<th title=\"Heats since first worklog mention\">age</th>" in html
+        # t-527: age column title changed from "Heats since first worklog
+        # mention" to "Minutes since task was filed" when semantics shifted
+        # from heats-based to created_at-based.
+        assert "<th title=\"Minutes since task was filed\">age</th>" in html
 
     def test_empty_state_copy(self, poker):
         html = poker.get("/cockpit").text
@@ -108,7 +111,9 @@ class TestCockpitTemplatePolish:
         assert "'Enter'" in html
 
     def test_colspan_bumped_to_12(self, poker):
-        # t-380 added a bulk-select column, bumping header/skeleton/empty
-        # colspan from 11 to 12.
+        # t-380 bumped to 12 (bulk-select col). t-527 removed the
+        # primary-row desc + reason cells and moved desc to a second
+        # tr below each row — the new header/skeleton/empty colspan
+        # is 10.
         html = poker.get("/cockpit").text
-        assert 'colspan="12"' in html
+        assert 'colspan="10"' in html
