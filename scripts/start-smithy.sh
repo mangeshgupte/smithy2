@@ -285,26 +285,30 @@ FIRST_FORGE_ID=$(tmux split-window -t "$ASSEMBLY_ID" -v -p 50 \
   -c "$FORGE_ROOT/.worktrees/$FIRST_FORGE/personas/forge" \
   -P -F '#{pane_id}')
 
-# Capture the row width now, while the first forge pane still spans the full
-# right column. Once we split it horizontally below, its pane_width shrinks.
-ROW_WIDTH=$(tmux display -p -t "$FIRST_FORGE_ID" '#{pane_width}')
-
 FORGE_PANE_IDS=("$FIRST_FORGE_ID")
-# Remaining forges: each splits off the first forge pane. We equalize widths
-# at the end rather than relying on split percentages.
-for ((i=1; i<${#FORGE_ARR[@]}; i++)); do
+# Remaining forges: chain-split off the previous forge pane, sizing each
+# split so all panes are born equal — the i-th split gives the new pane
+# (N-i)/(N-i+1) of the remaining width. Splitting the first pane repeatedly
+# (the old approach) yields uneven widths that the resize pass can't always
+# recover after the client attaches and the window reflows.
+N=${#FORGE_ARR[@]}
+for ((i=1; i<N; i++)); do
   fid="${FORGE_ARR[$i]}"
-  new_id=$(tmux split-window -t "$FIRST_FORGE_ID" -h \
+  pct=$(( 100 * (N - i) / (N - i + 1) ))
+  new_id=$(tmux split-window -t "${FORGE_PANE_IDS[$((i-1))]}" -h -p "$pct" \
     -c "$FORGE_ROOT/.worktrees/$fid/personas/forge" \
     -P -F '#{pane_id}')
   FORGE_PANE_IDS+=("$new_id")
 done
 
-# Equalize forge pane widths using the row width captured before splitting.
-# Resize each pane (except the last, which absorbs the remainder) to an
-# equal cell count.
-N=${#FORGE_PANE_IDS[@]}
+# Safety net: equalize from the live widths (the window may have reflowed
+# since the splits). Last pane absorbs the remainder.
 if (( N > 1 )); then
+  ROW_WIDTH=0
+  for pid in "${FORGE_PANE_IDS[@]}"; do
+    w=$(tmux display -p -t "$pid" '#{pane_width}')
+    ROW_WIDTH=$(( ROW_WIDTH + w ))
+  done
   EACH=$(( ROW_WIDTH / N ))
   for ((i=0; i<N-1; i++)); do
     tmux resize-pane -t "${FORGE_PANE_IDS[$i]}" -x "$EACH"
