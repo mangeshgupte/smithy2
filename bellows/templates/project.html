@@ -130,7 +130,7 @@
                     <span class="heat-signal">{{ heat.get('signal', '🟢') }}</span>
                     <span class="heat-number">Heat {{ heat.get('heat', '?') }}</span>
                     <span class="heat-stage stage-{{ heat.get('stage', '') }}">{{ heat.get('stage', '') }}</span>
-                    <span class="heat-value {% if val >= 0.7 %}heat-value-high{% elif val >= 0.5 %}heat-value-mid{% else %}heat-value-low{% endif %}">{{ heat.get('value', '') }}</span>
+                    <span class="heat-value {% if val >= 0.7 %}heat-value-high{% elif val >= 0.5 %}heat-value-mid{% else %}heat-value-low{% endif %}" title="productivity (self-rated 0.0–1.0)">{{ heat.get('value', '') }}</span>
                     <span class="heat-summary">{{ (heat.get('notes') or '')[:50] }}{% if (heat.get('notes') or '')|length > 50 %}...{% endif %}</span>
                 </summary>
                 <p class="heat-notes-full">{{ heat.get('notes') or '' }}</p>
@@ -148,7 +148,7 @@
                         <span class="heat-signal">{{ heat.get('signal', '🟢') }}</span>
                         <span class="heat-number">Heat {{ heat.get('heat', '?') }}</span>
                         <span class="heat-stage stage-{{ heat.get('stage', '') }}">{{ heat.get('stage', '') }}</span>
-                        <span class="heat-value {% if val >= 0.7 %}heat-value-high{% elif val >= 0.5 %}heat-value-mid{% else %}heat-value-low{% endif %}">{{ heat.get('value', '') }}</span>
+                        <span class="heat-value {% if val >= 0.7 %}heat-value-high{% elif val >= 0.5 %}heat-value-mid{% else %}heat-value-low{% endif %}" title="productivity (self-rated 0.0–1.0)">{{ heat.get('value', '') }}</span>
                         <span class="heat-summary">{{ (heat.get('notes') or '')[:50] }}{% if (heat.get('notes') or '')|length > 50 %}...{% endif %}</span>
                     </summary>
                     <p class="heat-notes-full">{{ heat.get('notes') or '' }}</p>

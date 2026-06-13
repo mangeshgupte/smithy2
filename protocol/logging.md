@@ -27,7 +27,7 @@ Forge for backcompat.
 
 ## Your Inputs
 
-### Value (0.0-1.0)
+### Productivity (0.0-1.0)
 
 Rate the heat's productivity honestly:
 - **0.9-1.0**: Major breakthrough, key feature complete
@@ -36,10 +36,14 @@ Rate the heat's productivity honestly:
 - **0.3-0.4**: Mostly setup/exploration
 - **0.1-0.2**: Stuck, wrong direction
 
+> The CLI flag and the `worklog.tsv` column remain named `value` for
+> backwards compatibility (`smithy end-heat <value> <signal>`); **productivity**
+> is the display label for the same 0.0-1.0 self-rating.
+
 ### Signal
 
-- 🟢 **Green**: Completed normally, value ≥ 0.7, no issues
-- 🟡 **Yellow**: Value < 0.7, or progress stalled, or moderate uncertainty
+- 🟢 **Green**: Completed normally, productivity ≥ 0.7, no issues
+- 🟡 **Yellow**: Productivity < 0.7, or progress stalled, or moderate uncertainty
 - 🔴 **Red**: Rollback, blocked > 5 heats, or deviation from intent
 
 ### Notes

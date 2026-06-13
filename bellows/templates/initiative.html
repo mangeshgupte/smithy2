@@ -193,7 +193,10 @@ function openTaskDrawer(taskId) {
             list.innerHTML = '';
             wl.slice(-10).reverse().forEach(w => {
                 const li = document.createElement('li');
-                li.textContent = `h${w.heat} ${w.signal || ''} ${w.stage} ${w.value ?? ''} — ${w.notes || ''}`;
+                // t-509: label the bare self-rating as productivity (display
+                // only — w.value is the worklog schema field, unchanged).
+                const prod = w.value == null ? '' : `prod ${w.value}`;
+                li.textContent = `h${w.heat} ${w.signal || ''} ${w.stage} ${prod} — ${w.notes || ''}`;
                 list.appendChild(li);
             });
         })
