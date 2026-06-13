@@ -52,12 +52,24 @@ templates = Jinja2Templates(directory=BASE_DIR / "templates")
 STATE_DIR = os.environ.get("FORGE_PROJECT_DIR", str(Path(__file__).parent.parent))
 
 URL_BELLOWS = os.environ.get("URL_BELLOWS", "http://localhost:8080")
+# t-555: no baked-in active flag — the old static tuple hardcoded
+# Poker as active on every page (so /cockpit never highlighted, and
+# Cockpit had no nav entry at all; the idle banner was the only path).
 NAV_LINKS = [
-    ("🃏 Poker", os.environ.get("URL_POKER", "http://localhost:8001"), True),
-    ("🎯 Intent", os.environ.get("URL_INTENT", "http://localhost:8003"), False),
-    ("📅 Timeline", os.environ.get("URL_TIMELINE", "http://localhost:8004"), False),
-    ("🔔 Bellows", URL_BELLOWS, False),
+    ("🃏 Poker", os.environ.get("URL_POKER", "http://localhost:8001")),
+    ("🎛 Cockpit", "/cockpit"),
+    ("🎯 Intent", os.environ.get("URL_INTENT", "http://localhost:8003")),
+    ("📅 Timeline", os.environ.get("URL_TIMELINE", "http://localhost:8004")),
+    ("🔔 Bellows", URL_BELLOWS),
 ]
+
+
+def nav_links(active: str | None = None):
+    """Render NAV_LINKS to the (label, url, is_active) 3-tuples the
+    steering-nav template loop expects, computing `is_active` per route
+    ("Poker" on /, "Cockpit" on /cockpit; None highlights nothing)."""
+    return [(label, url, bool(active) and active in label)
+            for label, url in NAV_LINKS]
 
 
 def _load_state():
@@ -198,7 +210,7 @@ async def index(request: Request):
         "project": project_name,
         "forge_activity": forge_activity,
         "idle_state": idle_state,
-        "nav_links": NAV_LINKS,
+        "nav_links": nav_links("Poker"),
         "globally_pinned_ids": _globally_pinned_ids(project_name),
         "url_bellows": URL_BELLOWS,
     })
@@ -302,7 +314,7 @@ async def cockpit(request: Request, stage: str = None, status: str = None,
         "filter_status": status or "",
         "filter_initiative": initiative or "",
         "filter_q": q or "",
-        "nav_links": NAV_LINKS,
+        "nav_links": nav_links("Cockpit"),
     })
 
 
@@ -312,7 +324,7 @@ async def activity_browser(request: Request):
     state = _load_state()
     return templates.TemplateResponse(request=request, name="activity.html", context={
         "project": state.get("project", "unknown"),
-        "nav_links": NAV_LINKS,
+        "nav_links": nav_links(),
     })
 
 

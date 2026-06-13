@@ -922,6 +922,26 @@ class TestUIReactivity:
         r = c.get("/")
         assert 'active' in r.text
 
+    def test_poker_nav_has_cockpit_link(self, poker_client):
+        """t-555: the steering-nav itself links to /cockpit — not just
+        the conditional idle banner."""
+        c, _ = poker_client
+        r = c.get("/")
+        assert 'href="/cockpit"' in r.text
+        assert "Cockpit" in r.text
+
+    def test_cockpit_nav_highlights_cockpit_not_poker(self, poker_client):
+        """t-555: active flag is computed per-route — on /cockpit the
+        Cockpit entry is active and Poker isn't."""
+        c, _ = poker_client
+        r = c.get("/cockpit")
+        assert 'class="nav-link active">🎛 Cockpit' in r.text
+        assert 'class="nav-link active">🃏 Poker' not in r.text
+        # And on / it's the other way around.
+        r = c.get("/")
+        assert 'class="nav-link active">🃏 Poker' in r.text
+        assert 'class="nav-link active">🎛 Cockpit' not in r.text
+
     def test_timeline_has_nav_bar(self, timeline_client):
         """Timeline renders the cross-UI navigation bar."""
         c, _ = timeline_client
@@ -929,12 +949,28 @@ class TestUIReactivity:
         assert "steering-nav" in r.text
         assert "Poker" in r.text
 
+    def test_timeline_nav_has_cockpit_link(self, timeline_client):
+        """t-555: cross-app nav is uniform — timeline links to the
+        poker app's /cockpit."""
+        c, _ = timeline_client
+        r = c.get("/")
+        assert "/cockpit" in r.text
+        assert "Cockpit" in r.text
+
     def test_intent_has_nav_bar(self, intent_client):
         """Intent Editor renders the cross-UI navigation bar."""
         c, _ = intent_client
         r = c.get("/")
         assert "steering-nav" in r.text
         assert "Poker" in r.text
+
+    def test_intent_nav_has_cockpit_link(self, intent_client):
+        """t-555: cross-app nav is uniform — intent editor links to the
+        poker app's /cockpit."""
+        c, _ = intent_client
+        r = c.get("/")
+        assert "/cockpit" in r.text
+        assert "Cockpit" in r.text
 
     # --- Refresh button ---
 
