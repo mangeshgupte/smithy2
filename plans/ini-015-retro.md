@@ -1,8 +1,8 @@
 # ini-015: Marshal agent — Retrospective
 
 **Closed:** 2026-04-19 *(pending `smithy complete-initiative`)*
-**Heat cost:** 28 heats (budgeted 25)
-**Task count:** 32 complete / 0 abandoned *(rejects rolled into merged retries, see appendix)*
+**Heat cost:** 34 heats (budgeted 40)
+**Task count:** 35 complete / 0 abandoned *(rejects rolled into merged retries, see appendix)*
 **Successor:** none — future Marshal maintenance work files as new initiatives when substantial (per ini-025 locked decisions)
 **Author:** Anvil (prose, 2026-04-19) + `<forge-id>` (data, task t-506)
 
@@ -14,7 +14,7 @@ Replaced the wavefront allocator (a deterministic PI controller picking next-tas
 
 *Sequenced by task id; see appendix for full task-by-task breakdown with merge shas.*
 
-*32 tasks under the original initiative window (2026-04-11 → 04-19), plus 2 maintenance tasks filed under ini-015 after the first closure draft. Merge-sha column is `—` for t-241–t-262: their work landed in untagged `[stage] description` commits on 2026-04-11, before the `[stage] t-XXX:` commit convention was adopted at t-263 (itself an ini-015 deliverable).*
+*32 tasks under the original initiative window (2026-04-11 → 04-19), plus 3 maintenance tasks filed under ini-015 after the first closure draft. Merge-sha column is `—` for t-241–t-262: their work landed in untagged `[stage] description` commits on 2026-04-11, before the `[stage] t-XXX:` commit convention was adopted at t-263 (itself an ini-015 deliverable).*
 
 **Original initiative (32):**
 
@@ -51,8 +51,9 @@ Replaced the wavefront allocator (a deterministic PI controller picking next-tas
 - **t-308** (editing) — Delete legacy dispatch/ directory (5 files: anvil-to-forge.md etc.) + remove any CLI… — sha=`78c712f`
 - **t-479** (implementation) — Marshal: never block on stdin — escalate to inbox.md + nudge Anvil, then proceed with… — sha=`11bbf70`
 
-**Late-filed maintenance under ini-015 (2):**
+**Late-filed maintenance under ini-015 (3):**
 
+- **t-517** (implementation) — back-pressure-aware dispatch scoring — sha=`c915a85`
 - **t-530** (implementation) — set-next-tasks only nudges the top task's assigned forge, leaving other pinned forges… — sha=`1ac0438`
 - **t-534** (implementation) — Marshal reject-loop detector: stop re-dispatching a task that's failed 3 times with t… — sha=`034fc56`
 
@@ -127,15 +128,16 @@ Replaced the wavefront allocator (a deterministic PI controller picking next-tas
 | t-303 | marketing | 0 | merged | `3acb8c6` |
 | t-308 | editing | 0 | merged | `78c712f` |
 | t-479 | implementation | 5 | merged | `11bbf70` |
+| t-517 | implementation | 1 | merged | `c915a85` |
 | t-530 | implementation | 2 | merged | `1ac0438` |
 | t-534 | implementation | 3 | merged | `034fc56` |
-| **total** | **34 tasks** | **35** | **0 abandoned** | — |
+| **total** | **35 tasks** | **36** | **0 abandoned** | — |
 
 **Window & cadence.**
 
 - Earliest worklog entry under ini-015: **2026-04-11**.
-- Latest merge (late-filed t-534): **2026-06-12**. Original-window close: **2026-04-19**.
-- Calendar span (original window): **~8 days** (2026-04-11 → 04-19); the two maintenance tasks landed weeks later under the still-open initiative.
-- Reject cycles: **5** total across 34 tasks (merge:reject ≈ **34:5**, ~15% of tasks saw ≥1 reject); no task exceeded 3 reject cycles.
+- Latest merge (late-filed t-517): **2026-06-12**. Original-window close: **2026-04-19**.
+- Calendar span (original window): **~8 days** (2026-04-11 → 04-19); the three maintenance tasks landed weeks later under the still-open initiative.
+- Reject cycles: **5** total across 35 tasks (merge:reject ≈ **35:5**, ~14% of tasks saw ≥1 reject); no task exceeded 3 reject cycles.
 
-> **Data-fill note (t-506).** Figures are reconciled against current state, which has drifted from the prose header above. Current `state.json`: ini-015 `heats_used=33`, `budget_cap=40`, `status=active`, **34** complete tasks — vs the header's *28 heats / budget 25 / 32 tasks / closed 2026-04-19* (Anvil's original-closure draft). The header reflects the first closure attempt; the initiative was later reopened, its cap raised to 40, and two maintenance tasks (t-530, t-534) added. Per-task `heats` count distinct Forge work-heat worklog rows (sum 35) and so differ slightly from the initiative's charged `heats_used` (33); attribution is approximate for the pre-per-task-branch era. **Anvil should reconcile the header numbers before `smithy complete-initiative ini-015` runs.**
+> **Data-fill note (t-506, reconciled t-572).** Figures match current state. Current `state.json`: ini-015 `heats_used=34`, `budget_cap=40`, `status=active`, **35** complete tasks; `closed_at` is still null — hence the *(pending `smithy complete-initiative`)* marker on the Closed line. t-572 reconciled the header above to these live values; it previously carried Anvil's original-closure draft (*28 heats / budget 25 / 32 tasks*) from before the initiative was reopened, its cap raised to 40, and three maintenance tasks (t-517, t-530, t-534) added. Per-task `heats` count distinct Forge work-heat worklog rows (appendix sum **36**) and so differ from the initiative's charged `heats_used` (34); attribution is approximate for the pre-per-task-branch era. The remaining closure step is the human running `smithy complete-initiative ini-015 --retro plans/ini-015-retro.md`.
