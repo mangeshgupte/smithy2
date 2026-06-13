@@ -101,23 +101,34 @@ def _build_priority_reason(state: dict, task: dict) -> str:
 def _reset_worktree_on_reject(root, forge_id):
     """t-439: discard uncommitted WIP in the Forge's worktree after the
     pre-submit gate rejects. Runs `git reset --hard HEAD` + `git clean
-    -fdx` in the worktree. Never raises into end-heat — reject-path
-    cleanup must not mask the original test failure.
+    -fdx -e .venv` in the worktree. Never raises into end-heat —
+    reject-path cleanup must not mask the original test failure.
 
-    Ignores `.forge-checkpoint*.json` at main repo root (they don't
-    live in the worktree) and anything that isn't a git repo (e.g.
-    when run during smoke tests or from main itself)."""
+    t-562 hardening:
+    - `.venv/` is excluded from the clean. `-x` removes IGNORED files,
+      so every reject used to silently delete the worktree venv — the
+      next gate then failed on ImportError and the rejects compounded
+      (April's reject spiral; temper's mid-session venv loss
+      2026-06-13). `-x` is kept for pyc/scratch; the env survives.
+    - The silent fallback to `root` is GONE. When the worktree path
+      doesn't resolve, we log and skip cleanup — running `clean -fdx`
+      at the main repo root would eat untracked coordination files
+      (.assembly-queue.jsonl, .smithy-nudge-queue/, checkpoints)."""
     import subprocess
     wt = main_repo_root(root) / ".worktrees" / (forge_id or "")
-    cwd = wt if (forge_id and wt.exists() and (wt / ".git").exists()) else root
+    if not (forge_id and wt.exists() and (wt / ".git").exists()):
+        _err(f"reject-cleanup skipped: no worktree for {forge_id!r} "
+             f"at {wt} (t-562 — never clean the main repo root)")
+        return
     try:
         subprocess.run(["git", "reset", "--hard", "HEAD"],
-                       cwd=str(cwd), capture_output=True, text=True,
+                       cwd=str(wt), capture_output=True, text=True,
                        timeout=30)
-        subprocess.run(["git", "clean", "-fdx"],
-                       cwd=str(cwd), capture_output=True, text=True,
+        subprocess.run(["git", "clean", "-fdx", "-e", ".venv"],
+                       cwd=str(wt), capture_output=True, text=True,
                        timeout=30)
-        _err(f"worktree reset to HEAD + cleaned (t-439 reject-cleanup)")
+        _err(f"worktree reset to HEAD + cleaned (t-439 reject-cleanup, "
+             f".venv preserved)")
     except Exception as exc:
         _err(f"worktree reset failed ({exc}); inspect manually")
 
