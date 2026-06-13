@@ -152,7 +152,8 @@ def test_assembly_tick_merge_nudges_marshal_live(proj, tmp_path, monkeypatch):
     # stubs mirror the new signatures.
     from smithy import assembly as asm_mod
     monkeypatch.setattr(asm_mod, "rebase_task_branch",
-                        lambda root, fid, tid, base="main":
+                        lambda root, fid, tid, base="main",
+                               branch=None, sha=None:
                             {"status": "clean",
                              "staging_ref": f"_merge-{tid}"})
     monkeypatch.setattr(asm_mod, "run_tests_in_worktree",
