@@ -2433,24 +2433,64 @@ def set_next_tasks(ctx, task_ids, no_nudge):
     _emit_rig_event(root, "queue_set", actor="marshal",
                     task_ids=ordered, count=len(ordered))
 
-    # Auto-nudge the Forge assigned to the top task (t-414 per-forge routing).
-    # Fall back to the primary Forge when assigned_forge is unset.
+    # t-530: fan out nudges to every distinct forge that has a task
+    # anywhere in `ordered`, not just the forge that owns ordered[0].
+    # Prior behaviour left non-top pinned forges idle indefinitely
+    # (observed 2026-04-19: forge-quench idle 15m with its P0 at
+    # queue position 3). Build `forge_to_task`: first occurrence per
+    # forge wins — dedupe so a forge with N pinned tasks gets one
+    # nudge, not N. Unassigned (assigned_forge is None) tasks route to
+    # the primary forge as today.
     if not no_nudge:
-        top_task = queue_map.get(ordered[0], {})
-        top_desc = top_task.get("desc", "")[:60]
-        nudge_msg = f"Queue updated. {len(ordered)} tasks ready. Top: {ordered[0]} — {top_desc}"
-        target = top_task.get("assigned_forge") or primary_forge_id(state)
-        nudge_result = _nudge_persona(target, nudge_msg, root=root)
-        result["nudge"] = nudge_result
-        _emit_rig_event(root, "nudge_sent", actor="marshal", target=target,
-                        task_id=ordered[0],
-                        nudged=nudge_result.get("nudged"))
-        if nudge_result["nudged"]:
-            _err(f"Set {len(ordered)} next tasks: {', '.join(ordered)} — nudged {target}")
+        primary = primary_forge_id(state)
+        # Ordered list of (target_forge, first_task_id, position) pairs.
+        # Dict preserves insertion order, which is the canonical walk
+        # order through `ordered` — the "first pinned task" each forge
+        # hears about matches the nudge body we'd have sent in the
+        # single-forge world.
+        forge_to_task: dict = {}
+        for idx, tid in enumerate(ordered):
+            t = queue_map.get(tid, {})
+            target = t.get("assigned_forge") or primary
+            if target not in forge_to_task:
+                forge_to_task[target] = (tid, idx + 1)  # 1-based position
+
+        nudges = []
+        for target, (tid, pos) in forge_to_task.items():
+            t = queue_map.get(tid, {})
+            desc = t.get("desc", "")[:60]
+            if pos == 1 and len(ordered) == 1:
+                # Preserve the classic single-task message shape.
+                msg = f"Queue updated. {len(ordered)} tasks ready. Top: {tid} — {desc}"
+            elif pos == 1:
+                msg = (f"Queue updated. {len(ordered)} tasks ready. "
+                       f"Top: {tid} — {desc}")
+            else:
+                msg = (f"Queue updated. Your next task: {tid} "
+                       f"at position {pos} — {desc}")
+            nudge_result = _nudge_persona(target, msg, root=root)
+            nudges.append({"target": target, "task_id": tid,
+                           "position": pos, "result": nudge_result})
+            _emit_rig_event(root, "nudge_sent", actor="marshal",
+                            target=target, task_id=tid,
+                            nudged=nudge_result.get("nudged"))
+
+        result["nudges"] = nudges
+        # Back-compat: surface the top-task nudge under the legacy
+        # `nudge` key so existing callers that read result["nudge"]
+        # don't break.
+        if nudges:
+            result["nudge"] = nudges[0]["result"]
+        delivered = [n["target"] for n in nudges if n["result"].get("nudged")]
+        if delivered:
+            _err(f"Set {len(ordered)} next tasks: {', '.join(ordered)} "
+                 f"— nudged {len(delivered)}/{len(nudges)}: "
+                 f"{', '.join(delivered)}")
         else:
-            _err(f"Set {len(ordered)} next tasks: {', '.join(ordered)} — nudge skipped: {nudge_result['reason']}")
+            _err(f"Set {len(ordered)} next tasks: {', '.join(ordered)} — no nudges delivered")
     else:
         result["nudge"] = {"nudged": False, "reason": "skipped (--no-nudge)"}
+        result["nudges"] = []
         _err(f"Set {len(ordered)} next tasks: {', '.join(ordered)}")
 
     _output(result)
