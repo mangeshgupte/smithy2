@@ -12,7 +12,11 @@
 #   scripts/nudge.sh <agent> "<text>"   # custom message
 #   scripts/nudge.sh --list             # list known agent panes
 #
-# <agent> is derived from each pane's working directory:
+# <agent> is derived from each pane's START directory (t-554: the
+# directory the pane was created with — pane_current_path tracks the
+# FOREGROUND process cwd and flaps to the repo root during any Bash
+# call the agent runs there, which made nudges miss mid-flap), with
+# the current path as fallback:
 #   .worktrees/<name>/...     -> <name>   (marshal, forge-quench, ...)
 #   .../personas/<name>       -> <name>   (anvil, assembly)
 #
@@ -42,10 +46,18 @@ pane_agent() {
   fi
 }
 
+# Resolve a pane's agent: start path first (stable), current path second.
+pane_agent_row() {
+  local start="$1" cur="$2" a
+  a="$(pane_agent "$start")"
+  [[ -z "$a" ]] && a="$(pane_agent "$cur")"
+  echo "$a"
+}
+
 list_panes() {
-  while IFS=$'\t' read -r pid path; do
-    printf '  %-20s %s\t%s\n' "$(pane_agent "$path")" "$pid" "$path"
-  done < <(tmux list-panes -t "$FORGE_SESSION" -F '#{pane_id}	#{pane_current_path}')
+  while IFS=$'\t' read -r pid start cur; do
+    printf '  %-20s %s\t%s\n' "$(pane_agent_row "$start" "$cur")" "$pid" "$cur"
+  done < <(tmux list-panes -t "$FORGE_SESSION" -F '#{pane_id}	#{pane_start_path}	#{pane_current_path}')
 }
 
 case "$1" in
@@ -57,12 +69,12 @@ AGENT="$1"
 MESSAGE="${2:-[nudge] re-read shared state and continue your loop}"
 
 PANE_ID=""
-while IFS=$'\t' read -r pid path; do
-  if [[ "$(pane_agent "$path")" == "$AGENT" ]]; then
+while IFS=$'\t' read -r pid start cur; do
+  if [[ "$(pane_agent_row "$start" "$cur")" == "$AGENT" ]]; then
     PANE_ID="$pid"
     break
   fi
-done < <(tmux list-panes -t "$FORGE_SESSION" -F '#{pane_id}	#{pane_current_path}')
+done < <(tmux list-panes -t "$FORGE_SESSION" -F '#{pane_id}	#{pane_start_path}	#{pane_current_path}')
 
 if [[ -z "${PANE_ID:-}" ]]; then
   echo "nudge: no pane for agent '$AGENT' in session '$FORGE_SESSION'" >&2

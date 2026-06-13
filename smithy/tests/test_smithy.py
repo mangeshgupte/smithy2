@@ -749,8 +749,10 @@ class TestNudgeCommand:
                 # A forge pane IS present (session is the right rig),
                 # but the 'anvil' persona's pane is absent.
                 out = (
-                    "%1\t/repo/.worktrees/forge-01/personas/forge\n"
-                    "%2\t/repo/.worktrees/marshal/personas/marshal\n"
+                    "%1\t/repo/.worktrees/forge-01/personas/forge"
+                    "\t/repo/.worktrees/forge-01/personas/forge\t\u2733 busy\n"
+                    "%2\t/repo/.worktrees/marshal/personas/marshal"
+                    "\t/repo/.worktrees/marshal/personas/marshal\t\u2733 busy\n"
                 )
                 return sp.CompletedProcess(cmd, 0, stdout=out, stderr="")
             return sp.CompletedProcess(cmd, 0, stdout="", stderr="")
@@ -780,8 +782,10 @@ class TestNudgeCommand:
                 return sp.CompletedProcess(cmd, 0, stdout="", stderr="")
             if "list-panes" in cmd:
                 out = (
-                    "%1\t/repo/.worktrees/forge-quench/personas/forge\n"
-                    "%2\t/repo/.worktrees/anvil/personas/anvil\n"
+                    "%1\t/repo/.worktrees/forge-quench/personas/forge"
+                    "\t/repo/.worktrees/forge-quench/personas/forge\t\u2733 busy\n"
+                    "%2\t/repo/.worktrees/anvil/personas/anvil"
+                    "\t/repo/.worktrees/anvil/personas/anvil\t\u2733 busy\n"
                 )
                 return sp.CompletedProcess(cmd, 0, stdout=out, stderr="")
             if "send-keys" in cmd:
@@ -838,7 +842,7 @@ class TestNudgeRosterMismatch:
                 return sp.CompletedProcess(cmd, 0, stdout="", stderr="")
             if "list-panes" in cmd:
                 # Stale session: only a generic pane, no forges.
-                out = "%1\t/tmp/random\n"
+                out = "%1\t/tmp/random\t/tmp/random\tbash\n"
                 return sp.CompletedProcess(cmd, 0, stdout=out, stderr="")
             return sp.CompletedProcess(cmd, 0, stdout="", stderr="")
 
@@ -869,8 +873,10 @@ class TestNudgeRosterMismatch:
                 return sp.CompletedProcess(cmd, 0, stdout="", stderr="")
             if "list-panes" in cmd:
                 out = (
-                    "%1\t/repo/.worktrees/forge-quench/personas/forge\n"
-                    "%2\t/repo/.worktrees/anvil/personas/anvil\n"
+                    "%1\t/repo/.worktrees/forge-quench/personas/forge"
+                    "\t/repo/.worktrees/forge-quench/personas/forge\t\u2733 busy\n"
+                    "%2\t/repo/.worktrees/anvil/personas/anvil"
+                    "\t/repo/.worktrees/anvil/personas/anvil\t\u2733 busy\n"
                 )
                 return sp.CompletedProcess(cmd, 0, stdout=out, stderr="")
             if "send-keys" in cmd:
@@ -926,7 +932,8 @@ class TestNudgeRosterMismatch:
             if "list-panes" in cmd:
                 return sp.CompletedProcess(
                     cmd, 0,
-                    stdout="%1\t/tmp/unrelated\n%2\t/tmp/other\n",
+                    stdout="%1\t/tmp/unrelated\t/tmp/unrelated\tzsh\n"
+                           "%2\t/tmp/other\t/tmp/other\tzsh\n",
                     stderr="",
                 )
             return sp.CompletedProcess(cmd, 0, stdout="", stderr="")
