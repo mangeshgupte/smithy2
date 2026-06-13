@@ -2845,6 +2845,18 @@ def _backpressure_check(root, state) -> dict:
             "reason": None}
 
 
+def _pressure_ratio(root, state) -> float:
+    """t-517: Assembly back-pressure as a 0..n ratio (depth / threshold)
+    for the pressure-aware dispatcher. 0.0 when the threshold resolves to
+    0 (no forges + multiplier guard makes that impossible, but stay safe).
+    """
+    bp = _backpressure_check(root, state)
+    threshold = bp.get("threshold") or 0
+    if threshold <= 0:
+        return 0.0
+    return bp["depth"] / threshold
+
+
 @cli.command("set-next-tasks")
 @click.argument("task_ids", nargs=-1, required=True)
 @click.option("--no-nudge", is_flag=True, default=False, help="Skip auto-nudge to forge")
@@ -3024,7 +3036,7 @@ def reconcile_next_tasks(ctx, dry_run, no_nudge):
     # (stage balance, priority, blocked_by, affinity, touches, serial /
     # parallel). Reusing it keeps the invariant aligned with Marshal's
     # existing priority logic — there's one ranking algorithm, not two.
-    from smithy.dispatch import select_task_for_forge
+    from smithy.dispatch import select_task_with_pressure
 
     # We pick one task per idle forge by iterating: after picking for
     # forge-A, mark that task as in_progress in an in-memory copy of
@@ -3040,13 +3052,22 @@ def reconcile_next_tasks(ctx, dry_run, no_nudge):
     # t-534: don't repopulate next_tasks with reject-loop candidates.
     loop_skips = set(_reject_loop_guard(root, state))
 
+    # t-517: compute Assembly back-pressure once; the scratch mutation
+    # below marks each pick in-flight, so the next forge's risk scoring
+    # naturally steers it toward a different initiative.
+    ratio = _pressure_ratio(root, state)
+
     picked = []
     # Visit idle forges in a stable order so the rig stays deterministic.
     for forge in sorted(idle_forges, key=lambda f: f.get("id", "")):
         fid = forge.get("id")
         if not fid:
             continue
-        task = select_task_for_forge(scratch, fid, skip_ids=loop_skips)
+        task, decision = select_task_with_pressure(
+            scratch, fid, loop_skips, ratio)
+        if decision is not None:
+            _emit_rig_event(root, "marshal_pressure_dispatch",
+                            forge_id=fid, **decision)
         if task is None:
             continue
         tid = task.get("id")
@@ -3539,11 +3560,18 @@ def dispatch_next_cmd(ctx, forge_id):
     t-534: reject-loop candidates (≥3 rejects, same reason fingerprint)
     are skipped — see `_reject_loop_guard`.
     """
-    from .dispatch import select_task_for_forge
+    from .dispatch import select_task_with_pressure
     root = ctx.obj["root"]
     state = load_state(root)
     skips = _reject_loop_guard(root, state)
-    task = select_task_for_forge(state, forge_id, skip_ids=set(skips))
+    # t-517: factor Assembly back-pressure into the choice — prefer
+    # orthogonal, low-conflict-risk work when the queue is loaded.
+    ratio = _pressure_ratio(root, state)
+    task, decision = select_task_with_pressure(
+        state, forge_id, set(skips), ratio)
+    if decision is not None:
+        _emit_rig_event(root, "marshal_pressure_dispatch",
+                        forge_id=forge_id, **decision)
     if task is None:
         _output({"task": None, "forge_id": forge_id,
                  "message": "no eligible task"})
