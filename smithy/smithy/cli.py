@@ -2595,26 +2595,146 @@ def add_task(ctx, stage, desc, priority, blocked_by, initiative_id):
     _err(f"Added {new_id}: {desc}")
 
 
+def _unmerged_task_branch(root, forge_id, task_id):
+    """t-560: return {"branch", "tip", "ahead"} when `<forge>/<task>`
+    exists with commits not reachable from main, else None."""
+    import subprocess as _sp
+    if not forge_id:
+        return None
+    branch = f"{forge_id}/{task_id}"
+    main_root = main_repo_root(root)
+    tip = _sp.run(["git", "rev-parse", "--verify", "--quiet", branch],
+                  cwd=str(main_root), capture_output=True, text=True)
+    if tip.returncode != 0:
+        return None
+    ahead = _sp.run(["git", "rev-list", "--count", f"main..{branch}"],
+                    cwd=str(main_root), capture_output=True, text=True)
+    n = int(ahead.stdout.strip() or 0) if ahead.returncode == 0 else 0
+    if n == 0:
+        return None
+    return {"branch": branch, "tip": tip.stdout.strip(), "ahead": n}
+
+
 @cli.command("complete-task")
 @click.argument("task_id")
+@click.option("--force", is_flag=True, default=False,
+              help="t-560: close anyway, orphaning any unmerged branch. "
+                   "Loud warning + worklog note.")
 @click.pass_context
-def complete_task(ctx, task_id):
-    """Mark a task as complete."""
+def complete_task(ctx, task_id, force):
+    """Mark a task as complete.
+
+    t-560 (ini-024): complete-task closes a task WITHOUT enqueueing for
+    Assembly — the documented ghost-complete path (t-527 twice in one
+    day, t-474 historically): the branch's work silently never lands.
+    If an unmerged `<forge>/<task>` branch exists, refuse and point at
+    the real paths (end-heat submit, or `smithy resubmit-task` for an
+    existing branch). `--force` proceeds with a loud warning and an
+    audit worklog row.
+    """
     root = ctx.obj["root"]
     state = load_state(root)
 
     for task in state.get("queue", []):
         if task["id"] == task_id:
+            unmerged = _unmerged_task_branch(
+                root, task.get("assigned_forge"), task_id)
+            if unmerged and not force:
+                _output({
+                    "error": f"Task {task_id} has an UNMERGED branch "
+                             f"{unmerged['branch']} "
+                             f"({unmerged['ahead']} commit(s) ahead of "
+                             f"main, tip {unmerged['tip'][:12]}) — "
+                             "closing now would ghost-complete the work. "
+                             "Use end-heat to submit, `smithy "
+                             "resubmit-task` to enqueue the existing "
+                             "branch, or --force to close anyway "
+                             "(orphans the branch).",
+                    **unmerged,
+                })
+                sys.exit(1)
             task["status"] = "complete"
             task["human_priority"] = None
             task["priority_reason"] = None
             save_state(root, state)
-            _output({"task": task})
+            if unmerged:
+                _err(f"⚠️  t-560: {task_id} FORCE-closed with unmerged "
+                     f"{unmerged['branch']} ({unmerged['ahead']} commit(s), "
+                     f"tip {unmerged['tip'][:12]}) — branch is now orphaned")
+                append_worklog(
+                    root, state["budget"]["used"], task.get("stage", "editing"),
+                    task_id, "complete", 0.0, "🟡",
+                    f"t-560 force-complete with unmerged "
+                    f"{unmerged['branch']}@{unmerged['tip'][:12]} "
+                    f"({unmerged['ahead']} ahead) — orphaned",
+                    forge_id=task.get("assigned_forge"))
+            _output({"task": task,
+                     **({"forced_over_unmerged": unmerged} if unmerged else {})})
             _err(f"Completed {task_id}")
             return
 
     _output({"error": f"Task {task_id} not found"})
     sys.exit(1)
+
+
+@cli.command("resubmit-task")
+@click.argument("task_id")
+@click.option("--forge", "forge_id", default=None,
+              help="Forge id owning the branch (default: the task's "
+                   "assigned_forge).")
+@click.pass_context
+def resubmit_task(ctx, task_id, forge_id):
+    """t-560: enqueue an EXISTING `<forge>/<task>` branch for Assembly.
+
+    The recovery path when a branch has committed work but its queue
+    row is gone (plumbing reject, lost jsonl, hand-cleanup): appends a
+    proper row to `.assembly-queue.jsonl` (branch + tip sha) and flips
+    the task to `submitted`. Quench hand-built this row for t-565;
+    complete-task-without-row is the ghost-complete mechanism this
+    closes (with t-560's guard).
+    """
+    import subprocess as _sp
+    root = ctx.obj["root"]
+    state = load_state(root)
+    task = next((t for t in state.get("queue", [])
+                 if t["id"] == task_id), None)
+    if task is None:
+        _output({"error": f"Task {task_id} not found"})
+        sys.exit(1)
+    fid = forge_id or task.get("assigned_forge")
+    if not fid:
+        _output({"error": f"Task {task_id} has no assigned_forge — "
+                          "pass --forge explicitly"})
+        sys.exit(1)
+    branch = f"{fid}/{task_id}"
+    main_root = main_repo_root(root)
+    tip = _sp.run(["git", "rev-parse", "--verify", "--quiet", branch],
+                  cwd=str(main_root), capture_output=True, text=True)
+    if tip.returncode != 0:
+        _output({"error": f"branch '{branch}' not found — nothing to "
+                          "resubmit"})
+        sys.exit(1)
+    sha = tip.stdout.strip()
+
+    entry = {
+        "forge_id": fid,
+        "task_id": task_id,
+        "heat": state["budget"]["used"],
+        "branch": branch,
+        "sha": sha,
+        "submitted_at": datetime.now(timezone.utc).isoformat(
+            timespec="seconds"),
+        "resubmitted": True,
+    }
+    _append_queue(assembly_queue_path(root), entry)
+
+    task["status"] = "submitted"
+    task["assigned_forge"] = fid
+    save_state(root, state)
+    _emit_rig_event(root, "task_resubmitted", actor=fid,
+                    task_id=task_id, branch=branch, sha=sha)
+    _output({"resubmitted": entry, "task": task})
+    _err(f"Resubmitted {task_id}: {branch}@{sha[:12]} queued for Assembly")
 
 
 @cli.command("set-priority")
