@@ -94,6 +94,10 @@
                           color: var(--yellow, #c89c2a); padding: 2px 8px; border-radius: 2px;
                           cursor: pointer; font: inherit; }
         .c-toast button:hover { background: var(--yellow, #c89c2a); color: #000; }
+        /* t-546: whole row is a click target for expand/collapse.
+           Declared BEFORE the draggable rule so pending rows keep the
+           grab cursor (same specificity — later declaration wins). */
+        .cockpit-table tr[data-task-id] { cursor: pointer; }
         /* t-389: DnD affordances. Pending rows are draggable. */
         .cockpit-table tr[draggable="true"] { cursor: grab; }
         .cockpit-table tr.c-dragging { opacity: 0.4; }
@@ -422,11 +426,29 @@
                 `<td class="c-age">${t.age_heats == null ? '—' : (t.age_heats + 'h')}</td>` +
                 `<td class="c-desc" title="${(t.desc || '').replace(/"/g, '&quot;')}">${t.desc || ''}</td>` +
                 `<td><span class="c-kebab" onclick="toggleDefer('${t.id}', '${t.status}')" title="defer/undefer">${t.status === 'deferred' ? '▶' : '⏸'}</span></td>`;
+            // t-546: whole-row click toggles the inline panel (the
+            // chevron alone was a 16px target). Guard in the handler
+            // keeps links/buttons/checkbox/kebab working unchanged.
+            tr.addEventListener('click', e => onRowClickToggle(e, t.id));
             body.appendChild(tr);
             if (isOpen) {
                 const panel = buildInlinePanel(t);
                 body.appendChild(panel);
             }
+    }
+
+    // t-546: row-background click → expand/collapse. Interactive children
+    // keep their own behavior: closest() walks up from the click target,
+    // so any click inside a link, button, form control, the defer kebab,
+    // or the chevron (which has its own toggle handler that stops
+    // propagation — listed here as belt-and-suspenders) is ignored.
+    function onRowClickToggle(evt, taskId) {
+        if (evt.target.closest(
+            'a, button, input, select, textarea, .c-kebab, .c-expand')) return;
+        // Selecting text (e.g. copying a desc) ends with a click on the
+        // row — don't treat that as a toggle.
+        if (window.getSelection && String(window.getSelection())) return;
+        toggleInlineExpand(evt, taskId);
     }
 
     // t-391: Complete-row shape. id + stage + desc, plus value emoji, heat
@@ -451,6 +473,7 @@
             `<td class="c-ship-heat">${heat}</td>` +
             `<td class="c-ship-sha">${sha}</td>` +
             `<td class="c-desc" colspan="5" title="${(t.desc || '').replace(/"/g, '&quot;')}">${t.desc || ''}</td>`;
+        tr.addEventListener('click', e => onRowClickToggle(e, t.id));  // t-546
         body.appendChild(tr);
         if (isOpen) body.appendChild(buildInlinePanel(t));
     }
