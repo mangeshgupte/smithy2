@@ -55,6 +55,9 @@
     <div id="idle-banner" class="idle-banner" hidden></div>
     {% endif %}
 
+    <!-- t-571: 3-pane layout — left=rig+activity, center=poker, right=cockpit/detail -->
+    <div class="poker-grid">
+    <div class="poker-col poker-col-center">
     <div id="card-list" class="card-list">
         {% for ini in initiatives %}
         {% set weight = '3×' if loop.index == 1 else ('2×' if loop.index == 2 else '1×') %}
@@ -190,6 +193,9 @@
     <div class="kill-zone" id="kill-zone">
         <span>🗑️ Drop here to reject</span>
     </div>
+    </div><!-- /poker-col-center -->
+
+    <div class="poker-col poker-col-left">
 
     {# t-520 (ini-012), moved here from Timeline by t-550 (human request):
        rig throughput dashboard. Zero-dep hand-rolled SVG charts — adding
@@ -240,6 +246,12 @@
             <a class="activity-fulllog" href="/activity" id="activity-fulllog-link">view full log →</a>
         </div>
     </aside>
+    </div><!-- /poker-col-left -->
+
+    <div class="poker-col poker-col-right">
+    <!-- t-571: right pane defaults to the cockpit task table; the detail
+         drawer (below) slides over and hides this when a task is opened. -->
+    <iframe id="cockpit-frame" class="cockpit-frame" src="/cockpit" title="Cockpit — task table"></iframe>
 
     <!-- Task detail side drawer (t-325) -->
     <div id="task-detail-backdrop" class="task-detail-backdrop" onclick="closeTaskDetail()"></div>
@@ -284,6 +296,8 @@
             </section>
         </div>
     </aside>
+    </div><!-- /poker-col-right -->
+    </div><!-- /poker-grid -->
 
     <script>
     const list = document.getElementById('card-list');
@@ -395,6 +409,8 @@
         window.history.replaceState({}, '', url);
         document.getElementById('task-detail').setAttribute('aria-hidden', 'false');
         document.getElementById('task-detail-backdrop').classList.add('show');
+        // t-571: hide the cockpit beneath so the detail "replaces" the right pane.
+        document.querySelector('.poker-col-right')?.classList.add('detail-open');
         document.getElementById('td-id').textContent = taskId;
         document.getElementById('td-desc').textContent = 'Loading…';
         fetch('/api/task/' + encodeURIComponent(taskId))
@@ -407,6 +423,8 @@
         currentDetailTaskId = null;
         document.getElementById('task-detail').setAttribute('aria-hidden', 'true');
         document.getElementById('task-detail-backdrop').classList.remove('show');
+        // t-571: restore the cockpit in the right pane.
+        document.querySelector('.poker-col-right')?.classList.remove('detail-open');
         const url = new URL(window.location);
         url.searchParams.delete('task');
         window.history.replaceState({}, '', url);
