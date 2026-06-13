@@ -2917,13 +2917,16 @@ def reconcile_next_tasks(ctx, dry_run, no_nudge):
     scratch = copy.deepcopy(state)
     scratch_queue_by_id = {t["id"]: t for t in scratch.get("queue") or []}
 
+    # t-534: don't repopulate next_tasks with reject-loop candidates.
+    loop_skips = set(_reject_loop_guard(root, state))
+
     picked = []
     # Visit idle forges in a stable order so the rig stays deterministic.
     for forge in sorted(idle_forges, key=lambda f: f.get("id", "")):
         fid = forge.get("id")
         if not fid:
             continue
-        task = select_task_for_forge(scratch, fid)
+        task = select_task_for_forge(scratch, fid, skip_ids=loop_skips)
         if task is None:
             continue
         tid = task.get("id")
@@ -3374,6 +3377,34 @@ def queue_push(ctx, task_id, top, no_nudge, target_persona, assigned_forge):
     _output(result)
 
 
+def _reject_loop_guard(root, state, tail: int = 200) -> dict:
+    """t-534: compute reject-loop skip candidates from the worklog tail
+    and handle the side effects — a `marshal_skipped_loop_candidate`
+    rig-event per skipped task per dispatch pass, and ONE inbox.md note
+    per (task, fingerprint) loop episode (content-deduped, acceptance
+    §c). Returns {task_id: fingerprint}; pass the key set into the
+    dispatch selectors as `skip_ids`."""
+    from .dispatch import reject_loop_skips
+    import csv as _csv
+    rows = []
+    wl = worklog_path(root)
+    if wl.exists():
+        with open(wl) as f:
+            rows = list(_csv.DictReader(f, delimiter="\t"))[-tail:]
+    skips = reject_loop_skips(state, rows)
+    for tid, fp in sorted(skips.items()):
+        _emit_rig_event(root, "marshal_skipped_loop_candidate",
+                        actor="marshal", task_id=tid, fingerprint=fp)
+        note = (f"Reject loop detected: {tid} rejected 3x with '{fp}'. "
+                f"Human intervention needed or fix the root cause.")
+        inbox = root / "inbox.md"
+        existing = inbox.read_text() if inbox.exists() else ""
+        if note not in existing:
+            with open(inbox, "a") as f:
+                f.write(f"\n- {note}\n")
+    return skips
+
+
 @cli.command("dispatch-next")
 @click.option("--forge", "forge_id", required=True,
               help="Forge id to dispatch for (walk initiatives from this "
@@ -3384,11 +3415,15 @@ def dispatch_next_cmd(ctx, forge_id):
     take, by walking initiatives with the multi-forge-poker constraints
     (parallelism / affinity / touches). Pure: does NOT pop, push, or
     mutate state. Marshal uses this to decide what to queue-push next.
+
+    t-534: reject-loop candidates (≥3 rejects, same reason fingerprint)
+    are skipped — see `_reject_loop_guard`.
     """
     from .dispatch import select_task_for_forge
     root = ctx.obj["root"]
     state = load_state(root)
-    task = select_task_for_forge(state, forge_id)
+    skips = _reject_loop_guard(root, state)
+    task = select_task_for_forge(state, forge_id, skip_ids=set(skips))
     if task is None:
         _output({"task": None, "forge_id": forge_id,
                  "message": "no eligible task"})
@@ -3699,7 +3734,11 @@ def claim_task_cmd(ctx, forge_id):
             _err(f"claim-task {forge_id}: rig halted")
             sys.exit(1)
 
-        task = claim_task_for_forge(state, forge_id)
+        # t-534: Forge self-dispatch honours the same reject-loop
+        # suppression as Marshal's dispatch walk.
+        task = claim_task_for_forge(
+            state, forge_id,
+            skip_ids=set(_reject_loop_guard(root, state)))
         if task is None:
             _output({"task": None, "reason": "no eligible task"})
             _err(f"claim-task {forge_id}: no eligible task")
