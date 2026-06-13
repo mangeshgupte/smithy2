@@ -28,3 +28,6 @@ smithy/smithy.egg-info/
 # t-533: per-rejection full-test-output dumps. Reject reason in
 # state.json carries the file:// pointer; files themselves are local-only.
 .assembly-logs/
+
+# t-563: plumbing-rejected queue rows preserved for recovery.
+.assembly-queue-dead.jsonl
