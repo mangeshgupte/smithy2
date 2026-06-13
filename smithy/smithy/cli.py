@@ -642,6 +642,19 @@ def start_heat(ctx, stage, task_id, forge_id, reuse_scratch):
                 _output({"error": f"Task {task_id} not found in queue"})
                 sys.exit(1)
 
+        # t-544: keep the registry honest — patrol's orphan-checkpoint
+        # heuristic reads parallel.forges[].status, and a stale "idle"
+        # there got live checkpoints deleted mid-heat (h1221/h1230 on
+        # 2026-06-12). Stamp busy + current task/heat at heat start.
+        for _f in (state.get("parallel") or {}).get("forges") or []:
+            if _f.get("id") == forge_id:
+                _f["status"] = "busy"
+                _f["current_task"] = task_id
+                _f["current_heat"] = heat_number
+                _f["last_heartbeat"] = datetime.now(
+                    timezone.utc).isoformat(timespec="seconds")
+                break
+
         save_state(root, state)
         total_heats = budget["total_heats"]
 
@@ -847,6 +860,18 @@ def end_heat(ctx, value, signal, notes, outcome, progress, no_nudge, forge_id,
         # Update overall progress
         progresses = [st.get("progress", 0) for st in state["stages"].values()]
         state["overall_progress"] = round(sum(progresses) / len(progresses), 2)
+
+        # t-544: mirror of start-heat's registry stamp — the heat is over,
+        # so flip the entry back to idle. Keeps patrol's registry-vs-
+        # checkpoint coherence checks meaningful in both directions.
+        for _f in (state.get("parallel") or {}).get("forges") or []:
+            if _f.get("id") == forge_id:
+                _f["status"] = "idle"
+                _f["current_task"] = None
+                _f["current_heat"] = None
+                _f["last_heartbeat"] = datetime.now(
+                    timezone.utc).isoformat(timespec="seconds")
+                break
 
         # Save state
         save_state(root, state)
@@ -4749,10 +4774,59 @@ def patrol(ctx, fix):
             issues.append(f"{fid} is busy but has no checkpoint — lost state")
             stuck_forges.append(fid)
         if fstatus == "idle" and cp_exists:
-            issues.append(f"{fid} is idle but has a checkpoint — orphan")
-            if fix:
-                forge_checkpoint_path(root, fid).unlink()
-                fixes.append(f"Deleted orphan checkpoint for {fid}")
+            # t-544: registry status is a CACHE, not truth (ini-024) —
+            # it lags reality whenever a pane runs code that doesn't
+            # stamp it. Deleting on "idle + checkpoint" alone destroyed
+            # two live heats on 2026-06-12 (forge-temper h1221/h1230):
+            # the heat lost its checkpoint mid-flight, end-heat refused,
+            # and check #2 then reset the task — budget/worklog drift.
+            # Verify the forge is ACTUALLY idle before reaping:
+            #   live = checkpoint's task is in_progress AND assigned to
+            #          this forge, OR checkpoint mtime is fresh (a heat
+            #          plausibly in flight).
+            # Live + --fix → repair the registry to busy (trust the
+            # checkpoint, not the cache). Only stale-and-taskless
+            # checkpoints are deleted.
+            cp_file = forge_checkpoint_path(root, fid)
+            cp_task = None
+            try:
+                cp_task = json.loads(cp_file.read_text()).get("task_id")
+            except Exception:
+                pass
+            task_live = any(
+                t.get("id") == cp_task
+                and t.get("status") == "in_progress"
+                and t.get("assigned_forge") == fid
+                for t in state.get("queue", [])
+            )
+            FRESH_S = 1800  # 30 min — matches the stuck-heat cutoff.
+            mtime_fresh = False
+            try:
+                cp_age = (datetime.now(timezone.utc)
+                          - datetime.fromtimestamp(
+                              cp_file.stat().st_mtime, tz=timezone.utc)
+                          ).total_seconds()
+                mtime_fresh = cp_age < FRESH_S
+            except OSError:
+                pass
+            if task_live or mtime_fresh:
+                issues.append(
+                    f"{fid} registry says idle but its checkpoint looks "
+                    f"LIVE ({'task ' + cp_task + ' in_progress' if task_live else 'fresh mtime'}) "
+                    "— registry lagging, not an orphan"
+                )
+                if fix:
+                    forge["status"] = "busy"
+                    if cp_task and cp_task != "generated":
+                        forge["current_task"] = cp_task
+                    fixes.append(
+                        f"Repaired {fid} registry status idle→busy from "
+                        "live checkpoint (no reap)")
+            else:
+                issues.append(f"{fid} is idle but has a checkpoint — orphan")
+                if fix:
+                    cp_file.unlink()
+                    fixes.append(f"Deleted orphan checkpoint for {fid}")
 
     # 7. t-407 H2: Assembly-only-to-main invariant. Every Forge registered
     # in parallel.forges[] must have a `worktree` field pointing under
