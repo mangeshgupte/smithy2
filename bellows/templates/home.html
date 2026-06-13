@@ -85,6 +85,34 @@
 {% endfor %}
 </div>
 
+<!-- t-525: autopilot deferrals awaiting human review -->
+{% for p in projects %}
+{% if p.deferred %}
+<section class="deferred-section">
+    <h2 style="margin-top: 24px;">🛟 Deferred — {{ p.name }}
+        <a href="/project/{{ p.name }}/deferred" class="muted"
+           style="font-size: 13px; font-weight: normal;">view all →</a>
+    </h2>
+    <ul class="deferred-list" style="list-style: none; padding: 0;">
+    {% for d in p.deferred %}
+        <li class="deferred-entry" style="margin: 6px 0;">
+            <span class="severity-chip severity-{{ d.severity }}"
+                  style="display: inline-block; padding: 1px 8px; border-radius: 10px;
+                         font-size: 11px; font-weight: 600; margin-right: 8px;
+                         color: #fff;
+                         background: {{ {'low': '#8a8f98', 'moderate': '#b58a00',
+                                         'high': '#d4500f', 'urgent': '#c0212f'}[d.severity] }};">
+                {{ d.severity }}</span>
+            <strong>{{ d.anomaly }}</strong>
+            <span class="muted" style="font-size: 12px;">{{ d.ts }}</span>
+            {% if d.context %}<div class="muted" style="font-size: 13px; margin-left: 2px;">{{ d.context }}</div>{% endif %}
+        </li>
+    {% endfor %}
+    </ul>
+</section>
+{% endif %}
+{% endfor %}
+
 <!-- New Project -->
 <section class="new-project-section">
     <details class="new-project-toggle">

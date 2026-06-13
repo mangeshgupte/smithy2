@@ -399,3 +399,41 @@ def get_morning_briefing(projects: list[dict]) -> dict:
         "notable": notable,
         "tier_counts": tier_counts,
     }
+
+
+def read_deferred_entries(project_dir: str, limit: int = 10) -> list[dict]:
+    """t-525 (ini-026 T4): parse a project's deferred.md into entry
+    dicts, newest first. The format is the t-524 protocol shape
+    written by scripts/autopilot-append-deferred.sh:
+
+        ## <ISO ts> · <Axx anomaly-name>
+        **Context:** ...
+        **Autopilot did not:** ...
+        **Related:** ...
+        **Severity:** <low|moderate|high|urgent>[ — justification]
+        ---
+
+    Missing or empty file → []. Unparseable fragments degrade to
+    defaults rather than raising (the dashboard is a courtesy view).
+    """
+    path = Path(project_dir) / "deferred.md"
+    if not path.exists():
+        return []
+    entries = []
+    cur = None
+    for line in path.read_text().splitlines():
+        if line.startswith("## "):
+            header = line[3:].strip()
+            ts, _, anomaly = header.partition(" · ")
+            cur = {"ts": ts, "anomaly": anomaly or "?",
+                   "severity": "low", "context": ""}
+            entries.append(cur)
+        elif cur is not None and line.startswith("**Severity:**"):
+            raw = line.split("**Severity:**", 1)[1].strip()
+            sev = raw.split()[0].strip("—- ").lower() if raw else ""
+            if sev in ("low", "moderate", "high", "urgent"):
+                cur["severity"] = sev
+        elif cur is not None and line.startswith("**Context:**"):
+            cur["context"] = line.split("**Context:**", 1)[1].strip()
+    entries.reverse()
+    return entries[:max(0, limit)]
