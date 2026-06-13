@@ -3538,7 +3538,13 @@ def _reject_loop_guard(root, state, tail: int = 200) -> dict:
                         actor="marshal", task_id=tid, fingerprint=fp)
         note = (f"Reject loop detected: {tid} rejected 3x with '{fp}'. "
                 f"Human intervention needed or fix the root cause.")
-        inbox = root / "inbox.md"
+        # t-574: anchor at the MAIN repo root, not `root`. dispatch-next is
+        # Marshal's command and Marshal runs it from .worktrees/marshal, so
+        # `root / "inbox.md"` is that worktree's tracked copy — the human
+        # (who reads main/inbox.md) never sees the reject-loop note, and the
+        # worktree tree is left dirty. Same root-anchoring class as
+        # t-419/t-454/t-569.
+        inbox = main_repo_root(root) / "inbox.md"
         existing = inbox.read_text() if inbox.exists() else ""
         if note not in existing:
             with open(inbox, "a") as f:
