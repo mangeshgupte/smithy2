@@ -233,11 +233,46 @@ redundancy disappears.
   questions #4 below) is the human-accessible pause button that doesn't
   require a crontab edit.
 
+### Rollout criteria (t-526, implements the revised gate)
+
+Shipped mechanics:
+
+- **Default OFF.** `autopilot-tick.sh` gate 0 exits silently unless
+  `FORGE_AUTOPILOT_ENABLED=1`. Cron can be installed any time; ticks
+  are no-ops until the flip. `--force` bypasses (explicit human).
+- **Manual shakedown path.** `smithy autopilot --once` runs one full
+  detection tick inline regardless of the env gate: snapshot → A1-A12
+  detectors → decision matrix → deferred.md entries + rising-edge
+  notifications (t-525 scripts) → `.autopilot-state.json` persist →
+  canonical TICK line in `autopilot.log` → `autopilot_tick_complete`
+  rig-event `(fixed_count, deferred_count, urgent_count,
+  safe_fix_candidates)`. `--once` deliberately does NOT execute
+  safe_fix actions — it reports them as candidates; acting stays with
+  Anvil's autopilot-mode prompt (T3), so shakedown observation can't
+  cause a destructive action by construction.
+- **Pause UX.** `touch .autopilot-paused` pauses (gate 4, also under
+  `--force`); `rm .autopilot-paused` resumes. No crontab edit needed.
+
+Flip-the-default checklist (human-executed):
+
+1. Plumbing merged: t-522 (tick wrapper), t-523 (detectors), t-524
+   (protocol docs), t-525 (deferral + notify), t-526 (this gate).
+2. Run `smithy autopilot --once` for ~5-10 ticks under observation:
+   (a) zero destructive or inappropriate actions (trivially true on
+   the --once path — verify the *candidates* are sensible); (b) every
+   detected anomaly is either a plausible safe_fix candidate or lands
+   in `deferred.md` with the right severity + notification; (c) the
+   TICK summary line matches reality.
+3. Set `FORGE_AUTOPILOT_ENABLED=1` in `scripts/start-smithy.sh` so the
+   cron tick goes live on the next rig start.
+4. Liveness chain (t-494/t-495/t-496) stays parallel per the t-528
+   relaxation above — not a blocker.
+
 ### Amendment note
 
-This ticket (t-528) amends t-526's acceptance criteria. Once t-526 is
-dispatched, this amendment is absorbed into its implementation and the
-original §T6 wording becomes stale; delete it then.
+This ticket (t-528) amends t-526's acceptance criteria. t-526's
+implementation absorbed this amendment (see §Rollout criteria above);
+the original §T6 wording is superseded.
 
 ## Open questions
 

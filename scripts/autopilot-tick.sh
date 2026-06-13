@@ -74,6 +74,15 @@ if [[ -z "$FORGE_ANVIL_WINDOW" ]]; then
   exit 0
 fi
 
+# Gate 0 (t-526 rollout): autopilot is DISABLED by default. Cron fires
+# every 10 minutes regardless; until the human flips the default after
+# shakedown (plans/autopilot-anvil-design.md §Rollout), every tick is a
+# silent no-op. --force bypasses — explicit human intent, same as the
+# `smithy autopilot --once` shakedown path.
+if (( FORCE == 0 )) && [[ "${FORGE_AUTOPILOT_ENABLED:-0}" != "1" ]]; then
+  exit 0
+fi
+
 # Gate 1: tmux session must exist.
 if (( FORCE == 0 )); then
   if ! tmux has-session -t "$FORGE_SESSION" 2>/dev/null; then
