@@ -129,7 +129,7 @@
     <div class="cockpit-page">
         <header>
             <h1>🎛 Queue Cockpit</h1>
-            <p class="subtitle">{{ project }} — per-task steering. Scheduler order is authoritative; no client resort.</p>
+            <p class="subtitle">{{ project }} — per-task steering. In-flight first, then by priority, then by id — scheduler's next_tasks ordering surfaces via the priority numbers.</p>
         </header>
 
         <div class="cockpit-filters">
@@ -320,6 +320,21 @@
             if (r.status === 'deferred') deferred.push(r);
             else if (r.status === 'complete') complete.push(r);
             else pending.push(r);   // pending + in_progress + submitted → Pending section
+        });
+        // t-536: sort the pending bucket client-side: in_progress first,
+        // then by priority ascending (0 = highest), then by id for a
+        // stable tiebreaker. The server still returns scheduler-ordered
+        // rows; we re-bucket for visual clarity so active work is
+        // always at the top. Drag-drop still writes to next_tasks
+        // server-side; the visual sort sits on top of that.
+        pending.sort((a, b) => {
+            const sa = a.status === 'in_progress' ? 0 : 1;
+            const sb = b.status === 'in_progress' ? 0 : 1;
+            if (sa !== sb) return sa - sb;                    // in_progress first
+            const pa = (a.priority == null) ? 99 : a.priority;
+            const pb = (b.priority == null) ? 99 : b.priority;
+            if (pa !== pb) return pa - pb;                    // lower num = higher pri
+            return (a.id || '').localeCompare(b.id || '');    // stable id tiebreak
         });
         // Complete: reverse by last worklog timestamp (newest first). Server
         // order is scheduler; we re-sort just this section.
