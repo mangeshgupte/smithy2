@@ -122,7 +122,9 @@ header h1 { font-size: 30px; letter-spacing: -0.5px; }
 .poker-card.expanded .card-expanded { display: block; }
 .poker-card.expanded .card-summary { display: none; }
 
-.card-full-desc { font-size: 16px; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px; }
+/* t-553: pre-wrap so multi-line descs (numbered lists, paragraphs)
+   keep their structure — matches cockpit's .c-inline-desc. */
+.card-full-desc { font-size: 16px; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px; white-space: pre-wrap; }
 
 .card-progress-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-bottom: 4px; }
 .card-progress-fill { height: 100%; background: var(--blue); border-radius: 3px; }
@@ -250,7 +252,7 @@ code {
 .task-detail-close:hover { background: var(--surface); color: var(--text); }
 .task-detail-body { padding: 28px 24px 24px; }
 .td-identity .td-id { font-family: var(--font-mono, monospace); font-size: 18px; color: var(--text-muted); }
-.td-identity .td-desc { font-size: 15px; margin: 6px 0 10px; line-height: 1.4; }
+.td-identity .td-desc { font-size: 15px; margin: 6px 0 10px; line-height: 1.4; white-space: pre-wrap; }  /* t-553 */
 .td-badges { display: flex; gap: 6px; margin-bottom: 14px; }
 .td-stage, .td-status { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: var(--surface); text-transform: uppercase; letter-spacing: 0.06em; }
 .td-section { margin-top: 18px; }
