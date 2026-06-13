@@ -320,6 +320,17 @@ def run_tests_in_worktree(project_dir: Path, forge_id: str,
     }
 
 
+def push_enabled() -> bool:
+    """t-545: kill switch for advisory pushes. SMITHY_PUSH_ENABLED
+    defaults to enabled (rig behaviour); 0/false/no disables. The test
+    suite forces it off via the repo-root conftest.py so no test can
+    network-push; push-machinery tests opt back in per-test against
+    local bare remotes."""
+    import os
+    return os.environ.get("SMITHY_PUSH_ENABLED", "1").strip().lower() \
+        not in ("0", "false", "no")
+
+
 def ff_merge_forge_branch(project_dir: Path, forge_id: str,
                           task_id: str, base: str = "main",
                           delete_branch: bool = True,
@@ -367,7 +378,13 @@ def ff_merge_forge_branch(project_dir: Path, forge_id: str,
     # t-438: advisory push. Outcome lands under `result["push"]` — the
     # assembly-tick caller forwards it to assembly-log.jsonl and
     # rig-events.jsonl for observability.
-    if push_remote:
+    # t-545: SMITHY_PUSH_ENABLED=0 short-circuits to "skipped" so tests
+    # and offline work never attempt a network push.
+    if push_remote and not push_enabled():
+        result["push"] = {"status": "skipped", "remote": push_remote,
+                          "branch": base,
+                          "reason": "disabled by SMITHY_PUSH_ENABLED"}
+    elif push_remote:
         try:
             pr = subprocess.run(
                 ["git", "push", push_remote, base],

@@ -1,4 +1,6 @@
-"""t-519: disable smithy tmux nudges for every pytest run.
+"""Repo-root pytest conftest — suite-wide environment guards.
+
+t-519: disable smithy tmux nudges for every pytest run.
 
 Tests that exercise `smithy end-heat` / `assembly-tick` / `queue-push`
 (either via CliRunner in-process or `subprocess.run([sys.executable,
@@ -19,11 +21,22 @@ the test spawns, so CliRunner callers and `sys.executable -m smithy
 Scope: `autouse=True, scope="session"` — set once, every test
 benefits. Individual tests that want to exercise the real-nudge path
 can `monkeypatch.setenv("SMITHY_NUDGE_ENABLED", "1")` locally.
+
+t-545: force the advisory-push kill switch OFF for the whole suite so
+no test can attempt a network `git push` (offline CI, staging venv,
+Forge worktrees). Set at import (not a fixture) so it also covers
+collection-time code and inherits into subprocesses. Push-machinery
+tests opt back in per-test with `monkeypatch.setenv(
+"SMITHY_PUSH_ENABLED", "1")` against local bare remotes — see
+tests/test_t438_origin_push.py. The rig's real Assembly process runs
+outside pytest, so its default stays enabled.
 """
 
 import os
 
 import pytest
+
+os.environ["SMITHY_PUSH_ENABLED"] = "0"
 
 
 @pytest.fixture(autouse=True, scope="session")
