@@ -5,9 +5,9 @@ triggers: halt_toggle, patrol_jump, repeat_rejections, budget_low,
 queue_backpressure, all_forges_idle. Thresholds configurable in
 `state.parallel.comms.thresholds`.
 
-Imports use the namespace form (`from smithy.smithy.X import …`) so
-the tests pass under Assembly's bare `/usr/bin/python3` — per the
-t-502 divergence research.
+Imports use the installed-package form (`from smithy.X import …`) per
+the t-549 import-hygiene guard — the namespace form ModuleNotFoundErrors
+at collection under the staging gate.
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from smithy.smithy import cli as cli_mod
+from smithy import cli as cli_mod
 
 
 REPO_ROOT = Path(__file__).parent.parent
@@ -38,7 +38,7 @@ def proj(tmp_path):
     """Minimal scaffolded project."""
     project = tmp_path / "proj"
     r = subprocess.run(
-        [sys.executable, "-m", "smithy.smithy.cli",
+        [sys.executable, "-m", "smithy.cli",
          "--dir", str(tmp_path), "init", "proj", "--target", str(project)],
         cwd=str(REPO_ROOT), capture_output=True, text=True, timeout=30,
     )
@@ -62,12 +62,12 @@ def _fired_path(proj):
 
 class TestCommsThresholds:
     def test_defaults_used_when_state_empty(self):
-        from smithy.smithy.cli import _comms_thresholds, COMMS_DEFAULT_THRESHOLDS
+        from smithy.cli import _comms_thresholds, COMMS_DEFAULT_THRESHOLDS
         out = _comms_thresholds({})
         assert out == COMMS_DEFAULT_THRESHOLDS
 
     def test_state_overrides_merge_over_defaults(self):
-        from smithy.smithy.cli import _comms_thresholds
+        from smithy.cli import _comms_thresholds
         state = {"parallel": {"comms": {"thresholds":
                                          {"budget_low_pct": 25.0,
                                           "patrol_jump_delta": 5}}}}
@@ -79,7 +79,7 @@ class TestCommsThresholds:
 
     def test_malformed_threshold_silently_uses_default(self):
         """A non-numeric value for a threshold we know about falls back."""
-        from smithy.smithy.cli import _comms_thresholds
+        from smithy.cli import _comms_thresholds
         state = {"parallel": {"comms":
                               {"thresholds": {"budget_low_pct": "not-a-number"}}}}
         out = _comms_thresholds(state)
@@ -100,7 +100,7 @@ class TestEvaluateCommsTriggers:
         return state, snap
 
     def test_halt_toggle_fires_on_rising_edge_only(self, tmp_path):
-        from smithy.smithy.cli import _evaluate_comms_triggers, \
+        from smithy.cli import _evaluate_comms_triggers, \
             COMMS_DEFAULT_THRESHOLDS
         state, snap = self._base_state_and_snapshot()
         snap["halt_flag"] = True
@@ -115,7 +115,7 @@ class TestEvaluateCommsTriggers:
 
     def test_halt_toggle_suppressed_when_unchanged(self, tmp_path):
         """halt flag still False this cycle → no transition, no fire."""
-        from smithy.smithy.cli import _evaluate_comms_triggers, \
+        from smithy.cli import _evaluate_comms_triggers, \
             COMMS_DEFAULT_THRESHOLDS
         state, snap = self._base_state_and_snapshot()
         last = {"halt_toggle": {"condition": False, "fired": False,
@@ -126,7 +126,7 @@ class TestEvaluateCommsTriggers:
         assert halt["fired"] is False
 
     def test_budget_low_fires_once(self, tmp_path):
-        from smithy.smithy.cli import _evaluate_comms_triggers, \
+        from smithy.cli import _evaluate_comms_triggers, \
             COMMS_DEFAULT_THRESHOLDS
         state, snap = self._base_state_and_snapshot()
         snap["budget"] = {"total": 100, "used": 95, "remaining": 5}
@@ -144,7 +144,7 @@ class TestEvaluateCommsTriggers:
         assert b2["condition"] is True  # still below threshold
 
     def test_queue_backpressure_threshold(self, tmp_path):
-        from smithy.smithy.cli import _evaluate_comms_triggers, \
+        from smithy.cli import _evaluate_comms_triggers, \
             COMMS_DEFAULT_THRESHOLDS
         state, snap = self._base_state_and_snapshot()
         # 1 forge, factor=2.0 → ceiling=2. depth=3 trips.
@@ -161,7 +161,7 @@ class TestEvaluateCommsTriggers:
         assert bp2["fired"] is False
 
     def test_all_forges_idle_needs_consecutive_cycles(self, tmp_path):
-        from smithy.smithy.cli import _evaluate_comms_triggers, \
+        from smithy.cli import _evaluate_comms_triggers, \
             COMMS_DEFAULT_THRESHOLDS
         state, snap = self._base_state_and_snapshot()
         # Default requires 2 consecutive cycles. First eval: streak=1,
@@ -189,7 +189,7 @@ class TestEvaluateCommsTriggers:
         assert idle3["fired"] is False
 
     def test_all_forges_idle_streak_resets_when_any_busy(self, tmp_path):
-        from smithy.smithy.cli import _evaluate_comms_triggers, \
+        from smithy.cli import _evaluate_comms_triggers, \
             COMMS_DEFAULT_THRESHOLDS
         state, snap = self._base_state_and_snapshot()
         state["parallel"]["forges"] = [
