@@ -4578,6 +4578,153 @@ def _detect_bottlenecks(state, root, window_minutes, active_forges=None):
     return out
 
 
+@cli.command("autopilot")
+@click.option("--once", is_flag=True, default=False,
+              help="Run one detection tick inline (shakedown path).")
+@click.pass_context
+def autopilot_cmd(ctx, once):
+    """t-526 (ini-026 T5): manual autopilot tick for shakedown.
+
+    `--once` runs ONE full detection tick inline, bypassing the
+    FORGE_AUTOPILOT_ENABLED rollout gate: gathers a rig snapshot, runs
+    the A1-A12 detectors + decision matrix (t-523), writes deferred.md
+    entries and fires rising-edge notifications via the t-525 scripts,
+    persists .autopilot-state.json, appends the canonical TICK line to
+    autopilot.log, and emits the autopilot_tick_complete rig-event.
+
+    SAFE-FIX ACTIONS ARE NOT EXECUTED HERE. Shakedown is observational
+    (design §Rollout: "no destructive actions" is the pass criterion);
+    acting on safe_fix anomalies stays with Anvil's autopilot-mode
+    prompt (T3 protocol). --once reports them as candidates so the
+    human can verify the matrix routes correctly. Patrol-derived
+    detectors (A2/A7) see empty patrol data on this path — the cron
+    dispatch (T1 prompt step 2) is where live patrol output enters.
+    """
+    if not once:
+        _output({"error": "only --once is supported; the cron path is "
+                          "scripts/autopilot-tick.sh"})
+        sys.exit(2)
+    from .autopilot import (DEFER, SAFE_FIX, decide_all, detect_all,
+                            load_prior_snapshot, write_tick_snapshot)
+    import csv as _csv
+    import os
+    import subprocess as _sp
+    root = ctx.obj["root"]
+    state = load_state(root)
+
+    def _tmux(*args):
+        try:
+            r = _sp.run(["tmux", *args], capture_output=True, text=True,
+                        timeout=5)
+            return r.stdout if r.returncode == 0 else ""
+        except Exception:
+            return ""
+
+    branches = set()
+    br = _sp.run(["git", "for-each-ref", "--format=%(refname:short)",
+                  "refs/heads"], cwd=str(root), capture_output=True,
+                 text=True)
+    if br.returncode == 0:
+        branches = set(br.stdout.split())
+
+    qpath = assembly_queue_path(root)
+    jsonl_rows = None
+    if qpath.exists():
+        jsonl_rows = []
+        for ln in qpath.read_text().splitlines():
+            if not ln.strip():
+                continue
+            try:
+                jsonl_rows.append(json.loads(ln))
+            except json.JSONDecodeError:
+                continue
+
+    session = os.environ.get("FORGE_SESSION", "forge")
+    sessions = [s for s in
+                _tmux("ls", "-F", "#{session_name}").splitlines() if s]
+    pane_tails = {
+        pane: _tmux("capture-pane", "-p", "-t",
+                    f"{session}:{pane}")[-2000:]
+        for pane in ("marshal", "assembly")
+    }
+
+    rows = []
+    wl = worklog_path(root)
+    if wl.exists():
+        with open(wl) as f:
+            rows = list(_csv.DictReader(f, delimiter="\t"))[-30:]
+
+    snap = {
+        "state": state,
+        "pane_tails": pane_tails,
+        "patrol": {},
+        "prior": load_prior_snapshot(root),
+        "branches": branches,
+        "jsonl_rows": jsonl_rows,
+        "sessions": sessions,
+        "worklog_tail": rows,
+        "forge_session": session,
+    }
+
+    anomalies = detect_all(snap)
+    pairs = decide_all(anomalies)
+    fix_candidates = [a for a, d in pairs if d["action"] == SAFE_FIX]
+    deferred = [a for a, d in pairs if d["action"] == DEFER]
+    urgent = [a for a in anomalies if a.severity == "urgent"]
+
+    append_sh = Path(__file__).resolve().parent.parent.parent / \
+        "scripts" / "autopilot-append-deferred.sh"
+    notify_sh = append_sh.parent / "autopilot-notify.sh"
+    env = dict(os.environ)
+    env["FORGE_ROOT"] = str(root)
+    for a, d in pairs:
+        if d["action"] == DEFER and append_sh.exists():
+            _sp.run(["bash", str(append_sh), a.type, a.name, a.severity,
+                     json.dumps(a.context)[:400],
+                     "execute outside the allow-list", "—"],
+                    env=env, capture_output=True, text=True, timeout=15)
+        if d.get("notify") and notify_sh.exists():
+            _sp.run(["bash", str(notify_sh), "fire", a.type, a.severity,
+                     f"{a.name}: {json.dumps(a.context)[:120]}"],
+                    env=env, capture_output=True, text=True, timeout=15)
+    # Rising-edge re-arm: notification types absent this tick clear.
+    present = {a.type for a in anomalies}
+    if notify_sh.exists():
+        for t in ("A9", "A10", "A12"):
+            if t not in present:
+                _sp.run(["bash", str(notify_sh), "clear", t], env=env,
+                        capture_output=True, text=True, timeout=15)
+
+    ts = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    write_tick_snapshot(root, snap, ts=ts)
+
+    # K fixed is honest: --once executes nothing, so it logs 0 and
+    # surfaces safe_fix candidates separately for the observer.
+    line = (f"TICK {ts} · {len(anomalies)} anomalies · 0 fixed · "
+            f"{len(deferred)} deferred · {len(urgent)} urgent")
+    with open(root / "autopilot.log", "a") as f:
+        f.write(line + "\n")
+
+    _emit_rig_event(root, "autopilot_tick_complete", actor="autopilot",
+                    mode="once", fixed_count=0,
+                    deferred_count=len(deferred),
+                    urgent_count=len(urgent),
+                    anomaly_count=len(anomalies),
+                    safe_fix_candidates=[a.type for a in fix_candidates])
+
+    _output({
+        "status": "ok",
+        "log_line": line,
+        "anomalies": [{"type": a.type, "name": a.name,
+                       "severity": a.severity} for a in anomalies],
+        "safe_fix_candidates": [a.type for a in fix_candidates],
+        "deferred": [a.type for a in deferred],
+        "urgent": [a.type for a in urgent],
+        "note": "safe_fix actions are NOT auto-executed by --once "
+                "(observational shakedown; see design §Rollout)",
+    })
+
+
 @cli.command("comms-snapshot")
 @click.option("--window-minutes", type=int, default=30,
               help="Recency window for 'last N-min' counters (default 30).")

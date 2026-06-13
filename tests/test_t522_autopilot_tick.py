@@ -86,6 +86,9 @@ def _run_tick(*, tmp_path, bin_dir, scripts_dir, env_overrides=None,
     env["PATH"] = f"{bin_dir}:{env['PATH']}"
     env["FORGE_ROOT"] = str(tmp_path)
     env["FORGE_SESSION"] = "forge-test-t522"
+    # t-526: the rollout gate defaults OFF; these tests exercise gates
+    # 1-5, so opt in here. TestT526RolloutGate overrides per-test.
+    env["FORGE_AUTOPILOT_ENABLED"] = "1"
     if env_overrides:
         env.update(env_overrides)
     return subprocess.run(
