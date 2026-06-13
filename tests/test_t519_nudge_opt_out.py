@@ -32,7 +32,7 @@ def _smithy(dir_path, *args, extra_env=None):
     if extra_env:
         env.update(extra_env)
     r = subprocess.run(
-        [sys.executable, "-m", "smithy.smithy.cli", "--dir", str(dir_path), *args],
+        [sys.executable, "-m", "smithy.cli", "--dir", str(dir_path), *args],
         cwd=str(REPO_ROOT), capture_output=True, text=True, timeout=15,
         env=env,
     )
@@ -47,7 +47,7 @@ def test_nudge_persona_respects_env_disabled(monkeypatch):
     With the env switch set, _nudge_persona returns the canned no-op
     shape with reason='SMITHY_NUDGE_ENABLED=0' and never reaches the
     tmux subprocess path."""
-    from smithy.smithy.cli import _nudge_persona
+    from smithy.cli import _nudge_persona
     # Clear the pytest backstop so we exercise ONLY the env-switch path.
     monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
     monkeypatch.setenv("SMITHY_NUDGE_ENABLED", "0")
@@ -66,7 +66,7 @@ def test_nudge_persona_env_value_1_falls_through(monkeypatch):
     backstop (still active under pytest) will kick in and return the
     `pytest context, nudge skipped` shape. Confirms the env switch is
     a simple string compare, not truthy-ish."""
-    from smithy.smithy.cli import _nudge_persona
+    from smithy.cli import _nudge_persona
     monkeypatch.setenv("SMITHY_NUDGE_ENABLED", "1")
     # Leave PYTEST_CURRENT_TEST alone so the backstop catches the fall-through.
     result = _nudge_persona("marshal", "x")
@@ -78,7 +78,7 @@ def test_nudge_persona_env_unset_defaults_to_enabled(monkeypatch):
     """When SMITHY_NUDGE_ENABLED is unset, default behaviour is 'enabled'
     (so production stays unchanged). Under pytest the second backstop
     still prevents real tmux calls."""
-    from smithy.smithy.cli import _nudge_persona
+    from smithy.cli import _nudge_persona
     monkeypatch.delenv("SMITHY_NUDGE_ENABLED", raising=False)
     # Don't clear PYTEST_CURRENT_TEST — we rely on the existing backstop.
     result = _nudge_persona("marshal", "x")
@@ -156,7 +156,7 @@ def test_subprocess_end_heat_opts_back_in_when_explicitly_requested(rig):
 def test_env_disabled_result_has_caller_required_keys():
     """Existing callers inspect `result["nudged"]` etc. The no-op shape
     must include those keys so they don't KeyError."""
-    from smithy.smithy.cli import _nudge_persona
+    from smithy.cli import _nudge_persona
     # Env is already 0 from conftest.
     result = _nudge_persona("marshal", "x")
     assert "nudged" in result

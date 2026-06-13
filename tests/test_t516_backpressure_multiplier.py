@@ -30,7 +30,7 @@ def _smithy(proj, *args, extra_env=None):
     if extra_env is not None:
         env.update(extra_env)
     r = subprocess.run(
-        [sys.executable, "-m", "smithy.smithy.cli",
+        [sys.executable, "-m", "smithy.cli",
          "--dir", str(proj), *args],
         cwd=str(REPO_ROOT), capture_output=True, text=True, timeout=15,
         env=env,
