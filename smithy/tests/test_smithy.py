@@ -1902,30 +1902,67 @@ class TestSyncStages:
 class TestMemoryWrite:
     """Tests for memory-write command."""
 
-    def test_memory_write_creates_file(self, project, runner):
-        """memory-write creates MEMORY_DAILY.md under the caller's
-        per-forge subdir (t-458). With no multi-forge state configured
-        the fallback is the DEFAULT_FORGE_ID ("forge-01") → subdir "01"."""
+    def test_memory_write_on_seeded_main_is_error(self, project, runner):
+        """t-568 (option-A point 2): init scaffolds the per-forge layout,
+        so a main-checkout write is an exit-2 error — the pre-t-568
+        silent write-only left an uncommittable dirty file. (This
+        fixture builds its rig by hand, so plant the marker.)"""
+        marker = project / "personas" / "forge" / "memory" / "README.md"
+        marker.parent.mkdir(parents=True, exist_ok=True)
+        marker.write_text("# Forge memory — per-forge layout (t-458)\n")
+        result = runner.invoke(cli, ["--dir", str(project), "memory-write", "Test note"])
+        assert result.exit_code == 2
+        data = json.loads(result.output)
+        assert "error" in data
+        assert "memory-rollup" in data["error"]
+        assert not (project / "personas" / "forge" / "memory" / "01"
+                    / "MEMORY_DAILY.md").exists()
+
+    def test_memory_write_appends_stays_legal_after_first_write(self, project, runner):
+        """The fallback subdir created by the first unseeded write must
+        not arm the seeded policy against the second (marker-based
+        check, not dir-existence)."""
+        self._unseed(project)
+        r1 = runner.invoke(cli, ["--dir", str(project), "memory-write", "first"])
+        assert r1.exit_code == 0
+        r2 = runner.invoke(cli, ["--dir", str(project), "memory-write", "second"])
+        assert r2.exit_code == 0
+
+    def _unseed(self, project):
+        # Remove the t-458/t-568 layout marker — legacy rigs predate it.
+        marker = project / "personas" / "forge" / "memory" / "README.md"
+        if marker.exists():
+            marker.unlink()
+
+    def test_memory_write_unseeded_creates_file(self, project, runner):
+        """Pre-t-458-shaped rigs (no per-forge layout) keep legacy
+        write-only behavior; fallback subdir is "01" (forge-01)."""
+        self._unseed(project)
         result = runner.invoke(cli, ["--dir", str(project), "memory-write", "Test note"])
         assert result.exit_code == 0
         data = json.loads(result.output)
         assert data["note"] == "Test note"
         memory_path = project / "personas" / "forge" / "memory" / "01" / "MEMORY_DAILY.md"
         assert memory_path.exists()
-        content = memory_path.read_text()
-        assert "Test note" in content
+        assert "Test note" in memory_path.read_text()
 
     def test_memory_write_with_heat(self, project, runner):
         """memory-write with --heat adds prefix (lands in primary subdir)."""
+        self._unseed(project)
         result = runner.invoke(cli, ["--dir", str(project), "memory-write", "Heat note", "--heat", "42", "--stage", "testing"])
         assert result.exit_code == 0
         content = (project / "personas" / "forge" / "memory" / "01" / "MEMORY_DAILY.md").read_text()
         assert "[h42 testing]" in content
 
     def test_memory_write_appends(self, project, runner):
-        """Multiple writes append under same date header in the primary subdir."""
+        """Multiple writes append under same date header in the primary
+        subdir. The fallback dir created by the FIRST legacy write must
+        not arm the t-568 seeded policy against the second (rig-level
+        seeded check)."""
+        self._unseed(project)
         runner.invoke(cli, ["--dir", str(project), "memory-write", "Note 1"])
-        runner.invoke(cli, ["--dir", str(project), "memory-write", "Note 2"])
+        result2 = runner.invoke(cli, ["--dir", str(project), "memory-write", "Note 2"])
+        assert result2.exit_code == 0
         content = (project / "personas" / "forge" / "memory" / "01" / "MEMORY_DAILY.md").read_text()
         assert "Note 1" in content
         assert "Note 2" in content
