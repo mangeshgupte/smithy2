@@ -484,10 +484,13 @@
             const descRow = document.createElement('tr');
             descRow.className = 'c-desc-row';
             descRow.dataset.descFor = t.id;
+            // t-565: the t-548 bounce badge lives here now — t-527's
+            // refinements dropped the reason column it used to ride in.
             descRow.innerHTML =
                 `<td></td><td></td>` +
                 `<td class="c-desc-cell" colspan="8" onclick="toggleInlineExpand(event, '${t.id}')">` +
                 `${(t.desc || '(no description)').replace(/</g, '&lt;').replace(/>/g, '&gt;')}` +
+                `${formatBounce(t)}` +
                 `</td>`;
             body.appendChild(descRow);
             if (isOpen) {
