@@ -32,7 +32,7 @@ REPO_ROOT = Path(__file__).parent.parent
 
 def _smithy(proj, *args):
     r = subprocess.run(
-        [sys.executable, "-m", "smithy.smithy.cli",
+        [sys.executable, "-m", "smithy.cli",
          "--dir", str(proj), *args],
         cwd=str(REPO_ROOT), capture_output=True, text=True, timeout=15,
     )
@@ -74,7 +74,7 @@ def test_add_task_stamps_created_at(proj):
 def test_task_summary_age_minutes_from_created_at(proj):
     """TaskSummary.from_queue_row reads created_at and computes
     age_minutes; older stamps yield larger deltas."""
-    from smithy.smithy.task_detail import TaskSummary
+    from smithy.task_detail import TaskSummary
     now = datetime.now(timezone.utc)
     recent = (now - timedelta(minutes=3)).isoformat()
     older = (now - timedelta(hours=2, minutes=15)).isoformat()
@@ -87,14 +87,14 @@ def test_task_summary_age_minutes_from_created_at(proj):
 def test_task_summary_age_minutes_none_when_created_at_missing():
     """Tasks predating t-527 have no created_at → age_minutes stays None
     and the Cockpit renders '—'."""
-    from smithy.smithy.task_detail import TaskSummary
+    from smithy.task_detail import TaskSummary
     r = TaskSummary.from_queue_row({"id": "t-legacy"})
     assert r.age_minutes is None
     assert r.created_at is None
 
 
 def test_task_summary_age_minutes_none_on_unparseable_stamp():
-    from smithy.smithy.task_detail import TaskSummary
+    from smithy.task_detail import TaskSummary
     r = TaskSummary.from_queue_row({"id": "t-bad", "created_at": "garbage"})
     assert r.age_minutes is None
     # created_at passes through raw for diagnostic value.
@@ -102,7 +102,7 @@ def test_task_summary_age_minutes_none_on_unparseable_stamp():
 
 
 def test_task_summary_to_dict_includes_age_minutes_and_created_at():
-    from smithy.smithy.task_detail import TaskSummary
+    from smithy.task_detail import TaskSummary
     now = datetime.now(timezone.utc).isoformat()
     r = TaskSummary.from_queue_row({"id": "t-1", "created_at": now})
     d = r.to_dict()
@@ -221,7 +221,7 @@ def test_cockpit_primary_row_is_10_cells_wide(cockpit_html):
 def test_cockpit_still_renders_with_old_state(tmp_path):
     """A state.json with tasks lacking created_at must still serialize
     cleanly — age_minutes defaults to null rather than throwing."""
-    from smithy.smithy.task_detail import TaskSummary
+    from smithy.task_detail import TaskSummary
     r = TaskSummary.from_queue_row({
         "id": "t-old", "desc": "legacy", "stage": "implementation",
         "status": "pending", "priority": 2,
