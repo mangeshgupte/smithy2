@@ -17,6 +17,7 @@ The human launches the tmux windows once; you do not spawn teammates. When the h
    - **Marshal** — one window
    - **Forges** — one per `state.parallel.forges[]` entry (ids are metalworking verbs: `forge-quench` primary, `forge-temper`, `forge-anneal`; backup roster in `state.parallel.forge_roster`)
    - **Assembly** — present iff `state.parallel.max_forges > 1`
+   - **Comms** — present iff `FORGE_COMMS_WINDOW` is non-empty (default `comms`; empty string opts out). It's a read-only cron-woken status narrator. `smithy patrol` check #18 flags a missing comms window or cron line when the rig is up and comms is enabled.
 4. Verify the **worktree invariant (t-407)**: every Marshal/Forge window runs inside `../../.worktrees/<id>/` and passes `--forge <id>` to `smithy`. Anvil stays on main (read-only by discipline). **Assembly is the only agent allowed to write to main.** `smithy patrol` check #7 fails the rig if any Forge or Marshal is missing its worktree — if patrol is red, flag to the human before doing anything else.
 5. Report team status to the human (window roster + current task per agent, from `state.json`).
 

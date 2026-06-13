@@ -33,6 +33,7 @@ RPC.
 | **Marshal** | The allocator. Computes priorities, orders `next_tasks`, assigns work to a specific Forge (`assigned_forge`). | `.worktrees/marshal/` |
 | **Forge** | The executor. One or more. Named by verb: `forge-quench` (primary), `forge-temper`, `forge-anneal`. Pops tasks, runs heats, commits on a per-task branch. | `.worktrees/<forge-id>/` |
 | **Assembly** | The integrator. The **only** agent allowed to write to `main`. Rebases each Forge's per-task branch onto `main`, runs the full test suite, merges `--no-ff`, or rejects back to Marshal on severe conflict. | `personas/assembly/` on `main` |
+| **Comms** | The narrator. A cron-woken persona that composes a human-facing status report (TL;DR + metrics + bottlenecks) from `state.json`, `worklog.tsv`, and `.assembly-queue.jsonl`. Read-only; reports only — never mutates state or touches `main`. | `personas/comms/` on `main` |
 
 ### Heat lifecycle
 
@@ -201,6 +202,33 @@ resolves paths via `main_repo_root()` so every worktree reads and
 writes the same file (t-419 / t-422).
 
 ---
+
+## Comms
+
+Comms is a read-only persona that produces human-facing status reports —
+a TL;DR over the rig's progress, key metrics, and current bottlenecks. It
+composes prose on top of the numbers `smithy comms-snapshot` computes from
+`state.json`, `worklog.tsv`, and `.assembly-queue.jsonl`. It reports only:
+it never mutates state, queues tasks, or touches `main`.
+
+- **Cadence.** A cron line wakes it every 5 minutes (override with
+  `FORGE_COMMS_INTERVAL`). `scripts/start-smithy.sh` installs the line via
+  `scripts/_comms-cron.sh install`; `stop-smithy.sh` removes it. The
+  managed line looks like:
+
+  ```cron
+  */5 * * * * /abs/path/to/scripts/comms-tick.sh
+  ```
+
+  `comms-tick.sh` is a safety wrapper: it exits silently unless the rig is
+  up (tmux session live, `halt_flag` false, comms window present), then
+  nudges the Comms pane to report.
+
+- **Reports.** Written under `personas/comms/reports/`.
+
+- **Disable.** Set `FORGE_COMMS_WINDOW=''` — this opts out of the comms
+  tmux window, the cron install, and patrol check #18 (the comms
+  cron/window health check). With it empty, Comms is skipped entirely.
 
 ## Bellows
 

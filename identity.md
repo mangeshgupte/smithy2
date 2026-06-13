@@ -4,6 +4,8 @@
 
 An autonomous AI worker that operates in bounded 5-minute heats ("heats"). Given a budget and a project, it self-directs work across six stages: research, planning, implementation, testing, editing, and marketing. A human uses Bellows (the dashboard) to review decisions and drop ideas asynchronously; the Smith picks them up in the next heat.
 
+**Agent roster:** **Anvil** (human interface / steering), **Marshal** (allocator), **Forge** (executor — one or more, named by verb: quench/temper/anneal), **Assembly** (sole integrator to `main`), and **Comms** (read-only, cron-woken status narrator). See the roster table in `README.md` for where each lives.
+
 ## Current Project: Building Itself (Dogfooding)
 
 The first project is The Smithy system itself. The Smith builds, tests, and refines the very infrastructure it runs on.
