@@ -610,7 +610,29 @@ def start_heat(ctx, stage, task_id, forge_id, reuse_scratch):
         if task_id:
             for task in state.get("queue", []):
                 if task["id"] == task_id:
-                    if task["status"] != "pending":
+                    # t-543: claim-task (ini-024 T2) flips a task to
+                    # in_progress BEFORE start-heat runs, so the documented
+                    # claim→start flow used to die on the pending-only
+                    # check. Accept in_progress when WE are the claimer
+                    # (idempotent re-entry); reject a sibling's claim, and
+                    # reject unattributed in_progress — no sanctioned path
+                    # leaves a claim unstamped, so that's an orphan for
+                    # patrol, not a startable heat.
+                    if task["status"] == "in_progress":
+                        claimer = task.get("assigned_forge")
+                        if claimer != forge_id:
+                            _output({
+                                "error": f"Task {task_id} is in_progress, "
+                                         f"claimed by {claimer or 'nobody'} "
+                                         f"(you are {forge_id})"
+                                         + ("" if claimer else
+                                            " — run `smithy patrol --fix` "
+                                            "to reap the orphan"),
+                                "claimed_by": claimer,
+                                "forge_id": forge_id,
+                            })
+                            sys.exit(1)
+                    elif task["status"] != "pending":
                         _output({"error": f"Task {task_id} is {task['status']}, not pending"})
                         sys.exit(1)
                     task["status"] = "in_progress"
