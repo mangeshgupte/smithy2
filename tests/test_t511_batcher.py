@@ -284,39 +284,125 @@ class TestAssemblyBatchTickCLI:
         assert data["window"]["depth"] == 2
         assert len(data["entries"]) == 2
 
-    def test_red_test_reverts_staging_leaves_queue(self, tick_rig, monkeypatch):
-        """A red test result in the MVP: staging resets, queue stays,
-        event records batch_outcome=red_deferred. We monkeypatch
-        run_batch_tests inside the subprocess — can't; easier route is
-        to assert the happy dry-run then exercise the runtime fn under
-        a direct Python call."""
-        # We don't have a good way to inject a mocked test runner into
-        # the subprocess-backed CLI. Instead, drive the green path +
-        # test-result branch via a direct Python import + patch.
+    # --- t-513 impl-T3: bisect on red + flaky retry ------------------------
+    # (replaces the impl-T1 "red_deferred" placeholder behaviour)
+
+    @staticmethod
+    def _invoke_with_tests(tick_rig, test_results):
+        """Drive assembly-batch-tick with run_batch_tests mocked to a
+        side-effect sequence (t-513: the red path now calls the runner
+        again for bisect probes + the flaky retry, so order matters)."""
         from smithy import cli as cli_mod
         from click.testing import CliRunner
         try:
             runner = CliRunner(mix_stderr=False)
         except TypeError:
             runner = CliRunner()
-
         with patch("smithy.assembly.run_batch_tests") as mt, \
              patch("smithy.assembly.ensure_staging_venv_versioned") as mv:
             mv.return_value = {"status": "reused",
-                               "path": "/usr/bin/python3",  # unused on red
+                               "path": "/usr/bin/python3",
                                "recreated": False}
-            mt.return_value = {"passed": False, "returncode": 2,
-                               "output": "fake red"}
+            mt.side_effect = test_results
             result = runner.invoke(
                 cli_mod.cli, ["--dir", str(tick_rig), "assembly-batch-tick"],
             )
+        return result
+
+    def test_red_first_entry_bisect_rejects_offender(self, tick_rig):
+        """t-513 §(b): always-red suite on [t-1, t-2] — bisect probes
+        the t-1 prefix (red → offender index 0), flaky retry stays red,
+        t-1 is rejected; no green prefix lands; t-2's row survives to
+        re-batch next tick."""
+        red = {"passed": False, "returncode": 2, "output": "fake red"}
+        # Calls: initial full-tip run, bisect probe @ prefix[0],
+        # flaky retry @ offender sha — all red.
+        result = self._invoke_with_tests(tick_rig, [red, red, red])
         assert result.exit_code == 0, result.output
         data = json.loads(result.output)
-        assert data["status"] == "red_deferred", data
-        # Queue intact — both rows still present.
+        assert data["status"] == "bisect_rejected", data
+        assert data["offender"] == "t-1", data
+        assert data["green_landed"] == 0
+        # Queue: t-1 popped (rejected), t-2 intact for the next tick.
+        qp = tick_rig / ".assembly-queue.jsonl"
+        rows = [json.loads(ln) for ln in qp.read_text().splitlines()
+                if ln.strip()]
+        assert [r["task_id"] for r in rows] == ["t-2"]
+        # t-1 flipped to pending with the bisect reason.
+        s = json.loads((tick_rig / "state.json").read_text())
+        t1 = next(t for t in s["queue"] if t["id"] == "t-1")
+        assert t1["status"] == "pending"
+        assert "batch-bisect" in (t1.get("priority_reason") or "")
+
+    def test_red_second_entry_lands_green_prefix(self, tick_rig):
+        """t-513 §(a)-shape: offender at the end — probe at prefix[0]
+        is green, offender t-2 confirmed red on retry; t-1 (the green
+        prefix) ff-merges into main, t-2 is rejected."""
+        red = {"passed": False, "returncode": 2, "output": "fake red"}
+        green = {"passed": True, "returncode": 0, "output": "ok"}
+        # Calls: initial red, probe @ prefix[0] green, retry @ t-2 red.
+        result = self._invoke_with_tests(tick_rig, [red, green, red])
+        assert result.exit_code == 0, result.output
+        data = json.loads(result.output)
+        assert data["status"] == "merged", data
+        assert data["outcome"] == "bisect_partial", data
+        assert data["merged_ids"] == ["t-1"]
+        assert data["rejected_ids"] == ["t-2"]
+        # §(e): only the green prefix's content reaches main.
+        assert (tick_rig / "a.txt").exists()
+        assert not (tick_rig / "b.txt").exists()
+        # Queue fully drained: t-1 landed, t-2 rejected.
+        qp = tick_rig / ".assembly-queue.jsonl"
+        assert not [ln for ln in qp.read_text().splitlines() if ln.strip()]
+        # §(f): bisect rig-event payload.
+        events = [json.loads(ln) for ln in
+                  (tick_rig / "rig-events.jsonl").read_text().splitlines()
+                  if ln.strip()]
+        bis = [e for e in events if e["event"] == "assembly_batch_bisect"]
+        assert bis and bis[-1]["batch_size"] == 2
+        assert bis[-1]["narrowed_to"] == 1
+        assert bis[-1]["green_landed"] == 1
+
+    def test_flaky_retry_lands_whole_batch(self, tick_rig):
+        """t-513 §(c): the flaky retry passes → no reject, the FULL
+        batch lands, flaky_test_observed event emitted."""
+        red = {"passed": False, "returncode": 2, "output": "fake red"}
+        green = {"passed": True, "returncode": 0, "output": "ok"}
+        # Calls: initial red, probe @ prefix[0] red (offender candidate
+        # t-1), flaky retry green → forgive the whole batch.
+        result = self._invoke_with_tests(tick_rig, [red, red, green])
+        assert result.exit_code == 0, result.output
+        data = json.loads(result.output)
+        assert data["status"] == "merged", data
+        assert data["flaky"] is True
+        assert data["merged_ids"] == ["t-1", "t-2"]
+        assert data["rejected_ids"] == []
+        assert (tick_rig / "a.txt").exists()
+        assert (tick_rig / "b.txt").exists()
+        events = [json.loads(ln) for ln in
+                  (tick_rig / "rig-events.jsonl").read_text().splitlines()
+                  if ln.strip()]
+        assert any(e["event"] == "flaky_test_observed" for e in events)
+
+    def test_timeout_aborts_and_leaves_queue(self, tick_rig):
+        """t-513 §(d): pytest timeout mid-tick → batch_outcome=aborted,
+        staging reset, queue fully intact."""
+        result = self._invoke_with_tests(
+            tick_rig,
+            subprocess.TimeoutExpired(cmd="pytest", timeout=600),
+        )
+        assert result.exit_code == 0, result.output
+        data = json.loads(result.output)
+        assert data["status"] == "aborted", data
         qp = tick_rig / ".assembly-queue.jsonl"
         rows = [ln for ln in qp.read_text().splitlines() if ln.strip()]
         assert len(rows) == 2
+        events = [json.loads(ln) for ln in
+                  (tick_rig / "rig-events.jsonl").read_text().splitlines()
+                  if ln.strip()]
+        merged_events = [e for e in events
+                         if e["event"] == "assembly_batch_merged"]
+        assert merged_events[-1]["batch_outcome"] == "aborted"
 
     # --- t-512 impl-T2: severe-conflict per-task reject -------------------
 
