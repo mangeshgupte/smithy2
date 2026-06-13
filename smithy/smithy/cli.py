@@ -1,5 +1,14 @@
 """Smithy CLI — deterministic bookkeeping for The Forge."""
 
+# t-573: PEP 604 union annotations (e.g. `-> bool | None`, from the
+# t-486/t-488 comms work) are evaluated at import on Python 3.9 and raise
+# TypeError, crashing the global install and the comms cron. Deferring all
+# annotations to strings (PEP 563) makes them lazy and 3.9-safe. Keep this
+# as the first statement after the docstring — a __future__ import must
+# precede any other code. The AST guard in test_t573_py39_import.py fails
+# if it's removed or if a runtime (non-annotation) PEP 604 union creeps in.
+from __future__ import annotations
+
 import json
 import sys
 import click
