@@ -2786,9 +2786,19 @@ def _nudge_persona(persona, message, root=None):
     import os
     import subprocess
 
-    # t-429: pytest-context backstop must be first — before busy-check, before
-    # session lookup, before anything that has side effects (the busy-check
-    # branch queues a nudge to file; we want even that suppressed under pytest).
+    # t-519: opt-out env switch. Covers every code path (including
+    # subprocess-spawned `smithy` CLI calls from tests) where the pytest-
+    # context backstop below can't reach because the child process has a
+    # fresh environment. Conftest autouse exports SMITHY_NUDGE_ENABLED=0
+    # for every test run; the env inherits into subprocess.run children.
+    if os.environ.get("SMITHY_NUDGE_ENABLED", "1") == "0":
+        return {"nudged": False, "queued": False, "persona": persona,
+                "target": None,
+                "reason": "SMITHY_NUDGE_ENABLED=0"}
+
+    # t-429: pytest-context backstop (in-process tests only — subprocess
+    # calls from tests don't inherit PYTEST_CURRENT_TEST; that's what the
+    # t-519 env switch above is for).
     if os.environ.get("PYTEST_CURRENT_TEST"):
         return {"nudged": False, "queued": False, "persona": persona,
                 "reason": "pytest context, nudge skipped"}

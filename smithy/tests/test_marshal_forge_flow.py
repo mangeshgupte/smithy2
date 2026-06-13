@@ -273,6 +273,7 @@ class TestNudgeQueueWhenBusy:
         # t-429: opt out of PYTEST_CURRENT_TEST backstop so the real
         # busy-check path executes.
         monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+        monkeypatch.setenv("SMITHY_NUDGE_ENABLED", "1")
         (project / ".forge-checkpoint.json").write_text(json.dumps({"heat": 11}))
         result = _nudge_persona("forge", "hello", root=project)
         assert result["nudged"] is False
@@ -292,6 +293,7 @@ class TestNudgeQueueWhenBusy:
     def test_nudge_queues_when_no_session(self, mock_run, project, monkeypatch):
         """If tmux session doesn't exist, nudge should queue as fallback."""
         monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+        monkeypatch.setenv("SMITHY_NUDGE_ENABLED", "1")
         mock_run.return_value = MagicMock(returncode=1)  # has-session fails
         result = _nudge_persona("forge", "hello", root=project)
         assert result["nudged"] is False

@@ -656,12 +656,16 @@ class TestNudgePytestBackstop:
     pane.
     """
 
-    def test_skips_when_pytest_current_test_set(self):
+    def test_skips_when_pytest_current_test_set(self, monkeypatch):
         """Env-var is set by pytest automatically — assert it and verify
         _nudge_persona returns the sentinel without touching subprocess."""
         import os
         from unittest.mock import patch
         from smithy.cli import _nudge_persona
+        # t-519: opt out of the newer SMITHY_NUDGE_ENABLED switch so we
+        # exercise the PYTEST_CURRENT_TEST backstop this test was
+        # written for.
+        monkeypatch.setenv("SMITHY_NUDGE_ENABLED", "1")
         assert os.environ.get("PYTEST_CURRENT_TEST"), \
             "pytest should set PYTEST_CURRENT_TEST for every test"
         with patch("subprocess.run") as mock_run:
@@ -671,9 +675,10 @@ class TestNudgePytestBackstop:
         assert result["reason"] == "pytest context, nudge skipped"
         mock_run.assert_not_called()
 
-    def test_skips_even_with_root_arg(self, tmp_path):
+    def test_skips_even_with_root_arg(self, tmp_path, monkeypatch):
         """Backstop fires before the busy-check branch too."""
         from smithy.cli import _nudge_persona
+        monkeypatch.setenv("SMITHY_NUDGE_ENABLED", "1")
         (tmp_path / ".marshal-checkpoint.json").write_text("{}")  # would normally queue
         result = _nudge_persona("marshal", "hi", root=tmp_path)
         assert result["reason"] == "pytest context, nudge skipped"
@@ -693,6 +698,7 @@ class TestNudgeCommand:
     def test_nudge_queues_when_busy(self, project, runner, monkeypatch):
         """When persona has a checkpoint, nudge should queue instead of sending."""
         monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+        monkeypatch.setenv("SMITHY_NUDGE_ENABLED", "1")
         (project / ".forge-checkpoint.json").write_text("{}")
         result = runner.invoke(cli, ["--dir", str(project), "nudge", "forge", "wake up"])
         assert result.exit_code == 0
@@ -709,6 +715,7 @@ class TestNudgeCommand:
     def test_nudge_queues_when_no_tmux(self, project, runner, monkeypatch):
         """When tmux session doesn't exist, nudge should queue with fallback."""
         monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+        monkeypatch.setenv("SMITHY_NUDGE_ENABLED", "1")
         import subprocess as sp
 
         def fake_run(cmd, **kwargs):
@@ -732,6 +739,7 @@ class TestNudgeCommand:
         tested separately in TestNudgeRosterMismatch.
         """
         monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+        monkeypatch.setenv("SMITHY_NUDGE_ENABLED", "1")
         import subprocess as sp
 
         def fake_run(cmd, **kwargs):
@@ -764,6 +772,7 @@ class TestNudgeCommand:
         that's the addressing convention Marshal and end-heat now use.
         """
         monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+        monkeypatch.setenv("SMITHY_NUDGE_ENABLED", "1")
         import subprocess as sp
 
         def fake_run(cmd, **kwargs):
@@ -819,6 +828,7 @@ class TestNudgeRosterMismatch:
     def test_wrong_session_fails_loud_not_queue(self, project, runner, monkeypatch):
         """Registered forges + panes without any of them → error, no queue."""
         monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+        monkeypatch.setenv("SMITHY_NUDGE_ENABLED", "1")
         self._register_forges(project, ["forge-quench", "forge-temper"])
 
         import subprocess as sp
@@ -849,6 +859,7 @@ class TestNudgeRosterMismatch:
     def test_live_session_selected_among_dual(self, project, runner, monkeypatch):
         """When pane roster contains a registered forge, the nudge is sent."""
         monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+        monkeypatch.setenv("SMITHY_NUDGE_ENABLED", "1")
         self._register_forges(project, ["forge-quench"])
 
         import subprocess as sp
@@ -883,6 +894,7 @@ class TestNudgeRosterMismatch:
         The roster-mismatch case is the one we escalate to error=True.
         """
         monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+        monkeypatch.setenv("SMITHY_NUDGE_ENABLED", "1")
         self._register_forges(project, ["forge-quench"])
 
         import subprocess as sp
@@ -904,6 +916,7 @@ class TestNudgeRosterMismatch:
     def test_resolve_pane_direct(self, project, monkeypatch):
         """Direct test on the (pane_id, reason) contract of _resolve_pane."""
         monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+        monkeypatch.setenv("SMITHY_NUDGE_ENABLED", "1")
         import subprocess as sp
         from smithy.cli import _resolve_pane
 
