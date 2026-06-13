@@ -44,6 +44,54 @@ The human's strategic intent. Reference this when generating tasks or making dec
 - **AI Collaborator**: Git-native structured disagreement (future)
 - **Memory Substrate**: Token-budgeted context assembly, episodic store (future)
 
+## Initiative Lifecycle
+
+Work is organized into **initiatives** (`ini-XXX`) — bounded bodies of
+related tasks with a shared goal. An initiative moves through a lifecycle,
+and closing one is a first-class step that captures what was learned, not
+just a status flip (ini-025).
+
+**States:** `proposed` → `approved`/`active` → `complete` (or `rejected`).
+Proposing and approving are human territory; Anvil and the rig execute
+within an approved initiative.
+
+**Closure flow (end-to-end):**
+
+1. **Decide to close.** The human signals an initiative is done. Anvil
+   verifies every task under it is `complete` — no open
+   `pending`/`in_progress`/`submitted` rows. Open work is flipped
+   explicitly or the closure waits.
+2. **Anvil drafts the retro prose.** Anvil reads the record (worklog
+   filtered to the ini's task ids, git log of merged shas, memories
+   tagged with ini context, `plans/` docs referencing it) and produces
+   `plans/ini-XXX-retro.md` from `plans/TEMPLATE-initiative-retro.md`,
+   filling the prose sections and leaving data sections marked for a
+   Forge. The drafting steps are in `personas/anvil/CLAUDE.md`
+   §"Closing Initiatives".
+3. **Forge fills the data.** Anvil files an `editing` task; a Forge runs
+   the state/worklog/git queries and fills the "What shipped" bullets and
+   the metrics appendix, then submits.
+4. **Assembly merges** the retro into main via the standard gate.
+5. **Human reviews + closes.** The retro renders on the Bellows
+   initiative detail page. The human edits prose if needed (directly on
+   main — retros are human territory, no gate) and runs
+   `smithy complete-initiative <id> --retro plans/ini-XXX-retro.md
+   [--successor <ini-id>]`. The CLI validates the path and writes the
+   state.json closure fields (`retro_path`, `closed_at`,
+   `heat_cost_total`, `successor_ini`). `--force-no-retro` is the
+   escape hatch for edge cases.
+
+**Succession is binary + optional pointer.** An initiative is `complete`
+with an optional `successor_ini` when there's a direct continuation
+(e.g. ini-018 → ini-024). There is no `maintenance` status — later
+maintenance work files as a new initiative when substantial, or as a
+`theme-XXX` task without initiative attribution when small. A new
+initiative may start while a prior one's retro is still in flight;
+closure never gates new work.
+
+Design contract: `plans/initiative-retros-design.md`. Template:
+`plans/TEMPLATE-initiative-retro.md`.
+
 ## Created
 
 2026-04-09

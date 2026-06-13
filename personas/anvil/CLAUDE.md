@@ -79,6 +79,70 @@ For explaining state and history, read:
 
 **Every claim should be traceable.** Don't speculate — cite the file, heat number, or commit.
 
+## Closing Initiatives (ini-025)
+
+When an initiative is done, it produces a **retro** — a closure artifact
+with prose (what we learned) and queryable metrics. The full contract is
+`plans/initiative-retros-design.md`; the canonical template is
+`plans/TEMPLATE-initiative-retro.md`; the end-to-end flow lives in
+`../../identity.md` §"Initiative Lifecycle". This section is YOUR part:
+drafting the prose skeleton from the record.
+
+You draft, a Forge fills the data, the human reviews and closes via
+`smithy complete-initiative <id> --retro <path> [--successor <ini-id>]`.
+You do NOT close it yourself — closure is human territory, and the CLI is
+the only writer of the state.json closure fields.
+
+### Drafting procedure (when the human says "close ini-XXX")
+
+1. **Verify it's closeable.** Every task under the initiative is
+   `complete` — no open `pending`/`in_progress`/`submitted` rows. If any
+   are open, flag to the human (flip to obsolete/reject explicitly, or
+   hold off). Don't draft a retro over live work.
+
+2. **Read the record — the four reads.** Each claim in the retro must be
+   traceable to one of these:
+   - **Worklog, filtered to the ini's task ids.** Get the task ids from
+     `state.json` (`queue[]` entries with `initiative_id == "ini-XXX"`),
+     then grep them in `../../worklog.tsv`. This is the heat-by-heat
+     truth: stage, value, signal, notes, outcome. Drives the metrics
+     appendix and surfaces the rework cycles (bounces show as repeated
+     task ids with rejected outcomes).
+   - **Git log of merged shas.** `git log --oneline main` and pick the
+     `[assembly] merge <forge-id>/<task-id>` commits for this ini's
+     tasks (and the underlying `[stage] t-XXX:` commits). These are the
+     "What shipped" shas — source of truth over anything hand-counted.
+   - **Memories tagged with ini context.** Scan `./memory/` (yours),
+     `../assembly/memory/`, and each `../forge/memory/<suffix>/` for
+     entries that reference this initiative or the subsystems it touched.
+     These are the carry-forward learnings — the non-obvious wins and the
+     recurring bugs already distilled into one-liners.
+   - **`plans/` docs referencing the ini.** Design docs, brainstorm
+     notes, earlier retros. They hold the original intent to measure the
+     outcome against (did we build what we set out to?).
+
+3. **Produce the skeleton.** Copy `plans/TEMPLATE-initiative-retro.md` to
+   `plans/ini-XXX-retro.md`. Fill every prose section (Summary, What
+   worked, What didn't, Carry-forward, What's next). Leave the data
+   sections (What shipped, Metrics appendix) as their `<TODO: Forge data
+   fill>` markers. Fill the header metrics from `state.json`
+   (`heat_cost_total`, task counts) — not from memory.
+
+4. **File the Forge data-fill task.** `smithy add-task editing "fill
+   metrics + task-by-task appendix in plans/ini-XXX-retro.md per retro
+   template"` — include in the description which `state.json`/worklog
+   queries the Forge should run (the task-id list + the merged-sha grep).
+   Assembly merges it through the standard flow.
+
+5. **Hand to the human.** They review the merged retro (Bellows renders
+   it on the initiative detail page), edit prose if needed (directly on
+   main — retros are human territory, no gate), and run
+   `smithy complete-initiative`. You're done once the data task is filed
+   and the prose is sound; don't poll for closure.
+
+Could become a `/retro-draft <ini-id>` skill later (design T3); for now
+it's this documented procedure.
+
 ## Status Commands (diagnostics, not mutations)
 
 When diagnosing a stuck or idle Forge, reach for **read-only** commands
