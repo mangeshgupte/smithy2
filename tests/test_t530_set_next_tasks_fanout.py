@@ -4,8 +4,10 @@ Prior behaviour nudged only the forge that owned ordered[0]; Forges
 pinned to lower-queue tasks stayed idle indefinitely (observed
 2026-04-19 ~heat 920, forge-quench idle 15m with its P0 at position 3).
 
-Namespace-form imports per t-502 so these pass under Assembly's bare
-/usr/bin/python3.
+Imports use the installed-package form (`smithy.cli`) — t-539 flipped
+the convention: the staging venv installs smithy editable, so the old
+namespace form (`smithy.smithy.cli`) ModuleNotFoundErrors at collection
+and aborts the ENTIRE suite (this file's import was the t-530 reject).
 """
 
 from __future__ import annotations
@@ -19,7 +21,7 @@ from unittest.mock import patch
 import pytest
 from click.testing import CliRunner
 
-from smithy.smithy import cli as cli_mod
+from smithy import cli as cli_mod
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -39,7 +41,7 @@ def proj(tmp_path):
     again (for the dedupe test)."""
     project = tmp_path / "proj"
     r = subprocess.run(
-        [sys.executable, "-m", "smithy.smithy.cli",
+        [sys.executable, "-m", "smithy.cli",
          "--dir", str(tmp_path), "init", "proj", "--target", str(project)],
         cwd=str(REPO_ROOT), capture_output=True, text=True, timeout=30,
     )
