@@ -18,6 +18,7 @@ Marshal's queue-push logic) decides what to do with the chosen task.
 """
 from __future__ import annotations
 
+import re
 from typing import Iterable
 
 
@@ -85,9 +86,90 @@ def _initiative_rank(ini: dict) -> tuple:
             ini.get("id", ""))
 
 
-def select_task_for_forge(state: dict, forge_id: str) -> dict | None:
+def _normalize_reason(notes: str) -> str:
+    """t-534: normalize a worklog reject reason into a 60-char
+    fingerprint — strip the 'reason=' prefix, lowercase, collapse
+    whitespace."""
+    reason = notes or ""
+    if reason.startswith("reason="):
+        reason = reason[len("reason="):]
+    return " ".join(reason.lower().split())[:60]
+
+
+def reject_loop_fingerprint(task_id: str, worklog_rows: list,
+                            window: int = 5,
+                            threshold: int = 3) -> str | None:
+    """t-534: return the shared reason fingerprint when `task_id` is in
+    a reject loop — within its last `window` worklog rows, at least
+    `threshold` are rejected AND the most recent `threshold` rejects
+    all share one normalized reason. A most-recent reject with a
+    DIFFERENT reason breaks the loop (acceptance §b: a new failure
+    mode means the task deserves fresh consideration). None otherwise.
+
+    `worklog_rows` — chronological dicts with at least
+    {"task_id", "outcome", "notes"}.
+    """
+    rows = [r for r in worklog_rows
+            if r.get("task_id") == task_id][-window:]
+    rejects = [r for r in rows if r.get("outcome") == "rejected"]
+    if len(rejects) < threshold:
+        return None
+    fps = [_normalize_reason(r.get("notes", ""))
+           for r in rejects[-threshold:]]
+    if len(set(fps)) == 1 and fps[0]:
+        return fps[0]
+    return None
+
+
+def fix_merge_clears_loop(fingerprint: str, task_id: str,
+                          worklog_rows: list, state: dict) -> bool:
+    """t-534 exit heuristic: a task whose desc contains 'fix' and
+    shares a ≥5-char keyword with the loop fingerprint merged AFTER
+    `task_id`'s most recent reject → the root cause was plausibly
+    addressed; clear the loop flag and let Marshal re-dispatch."""
+    last_rej = max((i for i, r in enumerate(worklog_rows)
+                    if r.get("task_id") == task_id
+                    and r.get("outcome") == "rejected"), default=None)
+    if last_rej is None:
+        return False
+    desc_by_id = {t.get("id"): (t.get("desc") or "").lower()
+                  for t in state.get("queue") or []}
+    keywords = {w for w in re.split(r"[^a-z0-9_.\-]+", fingerprint)
+                if len(w) >= 5}
+    if not keywords:
+        return False
+    for r in worklog_rows[last_rej + 1:]:
+        if r.get("outcome") not in ("merged", "complete"):
+            continue
+        desc = desc_by_id.get(r.get("task_id"), "")
+        if "fix" in desc and any(k in desc for k in keywords):
+            return True
+    return False
+
+
+def reject_loop_skips(state: dict, worklog_rows: list) -> dict:
+    """t-534: {task_id: fingerprint} for every pending task currently
+    in a reject loop (and not cleared by the fix-merge heuristic).
+    Pure — callers emit the rig-event / inbox note and pass the id set
+    into the selectors below as `skip_ids`."""
+    out = {}
+    for t in state.get("queue") or []:
+        if t.get("status") != "pending":
+            continue
+        fp = reject_loop_fingerprint(t.get("id"), worklog_rows)
+        if fp and not fix_merge_clears_loop(fp, t.get("id"),
+                                            worklog_rows, state):
+            out[t["id"]] = fp
+    return out
+
+
+def select_task_for_forge(state: dict, forge_id: str,
+                          skip_ids: set | None = None) -> dict | None:
     """Walk initiatives by rank and return the first ready task that
     passes every constraint for `forge_id`. None if nothing qualifies.
+
+    t-534: `skip_ids` (reject-loop candidates from
+    `reject_loop_skips`) are excluded from dispatch.
     """
     queue = state.get("queue") or []
     complete_ids = {t["id"] for t in queue if t.get("status") == "complete"}
@@ -136,6 +218,7 @@ def select_task_for_forge(state: dict, forge_id: str) -> dict | None:
             t for t in queue
             if t.get("initiative_id") == ini_id
             and _task_is_ready(t, complete_ids)
+            and t.get("id") not in (skip_ids or ())
         ]
         # Respect affinity as a filter once past Rule 2: if the task is
         # affinity-pinned to a set the forge isn't in, don't dispatch.
@@ -153,10 +236,14 @@ def select_task_for_forge(state: dict, forge_id: str) -> dict | None:
     return None
 
 
-def claim_task_for_forge(state: dict, forge_id: str) -> dict | None:
+def claim_task_for_forge(state: dict, forge_id: str,
+                         skip_ids: set | None = None) -> dict | None:
     """ini-024 T2: like `select_task_for_forge` but honours per-task
     `assigned_forge` pinning. Returns the next task this forge is allowed
     to start working on immediately, or None.
+
+    t-534: `skip_ids` excludes reject-loop candidates so Forge
+    self-dispatch can't resurrect a loop Marshal is suppressing.
 
     A task is claimable when ALL of:
       - status == "pending"
@@ -208,6 +295,7 @@ def claim_task_for_forge(state: dict, forge_id: str) -> dict | None:
             if t.get("initiative_id") == ini_id
             and _task_is_ready(t, complete_ids)
             and (t.get("assigned_forge") in (None, forge_id))
+            and t.get("id") not in (skip_ids or ())
         ]
         if not ini_tasks:
             continue
@@ -223,6 +311,7 @@ def claim_task_for_forge(state: dict, forge_id: str) -> dict | None:
         if (t.get("initiative_id") in (None, ""))
         and _task_is_ready(t, complete_ids)
         and (t.get("assigned_forge") in (None, forge_id))
+        and t.get("id") not in (skip_ids or ())
     ]
     if loose:
         loose.sort(key=_task_sort_key)
