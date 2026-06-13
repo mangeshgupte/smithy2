@@ -68,6 +68,11 @@ smithy claim-task --forge <your-id>
 
 - **Exit 0** — a task was claimed. Use its `task_id` and `stage` for
   Step 3. Do NOT also run `queue-pop`; the claim already mutated state.
+  (t-543: `start-heat` accepts a task that is already `in_progress`
+  when its `assigned_forge` is YOU — the claim→start hand-off is
+  idempotent. It still rejects a task claimed by a different Forge,
+  and rejects unattributed `in_progress` orphans — those go through
+  `smithy patrol --fix`.)
 - **Exit 1** — nothing eligible (empty queue, rig halted, or all
   pending tasks pinned elsewhere). Go to Step 2 (Idle).
 - **Exit 2** — misconfiguration (your forge id isn't in
