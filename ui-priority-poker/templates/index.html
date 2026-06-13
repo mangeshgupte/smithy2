@@ -191,6 +191,43 @@
         <span>🗑️ Drop here to reject</span>
     </div>
 
+    {# t-520 (ini-012), moved here from Timeline by t-550 (human request):
+       rig throughput dashboard. Zero-dep hand-rolled SVG charts — adding
+       Chart.js would pull a CDN dep for a single panel. Polls
+       /api/metrics/heat-rates every 30s; renders three sections: summary
+       tiles, bucketed bar chart (last N heat buckets), hourly wall-clock
+       rate line chart (last 24h, with gaps preserved). #}
+    <section class="rig-metrics" id="rig-metrics">
+        <div class="rig-metrics-header">
+            <h2>Rig throughput</h2>
+            <span class="muted" id="rig-metrics-updated">loading…</span>
+        </div>
+        <div class="rig-metrics-tiles">
+            <div class="metric-tile" id="tile-current">
+                <div class="tile-label">Current bucket (last 10 heats)</div>
+                <div class="tile-body"><span class="t-merged">–</span> merged · <span class="t-rejected">–</span> rejected · <span class="t-ratio">–</span></div>
+            </div>
+            <div class="metric-tile" id="tile-24h">
+                <div class="tile-label">Last 24h (wall-clock)</div>
+                <div class="tile-body"><span class="t-merged">–</span> merged · <span class="t-rejected">–</span> rejected · <span class="t-rate">–</span>/hr avg</div>
+            </div>
+            <div class="metric-tile" id="tile-all">
+                <div class="tile-label">All-time</div>
+                <div class="tile-body"><span class="t-merged">–</span> merged · <span class="t-rejected">–</span> rejected · <span class="t-ratio">–</span></div>
+            </div>
+        </div>
+        <div class="rig-metrics-charts">
+            <div class="chart-block">
+                <div class="chart-label">Heat buckets (10 heats/bucket)</div>
+                <svg id="chart-buckets" width="100%" height="160" viewBox="0 0 600 160" preserveAspectRatio="xMidYMid meet"></svg>
+            </div>
+            <div class="chart-block">
+                <div class="chart-label">Hourly rate (last 24h UTC)</div>
+                <svg id="chart-hourly" width="100%" height="160" viewBox="0 0 600 160" preserveAspectRatio="xMidYMid meet"></svg>
+            </div>
+        </div>
+    </section>
+
     <aside id="activity-panel" class="activity-panel" aria-label="Recent activity">
         <header class="activity-header">
             <span>📜 Activity</span>
@@ -703,6 +740,203 @@
         btn.classList.add('spinning');
         fetch('/api/state').then(() => location.reload()).catch(() => location.reload());
     }
+    </script>
+
+    <script>
+    // --- t-520: rig throughput dashboard renderer (moved from Timeline
+    // by t-550, human request) --------------------------------------
+    //
+    // Polls /api/metrics/heat-rates every 30s and redraws three panels
+    // with pure DOM + SVG (no Chart.js — keeps this UI's zero-dep
+    // posture). The server already computes all derived numbers; this
+    // function is a presentation layer.
+    const RIG_REFRESH_MS = 30 * 1000;
+    const METRIC_COLORS = {
+        merged: '#3fb950',    // green — same token as Bellows
+        rejected: '#f85149',  // red
+        partial: '#d29922',   // yellow
+    };
+
+    function renderRigMetrics(data) {
+        // Summary tiles
+        const current = data.summary.current_bucket;
+        const t24 = data.summary.last_24h;
+        const ta = data.summary.all_time;
+
+        function setTile(id, cfg) {
+            const tile = document.getElementById(id);
+            if (!tile) return;
+            for (const [sel, val] of Object.entries(cfg)) {
+                const el = tile.querySelector(sel);
+                if (el) el.textContent = val;
+            }
+        }
+        setTile('tile-current', {
+            '.t-merged': current.merged,
+            '.t-rejected': current.rejected,
+            '.t-ratio': current.ratio == null ? '—' : (current.ratio * 100).toFixed(0) + '%',
+        });
+        setTile('tile-24h', {
+            '.t-merged': t24.merged,
+            '.t-rejected': t24.rejected,
+            '.t-rate': t24.hourly_avg,
+        });
+        setTile('tile-all', {
+            '.t-merged': ta.merged,
+            '.t-rejected': ta.rejected,
+            '.t-ratio': ta.ratio == null ? '—' : (ta.ratio * 100).toFixed(0) + '%',
+        });
+
+        // Bucketed stacked bar chart
+        const svgB = document.getElementById('chart-buckets');
+        svgB.innerHTML = '';
+        const W = 600, H = 160, PAD_L = 32, PAD_B = 28, PAD_T = 8, PAD_R = 8;
+        const plotW = W - PAD_L - PAD_R;
+        const plotH = H - PAD_T - PAD_B;
+        const buckets = data.buckets || [];
+        const maxStack = Math.max(1, ...buckets.map(b => b.merged + b.rejected + b.partial));
+        const barGap = 4;
+        const barW = buckets.length > 0 ? (plotW / buckets.length) - barGap : 0;
+
+        // Axis line
+        const xAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        xAxis.setAttribute('x1', PAD_L); xAxis.setAttribute('x2', W - PAD_R);
+        xAxis.setAttribute('y1', H - PAD_B); xAxis.setAttribute('y2', H - PAD_B);
+        xAxis.setAttribute('stroke', '#30363d'); xAxis.setAttribute('stroke-width', 1);
+        svgB.appendChild(xAxis);
+
+        buckets.forEach((b, i) => {
+            const x = PAD_L + i * (barW + barGap);
+            let yBase = H - PAD_B;
+            ['merged', 'rejected', 'partial'].forEach(kind => {
+                const count = b[kind] || 0;
+                if (!count) return;
+                const segH = (count / maxStack) * plotH;
+                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                rect.setAttribute('x', x);
+                rect.setAttribute('y', yBase - segH);
+                rect.setAttribute('width', barW);
+                rect.setAttribute('height', segH);
+                rect.setAttribute('fill', METRIC_COLORS[kind]);
+                const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+                title.textContent = `${b.range} · ${kind} ${count}`;
+                rect.appendChild(title);
+                svgB.appendChild(rect);
+                yBase -= segH;
+            });
+            // x-axis label (heat range) — render every 2nd to avoid crowding
+            if (buckets.length <= 12 || i % 2 === 0) {
+                const lbl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                lbl.setAttribute('x', x + barW / 2);
+                lbl.setAttribute('y', H - PAD_B + 14);
+                lbl.setAttribute('fill', '#8b949e');
+                lbl.setAttribute('font-size', '10');
+                lbl.setAttribute('text-anchor', 'middle');
+                lbl.textContent = b.range;
+                svgB.appendChild(lbl);
+            }
+        });
+
+        if (!buckets.length) {
+            const msg = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            msg.setAttribute('x', W / 2); msg.setAttribute('y', H / 2);
+            msg.setAttribute('fill', '#8b949e');
+            msg.setAttribute('font-size', '12');
+            msg.setAttribute('text-anchor', 'middle');
+            msg.textContent = 'No data';
+            svgB.appendChild(msg);
+        }
+
+        // Hourly line chart (merged + rejected). Gaps (hours missing
+        // from response) render as breaks in the polyline — we split
+        // the series on gaps > 1h.
+        const svgH = document.getElementById('chart-hourly');
+        svgH.innerHTML = '';
+        const hourly = data.hourly || [];
+        const maxRate = Math.max(1, ...hourly.map(h => Math.max(h.merged, h.rejected)));
+
+        const xAxisH = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        xAxisH.setAttribute('x1', PAD_L); xAxisH.setAttribute('x2', W - PAD_R);
+        xAxisH.setAttribute('y1', H - PAD_B); xAxisH.setAttribute('y2', H - PAD_B);
+        xAxisH.setAttribute('stroke', '#30363d'); xAxisH.setAttribute('stroke-width', 1);
+        svgH.appendChild(xAxisH);
+
+        if (hourly.length) {
+            const tFirst = new Date(hourly[0].hour_utc).getTime();
+            const tLast = new Date(hourly[hourly.length - 1].hour_utc).getTime();
+            const tRange = Math.max(1, tLast - tFirst);
+            function xOf(iso) {
+                return PAD_L + (new Date(iso).getTime() - tFirst) / tRange * plotW;
+            }
+            function yOf(v) {
+                return (H - PAD_B) - (v / maxRate) * plotH;
+            }
+
+            // Split into contiguous segments (gap > 1h ends a segment).
+            function plot(kind, color) {
+                let seg = [];
+                const flush = () => {
+                    if (seg.length < 2) {
+                        // Render single points as a small dot instead.
+                        seg.forEach(p => {
+                            const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                            c.setAttribute('cx', xOf(p.hour_utc));
+                            c.setAttribute('cy', yOf(p[kind]));
+                            c.setAttribute('r', 2);
+                            c.setAttribute('fill', color);
+                            svgH.appendChild(c);
+                        });
+                    } else {
+                        const pts = seg.map(p =>
+                            `${xOf(p.hour_utc)},${yOf(p[kind])}`).join(' ');
+                        const pl = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+                        pl.setAttribute('points', pts);
+                        pl.setAttribute('stroke', color);
+                        pl.setAttribute('fill', 'none');
+                        pl.setAttribute('stroke-width', 1.5);
+                        svgH.appendChild(pl);
+                    }
+                    seg = [];
+                };
+                for (let i = 0; i < hourly.length; i++) {
+                    const h = hourly[i];
+                    if (seg.length) {
+                        const prev = new Date(seg[seg.length - 1].hour_utc);
+                        const cur = new Date(h.hour_utc);
+                        if ((cur - prev) > 3600 * 1000 * 1.5) flush();
+                    }
+                    seg.push(h);
+                }
+                flush();
+            }
+            plot('merged', METRIC_COLORS.merged);
+            plot('rejected', METRIC_COLORS.rejected);
+        } else {
+            const msg = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            msg.setAttribute('x', W / 2); msg.setAttribute('y', H / 2);
+            msg.setAttribute('fill', '#8b949e');
+            msg.setAttribute('font-size', '12');
+            msg.setAttribute('text-anchor', 'middle');
+            msg.textContent = 'No data in last 24h';
+            svgH.appendChild(msg);
+        }
+
+        document.getElementById('rig-metrics-updated').textContent =
+            'updated ' + new Date().toLocaleTimeString();
+    }
+
+    function pollRigMetrics() {
+        fetch('/api/metrics/heat-rates')
+            .then(r => r.ok ? r.json() : Promise.reject(r))
+            .then(renderRigMetrics)
+            .catch(() => {
+                document.getElementById('rig-metrics-updated').textContent =
+                    '(failed to load — retrying in 30s)';
+            });
+    }
+
+    pollRigMetrics();
+    setInterval(pollRigMetrics, RIG_REFRESH_MS);
     </script>
 </body>
 </html>

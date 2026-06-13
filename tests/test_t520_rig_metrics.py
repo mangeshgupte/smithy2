@@ -1,6 +1,9 @@
 """t-520 (ini-012): rig-throughput metrics endpoint.
 
-Coverage on the ui-timeline `/api/metrics/heat-rates` route:
+t-550: the endpoint (and its dashboard card) moved from ui-timeline to
+ui-priority-poker on human request; the contract is unchanged.
+
+Coverage on the ui-priority-poker `/api/metrics/heat-rates` route:
   - bucket math: counts merged/rejected/partial per 10-heat bucket
   - 'complete' outcome ignored (Forge-side; not a throughput signal)
   - hourly rate omits hours with no activity (gap preservation)
@@ -44,10 +47,11 @@ def _seed(dir_: Path, *, used=50, rows=None):
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
-    """Reimport ui-timeline's app with FORGE_PROJECT_DIR pointed at our
-    fixture directory so _load_state + worklog read target the seed."""
+    """Reimport ui-priority-poker's app (t-550 moved the endpoint there)
+    with FORGE_PROJECT_DIR pointed at our fixture directory so
+    _load_state + worklog read target the seed."""
     monkeypatch.setenv("FORGE_PROJECT_DIR", str(tmp_path))
-    sys.path.insert(0, str(REPO_ROOT / "ui-timeline"))
+    sys.path.insert(0, str(REPO_ROOT / "ui-priority-poker"))
     sys.path.insert(0, str(REPO_ROOT))
     for m in list(sys.modules):
         if m == "app":
@@ -56,7 +60,7 @@ def client(tmp_path, monkeypatch):
     try:
         yield TestClient(app_mod.app), tmp_path
     finally:
-        sys.path.remove(str(REPO_ROOT / "ui-timeline"))
+        sys.path.remove(str(REPO_ROOT / "ui-priority-poker"))
 
 
 def _iso(h, m=0):
