@@ -866,8 +866,15 @@ def end_heat(ctx, value, signal, notes, outcome, progress, no_nudge, forge_id,
                 if ini["id"] == ini_id:
                     ini["heats_used"] = ini.get("heats_used", 0) + 1
                     if ini.get("budget_cap") and ini["heats_used"] >= ini["budget_cap"]:
-                        # Append warning to outbox
-                        outbox_path = root / "outbox.md"
+                        # Append warning to outbox. t-569: anchor at the MAIN
+                        # repo root, not `root` (the invoking worktree). When
+                        # a Forge runs end-heat from `.worktrees/<id>/`, `root`
+                        # is that worktree's copy of outbox.md — the human
+                        # never reads it, and it leaves the worktree tree
+                        # dirty. Same root-anchoring class as t-419/t-454:
+                        # human-facing artifacts must land at the main root
+                        # regardless of invoking cwd.
+                        outbox_path = main_repo_root(root) / "outbox.md"
                         if outbox_path.exists():
                             warning = f"\n\n**⚠️ Initiative {ini_id} ({ini['title']}) has reached its budget cap ({ini['budget_cap']} heats).**\n"
                             outbox_path.write_text(outbox_path.read_text() + warning)
