@@ -252,7 +252,7 @@ Use `nudge.sh` when you truly need a synchronous answer — intent is genuinely 
 Research heats are first-class work. When assigned research:
 - Use WebSearch, Agent(Explore), and file reading to investigate deeply
 - Write findings to `../../research/<topic>.md`
-- Surface new task candidates in your report to Marshal (Marshal creates tasks; you propose them)
+- Surface new task candidates in your report to Marshal (Marshal creates tasks; you propose them). When you already know the file scope a proposed task will touch, name those paths in the proposal so Marshal/Anvil can file it with `--touches <glob>` (t-518) — that feeds pressure-aware dispatch (t-517) and keeps sibling tasks under one initiative from being treated as conflicting when they touch different files.
 - Flag strategic implications — Anvil updates STRATEGY.md, not you
 
 ## Research Briefs (multi-heat, human-facing)

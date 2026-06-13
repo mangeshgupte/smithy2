@@ -102,6 +102,41 @@ def test_pop_unassigned_pickable_by_any_forge(rig):
     assert json.loads(out)["task_id"] == "t-a"
 
 
+def test_pop_atomically_claims_task(rig):
+    """t-541: queue-pop must flip the popped task to in_progress + stamp the
+    forge in the SAME locked operation. Before the fix it removed the id
+    from next_tasks but left the task pending/unassigned — a limbo window
+    in which the p0 silently dropped from the queue while a non-queued task
+    got claimed instead."""
+    _smithy(rig, "queue-push", "t-a", "--no-nudge")
+    rc, out, _ = _smithy(rig, "queue-pop", "--forge", "forge-01")
+    assert rc == 0
+    data = json.loads(out)
+    assert data["task_id"] == "t-a"
+    # Returned task object already reflects the claim.
+    assert data["task"]["status"] == "in_progress"
+    assert data["task"]["assigned_forge"] == "forge-01"
+    # Truth (state.queue) is mutated, not just the cache.
+    task = next(t for t in _state(rig)["queue"] if t["id"] == "t-a")
+    assert task["status"] == "in_progress", "pop must claim (status)"
+    assert task["assigned_forge"] == "forge-01", "pop must stamp the forge"
+    assert "t-a" not in _state(rig)["next_tasks"]
+
+
+def test_pop_claimed_task_not_repoppable_or_reclaimable(rig):
+    """Once popped+claimed by forge-01, the task is no longer pending, so a
+    second pop won't re-return it and a sibling's claim-task scan can't grab
+    it — the popped id can't fall back into limbo (the t-541 silent-drop)."""
+    _smithy(rig, "queue-push", "t-a", "--no-nudge")
+    _smithy(rig, "queue-pop", "--forge", "forge-01")  # claims t-a
+    # A reconciliation claim by another forge must pick something else, never t-a.
+    rc, out, _ = _smithy(rig, "claim-task", "--forge", "forge-02")
+    claimed = json.loads(out).get("task_id")
+    assert claimed != "t-a", "claimed task owned by forge-01 must not be re-claimed"
+    assert next(t for t in _state(rig)["queue"]
+                if t["id"] == "t-a")["assigned_forge"] == "forge-01"
+
+
 def test_two_forges_in_parallel_get_different_tasks(rig):
     """Pin t-a→forge-01 and t-b→forge-02; each pops their own."""
     _smithy(rig, "queue-push", "t-a", "--forge", "forge-01", "--no-nudge")

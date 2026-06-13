@@ -1,5 +1,14 @@
 """Smithy CLI — deterministic bookkeeping for The Forge."""
 
+# t-573: PEP 604 union annotations (e.g. `-> bool | None`, from the
+# t-486/t-488 comms work) are evaluated at import on Python 3.9 and raise
+# TypeError, crashing the global install and the comms cron. Deferring all
+# annotations to strings (PEP 563) makes them lazy and 3.9-safe. Keep this
+# as the first statement after the docstring — a __future__ import must
+# precede any other code. The AST guard in test_t573_py39_import.py fails
+# if it's removed or if a runtime (non-annotation) PEP 604 union creeps in.
+from __future__ import annotations
+
 import json
 import sys
 import click
@@ -866,8 +875,15 @@ def end_heat(ctx, value, signal, notes, outcome, progress, no_nudge, forge_id,
                 if ini["id"] == ini_id:
                     ini["heats_used"] = ini.get("heats_used", 0) + 1
                     if ini.get("budget_cap") and ini["heats_used"] >= ini["budget_cap"]:
-                        # Append warning to outbox
-                        outbox_path = root / "outbox.md"
+                        # Append warning to outbox. t-569: anchor at the MAIN
+                        # repo root, not `root` (the invoking worktree). When
+                        # a Forge runs end-heat from `.worktrees/<id>/`, `root`
+                        # is that worktree's copy of outbox.md — the human
+                        # never reads it, and it leaves the worktree tree
+                        # dirty. Same root-anchoring class as t-419/t-454:
+                        # human-facing artifacts must land at the main root
+                        # regardless of invoking cwd.
+                        outbox_path = main_repo_root(root) / "outbox.md"
                         if outbox_path.exists():
                             warning = f"\n\n**⚠️ Initiative {ini_id} ({ini['title']}) has reached its budget cap ({ini['budget_cap']} heats).**\n"
                             outbox_path.write_text(outbox_path.read_text() + warning)
@@ -2535,8 +2551,13 @@ def stats(ctx):
 @click.option("--priority", type=int, default=2, help="Priority (0=highest, 3=lowest)")
 @click.option("--blocked-by", multiple=True, help="Task IDs this is blocked by")
 @click.option("--initiative", "initiative_id", default=None, help="Link to initiative ID")
+@click.option("--touches", multiple=True,
+              help="Path-glob this task writes (repeatable). Overrides the "
+                   "initiative's touches for pressure-aware conflict scoring "
+                   "(t-518); narrower than the initiative-level globs when the "
+                   "task touches only a subset. Omit to inherit initiative-level.")
 @click.pass_context
-def add_task(ctx, stage, desc, priority, blocked_by, initiative_id):
+def add_task(ctx, stage, desc, priority, blocked_by, initiative_id, touches):
     """Add a new task to the queue."""
     root = ctx.obj["root"]
     state = load_state(root)
@@ -2577,6 +2598,12 @@ def add_task(ctx, stage, desc, priority, blocked_by, initiative_id):
         # landed t-470 in state.json without it and blocked Assembly for
         # every submission afterward.
         "initiative_id": initiative_id,
+        # t-518 (ini-018): per-task path-globs for finer-grained
+        # pressure-aware conflict scoring. Always written (defaulting to
+        # []) so the schema is uniform; an empty list means "inherit the
+        # initiative-level touches" — see dispatch._effective_touches.
+        # Pre-t-518 tasks lack the key; readers MUST treat missing as [].
+        "touches": list(touches),
         # t-527 (ini-016): created_at ISO timestamp so the Cockpit can
         # render an "age in minutes" column instead of the less-useful
         # "heats since first worklog mention". Tasks pre-t-527 lack
@@ -3538,7 +3565,13 @@ def _reject_loop_guard(root, state, tail: int = 200) -> dict:
                         actor="marshal", task_id=tid, fingerprint=fp)
         note = (f"Reject loop detected: {tid} rejected 3x with '{fp}'. "
                 f"Human intervention needed or fix the root cause.")
-        inbox = root / "inbox.md"
+        # t-574: anchor at the MAIN repo root, not `root`. dispatch-next is
+        # Marshal's command and Marshal runs it from .worktrees/marshal, so
+        # `root / "inbox.md"` is that worktree's tracked copy — the human
+        # (who reads main/inbox.md) never sees the reject-loop note, and the
+        # worktree tree is left dirty. Same root-anchoring class as
+        # t-419/t-454/t-569.
+        inbox = main_repo_root(root) / "inbox.md"
         existing = inbox.read_text() if inbox.exists() else ""
         if note not in existing:
             with open(inbox, "a") as f:
@@ -3656,6 +3689,25 @@ def queue_pop(ctx, forge_id):
 
             # Put back tasks that belong to other Forges, in original order.
             state["next_tasks"] = preserved + next_tasks
+
+            # t-541: the pop must be ATOMIC with the claim. Before this,
+            # queue-pop removed the id from next_tasks but left the task
+            # status=pending and assigned_forge untouched — a limbo window
+            # between pop and the caller's start-heat. If anything ran in
+            # that window (a sibling's claim-task scan, or this forge
+            # falling into reconciliation), the popped task fell out of the
+            # cache without ever advancing in truth: the p0 silently
+            # dropped from the queue while a non-queued task got claimed
+            # instead (observed 2026-06-12 for t-539, 3× this session).
+            # Flip status→in_progress and stamp this forge here, under the
+            # same lock, so popping IS claiming. start-heat (t-543) accepts
+            # an already-in_progress task owned by the caller, so the
+            # downstream hand-off is unchanged; a crash before start-heat
+            # leaves an *attributed* orphan that patrol --fix reaps back to
+            # pending — strictly better than the silent-drop it replaces.
+            if task is not None and forge_id is not None:
+                task["status"] = "in_progress"
+                task["assigned_forge"] = forge_id
             save_state(root, state)
             remaining_len = len(state["next_tasks"])
 
@@ -3675,7 +3727,8 @@ def queue_pop(ctx, forge_id):
         _err(f"Skipped {len(skipped_stale)} stale head(s): {skipped_stale}")
     _emit_rig_event(root, "queue_pop", actor=forge_id or "queue",
                     task_id=task_id, forge_id=forge_id,
-                    remaining=remaining_len)
+                    remaining=remaining_len,
+                    claimed=bool(forge_id))  # t-541: pop atomically claims
     _output({"task_id": task_id, "task": task,
              "remaining": remaining_len,
              "skipped_stale": skipped_stale,
