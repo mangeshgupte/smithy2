@@ -3656,6 +3656,25 @@ def queue_pop(ctx, forge_id):
 
             # Put back tasks that belong to other Forges, in original order.
             state["next_tasks"] = preserved + next_tasks
+
+            # t-541: the pop must be ATOMIC with the claim. Before this,
+            # queue-pop removed the id from next_tasks but left the task
+            # status=pending and assigned_forge untouched — a limbo window
+            # between pop and the caller's start-heat. If anything ran in
+            # that window (a sibling's claim-task scan, or this forge
+            # falling into reconciliation), the popped task fell out of the
+            # cache without ever advancing in truth: the p0 silently
+            # dropped from the queue while a non-queued task got claimed
+            # instead (observed 2026-06-12 for t-539, 3× this session).
+            # Flip status→in_progress and stamp this forge here, under the
+            # same lock, so popping IS claiming. start-heat (t-543) accepts
+            # an already-in_progress task owned by the caller, so the
+            # downstream hand-off is unchanged; a crash before start-heat
+            # leaves an *attributed* orphan that patrol --fix reaps back to
+            # pending — strictly better than the silent-drop it replaces.
+            if task is not None and forge_id is not None:
+                task["status"] = "in_progress"
+                task["assigned_forge"] = forge_id
             save_state(root, state)
             remaining_len = len(state["next_tasks"])
 
@@ -3675,7 +3694,8 @@ def queue_pop(ctx, forge_id):
         _err(f"Skipped {len(skipped_stale)} stale head(s): {skipped_stale}")
     _emit_rig_event(root, "queue_pop", actor=forge_id or "queue",
                     task_id=task_id, forge_id=forge_id,
-                    remaining=remaining_len)
+                    remaining=remaining_len,
+                    claimed=bool(forge_id))  # t-541: pop atomically claims
     _output({"task_id": task_id, "task": task,
              "remaining": remaining_len,
              "skipped_stale": skipped_stale,
