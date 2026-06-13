@@ -91,6 +91,11 @@ class TaskSummary:
     # t-390: last worklog timestamp for this task — Cockpit Complete section
     # sorts by this descending. None if the task has no worklog rows yet.
     last_worklog_ts: Optional[str] = None
+    # t-548: bounce bookkeeping. submitted_heat = heat of the latest
+    # end-heat hand-off; reject_history = list of {done_heat,
+    # rejected_heat, reason} dicts appended by _do_assembly_reject.
+    submitted_heat: Optional[int] = None
+    reject_history: list = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
@@ -102,6 +107,8 @@ class TaskSummary:
             "blocked_by": self.blocked_by,
             "age_heats": self.age_heats,
             "last_worklog_ts": self.last_worklog_ts,
+            "submitted_heat": self.submitted_heat,
+            "reject_history": self.reject_history,
         }
 
     @classmethod
@@ -116,6 +123,8 @@ class TaskSummary:
             priority_reason=row.get("priority_reason"),
             initiative_id=row.get("initiative_id"),
             blocked_by=row.get("blocked_by", []) or [],
+            submitted_heat=row.get("submitted_heat"),
+            reject_history=row.get("reject_history", []) or [],
         )
 
 
@@ -131,6 +140,9 @@ class TaskDetail:
     priority_reason: Optional[str] = None
     initiative_id: Optional[str] = None
     blocked_by: list = field(default_factory=list)
+    # t-548: bounce bookkeeping (same fields as TaskSummary).
+    submitted_heat: Optional[int] = None
+    reject_history: list = field(default_factory=list)
     # Aggregated sub-records
     initiative: Optional[dict] = None
     worklog: list = field(default_factory=list)
@@ -167,6 +179,8 @@ class TaskDetail:
             detail.priority_reason = task_row.get("priority_reason")
             detail.initiative_id = task_row.get("initiative_id")
             detail.blocked_by = task_row.get("blocked_by", []) or []
+            detail.submitted_heat = task_row.get("submitted_heat")
+            detail.reject_history = task_row.get("reject_history", []) or []
         else:
             # Reconstruct from worklog tail. Steering.log mutations could further
             # enrich human_priority history but leave that to history[] below.
@@ -270,6 +284,8 @@ class TaskDetail:
             "priority_reason": self.priority_reason,
             "initiative_id": self.initiative_id,
             "blocked_by": self.blocked_by,
+            "submitted_heat": self.submitted_heat,
+            "reject_history": self.reject_history,
         }
         if self.reconstructed:
             task["_reconstructed"] = True

@@ -44,6 +44,9 @@
         .c-reason { max-width: 140px; overflow: hidden; text-overflow: ellipsis;
                     white-space: nowrap; color: var(--text-muted, #aaa); font-size: 13px; }
         .c-kebab { cursor: pointer; color: var(--text-muted, #888); padding: 0 4px; }
+        /* t-548: bounce badge — rejected-task heat pair in the reason cell. */
+        .c-bounce { color: var(--red, #c66); font-size: 12px; margin-left: 6px;
+                    white-space: nowrap; }
         .c-empty { padding: 32px; text-align: center; color: var(--text-muted, #888); }
         .c-empty a { color: var(--yellow, #c89c2a); }
         .c-age { color: var(--text-muted, #888); font-size: 13px; white-space: nowrap; }
@@ -423,7 +426,7 @@
                   `<button title="priority down" onclick="bumpHP('${t.id}', 1)">↓</button>` +
                   `<button title="clear" onclick="clearHP('${t.id}')">✕</button>` +
                 `</td>` +
-                `<td class="c-reason" title="${(t.priority_reason || '').replace(/"/g, '&quot;')}">${t.priority_reason || '—'}</td>` +
+                `<td class="c-reason" title="${(t.priority_reason || '').replace(/"/g, '&quot;')}">${t.priority_reason || '—'}${formatBounce(t)}</td>` +
                 `<td>${t.initiative_id || '—'}</td>` +
                 `<td class="c-age">${t.age_heats == null ? '—' : (t.age_heats + 'h')}</td>` +
                 `<td class="c-desc" title="${(t.desc || '').replace(/"/g, '&quot;')}">${t.desc || ''}</td>` +
@@ -480,6 +483,29 @@
         if (isOpen) body.appendChild(buildInlinePanel(t));
     }
 
+    // t-548: compact bounce badge for the primary row — latest
+    // (done, rejected) heat pair + total bounce count. Tasks that never
+    // bounced render nothing.
+    function formatBounce(t) {
+        const rh = t.reject_history || [];
+        if (!rh.length) return '';
+        const last = rh[rh.length - 1];
+        const done = (last.done_heat != null) ? ('done h' + last.done_heat) : 'done h?';
+        const times = rh.length > 1 ? ` (x${rh.length})` : '';
+        return ` <span class="c-bounce" title="assembly bounce ledger — expand row for full list">` +
+               `${done} / rejected h${last.rejected_heat}${times}</span>`;
+    }
+
+    // t-548: full bounce ledger for the inline panel, oldest first.
+    function formatBounceList(t) {
+        const rh = t.reject_history || [];
+        if (!rh.length) return '—';
+        return rh.map(b =>
+            `done h${b.done_heat != null ? b.done_heat : '?'} → rejected h${b.rejected_heat}` +
+            (b.reason ? ` — ${String(b.reason).replace(/</g, '&lt;')}` : '')
+        ).join('<br>');
+    }
+
     function buildInlinePanel(t) {
         const tr = document.createElement('tr');
         tr.className = 'c-inline-panel';
@@ -492,6 +518,7 @@
                     <dt>initiative</dt><dd>${t.initiative_id || '—'}</dd>
                     <dt>blocked by</dt><dd>${(t.blocked_by || []).join(', ') || '—'}</dd>
                     <dt>age</dt><dd>${t.age_heats == null ? '—' : (t.age_heats + ' heats')}</dd>
+                    <dt>bounces</dt><dd>${formatBounceList(t)}</dd>
                 </dl>
                 <div class="c-inline-history" data-history-for="${t.id}">Loading history…</div>
             </td>`;
