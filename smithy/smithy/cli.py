@@ -841,6 +841,11 @@ def end_heat(ctx, value, signal, notes, outcome, progress, no_nudge, forge_id,
             for task in state.get("queue", []):
                 if task["id"] == task_id:
                     task["status"] = "submitted"
+                    # t-548: record which heat produced this submission.
+                    # _do_assembly_reject pairs it with the rejection
+                    # heat in reject_history; resubmits overwrite so the
+                    # stamp always names the latest hand-off.
+                    task["submitted_heat"] = heat
                     completed_task = task
                     break
         elif (test_gate is not None and not test_gate["passed"]
@@ -1253,6 +1258,15 @@ def _do_assembly_reject(root, task_id, reason):
     task["human_priority"] = base_hp + 5
     pr = f"assembly rejected: {reason}"[:40]
     task["priority_reason"] = pr
+    # t-548: bounce ledger. Tasks can bounce repeatedly — append every
+    # (done, rejected) heat pair instead of overwriting. done_heat is the
+    # submitted_heat stamped by end-heat's submit path; None for
+    # submissions that predate t-548.
+    task.setdefault("reject_history", []).append({
+        "done_heat": task.get("submitted_heat"),
+        "rejected_heat": state["budget"]["used"],
+        "reason": reason[:80],
+    })
     save_state(root, state)
 
     append_worklog(root, state["budget"]["used"], "implementation", task_id,
