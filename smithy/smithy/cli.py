@@ -1872,8 +1872,62 @@ def assembly_batch_tick_cmd(ctx, base, idle_timer_s, dry_run):
                  "entries": entries})
         return
 
+    # t-514 §(i)(3): validation pre-pass — drop rows whose per-task
+    # branch vanished (Forge force-completed, Marshal cleaned up). The
+    # submitter is gone, so there is nothing to assembly-reject back
+    # to — a reject would be a ghost call. Just drop the row + log.
+    orphaned = [e for e in entries
+                if _sp.run(["git", "rev-parse", "--verify", "--quiet",
+                            e.get("branch") or ""],
+                           cwd=str(root), capture_output=True,
+                           text=True).returncode != 0]
+    if orphaned:
+        _pop_rows({e.get("task_id") for e in orphaned})
+        for e in orphaned:
+            _log(root, e.get("forge_id", "?"), e.get("task_id", "?"),
+                 "orphan_dropped", f"branch '{e.get('branch')}' missing")
+        entries = [e for e in entries if e not in orphaned]
+        if not entries:
+            _output({"status": "orphans_dropped",
+                     "dropped": sorted(e.get("task_id") for e in orphaned)})
+            return
+
+    # t-514 §(j): batch lifecycle metrics. `assembly_batch_start` fires
+    # once per processed batch; `_emit_end` stamps the uniform
+    # `assembly_batch_end` row at EVERY terminal exit below.
+    import time as _time
+    t0 = _time.monotonic()
+    all_task_ids = sorted({e.get("task_id") for e in entries})
+    _emit_rig_event(root, "assembly_batch_start", actor="assembly",
+                    batch_size=len(entries),
+                    forge_ids=sorted({e.get("forge_id") for e in entries}),
+                    task_ids=all_task_ids)
+
+    def _emit_end(outcome, green_landed=0, rejected=0, tests_runs=0):
+        _emit_rig_event(root, "assembly_batch_end", actor="assembly",
+                        batch_outcome=outcome, batch_size=len(entries),
+                        green_landed=green_landed,
+                        rejected_count=rejected, tests_runs=tests_runs,
+                        batch_latency_ms=int((_time.monotonic() - t0)
+                                             * 1000),
+                        task_ids=all_task_ids)
+
     # 1. Merge each entry into staging sequentially.
-    batch = run_batch(root, entries, base=base)
+    try:
+        batch = run_batch(root, entries, base=base)
+    except Exception as exc:
+        # t-514 §(i)(2): mid-batch subprocess crash (OOM, signal) —
+        # reset staging, leave the queue INTACT; next tick re-batches
+        # from scratch. Staging may not exist yet if the crash hit
+        # before ensure_staging_worktree ran.
+        if staging_path(root).exists():
+            reset_staging_to(staging_path(root), base)
+        _emit_rig_event(root, "assembly_batch_merged", actor="assembly",
+                        batch_size=len(entries),
+                        batch_outcome="aborted_crashed")
+        _emit_end("aborted_crashed")
+        _output({"status": "aborted_crashed", "detail": str(exc)[:200]})
+        return
     if batch.get("status") != "ok":
         _output({"status": "error",
                  "detail": batch.get("detail", "run_batch failed")})
@@ -1910,6 +1964,7 @@ def assembly_batch_tick_cmd(ctx, base, idle_timer_s, dry_run):
         _emit_rig_event(root, "assembly_batch_merged", actor="assembly",
                         batch_size=0, batch_outcome=outcome,
                         severe_count=len(severe))
+        _emit_end(outcome, rejected=len(rejected_ids))
         _output({"status": outcome, "severe_count": len(severe),
                  "rejected_ids": sorted(rejected_ids),
                  "severe": [m.get("detail", "?") for m in severe]})
@@ -1917,22 +1972,46 @@ def assembly_batch_tick_cmd(ctx, base, idle_timer_s, dry_run):
 
     wt = staging_path(root)
 
-    # 2. Venv: reuse if smithy hash unchanged, else recreate.
+    # 2. Venv: reuse if smithy hash unchanged, else recreate (one
+    # corrupt-recover retry happens INSIDE ensure_staging_venv_versioned
+    # — t-514 §(i)(1)).
     smithy_hash = smithy_tree_hash(wt)
     venv_info = ensure_staging_venv_versioned(wt, smithy_hash=smithy_hash)
     if venv_info["status"] == "error":
-        # Revert staging so we don't leave a half-merged tip across ticks.
+        # The retry already ran — this venv isn't coming back this
+        # tick. Reject the WHOLE batch so Forges get their work back,
+        # alert Marshal, keep the jsonl consistent with state.
+        detail = venv_info.get("detail", "?")
+        reason = f"venv_broken: {detail}"[:80]
+        for m in green:
+            e = m["entry"]
+            _do_assembly_reject(root, e["task_id"], reason)
+            _log(root, e["forge_id"], e["task_id"], "rejected", reason)
+            rejected_ids.add(e["task_id"])
+        _pop_rows(rejected_ids)
         reset_staging_to(wt, base)
+        _nudge_persona("marshal",
+                       f"ASSEMBLY venv_broken: {detail[:120]} — batch of "
+                       f"{len(green)} rejected, manual venv repair needed",
+                       root=root)
         _emit_rig_event(root, "assembly_batch_merged", actor="assembly",
-                        batch_size=len(green), batch_outcome="venv_error")
-        _output({"status": "venv_error",
-                 "detail": venv_info.get("detail", "?")})
+                        batch_size=len(green), batch_outcome="venv_broken")
+        _emit_end("venv_broken", rejected=len(rejected_ids))
+        _output({"status": "venv_broken", "detail": detail,
+                 "rejected_ids": sorted(rejected_ids)})
         return
+    if venv_info["status"] in ("created", "recreated"):
+        # t-514 §(j)(4): venv_recreated metric with build reason.
+        _emit_rig_event(root, "venv_recreated", actor="assembly",
+                        reason=venv_info.get("reason"),
+                        retried=venv_info.get("retried", False))
 
     # 3. Single pytest run post-merge on staging's tip.
     n_batch = len(green)
     flaky = False
     bisect_info = None
+
+    tests_runs = 0
 
     def _abort(detail, probes=0):
         """§(d): abort the tick — reset staging to base, LEAVE the
@@ -1942,9 +2021,11 @@ def assembly_batch_tick_cmd(ctx, base, idle_timer_s, dry_run):
         _emit_rig_event(root, "assembly_batch_merged", actor="assembly",
                         batch_size=n_batch, batch_outcome="aborted",
                         probes=probes)
+        _emit_end("aborted", tests_runs=tests_runs)
         _output({"status": "aborted", "detail": str(detail)[:200],
                  "probes": probes})
 
+    tests_runs += 1
     try:
         tst = run_batch_tests(wt)
     except Exception as exc:
@@ -1967,6 +2048,7 @@ def assembly_batch_tick_cmd(ctx, base, idle_timer_s, dry_run):
         bs = (bisect_batch(wt, green) if n_batch > 1 else
               {"status": "isolated", "offender_index": 0,
                "offender": green[0], "green_prefix": [], "probes": 0})
+        tests_runs += bs.get("probes", 0)
         if bs["status"] != "isolated":
             _abort(bs.get("detail", "bisect failed"),
                    probes=bs.get("probes", 0))
@@ -1980,6 +2062,7 @@ def assembly_batch_tick_cmd(ctx, base, idle_timer_s, dry_run):
         retry = None
         rs = reset_staging_to(wt, offender["sha"])
         if rs["status"] == "ready":
+            tests_runs += 1
             try:
                 retry = run_batch_tests(wt)
             except Exception as exc:
@@ -2013,6 +2096,9 @@ def assembly_batch_tick_cmd(ctx, base, idle_timer_s, dry_run):
                 # Offender was the first entry — nothing to land.
                 _pop_rows(rejected_ids)
                 reset_staging_to(wt, base)
+                _emit_end("bisect", green_landed=0,
+                          rejected=len(rejected_ids),
+                          tests_runs=tests_runs)
                 _output({"status": "bisect_rejected",
                          "offender": e["task_id"],
                          "green_landed": 0,
@@ -2094,6 +2180,12 @@ def assembly_batch_tick_cmd(ctx, base, idle_timer_s, dry_run):
         push_status=push_status,
         flaky=flaky,
     )
+    # t-514 §(j): uniform end event — "bisect" when a bisect landed a
+    # prefix, otherwise the t-512 vocabulary.
+    _emit_end("bisect" if bisect_info
+              else "partial_reject" if severe else "green",
+              green_landed=len(green), rejected=len(rejected_ids),
+              tests_runs=tests_runs)
 
     _output({
         "status": "merged",
@@ -2349,6 +2441,36 @@ def stats(ctx):
     initiatives = state.get("initiatives", [])
     active_ini = [i for i in initiatives if i["status"] == "active"]
 
+    # t-514 §(j): batching panel aggregated from rig-events.jsonl
+    # (assembly_batch_end + venv_recreated rows — that file IS the
+    # batch-history store).
+    ev_path = _rig_events_path(root)
+    batch_ends = []
+    venv_recreations = 0
+    if ev_path.exists():
+        for ln in ev_path.read_text().splitlines():
+            try:
+                ev = json.loads(ln)
+            except json.JSONDecodeError:
+                continue
+            if ev.get("event") == "assembly_batch_end":
+                batch_ends.append(ev)
+            elif ev.get("event") == "venv_recreated":
+                venv_recreations += 1
+    nb = len(batch_ends)
+    batching = {
+        "batches_total": nb,
+        "green_rate": round(sum(1 for b in batch_ends
+                                if b.get("batch_outcome") == "green")
+                            / nb, 2) if nb else 0,
+        "bisect_rate": round(sum(1 for b in batch_ends
+                                 if b.get("batch_outcome") == "bisect")
+                             / nb, 2) if nb else 0,
+        "avg_batch_size": round(sum(b.get("batch_size", 0)
+                                    for b in batch_ends) / nb, 1) if nb else 0,
+        "venv_recreations": venv_recreations,
+    }
+
     _output({
         "total_heats": total_heats,
         "stage_distribution": stage_dist,
@@ -2356,6 +2478,7 @@ def stats(ctx):
         "themes": len(themes),
         "initiatives": {"total": len(initiatives), "active": len(active_ini)},
         "queue_size": len([t for t in state.get("queue", []) if t["status"] == "pending"]),
+        "batching": batching,
     })
 
 

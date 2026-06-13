@@ -407,14 +407,22 @@ class TestAssemblyBatchTickCLI:
     # --- t-512 impl-T2: severe-conflict per-task reject -------------------
 
     def test_partial_reject_merges_green_neighbours(self, tick_rig):
-        """§(a)+(c): [clean, severe, clean] → green subset merges,
-        severe is rejected via assembly-reject; outcome=partial_reject.
-        Simplified: queue [t-severe (nonexistent branch), t-2 (clean)].
-        run_batch marks t-severe severe; t-2 merges; t-severe is
-        flipped to pending + rejected + nudge fired.
+        """§(a)+(c): [clean, severe] → green subset merges, severe is
+        rejected via assembly-reject; outcome=partial_reject.
+        t-514 NOTE: severe must be a REAL conflict now — a missing
+        branch is orphan-dropped in the pre-pass instead of rejected.
+        t-severe's branch add/add-conflicts with t-2 on b.txt.
         """
         qp = tick_rig / ".assembly-queue.jsonl"
-        # Register a severe task in state.
+        # Real conflicting branch: adds b.txt with different content
+        # than forge-01/t-2's b.txt. Stage ONLY b.txt — state.json is
+        # deliberately dirty on main (see fixture comment).
+        _git(tick_rig, "checkout", "-b", "forge-01/t-severe", "main")
+        (tick_rig / "b.txt").write_text("CONFLICT\n")
+        _git(tick_rig, "add", "b.txt")
+        _git(tick_rig, "commit", "-q", "-m", "conflicting b.txt")
+        _git(tick_rig, "checkout", "main")
+        # Register the severe task in state.
         s = json.loads((tick_rig / "state.json").read_text())
         s["queue"].append({
             "id": "t-severe", "stage": "implementation", "desc": "severe",
@@ -423,15 +431,15 @@ class TestAssemblyBatchTickCLI:
             "assigned_forge": "forge-01",
         })
         (tick_rig / "state.json").write_text(json.dumps(s, indent=2))
-        # Replace jsonl: t-severe (branch missing → severe) then t-2.
+        # Replace jsonl: t-2 (clean) first, then t-severe (conflicts).
         t2_row = json.loads([ln for ln in qp.read_text().splitlines()
                              if '"t-2"' in ln][0])
         qp.write_text("\n".join([
+            json.dumps(t2_row),
             json.dumps({"forge_id": "forge-01", "task_id": "t-severe",
                         "heat": 1, "branch": "forge-01/t-severe",
                         "sha": "deadbeef",
                         "submitted_at": "2026-04-19T00:00:00+00:00"}),
-            json.dumps(t2_row),
         ]) + "\n")
 
         from smithy import cli as cli_mod
@@ -474,11 +482,23 @@ class TestAssemblyBatchTickCLI:
                    for m in msgs), msgs
 
     def test_all_severe_skips_test_run_and_emits_all_rejected(self, tick_rig):
-        """§(e): whole batch is severe → no pytest, outcome=all_rejected."""
+        """§(e): whole batch is severe → no pytest, outcome=all_rejected.
+        t-514 NOTE: severe needs REAL conflicts now (missing branches
+        are orphan-dropped in the pre-pass). Advance main with
+        anchor.txt, then give each branch a different anchor.txt from
+        the pre-anchor base — every merge add/add-conflicts."""
         qp = tick_rig / ".assembly-queue.jsonl"
+        (tick_rig / "anchor.txt").write_text("MAIN\n")
+        _git(tick_rig, "add", "anchor.txt")
+        _git(tick_rig, "commit", "-q", "-m", "anchor on main")
         rows = []
         s = json.loads((tick_rig / "state.json").read_text())
         for tid in ("t-gone-1", "t-gone-2"):
+            _git(tick_rig, "checkout", "-b", f"forge-01/{tid}", "main~1")
+            (tick_rig / "anchor.txt").write_text(f"{tid}\n")
+            _git(tick_rig, "add", "anchor.txt")
+            _git(tick_rig, "commit", "-q", "-m", f"conflicting {tid}")
+            _git(tick_rig, "checkout", "main")
             s["queue"].append({
                 "id": tid, "stage": "implementation", "desc": tid,
                 "status": "submitted", "priority": 1, "blocked_by": [],
@@ -607,3 +627,224 @@ class TestAssemblyBatchTickCLI:
         # a.txt landed on main
         head_a = _git(tick_rig, "show", "main:a.txt")
         assert head_a.returncode == 0
+
+
+# -------- t-514 impl-T4: metric hooks + failure-mode hardening --------------
+
+
+def _events(proj):
+    p = proj / "rig-events.jsonl"
+    if not p.exists():
+        return []
+    return [json.loads(ln) for ln in p.read_text().splitlines() if ln.strip()]
+
+
+class TestT514Metrics:
+    """§(j) metric hooks + §(i) failure modes, via the tick CLI."""
+
+    _invoke = staticmethod(TestAssemblyBatchTickCLI._invoke_with_tests)
+
+    def test_green_emits_start_and_end(self, tick_rig):
+        green = {"passed": True, "returncode": 0, "output": "ok"}
+        result = self._invoke(tick_rig, [green])
+        assert json.loads(result.output)["status"] == "merged"
+        evs = _events(tick_rig)
+        starts = [e for e in evs if e["event"] == "assembly_batch_start"]
+        ends = [e for e in evs if e["event"] == "assembly_batch_end"]
+        assert len(starts) == 1 and len(ends) == 1
+        assert starts[0]["batch_size"] == 2
+        assert starts[0]["task_ids"] == ["t-1", "t-2"]
+        assert starts[0]["forge_ids"] == ["forge-01"]
+        e = ends[0]
+        assert e["batch_outcome"] == "green"
+        assert e["green_landed"] == 2
+        assert e["rejected_count"] == 0
+        assert e["tests_runs"] == 1
+        assert isinstance(e["batch_latency_ms"], int)
+
+    def test_bisect_end_event_counts_runs(self, tick_rig):
+        """[red, probe-green, retry-red] → outcome bisect, 3 test runs
+        (initial + 1 probe + 1 flaky retry), prefix of 1 landed."""
+        red = {"passed": False, "returncode": 2, "output": "fake red"}
+        green = {"passed": True, "returncode": 0, "output": "ok"}
+        result = self._invoke(tick_rig, [red, green, red])
+        assert json.loads(result.output)["status"] == "merged"
+        ends = [e for e in _events(tick_rig)
+                if e["event"] == "assembly_batch_end"]
+        assert len(ends) == 1
+        e = ends[0]
+        assert e["batch_outcome"] == "bisect"
+        assert e["green_landed"] == 1
+        assert e["rejected_count"] == 1
+        assert e["tests_runs"] == 3
+
+    def test_crash_mid_batch_aborts_keeps_queue(self, tick_rig):
+        """§(i)(2): run_batch raising → aborted_crashed, queue intact,
+        next tick re-batches from scratch."""
+        from smithy import cli as cli_mod
+        from click.testing import CliRunner
+        try:
+            runner = CliRunner(mix_stderr=False)
+        except TypeError:
+            runner = CliRunner()
+        with patch("smithy.assembly.run_batch") as mb:
+            mb.side_effect = RuntimeError("simulated OOM")
+            result = runner.invoke(
+                cli_mod.cli, ["--dir", str(tick_rig), "assembly-batch-tick"],
+            )
+        assert result.exit_code == 0, result.output
+        data = json.loads(result.output)
+        assert data["status"] == "aborted_crashed", data
+        qp = tick_rig / ".assembly-queue.jsonl"
+        rows = [ln for ln in qp.read_text().splitlines() if ln.strip()]
+        assert len(rows) == 2
+        ends = [e for e in _events(tick_rig)
+                if e["event"] == "assembly_batch_end"]
+        assert ends[-1]["batch_outcome"] == "aborted_crashed"
+
+    def test_orphan_row_dropped_without_reject(self, tick_rig):
+        """§(i)(3): a jsonl row whose branch vanished is dropped in the
+        pre-pass — no assembly-reject fires for it, the rest proceed."""
+        qp = tick_rig / ".assembly-queue.jsonl"
+        ghost = json.dumps({
+            "forge_id": "forge-01", "task_id": "t-ghost", "heat": 9,
+            "branch": "forge-01/t-ghost", "sha": "0" * 40,
+            "submitted_at": "2026-04-19T00:00:10+00:00",
+        })
+        qp.write_text(qp.read_text() + ghost + "\n")
+        green = {"passed": True, "returncode": 0, "output": "ok"}
+        result = self._invoke(tick_rig, [green])
+        data = json.loads(result.output)
+        assert data["status"] == "merged", data
+        assert data["merged_ids"] == ["t-1", "t-2"]
+        assert data["rejected_ids"] == []
+        # Row gone, no reject row for t-ghost — orphan_dropped instead.
+        assert "t-ghost" not in qp.read_text()
+        log = (tick_rig / "assembly-log.jsonl")
+        log_rows = [json.loads(ln) for ln in log.read_text().splitlines()
+                    if ln.strip()] if log.exists() else []
+        ghost_rows = [r for r in log_rows if r.get("task_id") == "t-ghost"]
+        assert ghost_rows, "expected an orphan_dropped audit row"
+        assert all(r["outcome"] == "orphan_dropped" for r in ghost_rows)
+
+    def test_venv_broken_rejects_whole_batch(self, tick_rig):
+        """§(i)(1): venv build error (post-retry) → every green entry
+        assembly-rejected with venv_broken reason, jsonl popped clean."""
+        from smithy import cli as cli_mod
+        from click.testing import CliRunner
+        try:
+            runner = CliRunner(mix_stderr=False)
+        except TypeError:
+            runner = CliRunner()
+        with patch("smithy.assembly.ensure_staging_venv_versioned") as mv:
+            mv.return_value = {"status": "error",
+                               "detail": "uv pip install: boom",
+                               "retried": True}
+            result = runner.invoke(
+                cli_mod.cli, ["--dir", str(tick_rig), "assembly-batch-tick"],
+            )
+        assert result.exit_code == 0, result.output
+        data = json.loads(result.output)
+        assert data["status"] == "venv_broken", data
+        assert data["rejected_ids"] == ["t-1", "t-2"]
+        # jsonl fully popped, still parseable (possibly empty).
+        qp = tick_rig / ".assembly-queue.jsonl"
+        leftover = [ln for ln in qp.read_text().splitlines() if ln.strip()]
+        assert leftover == []
+        # State: both tasks back to pending with the venv_broken reason.
+        s = json.loads((tick_rig / "state.json").read_text())
+        for tid in ("t-1", "t-2"):
+            t = next(t for t in s["queue"] if t["id"] == tid)
+            assert t["status"] == "pending"
+            assert "venv_broken" in (t.get("priority_reason") or "")
+        ends = [e for e in _events(tick_rig)
+                if e["event"] == "assembly_batch_end"]
+        assert ends[-1]["batch_outcome"] == "venv_broken"
+
+    def test_venv_recreated_event_fires(self, tick_rig):
+        green = {"passed": True, "returncode": 0, "output": "ok"}
+        from smithy import cli as cli_mod
+        from click.testing import CliRunner
+        try:
+            runner = CliRunner(mix_stderr=False)
+        except TypeError:
+            runner = CliRunner()
+        with patch("smithy.assembly.run_batch_tests") as mt, \
+             patch("smithy.assembly.ensure_staging_venv_versioned") as mv:
+            mv.return_value = {"status": "created",
+                               "path": "/usr/bin/python3",
+                               "recreated": False, "reason": "first_use",
+                               "retried": False}
+            mt.return_value = green
+            result = runner.invoke(
+                cli_mod.cli, ["--dir", str(tick_rig), "assembly-batch-tick"],
+            )
+        assert json.loads(result.output)["status"] == "merged"
+        recs = [e for e in _events(tick_rig)
+                if e["event"] == "venv_recreated"]
+        assert len(recs) == 1
+        assert recs[0]["reason"] == "first_use"
+
+    def test_stats_batching_panel(self, tick_rig):
+        """§(b): smithy stats renders the batching panel with non-zero
+        counters after a simulated run."""
+        green = {"passed": True, "returncode": 0, "output": "ok"}
+        self._invoke(tick_rig, [green])  # one green batch
+        rc, out, err = _smithy(tick_rig, "stats")
+        assert rc == 0, err
+        data = json.loads(out)
+        b = data["batching"]
+        assert b["batches_total"] == 1
+        assert b["green_rate"] == 1.0
+        assert b["bisect_rate"] == 0
+        assert b["avg_batch_size"] == 2.0
+
+
+class TestT514VenvRetry:
+    """§(i)(1) unit: ensure_staging_venv_versioned retries the build
+    once (corrupt_recover) before reporting error."""
+
+    @staticmethod
+    def _drive(tmp_path, install_rcs):
+        """Run ensure with a fake uv whose pip-install returncodes are
+        consumed from install_rcs (venv creation always succeeds)."""
+        from smithy.assembly import ensure_staging_venv_versioned
+        (tmp_path / "smithy").mkdir()
+        venv_py = tmp_path / ".venv" / "bin" / "python3"
+        rcs = list(install_rcs)
+
+        class CP:
+            def __init__(self, rc):
+                self.returncode = rc
+                self.stderr = "boom" if rc else ""
+
+        def fake_run(cmd, *a, **kw):
+            if len(cmd) >= 2 and cmd[1] == "venv":
+                venv_py.parent.mkdir(parents=True, exist_ok=True)
+                venv_py.write_text("#!/bin/sh\nexit 0\n")
+                return CP(0)
+            return CP(rcs.pop(0))
+
+        with patch("smithy.assembly.subprocess.run", fake_run), \
+             patch("shutil.which",
+                   lambda n: "/fake/uv" if n == "uv" else None):
+            return ensure_staging_venv_versioned(tmp_path,
+                                                 smithy_hash="abc")
+
+    def test_first_failure_recovers_on_retry(self, tmp_path):
+        res = self._drive(tmp_path, [1, 0])
+        assert res["status"] == "created", res
+        assert res["reason"] == "corrupt_recover"
+        assert res["retried"] is True
+
+    def test_double_failure_errors(self, tmp_path):
+        res = self._drive(tmp_path, [1, 1])
+        assert res["status"] == "error"
+        assert res["retried"] is True
+        assert "boom" in res["detail"]
+
+    def test_clean_build_reports_first_use(self, tmp_path):
+        res = self._drive(tmp_path, [0])
+        assert res["status"] == "created"
+        assert res["reason"] == "first_use"
+        assert res["retried"] is False
