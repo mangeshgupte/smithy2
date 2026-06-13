@@ -3,7 +3,14 @@
 **Who you are:** read `IDENTITY.md` in this directory. Character, values, voice.
 **What this file is:** how you do your job — the loop, the tools, the files.
 
-**Status:** LIVE (t-399 I4, 2026-04-13). The merge loop is driven by `smithy assembly-tick`. One tick drains one queue entry end-to-end.
+**Status:** LIVE (t-399 I4, 2026-04-13). **Batched since ini-020 (t-570,
+2026-06-12):** the merge loop is driven by `smithy assembly-batch-tick`.
+One tick drains the *whole* `.assembly-queue.jsonl` as a single batch —
+rebase each entry into a staging worktree, run pytest **once** on the
+green tip, and on red bisect to the one offending entry, reject it, and
+land the green prefix. N=1 falls back cleanly to the single-task shape.
+The legacy `smithy assembly-tick` (one-entry-per-tick) is retained as a
+fallback until ini-020 impl-T5 (t-515) retires it.
 
 ## Design Contract (2026-04-13)
 
@@ -49,42 +56,81 @@ this); you operate on `main` in the repo root.
 ## The Tick Loop
 
 ```bash
-# Drain one item.
-smithy assembly-tick          # production (runs real pytest)
-smithy assembly-tick --dry-run     # report next item without changing state
-smithy assembly-tick --tests-cmd "…"  # override pytest command
+# Drain the whole queue as a batch.
+smithy assembly-batch-tick          # production (runs real pytest once on green)
+smithy assembly-batch-tick --dry-run     # report the batch window without changing state
+smithy assembly-batch-tick --idle-timer-s 60  # singleton wait threshold (default 60s)
 ```
 
-`assembly-tick` returns a JSON status:
-- `{"status": "empty"}` — queue is empty, nothing to do
-- `{"status": "merged", "task_id": "...", "sha": "...", "branch": "..."}` —
-  task merged, Marshal nudged (`ASSEMBLY_MERGED:`), `blocked_by` graph may
-  have opened downstream
-- `{"status": "rejected", "task_id": "...", "reason": "..."}` — task back
-  to pending, Marshal nudged (`ASSEMBLY_REJECTED:`)
+One `assembly-batch-tick` processes **every** queued entry in a single
+pass, not one entry per tick. It returns a JSON status:
+
+- `{"status": "empty"}` / `{"status": "idle"}` — queue empty, nothing to do.
+- `{"status": "wait", "age_s": …, "idle_timer_s": …}` — exactly one entry
+  and it's younger than the idle timer; the batcher is holding for a sibling
+  to land so it can batch. **Do NOT spin** — break and let the next
+  submit-nudge (or a later wake) re-trigger; the singleton fires
+  automatically once it ages past `idle_timer_s`.
+- `{"status": "merged", "outcome": "green"|"partial_reject"|"bisect_partial",
+  "merged_ids": […], "rejected_ids": […]}` — the green tip merged to `main`
+  with one `--no-ff` commit; each merged task flips submitted→complete and
+  nudges Marshal, each rejected task flips back to pending (+5 human_priority)
+  and nudges Marshal. `blocked_by` graphs may have opened downstream.
+- `{"status": "all_rejected"|"no_green"|"bisect_rejected", …}` — nothing
+  landed; every candidate was severe-conflict or the sole/leading entry was
+  the bisect offender. Rows popped, Marshal nudged per reject.
+- `{"status": "aborted"|"aborted_crashed"|"venv_broken"|"error", …}` —
+  the tick bailed; the queue is left **intact** to re-batch on the next
+  wake (or, for `venv_broken`, after manual venv repair). Do not loop on
+  these — they re-fail immediately; surface and wait for the next trigger.
 
 **Event-driven trigger (t-422).** When a Forge runs `end-heat` with
 `outcome=submitted`, smithy automatically:
 1. Appends a row to `.assembly-queue.jsonl` (at the MAIN repo root —
    t-422 anchored this path so all worktrees write to one queue).
-2. Nudges this pane with `ASSEMBLY_QUEUE: <branch> @ <sha> (<task>)
-   — run smithy assembly-tick.`
+2. Nudges this pane with `ASSEMBLY_QUEUE: <branch> @ <sha> (<task>)`.
 
-On that nudge you MUST drain:
+On that nudge you MUST drain. Two phases — the batched fast path, then a
+reconciliation backstop:
 
 ```bash
+# Phase 1 — batch-drain the fast-path queue (.assembly-queue.jsonl).
 while true; do
-  out=$(smithy assembly-tick)
+  out=$(smithy assembly-batch-tick)
   echo "$out"
-  if echo "$out" | grep -q '"status": "empty"'; then break; fi
+  st=$(echo "$out" | python3 -c "import sys,json; print(json.load(sys.stdin).get('status',''))")
+  case "$st" in
+    # progress made — loop once more to land any post-bisect leftovers
+    merged|partial_reject|bisect_partial|all_rejected|no_green|bisect_rejected|orphans_dropped) continue ;;
+    # empty/idle/wait → nothing to do now; aborted/error/venv_broken → re-fails on retry, stop
+    *) break ;;
+  esac
 done
+
+# Phase 2 — reconciliation backstop (ini-024 T1). The batch path reads
+# ONLY the jsonl; if a submit-nudge or its jsonl row was lost, the work
+# still lives in state.queue (status=submitted, per-task branch in git).
+# The retained legacy `assembly-tick` scans that truth and drains one
+# such orphan per call, so a lost row never freezes the rig. Loop until
+# it too reports empty.
+while true; do
+  rec=$(smithy assembly-tick)
+  echo "$rec"
+  echo "$rec" | grep -q '"status": "empty"' && break
+done
+
 # Update heartbeat after draining.
 smithy assembly-heartbeat
 ```
 
-Cadence: wake on nudge → drain all queued items by calling
-`assembly-tick` in a loop until it returns `empty` → update heartbeat →
-go idle. Never poll.
+Cadence: wake on nudge → batch-drain via `assembly-batch-tick` until it
+stops making progress (`empty`/`idle`/`wait`, or a non-retryable bail) →
+run the `assembly-tick` reconciliation backstop until empty → update
+heartbeat → go idle. Never poll.
+
+> **N=1 fallback.** When only one entry is queued past the idle timer, the
+> batch path behaves like the old single-task tick — one rebase, one test
+> run, one merge — so a quiet rig still ships work promptly.
 
 ## Truth vs. Cache (ini-024)
 
@@ -93,19 +139,27 @@ sources of truth. `.assembly-queue.jsonl` is a cache** — a fast-path
 hint from Forge's `end-heat` that saves you from scanning every
 tick. It is not load-bearing for correctness.
 
-`smithy assembly-tick` enforces the reconciliation contract: when
-the jsonl is empty or missing, scan `state.queue` for tasks with
-`status=submitted` whose per-task branch exists in git (via
-`git rev-parse --verify <forge-id>/<task-id>`). If a match exists,
-drive the same rebase → test → merge/reject pipeline against it —
-same code paths, new trigger condition (ini-024 T1). A missing
-jsonl is a non-event.
+The reconciliation contract (ini-024 T1): when the jsonl is empty or
+missing, scan `state.queue` for tasks with `status=submitted` whose
+per-task branch exists in git (via `git rev-parse --verify
+<forge-id>/<task-id>`). If a match exists, drive the same rebase →
+test → merge/reject pipeline against it — a missing jsonl is a
+non-event.
+
+**Which command reconciles (t-570):** `assembly-batch-tick` drains the
+jsonl fast path *only* — it returns `empty` if the jsonl is missing and
+does **not** scan `state.queue`. Reconciliation is still provided by the
+retained legacy `smithy assembly-tick`, which is why Phase 2 of the drain
+loop above runs it after the batch pass. (ini-020 impl-T5 / t-515 must
+move this `state.queue` scan into the batch path *before* it deletes
+`assembly-tick`, or the lost-jsonl guarantee regresses — flagged in
+`research/ini-020-t515-retirement-gate.md`.)
 
 Operational corollary: do NOT manually re-append rows to fix a
-"missing jsonl" observation. Just run `smithy assembly-tick` — it
-will self-heal. The t-493 / t-448 / t-480 class of "submitted task,
-no jsonl row, rig frozen" incidents is structurally impossible
-post-ini-024-T1.
+"missing jsonl" observation. Just run the drain loop — Phase 2's
+`assembly-tick` self-heals. The t-493 / t-448 / t-480 class of
+"submitted task, no jsonl row, rig frozen" incidents stays structurally
+impossible.
 
 ## What You Read
 

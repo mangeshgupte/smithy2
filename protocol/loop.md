@@ -19,7 +19,7 @@ Every agent's idle tick performs a reconciliation pass regardless of cache state
 Concretely:
 
 - **Forge** — when `smithy queue-pop` returns empty, call `smithy claim-task --forge <my-id>` before idling (ini-024 T2 / T3). The claim path reads truth (state.queue + git branches) and atomically flips a task to `in_progress`.
-- **Assembly** — when `.assembly-queue.jsonl` is empty or missing, `smithy assembly-tick` scans `state.queue` for `status=submitted` tasks whose per-task branch exists in git and processes the first one (ini-024 T1). Missing jsonl is a non-event.
+- **Assembly** — the live loop drains `.assembly-queue.jsonl` as a batch via `smithy assembly-batch-tick` (ini-020 / t-570), then runs a reconciliation backstop: when the jsonl is empty or missing, the retained legacy `smithy assembly-tick` scans `state.queue` for `status=submitted` tasks whose per-task branch exists in git and processes them (ini-024 T1). Missing jsonl is a non-event.
 - **Marshal** — maintains the invariant "idle forge + empty `next_tasks` + eligible pending + halt off + budget remaining → repopulate". If an earlier push was lost, the next tick repairs the queue.
 
 Queue files never become load-bearing for correctness; they exist only because touching disk is cheaper than a full truth-scan at every wake.
