@@ -55,6 +55,14 @@ def branch_name(forge_id: str, task_id: str) -> str:
 _STASH_LABEL = "assembly-rebase-autostash"
 _STAGING_WORKTREE = "_assembly-staging"
 
+# t-533: how much test output to inline in the returned dict (and thus
+# in .assembly-queue.jsonl / reject reasons / state.json). Raised from
+# 4000 → 16000 after a 14-KeyError collection-error trace was truncated
+# to a useless "19 collection errors" line on 2026-04-19. Full output
+# is still available via the `output_full` key for callers that want
+# to persist a diagnostic log to disk.
+TEST_OUTPUT_INLINE_LIMIT = 16000
+
 
 def staging_path(project_dir: Path) -> Path:
     """Conventional location of Assembly's private rebase workspace."""
@@ -316,7 +324,10 @@ def run_tests_in_worktree(project_dir: Path, forge_id: str,
     return {
         "passed": r.returncode == 0,
         "returncode": r.returncode,
-        "output": (r.stdout + r.stderr)[-4000:],
+        "output": (r.stdout + r.stderr)[-TEST_OUTPUT_INLINE_LIMIT:],
+        # t-533: full untrimmed output for callers that persist a
+        # diagnostic log file; reject reason gets a file:// pointer.
+        "output_full": r.stdout + r.stderr,
     }
 
 
@@ -800,7 +811,8 @@ def run_batch_tests(wt: Path, timeout_s: int = 600,
     r = subprocess.run(cmd, cwd=str(wt), capture_output=True,
                        text=True, timeout=timeout_s)
     return {"passed": r.returncode == 0, "returncode": r.returncode,
-            "output": (r.stdout + r.stderr)[-4000:]}
+            "output": (r.stdout + r.stderr)[-TEST_OUTPUT_INLINE_LIMIT:],
+            "output_full": r.stdout + r.stderr}
 
 
 def bisect_batch(wt: Path, merged: list, run_tests=None) -> dict:
