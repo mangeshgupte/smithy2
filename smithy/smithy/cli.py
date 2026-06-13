@@ -1910,18 +1910,27 @@ def assembly_batch_tick_cmd(ctx, base, idle_timer_s, dry_run):
         delete_forge_branch(root, e["forge_id"], e["task_id"], force=True)
 
     # 6. Advisory push (t-438 semantics — never fails the batch).
+    # t-545: honour the SMITHY_PUSH_ENABLED kill switch, and record
+    # failures as an assembly-log audit row (not just telemetry) so a
+    # silently-failing push is visible where rejects are triaged.
+    from .assembly import push_enabled
     push_status = "skipped"
     push_reason = ""
-    try:
-        pr = _sp.run(["git", "push", "origin", base],
-                     cwd=str(root), capture_output=True, text=True, timeout=30)
-        push_status = "ok" if pr.returncode == 0 else "failed"
-        if pr.returncode != 0:
-            tail = (pr.stderr or pr.stdout or "").strip().splitlines()
-            push_reason = (tail[-1] if tail else "")[:200]
-    except (subprocess.TimeoutExpired, Exception) as exc:
-        push_status = "failed"
-        push_reason = str(exc)[:200]
+    if not push_enabled():
+        push_reason = "disabled by SMITHY_PUSH_ENABLED"
+    else:
+        try:
+            pr = _sp.run(["git", "push", "origin", base],
+                         cwd=str(root), capture_output=True, text=True, timeout=30)
+            push_status = "ok" if pr.returncode == 0 else "failed"
+            if pr.returncode != 0:
+                tail = (pr.stderr or pr.stdout or "").strip().splitlines()
+                push_reason = (tail[-1] if tail else "")[:200]
+        except (subprocess.TimeoutExpired, Exception) as exc:
+            push_status = "failed"
+            push_reason = str(exc)[:200]
+        if push_status == "failed":
+            _log(root, "assembly", "batch", "push_failed", push_reason)
 
     # 7. Atomic pop of the N green entries + any severe entries we
     # already assembly-rejected above (t-512 impl-T2). Re-read the

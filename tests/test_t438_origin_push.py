@@ -48,10 +48,11 @@ def local_repo(tmp_path):
     yield origin, work
 
 
-def test_ff_merge_pushes_on_success(local_repo):
+def test_ff_merge_pushes_on_success(local_repo, monkeypatch):
     """`ff_merge_forge_branch` runs `git push origin main` after a
     clean merge; result["push"]["status"] == "ok" on success."""
     from smithy.assembly import ff_merge_forge_branch
+    monkeypatch.setenv("SMITHY_PUSH_ENABLED", "1")  # t-545: opt back in
     origin, work = local_repo
     # Create + switch to a per-task branch, commit one change.
     _git(work, "checkout", "-b", "forge-01/t-push", "main")
@@ -72,11 +73,12 @@ def test_ff_merge_pushes_on_success(local_repo):
     )
 
 
-def test_ff_merge_returns_success_when_push_fails(local_repo):
+def test_ff_merge_returns_success_when_push_fails(local_repo, monkeypatch):
     """Push failure must NOT fail the merge — ff_merge returns status
     'merged' with result["push"]["status"] == "failed" and the merge
     commit lands locally."""
     from smithy.assembly import ff_merge_forge_branch
+    monkeypatch.setenv("SMITHY_PUSH_ENABLED", "1")  # t-545: opt back in
     origin, work = local_repo
     _git(work, "checkout", "-b", "forge-01/t-push", "main")
     (work / "y.txt").write_text("y\n")
@@ -114,6 +116,67 @@ def test_ff_merge_disable_push_flag(local_repo):
     assert "push" not in res, (
         f"push attempted despite push_remote='' : {res.get('push')}"
     )
+
+
+# ---------------- t-545: SMITHY_PUSH_ENABLED kill switch -------------------
+
+
+def test_ff_merge_kill_switch_skips_push(local_repo, monkeypatch):
+    """SMITHY_PUSH_ENABLED=0 (the suite-wide conftest default) reports
+    push status 'skipped', leaves origin/main untouched, and does not
+    affect the merge itself."""
+    from smithy.assembly import ff_merge_forge_branch
+    monkeypatch.setenv("SMITHY_PUSH_ENABLED", "0")
+    origin, work = local_repo
+    before = _git(work, "rev-parse", "origin/main").stdout.strip()
+    _git(work, "checkout", "-b", "forge-01/t-ks", "main")
+    (work / "k.txt").write_text("k\n")
+    _git(work, "add", "k.txt")
+    _git(work, "commit", "-m", "t-ks", "-q")
+    _git(work, "checkout", "main")
+
+    res = ff_merge_forge_branch(work, "forge-01", "t-ks", base="main",
+                                delete_branch=False)
+    assert res["status"] == "merged", res
+    assert res["push"]["status"] == "skipped", res["push"]
+    assert "SMITHY_PUSH_ENABLED" in res["push"]["reason"]
+    # origin/main must NOT have advanced.
+    after = _git(work, "rev-parse", "origin/main").stdout.strip()
+    assert after == before, "push happened despite kill switch"
+
+
+def test_ff_merge_push_enabled_by_default(local_repo, monkeypatch):
+    """With SMITHY_PUSH_ENABLED unset (rig environment), the push runs —
+    the kill switch defaults to enabled."""
+    from smithy.assembly import ff_merge_forge_branch
+    monkeypatch.delenv("SMITHY_PUSH_ENABLED", raising=False)
+    origin, work = local_repo
+    _git(work, "checkout", "-b", "forge-01/t-def", "main")
+    (work / "d.txt").write_text("d\n")
+    _git(work, "add", "d.txt")
+    _git(work, "commit", "-m", "t-def", "-q")
+    _git(work, "checkout", "main")
+
+    res = ff_merge_forge_branch(work, "forge-01", "t-def", base="main",
+                                delete_branch=False)
+    assert res["status"] == "merged", res
+    assert res["push"]["status"] == "ok", res["push"]
+    r = _git(work, "rev-parse", "origin/main")
+    assert r.stdout.strip() == res["sha"]
+
+
+def test_push_enabled_value_parsing(monkeypatch):
+    """Unit coverage for the switch parser: 0/false/no (any case,
+    padded) disable; everything else — including unset — enables."""
+    from smithy.assembly import push_enabled
+    for v in ("0", "false", "FALSE", " no ", "No"):
+        monkeypatch.setenv("SMITHY_PUSH_ENABLED", v)
+        assert not push_enabled(), f"{v!r} should disable"
+    for v in ("1", "true", "yes", "anything"):
+        monkeypatch.setenv("SMITHY_PUSH_ENABLED", v)
+        assert push_enabled(), f"{v!r} should enable"
+    monkeypatch.delenv("SMITHY_PUSH_ENABLED", raising=False)
+    assert push_enabled(), "unset must default to enabled"
 
 
 def test_patrol_check_10_warns_on_origin_drift(tmp_path, monkeypatch):
