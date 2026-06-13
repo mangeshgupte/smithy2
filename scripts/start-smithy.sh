@@ -116,6 +116,21 @@ UI_PANES=(
   "timeline|ui-timeline|8004"
 )
 
+# t-566 (ini-022): pin the UI runtime. Bare `uv run uvicorn` resolves
+# the system/Xcode Python 3.9, and any PEP 604 (`str | None`) syntax in
+# an app crashes it on its NEXT restart (t-555 took poker down exactly
+# this way; the other panes were the same time bomb). Gates never catch
+# it because tests run in >=3.10 venvs. The dep set covers all four
+# apps: fastapi/uvicorn/jinja2 everywhere, markdown + python-multipart
+# for Bellows. scripts/restart-ui.sh builds the SAME command — keep the
+# two in sync via these env vars, not by editing literals in either.
+FORGE_UI_PYTHON="${FORGE_UI_PYTHON:-3.12}"
+FORGE_UI_DEPS="${FORGE_UI_DEPS:-fastapi,uvicorn,jinja2,markdown,python-multipart}"
+_ui_launch_cmd() {  # <abs-workdir> <port>
+  printf "cd '%s' && uv run --python %s --with %s uvicorn app:app --port %s" \
+    "$1" "$FORGE_UI_PYTHON" "${FORGE_UI_DEPS//,/ --with }" "$2"
+}
+
 usage() {
   cat <<'EOF'
 scripts/start-smithy.sh — launch The Forge tmux rig.
@@ -363,7 +378,7 @@ if [[ -n "$FORGE_UI_WINDOW" ]]; then
   for entry in "${UI_PANES[@]}"; do
     title="${entry%%|*}"; rest="${entry#*|}"
     workdir="${rest%|*}"; port="${rest##*|}"
-    cmd="cd '$FORGE_ROOT/$workdir' && uv run uvicorn app:app --port $port"
+    cmd="$(_ui_launch_cmd "$FORGE_ROOT/$workdir" "$port")"  # t-566 pinned runtime
     if [[ -z "$FIRST_UI" ]]; then
       FIRST_UI=$(tmux new-window -t "$FORGE_SESSION" \
         -n "$FORGE_UI_WINDOW" \
