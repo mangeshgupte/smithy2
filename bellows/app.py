@@ -32,7 +32,9 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
-from forge_reader import discover_projects, read_project, get_morning_briefing, compute_heat_diff
+from forge_reader import (discover_projects, read_project,
+                          get_morning_briefing, compute_heat_diff,
+                          read_deferred_entries)
 
 app = FastAPI(title="Bellows")
 
@@ -118,8 +120,28 @@ def count_all_decisions(projects: list[dict]) -> int:
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     projects = discover_projects(PROJECTS_DIR)
+    # t-525: surface each project's recent autopilot deferrals.
+    for p in projects:
+        p["deferred"] = read_deferred_entries(p["dir"], limit=10)
     return templates.TemplateResponse(request=request, name="home.html", context={
         "projects": projects,
+        "tab": "home",
+        "total_decisions": count_all_decisions(projects),
+    })
+
+
+@app.get("/project/{project_name}/deferred", response_class=HTMLResponse)
+async def project_deferred(request: Request, project_name: str):
+    """t-525: full deferred.md for a project, markdown-rendered."""
+    projects = discover_projects(PROJECTS_DIR)
+    project = next((p for p in projects if p["name"] == project_name), None)
+    if not project:
+        return HTMLResponse("<h1>Project not found</h1>", status_code=404)
+    path = Path(project["dir"]) / "deferred.md"
+    raw = path.read_text() if path.exists() else ""
+    return templates.TemplateResponse(request=request, name="deferred.html", context={
+        "project": project,
+        "deferred_raw": raw,
         "tab": "home",
         "total_decisions": count_all_decisions(projects),
     })

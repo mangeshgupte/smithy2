@@ -374,13 +374,19 @@ def load_prior_snapshot(root: Path) -> dict | None:
 
 def write_tick_snapshot(root: Path, snap, ts: str = "") -> dict:
     """Persist the cross-tick state A3/A10/A12 need next time around.
-    Returns the summary written (handy for tests)."""
+    Returns the summary written (handy for tests).
+
+    t-525: the "notified" map (rising-edge dedup owned by
+    scripts/autopilot-notify.sh) shares this file — carry it across
+    rewrites so a tick snapshot doesn't re-arm every notification."""
+    existing = load_prior_snapshot(root) or {}
     summary = {
         "ts": ts,
         "halt_flag": bool(_parallel(snap).get("halt_flag")),
         "all_idle_with_work": all_forges_idle_with_work(snap),
         "marshal_pane_tail": (snap.get("pane_tails") or {}).get("marshal")
                              or "",
+        "notified": existing.get("notified") or {},
     }
     (Path(root) / SNAPSHOT_FILENAME).write_text(
         json.dumps(summary, indent=2) + "\n")
