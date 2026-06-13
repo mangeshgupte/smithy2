@@ -1379,10 +1379,21 @@ def assembly_tick_cmd(ctx, base, dry_run, tests_cmd):
         return int((datetime.now(timezone.utc) - _tick_started_at)
                    .total_seconds() * 1000)
 
-    def _reject(reason: str) -> dict:
+    def _reject(reason: str, plumbing: bool = False) -> dict:
         # t-475: abort any in-flight rebase in the STAGING worktree (not
         # the Forge's) so our cleanup matches where we actually ran it.
         abort_rebase(root, STAGING_WORKTREE)
+        # t-563: a PLUMBING reject (unresolvable refs, staging
+        # breakage — not a content verdict) must not silently destroy
+        # the row's branch/sha pointers; t-561's row vanished this way
+        # and Anvil re-enqueued by hand. Preserve the row in a
+        # dead-letter file so it stays recoverable, and say so in the
+        # reject reason.
+        dead_path = None
+        if plumbing and not reconciled:
+            dead_path = _dead_letter_row(root, lines[0], reason)
+            if dead_path:
+                reason = f"{reason} (row preserved: {dead_path})"
         _do_assembly_reject(root, task_id, reason)
         _log(root, forge_id, task_id, "rejected", reason)
         # t-493 × ini-024 T1: only pop a row when the tick actually
@@ -1393,6 +1404,7 @@ def assembly_tick_cmd(ctx, base, dry_run, tests_cmd):
             _pop_queue(qpath, lines[0])
         _emit_rig_event(root, "assembly_tick_rejected", actor="assembly",
                         forge_id=forge_id, task_id=task_id, reason=reason,
+                        plumbing=plumbing, dead_letter=dead_path,
                         latency_ms=_tick_latency_ms())
         return {"status": "rejected", "task_id": task_id, "reason": reason,
                 "reconciled": reconciled}
@@ -1400,7 +1412,17 @@ def assembly_tick_cmd(ctx, base, dry_run, tests_cmd):
     # 1. Rebase onto base — t-475: use rebase_task_branch so the work
     # happens in .worktrees/_assembly-staging/ instead of the Forge's
     # worktree. Conflict resolution loop below now targets staging too.
-    rb = rebase_task_branch(root, forge_id, task_id, base=base)
+    # t-563: the row's explicit branch/sha drive source resolution; the
+    # <forge>/<task> convention is only the fallback (t-561 bounced 4×
+    # because the code ignored row.branch).
+    rb = rebase_task_branch(root, forge_id, task_id, base=base,
+                            branch=item.get("branch"),
+                            sha=item.get("sha"))
+    if rb.get("sha_divergence"):
+        _err(f"t-563 divergence: {rb['sha_divergence']['note']} "
+             f"({rb['sha_divergence']})")
+        _emit_rig_event(root, "assembly_sha_divergence", actor="assembly",
+                        task_id=task_id, **rb["sha_divergence"])
     if rb["status"] == "conflict":
         res = try_auto_resolve(root, STAGING_WORKTREE)
         if res["status"] == "severe":
@@ -1423,7 +1445,10 @@ def assembly_tick_cmd(ctx, base, dry_run, tests_cmd):
         elif res["status"] == "nothing":
             pass  # fall through
     elif rb["status"] == "error":
-        _output(_reject(f"rebase error: {rb.get('detail','?')[:120]}"))
+        # t-563: rebase errors are plumbing (refs, staging), not content
+        # verdicts — keep the row recoverable.
+        _output(_reject(f"rebase error: {rb.get('detail','?')[:120]}",
+                        plumbing=True))
         return
 
     staging_ref = rb.get("staging_ref")
@@ -1570,6 +1595,28 @@ def _append_queue(qpath, entry):
                 pass  # fsync can fail on some filesystems; append still lands.
         finally:
             fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+
+
+def _dead_letter_row(root, raw_line, reason):
+    """t-563: preserve a plumbing-rejected queue row in
+    `.assembly-queue-dead.jsonl` at the main repo root.
+
+    A plumbing reject (unresolvable source ref, staging breakage) is an
+    infrastructure verdict, not a content one — dropping the row also
+    drops the branch/sha pointers needed to retry it. Appends the row
+    with a timestamp + reason; returns the file path, or None on any
+    error (preservation is best-effort, never blocks the reject)."""
+    try:
+        path = main_repo_root(root) / ".assembly-queue-dead.jsonl"
+        entry = json.loads(raw_line)
+        entry["dead_lettered_at"] = datetime.now(timezone.utc).isoformat(
+            timespec="seconds")
+        entry["reject_reason"] = str(reason)[:300]
+        with open(path, "a") as f:
+            f.write(json.dumps(entry) + "\n")
+        return str(path)
+    except Exception:
+        return None
 
 
 def _pop_queue(qpath, drained_line):

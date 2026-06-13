@@ -110,9 +110,11 @@ def ensure_staging_worktree(project_dir: Path, base: str = "main") -> dict:
 
 
 def rebase_task_branch(project_dir: Path, forge_id: str,
-                       task_id: str, base: str = "main") -> dict:
-    """t-456: rebase ``<forge-id>/<task-id>`` onto ``base`` inside
-    Assembly's private staging worktree.
+                       task_id: str, base: str = "main",
+                       branch: str | None = None,
+                       sha: str | None = None) -> dict:
+    """t-456: rebase the submitted work onto ``base`` inside Assembly's
+    private staging worktree.
 
     Works by creating an ephemeral branch ``_merge-<task-id>`` in the
     staging worktree that starts at the commit of the Forge's per-task
@@ -121,9 +123,19 @@ def rebase_task_branch(project_dir: Path, forge_id: str,
     from whatever branch the Forge is currently on — Forge can move on
     to the next task immediately after submit.
 
+    t-563: the queue row's explicit ``branch``/``sha`` are TRUTH; the
+    ``<forge>/<task-id>`` naming convention is only the fallback when a
+    row lacks them. t-561's row carried branch=forge-quench/t-527 (a
+    fix legitimately submitted on another task's branch); the old code
+    derived forge-quench/t-561, found nothing, and bounced the content
+    for the 4th time on pure plumbing. Additionally, when the recorded
+    ``sha`` and the branch tip diverge (Forge moved on after submit),
+    the SHA wins — submit-boundary semantics say merge only up to what
+    was submitted — and the divergence is reported.
+
     Returns:
       {"status": "clean",    "staging_ref": "_merge-<task-id>",
-       "path": "<staging>"}
+       "path": "<staging>"}            (+ "sha_divergence" when seen)
       {"status": "conflict", "files": [...],
        "staging_ref": "_merge-<task-id>", "path": "<staging>"}
       {"status": "error",    "detail": "..."}
@@ -134,11 +146,49 @@ def rebase_task_branch(project_dir: Path, forge_id: str,
                 "detail": staged.get("detail", "staging worktree not ready")}
     wt = Path(staged["path"])
 
-    source = branch_name(forge_id, task_id)
-    exists = _git(project_dir, "rev-parse", "--verify", "--quiet", source)
-    if exists.returncode != 0:
-        return {"status": "error",
-                "detail": f"source branch '{source}' not found"}
+    # t-563: resolve the merge source — explicit row branch first,
+    # convention fallback; recorded sha overrides a moved branch tip.
+    source = branch or branch_name(forge_id, task_id)
+    divergence = None
+    tip = _git(project_dir, "rev-parse", "--verify", "--quiet", source)
+    if tip.returncode != 0:
+        # Branch ref gone (deleted/renamed). The recorded sha can still
+        # save the merge if the commit object survives.
+        if sha:
+            obj = _git(project_dir, "rev-parse", "--verify", "--quiet",
+                       f"{sha}^{{commit}}")
+            if obj.returncode == 0:
+                divergence = {"branch": source, "branch_tip": None,
+                              "used": sha,
+                              "note": "branch ref missing; merged from "
+                                      "recorded sha"}
+                source = sha
+            else:
+                return {"status": "error",
+                        "detail": f"source branch '{source}' not found "
+                                  f"and recorded sha '{sha[:12]}' "
+                                  "unresolvable"}
+        else:
+            return {"status": "error",
+                    "detail": f"source branch '{source}' not found"}
+    elif sha and tip.stdout.strip() != sha:
+        obj = _git(project_dir, "rev-parse", "--verify", "--quiet",
+                   f"{sha}^{{commit}}")
+        if obj.returncode == 0:
+            divergence = {"branch": source,
+                          "branch_tip": tip.stdout.strip(),
+                          "used": sha,
+                          "note": "branch tip moved past the submitted "
+                                  "sha; merging the submit boundary"}
+            source = sha
+        else:
+            # Recorded sha vanished (history rewrite); merge the branch
+            # tip but surface the divergence loudly.
+            divergence = {"branch": source,
+                          "branch_tip": tip.stdout.strip(),
+                          "used": tip.stdout.strip(),
+                          "note": f"recorded sha {sha[:12]} unresolvable; "
+                                  "merged branch tip instead"}
 
     ephemeral = merge_ref_name(task_id)
     # -B resets the ref if it lingered from a prior attempt.
@@ -150,13 +200,19 @@ def rebase_task_branch(project_dir: Path, forge_id: str,
 
     r = _git(wt, "rebase", base)
     if r.returncode == 0:
-        return {"status": "clean", "staging_ref": ephemeral,
-                "path": str(wt)}
+        out = {"status": "clean", "staging_ref": ephemeral,
+               "path": str(wt)}
+        if divergence:
+            out["sha_divergence"] = divergence
+        return out
     files = conflicted_files(wt)
     if files or (wt / ".git" / "rebase-merge").exists() or \
             (wt / ".git" / "rebase-apply").exists():
-        return {"status": "conflict", "files": files,
-                "staging_ref": ephemeral, "path": str(wt)}
+        out = {"status": "conflict", "files": files,
+               "staging_ref": ephemeral, "path": str(wt)}
+        if divergence:
+            out["sha_divergence"] = divergence
+        return out
     return {"status": "error",
             "detail": r.stderr.strip() or r.stdout.strip()}
 
