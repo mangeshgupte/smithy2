@@ -646,6 +646,9 @@ def ensure_staging_venv_versioned(wt: Path,
       {"status": "reused"   | "created" | "recreated" | "error",
        "path":   <venv/bin/python3>,
        "recreated": bool,
+       "reason": "first_use" | "tree_hash_changed" | "corrupt_recover"
+                 (build paths only — t-514 §(j) venv_recreated metric),
+       "retried": bool (t-514 §(i)(1): a corrupt-recover retry ran),
        "detail": "..."   (only on error)}
     """
     import os as _os
@@ -672,41 +675,55 @@ def ensure_staging_venv_versioned(wt: Path,
         return {"status": "error", "detail": "uv not on PATH"}
 
     recreated = venv.exists()
-    if recreated:
-        try:
-            _sh.rmtree(venv)
-        except OSError as exc:
-            return {"status": "error", "detail": f"rmtree venv: {exc}"}
+    reason = "tree_hash_changed" if recreated else "first_use"
 
-    r1 = subprocess.run([uv, "venv", str(venv)], capture_output=True,
-                        text=True, timeout=30)
-    if r1.returncode != 0 or not py.exists():
-        return {"status": "error",
-                "detail": f"uv venv: {r1.stderr.strip()}"}
+    def _build():
+        """rm -rf + uv venv + editable [test] install. Returns an error
+        detail string, or None on success."""
+        if venv.exists():
+            try:
+                _sh.rmtree(venv)
+            except OSError as exc:
+                return f"rmtree venv: {exc}"
+        r1 = subprocess.run([uv, "venv", str(venv)], capture_output=True,
+                            text=True, timeout=30)
+        if r1.returncode != 0 or not py.exists():
+            return f"uv venv: {r1.stderr.strip()}"
+        env = dict(_os.environ)
+        env["VIRTUAL_ENV"] = str(venv)
+        # t-529: install the `[test]` extras so the staging venv carries
+        # jinja2/starlette/httpx/fastapi/pydantic/etc. that tests/test_*.py
+        # collect-time imports. Without this, every task submit ERRORs on
+        # ImportError regardless of its own correctness — a 5-merge cascade
+        # on 2026-04-19 made this the rig's P0 blocker (see t-529). The
+        # `-e '.../smithy[test]'` form tells uv to resolve the
+        # optional-dependencies.test group in smithy/pyproject.toml.
+        r2 = subprocess.run(
+            [uv, "pip", "install", "--quiet", "-e",
+             f"{wt / 'smithy'}[test]"],
+            cwd=str(wt), env=env, capture_output=True, text=True, timeout=180,
+        )
+        if r2.returncode != 0:
+            return f"uv pip install: {r2.stderr.strip()}"
+        return None
 
-    env = dict(_os.environ)
-    env["VIRTUAL_ENV"] = str(venv)
-    # t-529: install the `[test]` extras so the staging venv carries
-    # jinja2/starlette/httpx/fastapi/pydantic/etc. that tests/test_*.py
-    # collect-time imports. Without this, every task submit ERRORs on
-    # ImportError regardless of its own correctness — a 5-merge cascade
-    # on 2026-04-19 made this the rig's P0 blocker (see t-529). The
-    # `-e '.../smithy[test]'` form tells uv to resolve the
-    # optional-dependencies.test group in smithy/pyproject.toml.
-    r2 = subprocess.run(
-        [uv, "pip", "install", "--quiet", "-e",
-         f"{wt / 'smithy'}[test]"],
-        cwd=str(wt), env=env, capture_output=True, text=True, timeout=180,
-    )
-    if r2.returncode != 0:
-        return {"status": "error",
-                "detail": f"uv pip install: {r2.stderr.strip()}"}
+    retried = False
+    detail = _build()
+    if detail is not None:
+        # t-514 §(i)(1): a failed build leaves a possibly-corrupt venv —
+        # blow it away and retry ONCE from scratch before giving up.
+        retried = True
+        reason = "corrupt_recover"
+        detail = _build()
+        if detail is not None:
+            return {"status": "error", "detail": detail, "retried": True}
 
     if smithy_hash is not None:
         marker.write_text(current_marker)
 
     return {"status": "recreated" if recreated else "created",
-            "path": str(py), "recreated": recreated}
+            "path": str(py), "recreated": recreated,
+            "reason": reason, "retried": retried}
 
 
 def run_batch(project_dir: Path, entries: list,
