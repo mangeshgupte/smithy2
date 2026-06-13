@@ -6020,12 +6020,31 @@ def memory_write(ctx, note, heat_num, stage):
     to eliminate MEMORY.md merge conflicts between parallel Forges. The
     subdir is the forge-id with the `forge-` prefix dropped, detected
     from the cwd's worktree at runtime.
+
+    t-564: when invoked from a Forge worktree, the rollup is COMMITTED
+    immediately on the current branch. The file is tracked, so leaving
+    it dirty blocked the next `start-heat` branch switch (quench
+    git-stashed by hand at h1250; temper hit the same at h1239). The
+    per-forge subdir is single-writer since t-458, so committing it is
+    sanctioned (temper's t-544 rollup precedent, Marshal-ratified).
+    Main-checkout invocations (Anvil, smoke runs) keep write-only
+    behavior — auto-committing on main would violate the
+    Assembly-only-to-main invariant.
     """
     from datetime import date
     root = ctx.obj["root"]
-    forge_id = detect_forge_from_cwd(root) or primary_forge_id(root)
+    detected = detect_forge_from_cwd(root)
+    forge_id = detected or primary_forge_id(root)
     subdir = forge_id.removeprefix("forge-") if forge_id else "quench"
-    path = root / "personas" / "forge" / "memory" / subdir / "MEMORY_DAILY.md"
+    # t-564: anchor the rollup at the DETECTED forge's worktree (not the
+    # --dir root) so `smithy --dir <main>` from a worktree still lands
+    # and commits in the caller's own tree.
+    base = root
+    if detected:
+        wt_root = main_repo_root(root) / ".worktrees" / detected
+        if wt_root.exists() and (wt_root / ".git").exists():
+            base = wt_root
+    path = base / "personas" / "forge" / "memory" / subdir / "MEMORY_DAILY.md"
     path.parent.mkdir(parents=True, exist_ok=True)
 
     today = date.today().isoformat()
@@ -6051,8 +6070,38 @@ def memory_write(ctx, note, heat_num, stage):
     content += entry
 
     path.write_text(content)
-    _output({"date": today, "note": note, "heat": heat_num})
-    _err(f"Memory: {note[:60]}")
+
+    # t-564: auto-commit in Forge worktrees so the tracked file never
+    # blocks the next start-heat. Best-effort — a commit failure leaves
+    # the write intact and is surfaced, not raised.
+    committed = False
+    commit_detail = None
+    import subprocess as _sp
+    in_worktree = (detected is not None
+                   and base.resolve() != main_repo_root(root).resolve())
+    if in_worktree:
+        try:
+            add = _sp.run(["git", "add", str(path)], cwd=str(base),
+                          capture_output=True, text=True, timeout=15)
+            label = f"h{heat_num}" if heat_num else "rollup"
+            cm = _sp.run(
+                ["git", "commit", "-m",
+                 f"[memory] {forge_id}: daily rollup ({label}, t-564 "
+                 "auto-commit)", "--", str(path)],
+                cwd=str(base), capture_output=True, text=True, timeout=15,
+            )
+            committed = cm.returncode == 0
+            if not committed:
+                commit_detail = (cm.stderr.strip() or cm.stdout.strip()
+                                 or add.stderr.strip())[:200]
+        except Exception as exc:
+            commit_detail = str(exc)[:200]
+
+    _output({"date": today, "note": note, "heat": heat_num,
+             "committed": committed,
+             **({"commit_detail": commit_detail} if commit_detail else {})})
+    _err(f"Memory: {note[:60]}"
+         + (" (committed)" if committed else ""))
 
 
 @cli.command("add-theme")
