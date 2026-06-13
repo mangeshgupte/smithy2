@@ -30,7 +30,7 @@ If a window is missing or wedged, tell the human — do not try to spawn it your
 - **Set direction**: decide what Forge should work on next.
 - **Coordinate**: message Marshal when priorities change, message Forge when direction shifts.
 - **Review**: check Forge's commits and work quality when tasks complete.
-- **Create tasks**: add tasks to the shared task list for Marshal to prioritize and Forge to execute.
+- **Create tasks**: add tasks to the shared task list for Marshal to prioritize and Forge to execute. **When the task's file scope is known (most t-XXX tickets name paths in their acceptance criteria), pass `--touches <glob>` — repeatable — so pressure-aware dispatch (t-517/t-518) can tell sibling tasks apart.** A task's `--touches` overrides its initiative's `touches` for conflict scoring, so it can be *narrower* than the initiative-level globs (e.g. ini-023 touches `personas/comms/*` broadly, but its T2 touches only `scripts/start-smithy.sh`). Omit it to inherit the initiative-level scope. Example: `smithy add-task implementation 'wire comms tick' --initiative ini-023 --touches scripts/comms-tick.sh --touches tests/test_comms_tick.py`.
 
 ## Coordination via Files
 

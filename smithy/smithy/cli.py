@@ -2535,8 +2535,13 @@ def stats(ctx):
 @click.option("--priority", type=int, default=2, help="Priority (0=highest, 3=lowest)")
 @click.option("--blocked-by", multiple=True, help="Task IDs this is blocked by")
 @click.option("--initiative", "initiative_id", default=None, help="Link to initiative ID")
+@click.option("--touches", multiple=True,
+              help="Path-glob this task writes (repeatable). Overrides the "
+                   "initiative's touches for pressure-aware conflict scoring "
+                   "(t-518); narrower than the initiative-level globs when the "
+                   "task touches only a subset. Omit to inherit initiative-level.")
 @click.pass_context
-def add_task(ctx, stage, desc, priority, blocked_by, initiative_id):
+def add_task(ctx, stage, desc, priority, blocked_by, initiative_id, touches):
     """Add a new task to the queue."""
     root = ctx.obj["root"]
     state = load_state(root)
@@ -2577,6 +2582,12 @@ def add_task(ctx, stage, desc, priority, blocked_by, initiative_id):
         # landed t-470 in state.json without it and blocked Assembly for
         # every submission afterward.
         "initiative_id": initiative_id,
+        # t-518 (ini-018): per-task path-globs for finer-grained
+        # pressure-aware conflict scoring. Always written (defaulting to
+        # []) so the schema is uniform; an empty list means "inherit the
+        # initiative-level touches" — see dispatch._effective_touches.
+        # Pre-t-518 tasks lack the key; readers MUST treat missing as [].
+        "touches": list(touches),
         # t-527 (ini-016): created_at ISO timestamp so the Cockpit can
         # render an "age in minutes" column instead of the less-useful
         # "heats since first worklog mention". Tasks pre-t-527 lack
