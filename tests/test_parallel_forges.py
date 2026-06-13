@@ -113,11 +113,15 @@ def test_n2_sandbox_five_heats_end_to_end(sandbox):
         assert tid is not None, f"heat {i}: {forge} got nothing to pop"
         forges_used.add(popped["task"]["assigned_forge"])
 
+        # t-542: be explicit about identity — the sandbox cwd is outside
+        # any worktree, and a pinned task now scopes its checkpoint to
+        # the pinned Forge (start-heat adopts the pin; end-heat must be
+        # told who it is or it resolves to the primary and misses).
         rc, _, _ = _smithy(sandbox, "start-heat", "implementation",
-                           "--task", tid)
+                           "--task", tid, "--forge", forge)
         assert rc == 0
         rc, _, _ = _smithy(sandbox, "end-heat", "0.7", "🟢",
-                           f"sandbox work for {tid}",
+                           f"sandbox work for {tid}", "--forge", forge,
                            "--outcome", "complete", "--no-nudge", "--skip-tests")
         assert rc == 0
         # Task should now be submitted (assembly.enabled=True).
@@ -167,8 +171,10 @@ def test_patrol_clean_after_sandbox_run(sandbox):
         forge = "forge-01" if i % 2 == 0 else "forge-02"
         rc, out, _ = _smithy(sandbox, "queue-pop", "--forge", forge)
         tid = json.loads(out)["task_id"]
-        _smithy(sandbox, "start-heat", "implementation", "--task", tid)
-        _smithy(sandbox, "end-heat", "0.7", "🟢", "ok",
+        # t-542: explicit identity (see companion test).
+        _smithy(sandbox, "start-heat", "implementation", "--task", tid,
+                "--forge", forge)
+        _smithy(sandbox, "end-heat", "0.7", "🟢", "ok", "--forge", forge,
                 "--outcome", "complete", "--no-nudge", "--skip-tests")
         _smithy(sandbox, "assembly-merge", tid, "--sha", f"sha{i:02d}" + "0" * 36)
         _drain_assembly_queue(sandbox)  # t-442: see doc in companion test
