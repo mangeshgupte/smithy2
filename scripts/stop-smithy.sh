@@ -102,12 +102,24 @@ uninstall_comms_cron() {
     "$SCRIPT_DIR/_comms-cron.sh" uninstall 2>/dev/null || true
 }
 
+# t-522 (ini-026 T1): symmetric autopilot-cron uninstall. Same guard
+# shape as uninstall_comms_cron above — silent on missing crontab,
+# idempotent on repeated calls.
+uninstall_autopilot_cron() {
+  if ! command -v crontab >/dev/null 2>&1; then
+    return 0
+  fi
+  FORGE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)" \
+    "$SCRIPT_DIR/_autopilot-cron.sh" uninstall 2>/dev/null || true
+}
+
 if ! tmux has-session -t "$FORGE_SESSION" 2>/dev/null; then
   echo "no tmux session '$FORGE_SESSION' — nothing to stop"
-  # Still strip the cron entry — the session being gone doesn't mean
+  # Still strip the cron entries — the session being gone doesn't mean
   # the cron line is gone, and a leftover tick would keep warning to
   # stderr once per cycle.
   uninstall_comms_cron
+  uninstall_autopilot_cron
   exit 0
 fi
 
@@ -115,6 +127,7 @@ if (( FORCE )); then
   tmux kill-session -t "$FORGE_SESSION"
   echo "killed session '$FORGE_SESSION' (--force)"
   uninstall_comms_cron
+  uninstall_autopilot_cron
   exit 0
 fi
 
@@ -172,6 +185,7 @@ if (( ${#PANE_IDS[@]} == 0 )); then
   tmux kill-session -t "$FORGE_SESSION"
   echo "session '$FORGE_SESSION' had no panes — killed"
   uninstall_comms_cron
+  uninstall_autopilot_cron
   exit 0
 fi
 
@@ -188,6 +202,7 @@ sleep "$FORGE_STOP_WAIT"
 if ! tmux has-session -t "$FORGE_SESSION" 2>/dev/null; then
   echo "session '$FORGE_SESSION' closed cleanly"
   uninstall_comms_cron
+  uninstall_autopilot_cron
   exit 0
 fi
 
@@ -196,3 +211,4 @@ echo "session still up with $REMAINING pane(s) — killing"
 tmux kill-session -t "$FORGE_SESSION"
 echo "killed session '$FORGE_SESSION'"
 uninstall_comms_cron
+uninstall_autopilot_cron
