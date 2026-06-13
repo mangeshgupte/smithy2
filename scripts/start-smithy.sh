@@ -11,7 +11,7 @@
 #   │         │ f1 │ f2 │ f3 │.. │
 #   └─────────┴────┴────┴────┴───┘
 #
-# Anvil takes the full-height left column (~40%). Right column is split
+# Anvil takes the full-height left column (~34%). Right column is split
 # into three equal rows: Marshal (top), Assembly (middle), and a row of
 # Forge panes (bottom) — one per entry in `state.parallel.forges[]`.
 #
@@ -272,8 +272,9 @@ trap 'tmux kill-session -t "$FORGE_SESSION" 2>/dev/null || true' ERR
 ANVIL_ID=$(tmux new-session -d -s "$FORGE_SESSION" -n main \
   -x 240 -y 64 -c "${PANES[0]##*|}" -P -F '#{pane_id}')
 
-# Right column (60%): Marshal at top, then split to Assembly, then forges.
-MARSHAL_ID=$(tmux split-window -t "$ANVIL_ID" -h -p 60 \
+# Right column (66%): Marshal at top, then split to Assembly, then forges.
+# (Anvil keeps the remaining ~34% — was 40%, trimmed 15% per human request.)
+MARSHAL_ID=$(tmux split-window -t "$ANVIL_ID" -h -p 66 \
   -c "${PANES[1]##*|}" -P -F '#{pane_id}')
 ASSEMBLY_ID=$(tmux split-window -t "$MARSHAL_ID" -v -p 67 \
   -c "${PANES[2]##*|}" -P -F '#{pane_id}')
