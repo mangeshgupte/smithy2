@@ -15,6 +15,7 @@ exist in the repo today, so the FORGE_ROOT for each test points at the
 worktree root rather than a synthetic tmp_path.
 """
 
+import re
 import os
 import socket
 import subprocess
@@ -119,7 +120,16 @@ class TestPortConflictPreflight:
         without --dry-run — the preflight must refuse and name the
         offending port + service. We DON'T actually create a tmux
         session: the preflight runs before tmux setup, so the script
-        exits non-zero with a clear stderr message."""
+        exits non-zero with a clear stderr message.
+
+        t-567: hermetic against a LIVE rig. The preflight checks ports
+        in its own order and exits on the FIRST conflict — when live
+        bellows holds 8080, that trips before our bound 8001 and the
+        message names 8080, not 8001. Assert the generic readable
+        shape ('port N already in use (needed by …)') instead of
+        hard-coding which port wins the race. Our bound socket
+        guarantees at least one conflict exists, so the preflight MUST
+        refuse either way."""
         sock = _bind(8001)
         try:
             env = os.environ.copy()
@@ -133,7 +143,9 @@ class TestPortConflictPreflight:
             assert r.returncode != 0, (
                 f"expected non-zero exit; stdout={r.stdout}\nstderr={r.stderr}"
             )
-            assert "port 8001 already in use" in r.stderr, r.stderr
-            assert "poker" in r.stderr, r.stderr
+            assert re.search(r"port \d+ already in use", r.stderr), r.stderr
+            # Message must still name the blocked service ('needed by
+            # <title> — <workdir>'), whichever port tripped first.
+            assert "needed by" in r.stderr, r.stderr
         finally:
             sock.close()
