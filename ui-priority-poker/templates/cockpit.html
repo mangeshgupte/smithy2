@@ -8,20 +8,43 @@
     <style>
         /* t-547: full-viewport width — no max-width cap or centering;
            slim side padding. Human feedback: wasted space left/right. */
-        .cockpit-page { padding: 16px 12px; }
+        /* t-557: typography scale — the cockpit's single source of truth
+           for type size, weight, and line-height. Every font-size below
+           references an --fs-* token instead of a one-off px value. The
+           four steps preserve the pre-t-557 rendered sizes (12/13/14/15)
+           so this is a tokenization + weight/letter-spacing/line-height
+           pass, not a resize — no layout shift.
+             --fs-xs  smallest: uppercase badges, age, section heads,
+                      ship heat/sha, desc preview, bounce badge
+             --fs-sm  secondary: filter labels, inline dl/history, reason
+             --fs-md  base: table body, stats, toast, controls
+             --fs-lg  emphasis: expanded inline description
+           Weight (not just size) carries hierarchy: the task id reads
+           medium, descriptions regular, metadata muted. Expanded views
+           relax to --lh-relaxed for readability; dense rows stay tight. */
+        .cockpit-page {
+            padding: 16px 12px;
+            --fs-xs: 12px;
+            --fs-sm: 13px;
+            --fs-md: 14px;
+            --fs-lg: 15px;
+            --fw-regular: 400;
+            --fw-medium: 500;
+            --lh-relaxed: 1.4;
+        }
         .cockpit-filters { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap;
                            padding: 12px; background: var(--surface, #1a1a1a);
                            border: 1px solid var(--border, #333); border-radius: 6px;
                            margin-bottom: 12px; }
         .cockpit-filters label { display: flex; flex-direction: column; gap: 4px;
-                                 font-size: 13px; color: var(--text-muted, #aaa); }
+                                 font-size: var(--fs-sm); color: var(--text-muted, #aaa); }
         .cockpit-filters select, .cockpit-filters input {
             padding: 4px 8px; background: var(--surface-hover, #222);
             border: 1px solid var(--border, #333); color: var(--text, #ddd);
             border-radius: 3px; font: inherit; min-width: 120px;
         }
-        .cockpit-stats { font-size: 14px; color: var(--text-muted, #888); margin: 4px 0 8px 0; }
-        .cockpit-table { width: 100%; border-collapse: collapse; font-size: 14px;
+        .cockpit-stats { font-size: var(--fs-md); color: var(--text-muted, #888); margin: 4px 0 8px 0; }
+        .cockpit-table { width: 100%; border-collapse: collapse; font-size: var(--fs-md);
                          font-family: var(--font-mono, monospace); }
         .cockpit-table th { text-align: left; padding: 8px;
                             border-bottom: 1px solid var(--border, #333);
@@ -31,9 +54,15 @@
         .cockpit-table tr.deferred-row { opacity: 0.6; }
         .cockpit-table tr:hover { background: var(--surface, #1a1a1a); }
         .c-expand { cursor: pointer; color: var(--text-muted, #888); width: 16px; }
-        .c-id a { color: var(--yellow, #c89c2a); text-decoration: none; }
-        .c-stage { font-size: 12px; text-transform: uppercase; padding: 2px 4px;
-                   border-radius: 2px; background: var(--surface-hover, #222); }
+        /* t-557: task id carries weight (medium) not just color — the
+           strongest per-row anchor for scanning. */
+        .c-id a { color: var(--yellow, #c89c2a); text-decoration: none;
+                  font-weight: var(--fw-medium); }
+        /* t-557: small uppercase badges get letter-spacing so the glyphs
+           don't crowd at --fs-xs (keeps uppercase, just legible). */
+        .c-stage { font-size: var(--fs-xs); text-transform: uppercase; padding: 2px 4px;
+                   border-radius: 2px; background: var(--surface-hover, #222);
+                   letter-spacing: 0.04em; }
         .c-hp { white-space: nowrap; }
         .c-hp button { font: inherit; background: transparent; border: 1px solid transparent;
                        color: var(--text-muted, #888); cursor: pointer; padding: 0 4px;
@@ -42,7 +71,7 @@
         .c-desc { max-width: 360px; overflow: hidden; text-overflow: ellipsis;
                   white-space: nowrap; }
         .c-reason { max-width: 140px; overflow: hidden; text-overflow: ellipsis;
-                    white-space: nowrap; color: var(--text-muted, #aaa); font-size: 13px; }
+                    white-space: nowrap; color: var(--text-muted, #aaa); font-size: var(--fs-sm); }
         .c-kebab { cursor: pointer; color: var(--text-muted, #888); padding: 0 4px; }
         /* t-556: numeric columns (priority, hp, age, heat) right-align,
            headers matching cells. */
@@ -55,11 +84,11 @@
         /* t-556: filter bar controls share one baseline. */
         .cockpit-filters button { padding: 4px 8px; font: inherit; }
         /* t-548: bounce badge — rejected-task heat pair in the reason cell. */
-        .c-bounce { color: var(--red, #c66); font-size: 12px; margin-left: 8px;
+        .c-bounce { color: var(--red, #c66); font-size: var(--fs-xs); margin-left: 8px;
                     white-space: nowrap; }
         .c-empty { padding: 32px; text-align: center; color: var(--text-muted, #888); }
         .c-empty a { color: var(--yellow, #c89c2a); }
-        .c-age { color: var(--text-muted, #888); font-size: 13px; white-space: nowrap; }
+        .c-age { color: var(--text-muted, #888); font-size: var(--fs-sm); white-space: nowrap; }
         .c-skeleton td { padding: 8px; }
         .c-skeleton-bar { display: block; height: 10px; background: var(--surface-hover, #222);
                           border-radius: 2px; animation: c-skel 1.2s infinite; }
@@ -70,38 +99,43 @@
         .c-expand.open { color: var(--yellow, #c89c2a); }
         tr.c-inline-panel { background: var(--surface, #141414); }
         tr.c-inline-panel:hover { background: var(--surface, #141414); }
-        .c-inline-body { padding: 12px 8px 16px !important; }
-        .c-inline-desc { font-size: 15px; margin-bottom: 8px; color: var(--text, #ddd);
-                         white-space: pre-wrap; }
+        /* t-557: the expanded panel is reading material — relax leading
+           across the whole body (desc, dl, history) to ~1.4. */
+        .c-inline-body { padding: 12px 8px 16px !important; line-height: var(--lh-relaxed); }
+        /* t-557: descriptions read regular weight — size (not boldness)
+           sets them apart from the medium-weight task id above. */
+        .c-inline-desc { font-size: var(--fs-lg); margin-bottom: 8px; color: var(--text, #ddd);
+                         white-space: pre-wrap; line-height: var(--lh-relaxed);
+                         font-weight: var(--fw-regular); }
         .c-inline-dl { display: grid; grid-template-columns: max-content 1fr;
-                       gap: 4px 12px; margin: 0 0 12px 0; font-size: 13px; }
+                       gap: 4px 12px; margin: 0 0 12px 0; font-size: var(--fs-sm); }
         .c-inline-dl dt { color: var(--text-muted, #888); }
         .c-inline-dl dd { margin: 0; color: var(--text, #ddd); }
-        .c-inline-history { font-size: 13px; color: var(--text-muted, #aaa); }
+        .c-inline-history { font-size: var(--fs-sm); color: var(--text-muted, #aaa); }
         .c-inline-history ul { margin: 4px 0 0 16px; padding: 0; }
         .c-inline-history li { margin: 1px 0; }
         /* t-390: section headers — dense, muted, click to collapse. */
         tr.c-section-head td { padding: 12px 8px 4px; border-bottom: none;
-                               font-size: 12px; text-transform: uppercase;
+                               font-size: var(--fs-xs); text-transform: uppercase;
                                letter-spacing: 0.08em; color: var(--text-muted, #888);
                                cursor: pointer; user-select: none; }
         tr.c-section-head:hover td { color: var(--text, #ddd); }
         .c-section-chip { display: inline-block; margin-left: 8px; padding: 0 4px;
                           background: var(--surface-hover, #222); color: var(--text, #ddd);
-                          border-radius: 8px; font-size: 12px; }
+                          border-radius: 8px; font-size: var(--fs-xs); }
         .c-section-caret { display: inline-block; width: 10px; }
         /* t-391: Complete-section row shape — dimmer, smaller, shipped metadata. */
         tr.c-complete-row td { color: var(--text-muted, #aaa); }
         .c-complete-row .c-id a { color: var(--text-muted, #888); }
         .c-ship-val { white-space: nowrap; }
-        .c-ship-heat { color: var(--text-muted, #888); font-size: 13px; }
-        .c-ship-sha { font-size: 13px; }
+        .c-ship-heat { color: var(--text-muted, #888); font-size: var(--fs-sm); }
+        .c-ship-sha { font-size: var(--fs-sm); }
         .c-ship-sha code { background: var(--surface-hover, #222); padding: 2px 4px;
                            border-radius: 2px; color: var(--yellow, #c89c2a); }
         /* t-392: undo toast. Fixed bottom-right, auto-dismisses in 6s. */
         .c-toast { position: fixed; right: 16px; bottom: 16px;
                    background: var(--surface, #1a1a1a); border: 1px solid var(--border, #333);
-                   padding: 8px 12px; border-radius: 4px; font-size: 14px;
+                   padding: 8px 12px; border-radius: 4px; font-size: var(--fs-md);
                    display: flex; align-items: center; gap: 8px; z-index: 1000;
                    box-shadow: 0 4px 14px rgba(0,0,0,0.4); }
         .c-toast[hidden] { display: none; }
@@ -126,7 +160,7 @@
                       padding: 8px 12px; margin-bottom: 8px;
                       background: var(--surface, #1a1a1a);
                       border: 1px solid var(--yellow, #c89c2a); border-radius: 4px;
-                      font-size: 14px; }
+                      font-size: var(--fs-md); }
         .c-bulk-bar[hidden] { display: none; }
         .c-bulk-bar button { font: inherit; background: transparent;
                              border: 1px solid var(--border, #333);
@@ -145,7 +179,10 @@
             padding: 4px 8px 8px;
             border-top: none;
             cursor: pointer;
-            font-size: 12px;
+            font-size: var(--fs-xs);
+            /* t-557: multi-line desc preview reads as a paragraph, not a
+               dense row — relax the leading for readability. */
+            line-height: var(--lh-relaxed);
         }
         .c-desc-row td.c-desc-cell:hover { color: var(--text, #ddd); }
         .c-ini-link { color: var(--link, #6ba); text-decoration: none; }
