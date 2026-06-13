@@ -129,7 +129,7 @@
 <body>
     <nav class="steering-nav">
         {% for label, url, active in nav_links %}
-        <a href="{{ url }}" class="nav-link">{{ label }}</a>
+        <a href="{{ url }}" class="nav-link{% if active %} active{% endif %}">{{ label }}</a>
         {% endfor %}
     </nav>
     <div class="cockpit-page">

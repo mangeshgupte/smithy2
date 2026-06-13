@@ -21,6 +21,11 @@ STATE_DIR = os.environ.get("FORGE_PROJECT_DIR", str(Path(__file__).parent.parent
 
 NAV_LINKS = [
     ("🃏 Poker", os.environ.get("URL_POKER", "http://localhost:8001"), False),
+    # t-555: Cockpit lives inside the poker app — cross-app nav must be
+    # uniform, so link it absolutely via URL_POKER.
+    ("🎛 Cockpit",
+     os.environ.get("URL_POKER", "http://localhost:8001") + "/cockpit",
+     False),
     ("🎯 Intent", os.environ.get("URL_INTENT", "http://localhost:8003"), True),
     ("📅 Timeline", os.environ.get("URL_TIMELINE", "http://localhost:8004"), False),
     ("🔔 Bellows", os.environ.get("URL_BELLOWS", "http://localhost:8080"), False),
