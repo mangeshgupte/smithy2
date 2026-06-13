@@ -18,6 +18,7 @@ Marshal's queue-push logic) decides what to do with the chosen task.
 """
 from __future__ import annotations
 
+import fnmatch
 import re
 from typing import Iterable
 
@@ -163,13 +164,17 @@ def reject_loop_skips(state: dict, worklog_rows: list) -> dict:
     return out
 
 
-def select_task_for_forge(state: dict, forge_id: str,
-                          skip_ids: set | None = None) -> dict | None:
-    """Walk initiatives by rank and return the first ready task that
-    passes every constraint for `forge_id`. None if nothing qualifies.
+def _eligible_candidates(state: dict, forge_id: str,
+                         skip_ids: set | None = None) -> list:
+    """Walk initiatives by rank; for each eligible initiative collect its
+    top-priority ready task. Returns one candidate per qualifying
+    initiative, in initiative-rank order.
 
-    t-534: `skip_ids` (reject-loop candidates from
-    `reject_loop_skips`) are excluded from dispatch.
+    This is the constraint walk that `select_task_for_forge` historically
+    inlined (t-441 Rules 1-4). Factoring it out lets both the plain
+    "first by rank" pick and the t-517 pressure-aware rescorer share one
+    source of truth for *which* tasks are dispatchable — the rescorer
+    only changes the ordering among them, never the membership.
     """
     queue = state.get("queue") or []
     complete_ids = {t["id"] for t in queue if t.get("status") == "complete"}
@@ -187,6 +192,7 @@ def select_task_for_forge(state: dict, forge_id: str,
     ]
     initiatives.sort(key=_initiative_rank)
 
+    candidates = []
     for ini in initiatives:
         ini_id = ini.get("id")
         parallelism = ini.get("parallelism", "parallel")
@@ -220,20 +226,163 @@ def select_task_for_forge(state: dict, forge_id: str,
             and _task_is_ready(t, complete_ids)
             and t.get("id") not in (skip_ids or ())
         ]
-        # Respect affinity as a filter once past Rule 2: if the task is
-        # affinity-pinned to a set the forge isn't in, don't dispatch.
-        if affinity and forge_id not in affinity:
-            # Fallback path (no pinned forge is idle) — this forge may
-            # take it only if nobody in affinity is idle. We already
-            # checked that in Rule 2; if we got here, affinity's idle
-            # members are exhausted, so this forge is allowed.
-            pass
         if not ini_tasks:
             continue
         ini_tasks.sort(key=_task_sort_key)
-        return ini_tasks[0]
+        candidates.append(ini_tasks[0])
 
-    return None
+    return candidates
+
+
+# --- t-517: back-pressure-aware conflict-risk scoring ------------------
+#
+# When Assembly's queue is loaded, pushing a task that touches the same
+# files as in-flight work guarantees merge-conflict pain. These heuristics
+# bias dispatch toward orthogonal, low-conflict-risk work *without* ever
+# letting risk override priority (acceptance §f): a higher-priority task
+# always beats a lower one because the risk term is clamped to (-1, 1) —
+# strictly less than one full priority bucket.
+PRESSURE_FLOOR = 0.3            # below this ratio, priority/rank dominates
+RISK_WEIGHT = 2.0
+RISK_CAP = 0.99                 # |risk_term| < 1.0 → priority always wins
+SAME_INITIATIVE_PENALTY = 0.3
+TOUCHES_OVERLAP_PENALTY = 0.5   # per overlapping candidate touch-glob
+SCOPE_HINT_PENALTY = 0.2
+# Stage modifier: implementation conflicts most; marketing/docs least.
+_STAGE_RISK = {
+    "implementation": 0.1,
+    "marketing": -0.1,
+    "docs": -0.1,
+}
+
+
+def _file_tokens(desc: str | None) -> set:
+    """Cheap scope heuristic: file-ish tokens in a task desc — anything
+    ending .py/.md or containing a path separator."""
+    out = set()
+    for raw in (desc or "").split():
+        tok = raw.strip(",.;:()[]{}'\"`")
+        if tok.endswith(".py") or tok.endswith(".md") or "/" in tok:
+            out.add(tok)
+    return out
+
+
+def _glob_overlap(g1: str, g2: str) -> bool:
+    """Two path globs overlap if equal or either matches the other under
+    fnmatch (e.g. 'smithy/' vs 'smithy/*')."""
+    if not g1 or not g2:
+        return False
+    if g1 == g2:
+        return True
+    return fnmatch.fnmatch(g1, g2) or fnmatch.fnmatch(g2, g1)
+
+
+def _count_touch_overlaps(cand_touches: Iterable[str],
+                          in_flight_touches: Iterable[str]) -> int:
+    """Number of candidate touch-globs that overlap any in-flight glob."""
+    inflight = list(in_flight_touches)
+    return sum(1 for c in cand_touches
+               if any(_glob_overlap(c, f) for f in inflight))
+
+
+def conflict_risk_score(state: dict, task: dict, in_flight: list) -> float:
+    """t-517: heuristic risk that dispatching `task` now will collide with
+    work already in flight (Forge `in_progress` + Assembly `submitted`).
+    Higher = riskier. Pure. Reused by the upcoming t-495 claim CLI (§g)."""
+    in_flight_inis = {t.get("initiative_id") for t in in_flight
+                      if t.get("initiative_id")}
+    in_flight_touches: set = set()
+    in_flight_file_toks: set = set()
+    for t in in_flight:
+        in_flight_touches.update(_effective_touches(state, t))
+        in_flight_file_toks |= _file_tokens(t.get("desc"))
+
+    risk = 0.0
+    ini = task.get("initiative_id")
+    if ini and ini in in_flight_inis:
+        risk += SAME_INITIATIVE_PENALTY
+    cand_touches = _effective_touches(state, task)
+    risk += TOUCHES_OVERLAP_PENALTY * _count_touch_overlaps(
+        cand_touches, in_flight_touches)
+    risk += _STAGE_RISK.get(task.get("stage"), 0.0)
+    if in_flight_file_toks and (_file_tokens(task.get("desc"))
+                                & in_flight_file_toks):
+        risk += SCOPE_HINT_PENALTY
+    return risk
+
+
+def effective_score(base_priority: int, risk: float,
+                    pressure_ratio: float) -> float:
+    """t-517 dispatch score (lower wins). base_priority dominates because
+    the risk term is clamped to (-RISK_CAP, RISK_CAP) — strictly inside
+    one priority bucket, so a P0 candidate can never lose to a P1 (§f)."""
+    raw = risk * pressure_ratio * RISK_WEIGHT
+    risk_term = max(-RISK_CAP, min(RISK_CAP, raw))
+    return base_priority + risk_term
+
+
+def select_task_with_pressure(state: dict, forge_id: str,
+                              skip_ids: set | None = None,
+                              pressure_ratio: float = 0.0):
+    """t-517: like `select_task_for_forge` but reorders the dispatchable
+    candidates by conflict risk when Assembly back-pressure is high.
+
+    Returns `(task, decision)`:
+      - `task` — chosen task dict, or None if nothing is dispatchable.
+      - `decision` — None when pressure_ratio < PRESSURE_FLOOR (priority/
+        rank dominates, behaviour identical to t-441). Otherwise a dict
+        {candidate_ids, scores, risks, selected_id, pressure_ratio} the
+        caller emits as the `marshal_pressure_dispatch` rig-event (§e).
+
+    Pure — no IO. The caller computes `pressure_ratio` (= Assembly queue
+    depth / back-pressure threshold, t-516) and does the rig-event write.
+    """
+    candidates = _eligible_candidates(state, forge_id, skip_ids)
+    if not candidates:
+        return None, None
+
+    # Low pressure → keep t-441 ordering exactly (regression guard §a).
+    if pressure_ratio < PRESSURE_FLOOR:
+        return candidates[0], None
+
+    in_flight = _in_flight_tasks(state)
+    scored = []
+    for c in candidates:
+        risk = conflict_risk_score(state, c, in_flight)
+        es = effective_score(int(c.get("priority", 2)), risk, pressure_ratio)
+        # Tie-break (§4): lower score, then shorter desc (smaller scope),
+        # then id for determinism.
+        scored.append((es, len(c.get("desc") or ""), c.get("id", ""), c, risk))
+    scored.sort(key=lambda x: (x[0], x[1], x[2]))
+
+    best = scored[0][3]
+    decision = {
+        "candidate_ids": [c.get("id") for c in candidates],
+        "scores": {s[3].get("id"): round(s[0], 4) for s in scored},
+        "risks": {s[3].get("id"): round(s[4], 4) for s in scored},
+        "selected_id": best.get("id"),
+        "pressure_ratio": round(pressure_ratio, 4),
+    }
+    return best, decision
+
+
+def select_task_for_forge(state: dict, forge_id: str,
+                          skip_ids: set | None = None,
+                          *, pressure_ratio: float = 0.0) -> dict | None:
+    """Walk initiatives by rank and return the first ready task that
+    passes every constraint for `forge_id`. None if nothing qualifies.
+
+    t-534: `skip_ids` (reject-loop candidates from
+    `reject_loop_skips`) are excluded from dispatch.
+
+    t-517: when `pressure_ratio` (Assembly back-pressure) is >=
+    PRESSURE_FLOOR, the dispatchable candidates are reordered by conflict
+    risk via `select_task_with_pressure`. At pressure_ratio=0.0 (the
+    default) the behaviour is identical to the original t-441 walk.
+    """
+    task, _decision = select_task_with_pressure(
+        state, forge_id, skip_ids, pressure_ratio)
+    return task
 
 
 def claim_task_for_forge(state: dict, forge_id: str,
