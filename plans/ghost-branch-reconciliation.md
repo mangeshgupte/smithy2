@@ -134,3 +134,32 @@ Re-confirmed each against current main (cherry + work-commit + file/functionalit
 ## Open items for Anvil / Marshal
 1. **File the fresh "bellows-window-health patrol check" task** (use forge-anneal/t-463 as reference), then prune t-463.
 2. **Reclassify complete→obsolete** (no CLI command — needs Marshal/Anvil) for the pruned-but-genuinely-obsolete tasks: t-535, t-474 (optionally t-457/t-469/t-561) so queue status reflects truth, not just branch absence.
+
+---
+
+# t-591 — FINISH: check #19 == 0 ✅
+
+The two held items from t-588/t-590 both landed on main since pass #2:
+
+| item | status | confirmation |
+|---|---|---|
+| **t-589** (fresh bellows-window-health patrol check, Anvil-filed from t-463) | MERGED `70fb862` / `c08abb9` | main's `smithy patrol` now runs **20 checks** (was 19); cli.py bellows refs 2 → 20. The t-463 bellows gap is **filled**. |
+| **forge-anneal/t-463** | **PRUNED** (was a8954e0) | bellows concern covered by t-589 (#20); tmux-layout.sh concern superseded by start-smithy.sh. Work confirmed in main → safe to delete. |
+| **t-472** (teammate-idle `tasks`→`queue` fix) | MERGED `8f8294d` | main's `hooks/teammate-idle.sh` now reads `state.get('queue', [])` — the live bug is fixed. Branch already deleted by Assembly on merge. |
+
+### Final confirmation (`smithy patrol`)
+- **checks_run: 20** · **ghost-branch (check #19) discrepancies: 0** ✅
+- No `forge-*/t-*` branches remain for any of the original 11 ids.
+- `clean: false` overall, but the 2 remaining discrepancies are **unrelated** to ghost branches and **out of t-591 scope**:
+  1. `comms-tick.sh cron line missing while rig is up` — Comms cron not installed.
+  2. `bellows tmux window 'bellows' missing while rig is up` — the Bellows dashboard/API is down. *(This is t-589's brand-new check #20 working as intended — flagging a real ops issue.)*
+  → flagged to Marshal/Anvil separately.
+
+## Reconciliation CLOSED
+Original 13 ghost branches: **11 pruned** (t-445, t-450, t-537×3, t-457, t-469, t-561, t-535, t-474, t-463) · **2 resubmitted→merged** (t-432 forge-status.sh, t-472 teammate-idle fix). **check #19 = 0.**
+
+Residual (queue-cosmetic, not check #19): complete→obsolete reclassification for the
+genuinely-obsolete tasks (t-535/t-474/…) still has no CLI and was **not** done via a
+raw state.json edit (live-state race risk / "no direct edits" invariant) — left for
+Marshal/Anvil. Pruning already removed the ghost aspect, and each pruned task's
+capability is either in main or ruled obsolete, so `complete` is not misleading.
