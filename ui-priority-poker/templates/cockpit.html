@@ -238,7 +238,10 @@
     </script>
 </head>
 <body>
-    <div class="reading">
+    <!-- t-586: NO .reading wrapper here. The cockpit is a wide multi-column
+         task table; t-579's .reading{max-width:750px} cap squished it and
+         re-wasted the side gutters t-547 deliberately removed. Standalone
+         /cockpit renders full-bleed; .reading stays for activity.html (prose). -->
     <nav class="steering-nav">
         {% for label, url, active in nav_links %}
         <a href="{{ url }}" class="nav-link{% if active %} active{% endif %}">{{ label }}</a>
@@ -963,6 +966,5 @@
     setInterval(loadRows, 15000);
     loadRows();
     </script>
-    </div>
 </body>
 </html>
