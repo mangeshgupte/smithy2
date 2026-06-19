@@ -72,8 +72,41 @@ _resolve_ui_pane() {  # <name> → pane_id or empty
   return 1
 }
 
+# t-583: PIDs of the SERVER process(es) holding <port> as their LOCAL
+# endpoint. Used to force-free the port after a graceful-shutdown hang.
+#
+# Critical gotcha (Anvil poker-bounce incident 2026-06-19): when a browser
+# tab holds an SSE /events stream, uvicorn enters graceful shutdown and the
+# stuck python is usually NOT in LISTEN — it sits in ESTABLISHED with the
+# LOCAL endpoint = 127.0.0.1:<port>. So we must NOT filter on -sTCP:LISTEN;
+# we list ALL TCP for the port and keep only rows whose LOCAL address (the
+# part before '->') ends in :<port>. That deliberately excludes the browser
+# CLIENT, whose LOCAL port is ephemeral and whose FOREIGN (post-'->') addr
+# is :<port>. A python/uvicorn command guard is a second safety net.
+_port_server_pids() {  # <port> → one PID per line (server side only)
+  local port="$1" pid="" cmd="" line addr local_addr
+  while IFS= read -r line; do
+    case "$line" in
+      p*) pid="${line#p}"; cmd="" ;;
+      c*) cmd="${line#c}" ;;
+      n*)
+        addr="${line#n}"
+        local_addr="${addr%%->*}"   # drop FOREIGN side of an ESTABLISHED row
+        local_addr="${local_addr%% *}"  # drop trailing " (LISTEN)"/" (ESTABLISHED)"
+        case "$local_addr" in
+          *:"$port")
+            case "$cmd" in
+              [Pp]ython*|uvicorn*) echo "$pid" ;;
+            esac
+            ;;
+        esac
+        ;;
+    esac
+  done < <(lsof -nP -iTCP:"$port" -Fpcn 2>/dev/null)
+}
+
 _bounce() {  # <name>
-  local name="$1" pid port cmd
+  local name="$1" pid port cmd held
   port="$(_ui_port "$name")"
   pid="$(_resolve_ui_pane "$name")" || {
     echo "restart-ui: no pane for '$name' in ${FORGE_SESSION}:${FORGE_UI_WINDOW}" >&2
@@ -86,6 +119,21 @@ _bounce() {  # <name>
   # hang on open SSE streams.
   tmux send-keys -t "$pid" C-c
   sleep 1
+
+  # t-583: if a held SSE stream kept uvicorn in graceful shutdown, the port
+  # is still bound and the pane is at a non-prompt — the relaunch we type
+  # below would never run. Force-free the port: kill -9 the server holder(s),
+  # then C-c the pane to clear any half-typed line before relaunching.
+  held="$(_port_server_pids "$port" | sort -u)"
+  if [[ -n "$held" ]]; then
+    echo "restart-ui: :$port still held after C-c (graceful-shutdown hang) — kill -9 $(echo $held)" >&2
+    # shellcheck disable=SC2086
+    kill -9 $held 2>/dev/null || true
+    sleep 1
+    tmux send-keys -t "$pid" C-c
+    sleep 1
+  fi
+
   cmd="$(_launch_cmd "$FORGE_ROOT/$(_ui_dir "$name")" "$port")"
   tmux send-keys -t "$pid" "$cmd" C-m
 
