@@ -4,7 +4,7 @@ Covers:
   * `_comms_patrol_issues` pure decision logic (disabled / halted / rig
     down / cron-missing / window-missing / both-present / None sentinels)
   * the subprocess probes with PATH-shimmed fake `crontab` and `tmux`
-  * end-to-end: `smithy patrol` reports checks_run == 18 and surfaces the
+  * end-to-end: `smithy patrol` reports checks_run >= 18 and surfaces the
     comms issue when the rig is up but the comms window is gone
 """
 
@@ -178,13 +178,16 @@ def _run_patrol(proj, env_bin=None, extra_env=None):
 
 
 class TestPatrolIntegration:
-    def test_checks_run_is_18(self, tmp_path):
+    def test_checks_run_at_least_18(self, tmp_path):
         proj = _init_project(tmp_path)
         # No rig session live (real tmux has-session for a random name
-        # fails) → comms check skips, but checks_run still reports 18.
+        # fails) → comms check skips, but checks_run still reports the
+        # full count. `>=` (not `==18`) so adding a later check (t-552
+        # made it 19) doesn't force-conflict this assertion — the exact
+        # self-collision that bounced t-488/t-552 the first time.
         out = _run_patrol(proj, extra_env={"FORGE_SESSION":
                                            "forge-t488-nope"})
-        assert out["checks_run"] == 18
+        assert out["checks_run"] >= 18
 
     def test_comms_window_missing_surfaced(self, tmp_path):
         proj = _init_project(tmp_path)
