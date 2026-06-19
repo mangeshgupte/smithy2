@@ -628,39 +628,89 @@ def start_heat(ctx, stage, task_id, forge_id, reuse_scratch):
 
         # Set task to in_progress if specified
         if task_id:
+            target = None
             for task in state.get("queue", []):
                 if task["id"] == task_id:
-                    # t-543: claim-task (ini-024 T2) flips a task to
-                    # in_progress BEFORE start-heat runs, so the documented
-                    # claim→start flow used to die on the pending-only
-                    # check. Accept in_progress when WE are the claimer
-                    # (idempotent re-entry); reject a sibling's claim, and
-                    # reject unattributed in_progress — no sanctioned path
-                    # leaves a claim unstamped, so that's an orphan for
-                    # patrol, not a startable heat.
-                    if task["status"] == "in_progress":
-                        claimer = task.get("assigned_forge")
-                        if claimer != forge_id:
-                            _output({
-                                "error": f"Task {task_id} is in_progress, "
-                                         f"claimed by {claimer or 'nobody'} "
-                                         f"(you are {forge_id})"
-                                         + ("" if claimer else
-                                            " — run `smithy patrol --fix` "
-                                            "to reap the orphan"),
-                                "claimed_by": claimer,
-                                "forge_id": forge_id,
-                            })
-                            sys.exit(1)
-                    elif task["status"] != "pending":
-                        _output({"error": f"Task {task_id} is {task['status']}, not pending"})
-                        sys.exit(1)
-                    task["status"] = "in_progress"
-                    task_desc = task["desc"]
+                    target = task
                     break
-            else:
+            if target is None:
                 _output({"error": f"Task {task_id} not found in queue"})
                 sys.exit(1)
+
+            status = target.get("status")
+            claimer = target.get("assigned_forge")
+            complete_ids = {t["id"] for t in state.get("queue", [])
+                            if t.get("status") == "complete"}
+
+            # t-543: accept an in_progress task only when WE are its
+            # claimer (idempotent claim→start re-entry). A sibling's claim
+            # or an unattributed orphan is not startable here — no
+            # sanctioned path leaves a claim unstamped, so that's patrol's
+            # to reap, not a startable heat.
+            if status == "in_progress" and claimer != forge_id:
+                _output({
+                    "error": f"Task {task_id} is in_progress, "
+                             f"claimed by {claimer or 'nobody'} "
+                             f"(you are {forge_id})"
+                             + ("" if claimer else
+                                " — run `smithy patrol --fix` "
+                                "to reap the orphan"),
+                    "claimed_by": claimer,
+                    "forge_id": forge_id,
+                })
+                sys.exit(1)
+
+            # t-577: the claim→start-heat RESUME seam must re-validate the
+            # gate instead of blindly resuming. A task that's been deferred
+            # or completed since we were pinned to it must NOT restart —
+            # this is how forge-anneal resumed the gated t-538 migration
+            # after Marshal deferred it. Release our pin (so the next
+            # reconciliation tick doesn't re-surface it) and idle. The
+            # budget bump above is undone first so a refused resume never
+            # burns a heat.
+            if status in ("deferred", "complete"):
+                released = (claimer == forge_id)
+                if released:
+                    target["assigned_forge"] = None
+                    budget["used"] = heat_number - 1   # undo the bump
+                    save_state(root, state)
+                _output({
+                    "error": f"Task {task_id} is {status}, not resumable"
+                             + (" — released pin, idling" if released
+                                else ""),
+                    "status": status, "released": released,
+                    "forge_id": forge_id,
+                })
+                sys.exit(1)
+
+            if status not in ("pending", "in_progress"):
+                _output({"error": f"Task {task_id} is {status}, "
+                                  f"not pending"})
+                sys.exit(1)
+
+            # t-577: on resume (in_progress pinned to us), re-check
+            # blocked_by — deps may have regressed or never been met when
+            # the claim→start seam skipped this. If unmet, release to
+            # pending (clear the pin) and idle rather than run gated work.
+            if status == "in_progress":
+                unmet = [d for d in (target.get("blocked_by") or [])
+                         if d not in complete_ids]
+                if unmet:
+                    target["assigned_forge"] = None
+                    target["status"] = "pending"
+                    budget["used"] = heat_number - 1   # undo the bump
+                    save_state(root, state)
+                    _output({
+                        "error": f"Task {task_id} resume refused — "
+                                 f"blocked_by {unmet} not complete; "
+                                 f"released to pending, idling",
+                        "blocked_by": unmet, "released": True,
+                        "forge_id": forge_id,
+                    })
+                    sys.exit(1)
+
+            target["status"] = "in_progress"
+            task_desc = target["desc"]
 
         # t-544: keep the registry honest — patrol's orphan-checkpoint
         # heuristic reads parallel.forges[].status, and a stale "idle"
