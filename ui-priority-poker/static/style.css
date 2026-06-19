@@ -28,10 +28,14 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     background: var(--bg);
     color: var(--text);
-    max-width: 750px;
-    margin: 0 auto;
     padding: 30px;
 }
+
+/* t-579: reading-measure opt-in. The global body went full-bleed (it was
+   max-width:750px;margin:0 auto, which strangled the poker 3-pane grid to a
+   centered 750px column — t-571 strangler recurrence). Standalone text pages
+   opt back into a readable measure by wrapping their content in .reading. */
+.reading { max-width: 750px; margin: 0 auto; }
 
 header { text-align: center; padding: 20px 0; }
 header h1 { font-size: 30px; letter-spacing: -0.5px; }
