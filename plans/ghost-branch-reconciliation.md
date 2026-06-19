@@ -108,3 +108,29 @@ reclassification must be done by Marshal/Anvil, not Forge.
 - Still-open from t-584 (out of t-588 scope, need their own disposition pass):
   t-457, t-469, t-561 (likely-superseded → prune after confirm), t-535 (obsolete),
   t-472 (ambiguous). Surfacing for a follow-up cleanup task.
+
+---
+
+# t-590 — Disposition pass #2 (the 5 still-open + Anvil's t-474 ruling)
+
+Re-confirmed each against current main (cherry + work-commit + file/functionality).
+
+| branch | disposition | action | evidence |
+|---|---|---|---|
+| forge-quench/t-457 | SUPERSEDED → **PRUNED** | `git branch -D` (was e882c32) | main's assembly.py has the staging-worktree machinery (21 refs) + the `.worktrees/_assembly-staging` worktree exists (ini-020 batched staging). t-457's decoupling goal is met. |
+| forge-quench/t-469 | SUPERSEDED → **PRUNED** | `git branch -D` (was 1f6513d) | main's assembly.py has stash logic (16 refs); ops commit `ce5a2dc` landed the "main stash-pop fix". |
+| forge-quench/t-561 | LANDED-DIFFERENTLY → **PRUNED** | `git branch -D` (was 29b4377) | main has `c93ccb2 [testing] t-561` + the t-527 edits; branch was a stale pre-rebase variant. |
+| forge-anneal/t-535 | OBSOLETE → **PRUNED** (no resubmit) | `git branch -D` (was c1ba80b) | t-516 backpressure-multiplier IS in main (39 refs, landed elsewhere); the namespace-import rework was re-canonicalized by t-539/t-549 → resubmit would conflict/be redundant. |
+| **forge-quench/t-472** | ⚠️ **NOT ambiguous — LIVE BUGFIX, not in main → RESUBMITTED** | `resubmit-task t-472` (→ submitted, @19788391) | main's `hooks/teammate-idle.sh` STILL reads `state.get('tasks', [])` — the schema key is `'queue'`, so the idle hook always sees **0 pending** (broken). t-472 fixes `tasks`→`queue`; applies clean. A real not-landed fix, NOT superseded. |
+| forge-anneal/t-474 | OBSOLETE (Anvil ruling) → **PRUNED** | `git branch -D` (was 9f1563c) | Anvil decided ini-021 forge-auto-clear is deprecated (CLAUDE.md rewrite dropped the /clear-hook). Pruned per decision. |
+
+## Final reconciliation summary (original 13 ghost branches)
+- **Pruned 10** (landed/superseded/obsolete): t-445, t-450, t-537×3 (t-584); t-457, t-469, t-561, t-535, t-474 (t-590).
+- **Resubmitted 2** (still-wanted, applied clean): **t-432** (forge-status.sh — main dangling-refs it; now merged) and **t-472** (teammate-idle.sh live bugfix — in Assembly queue).
+- **Held 1**: forge-anneal/t-463 — bellows-window-health patrol check is a genuine coverage gap; branch is stale (won't apply). Kept as the reference impl for a fresh re-implementation.
+
+**Remaining ghost branches: 2** (t-472 clears on merge; t-463 clears when the fresh bellows-patrol-check task lands) → check #19 driven **13 → ~1** (t-463).
+
+## Open items for Anvil / Marshal
+1. **File the fresh "bellows-window-health patrol check" task** (use forge-anneal/t-463 as reference), then prune t-463.
+2. **Reclassify complete→obsolete** (no CLI command — needs Marshal/Anvil) for the pruned-but-genuinely-obsolete tasks: t-535, t-474 (optionally t-457/t-469/t-561) so queue status reflects truth, not just branch absence.
