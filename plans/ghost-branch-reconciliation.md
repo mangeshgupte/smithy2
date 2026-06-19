@@ -84,3 +84,27 @@ is absent. Not lost, just redundant. Held (guardrail) pending confirmation.
    (t-457, t-469, t-561) and t-535 to drive check #19 to 0.
 3. Consider a status correction for any task confirmed abandoned (complete →
    not-complete) so the queue reflects truth.
+
+---
+
+# t-588 — Final disposition of the 3 false-completes
+
+Re-confirmed each against **current main** (post-t-584 merge). All 3 deliverable
+files remain MISSING from main.
+
+| branch | disposition | action taken | reason / evidence |
+|---|---|---|---|
+| **forge-anneal/t-432** (scripts/forge-status.sh) | ✅ STILL-WANTED → **RESUBMITTED** | `resubmit-task t-432` → status `submitted`, branch `forge-anneal/t-432@e264a564` enqueued for Assembly | main's `cli.py:4781` reap-suggestion literally says *"Inspect the pane (scripts/forge-status.sh)…"* — a **dangling reference to a script main expects but lacks**. Branch applies CLEAN to current main. Re-gating restores the per-forge dashboard + fixes the broken reference. (No per-forge *dashboard* exists in `smithy status`/`stats`/`sessions`.) |
+| **forge-anneal/t-463** (tmux-layout.sh + patrol check #13) | SPLIT — layout SUPERSEDED, **patrol check = genuine GAP → FRESH RE-IMPL** | flag Anvil; branch **kept** as reference (do NOT prune); not resubmitted | `scripts/tmux-layout.sh` superseded by `scripts/start-smithy.sh` (91 tmux ops builds the layout). BUT main's `smithy patrol` has **NO bellows-window-health check** (only 2 unrelated "bellows" refs). The check is real missing coverage. Branch does **NOT apply clean** (stale cli.py base) → don't force-resubmit. **Recommend Anvil file a fresh task:** "add a bellows-window-health check to `smithy patrol` on current main," using forge-anneal/t-463's check#13 as the reference impl. |
+| **forge-anneal/t-474** (hooks/forge-auto-clear.sh + settings.json) | ⚠️ NEEDS ANVIL DECISION (resubmit vs obsolete) | flag Anvil; **neither** resubmitted nor pruned | main has **no** forge context-reset/auto-clear hook (the `TaskCompleted` hook just runs `smithy complete-task`; cli.py:4530 only *describes* a manual `/clear` workflow). Branch applies CLEAN → resubmittable. **BUT** the persona `CLAUDE.md` was rewritten this session and **dropped the `/clear`-hook / auto-clear references** — a strong signal ini-021 auto-clear was **intentionally deprecated**. Strategic call → **Anvil decides**: resubmit if still wanted, else reclassify complete→obsolete. Per Marshal: do NOT blind-resubmit. |
+
+**No `obsolete` status command exists** (`complete-task` only) — any complete→obsolete
+reclassification must be done by Marshal/Anvil, not Forge.
+
+### check #19 trajectory
+- After t-584: 13 → 8 (pruned 5 landed).
+- After t-588: t-432 resubmitted (clears to **7** once Assembly merges it). t-463 +
+  t-474 remain flagged pending Anvil decisions.
+- Still-open from t-584 (out of t-588 scope, need their own disposition pass):
+  t-457, t-469, t-561 (likely-superseded → prune after confirm), t-535 (obsolete),
+  t-472 (ambiguous). Surfacing for a follow-up cleanup task.
