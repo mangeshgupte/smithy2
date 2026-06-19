@@ -249,14 +249,38 @@
     </div><!-- /poker-col-left -->
 
     <div class="poker-col poker-col-right">
-    <!-- t-571: right pane defaults to the cockpit task table; the detail
-         drawer (below) slides over and hides this when a task is opened. -->
-    <iframe id="cockpit-frame" class="cockpit-frame" src="/cockpit" title="Cockpit — task table"></iframe>
+    <!-- t-592: native cockpit list (no iframe — fetches /api/cockpit and renders
+         compact rows: id · priority · title · status dot). Replaces the t-571
+         <iframe src=/cockpit>, which loaded the full cockpit page (its own nav +
+         header) into ~460px — the t-547/t-571 "don't iframe full pages" wart.
+         Clicking a row swaps this pane IN-PLACE to the task detail below (no
+         overlay); the ← back control returns to the list. Default view = list. -->
+    <div class="cockpit-rail" id="cockpit-rail">
+        <div class="cockpit-rail-head">
+            <span>Cockpit</span>
+            <span id="cockpit-rail-count" class="muted"></span>
+        </div>
+        <div class="cockpit-rail-tools">
+            <input id="cockpit-rail-q" type="search" placeholder="filter id / title…"
+                   oninput="renderCockpitRail()" aria-label="Filter cockpit" />
+            <select id="cockpit-rail-status" onchange="renderCockpitRail()" aria-label="Status filter">
+                <option value="">all</option>
+                <option value="pending">pending</option>
+                <option value="in_progress">in progress</option>
+                <option value="submitted">submitted</option>
+                <option value="complete">complete</option>
+                <option value="deferred">deferred</option>
+            </select>
+        </div>
+        <ul class="cockpit-rail-list" id="cockpit-rail-list">
+            <li class="cockpit-rail-empty">Loading…</li>
+        </ul>
+    </div>
 
-    <!-- Task detail side drawer (t-325) -->
-    <div id="task-detail-backdrop" class="task-detail-backdrop" onclick="closeTaskDetail()"></div>
+    <!-- Task detail (t-325) — rendered IN-PLACE in this right pane (t-592),
+         not as the old fixed slide-over. -->
     <aside id="task-detail" class="task-detail" aria-hidden="true" role="dialog" aria-labelledby="td-id">
-        <button class="task-detail-close" onclick="closeTaskDetail()" aria-label="Close" title="Close (ESC)">×</button>
+        <button class="rail-back" onclick="closeTaskDetail()" title="Back to cockpit (ESC)">← Back to cockpit</button>
         <div class="task-detail-body">
             <div class="td-identity">
                 <div class="td-id" id="td-id">—</div>
@@ -407,8 +431,8 @@
         url.searchParams.set('task', taskId);
         window.history.replaceState({}, '', url);
         document.getElementById('task-detail').setAttribute('aria-hidden', 'false');
-        document.getElementById('task-detail-backdrop').classList.add('show');
-        // t-571: hide the cockpit beneath so the detail "replaces" the right pane.
+        // t-592: swap the right pane in-place — hide the cockpit list (CSS keys
+        // off .detail-open) and show the detail. The ← back control returns.
         document.querySelector('.poker-col-right')?.classList.add('detail-open');
         document.getElementById('td-id').textContent = taskId;
         document.getElementById('td-desc').textContent = 'Loading…';
@@ -421,13 +445,63 @@
     function closeTaskDetail() {
         currentDetailTaskId = null;
         document.getElementById('task-detail').setAttribute('aria-hidden', 'true');
-        document.getElementById('task-detail-backdrop').classList.remove('show');
-        // t-571: restore the cockpit in the right pane.
+        // t-592: restore the cockpit list in the right pane.
         document.querySelector('.poker-col-right')?.classList.remove('detail-open');
         const url = new URL(window.location);
         url.searchParams.delete('task');
         window.history.replaceState({}, '', url);
     }
+
+    // t-592: native cockpit list in the right pane (replaces the t-571 iframe).
+    // Renders /api/cockpit rows compactly (id · priority · title · status dot);
+    // a row click opens the task detail in-place via openTaskDetail(). Filtering
+    // is server-side via the existing q/status query params (no backend change).
+    function renderCockpitRail() {
+        const q = (document.getElementById('cockpit-rail-q')?.value || '').trim();
+        const status = document.getElementById('cockpit-rail-status')?.value || '';
+        const params = new URLSearchParams();
+        if (q) params.set('q', q);
+        if (status) params.set('status', status);
+        const qs = params.toString();
+        fetch('/api/cockpit' + (qs ? ('?' + qs) : ''))
+            .then(r => r.json())
+            .then(data => {
+                const list = document.getElementById('cockpit-rail-list');
+                if (!list) return;
+                const rows = data.rows || [];
+                const countEl = document.getElementById('cockpit-rail-count');
+                if (countEl) countEl.textContent =
+                    (data.filtered ?? rows.length) + '/' + (data.total ?? rows.length);
+                if (!rows.length) {
+                    list.innerHTML = '<li class="cockpit-rail-empty">No tasks match.</li>';
+                    return;
+                }
+                list.innerHTML = '';
+                for (const r of rows) {
+                    const li = document.createElement('li');
+                    li.className = 'cockpit-rail-row';
+                    li.onclick = (e) => openTaskDetail(e, r.id);
+                    const prio = (r.human_priority != null) ? ('you:p' + r.human_priority)
+                               : (r.priority != null ? ('p' + r.priority) : '');
+                    const title = r.title || r.desc || '';
+                    const mk = (cls, text) => {
+                        const s = document.createElement('span'); s.className = cls;
+                        if (text != null) s.textContent = text; return s;
+                    };
+                    const titleSpan = mk('cr-title', title); titleSpan.title = title;
+                    li.append(mk('cr-id', r.id), mk('cr-prio', prio), titleSpan,
+                              mk('cr-dot s-' + (r.status || 'pending')));
+                    list.appendChild(li);
+                }
+            })
+            .catch(() => {
+                const list = document.getElementById('cockpit-rail-list');
+                if (list) list.innerHTML =
+                    '<li class="cockpit-rail-empty">Failed to load cockpit.</li>';
+            });
+    }
+    renderCockpitRail();
+    setInterval(renderCockpitRail, 8000);
 
     function renderTaskDetail(data) {
         const t = data.task;

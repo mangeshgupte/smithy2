@@ -525,22 +525,47 @@ html.poker-page { overflow-x: hidden; }
     max-height: 60vh; box-shadow: none; z-index: auto;
 }
 .poker-col-left .rig-metrics { margin: 0; }
-/* Right pane: embedded cockpit. */
-.cockpit-frame {
-    width: 100%;
-    height: calc(100vh - 150px);
-    border: 1px solid var(--border, #30363d);
-    border-radius: 8px;
-    background: var(--surface, #161b22);
-}
-.poker-col-right.detail-open .cockpit-frame { display: none; }
-/* The detail drawer keeps its proven fixed right-anchored slide-in; opening
-   it hides the cockpit beneath (detail-open), so it reads as replacing the
-   right pane, and its existing × control returns to the cockpit. */
+/* t-592: native cockpit list in the right pane (replaces the t-571 iframe). */
+.cockpit-rail { display: flex; flex-direction: column; gap: 8px; }
+.cockpit-rail-head { display: flex; align-items: center; justify-content: space-between;
+    font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.cockpit-rail-tools { display: flex; gap: 6px; }
+.cockpit-rail-tools input, .cockpit-rail-tools select {
+    font: inherit; font-size: 12px; padding: 4px 6px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 5px; color: var(--text); }
+.cockpit-rail-tools input { flex: 1; min-width: 0; }
+.cockpit-rail-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column;
+    max-height: calc(100vh - 210px); overflow-y: auto; }
+.cockpit-rail-row { display: flex; align-items: center; gap: 7px; padding: 6px 8px;
+    border-bottom: 1px solid var(--surface); cursor: pointer; font-size: 12.5px; }
+.cockpit-rail-row:hover { background: var(--surface-hover); }
+.cockpit-rail-row .cr-id { color: var(--blue); font-family: ui-monospace, monospace; flex-shrink: 0; }
+.cockpit-rail-row .cr-prio { color: var(--text-muted); font-size: 11px; flex-shrink: 0; }
+.cockpit-rail-row .cr-title { flex: 1; min-width: 0; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+.cockpit-rail-row .cr-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--text-muted); }
+.cr-dot.s-in_progress { background: var(--blue); }
+.cr-dot.s-submitted { background: var(--yellow); }
+.cr-dot.s-complete { background: var(--green); }
+.cr-dot.s-deferred { background: #555; }
+.cockpit-rail-empty { color: var(--text-muted); font-size: 12px; padding: 12px 8px; }
+
+/* t-592: task detail rendered IN-PLACE in the right pane (no overlay/backdrop).
+   Override the standalone fixed slide-over positioning so it flows in-column. */
+.poker-col-right #task-detail {
+    position: static; transform: none; width: auto; height: auto;
+    inset: auto; box-shadow: none; background: transparent; z-index: auto;
+    border-left: none; overflow: visible; }
+.poker-col-right #task-detail .task-detail-body { padding: 4px 0 24px; }
+.rail-back { background: none; border: 1px solid var(--border); border-radius: 5px;
+    color: var(--blue); cursor: pointer; font-size: 12px; padding: 4px 10px; margin-bottom: 10px; }
+.rail-back:hover { background: var(--surface); }
+.poker-col-right.detail-open .cockpit-rail { display: none; }
+.poker-col-right:not(.detail-open) #task-detail { display: none; }
 @media (max-width: 1180px) {
     .poker-grid { grid-template-columns: 1fr; }
     /* grid-row: auto so each pane auto-places into its own row and they
        stack (t-587) instead of overlapping in the single row-1 cell. */
     .poker-col-left, .poker-col-center, .poker-col-right { grid-column: 1; grid-row: auto; }
-    .cockpit-frame { height: 70vh; }
+    .cockpit-rail-list { max-height: 60vh; }
 }
