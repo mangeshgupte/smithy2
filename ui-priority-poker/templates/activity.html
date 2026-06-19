@@ -32,6 +32,7 @@
     </style>
 </head>
 <body>
+    <div class="reading">
     <nav class="steering-nav">
         {% for label, url, active in nav_links %}
         <a href="{{ url }}" class="nav-link">{{ label }}</a>
@@ -131,5 +132,6 @@
     }
     loadLog();
     </script>
+    </div>
 </body>
 </html>
