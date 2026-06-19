@@ -8,7 +8,7 @@ PENDING=$(python3 -c "
 import json, sys
 with open('state.json') as f:
     state = json.load(f)
-tasks = state.get('tasks', [])
+tasks = state.get('queue', [])
 pending = [t for t in tasks if t.get('status') == 'pending']
 print(len(pending))
 " 2>/dev/null)
