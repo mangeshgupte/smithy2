@@ -493,6 +493,15 @@ code {
    RIGHT = cockpit (default) or, when a task is open, the detail drawer
    which slides over and the cockpit hides beneath it. Columns are placed
    by grid-column so DOM order need not match visual order. */
+/* t-587: the poker index hosts the slide-in task-detail drawer, which sits
+   off-screen right (position:fixed; transform:translateX(100%)) when closed.
+   That off-canvas box adds ~50px of horizontal scroll at narrower desktop
+   widths once the 3 panes are side-by-side. The drawer is anchored to the
+   viewport (the scrolling element is <html>), so the clip must go on <html>
+   — overflow-x:hidden on <body> does NOT suppress it. Scoped via the
+   <html class="poker-page"> hook so the standalone /cockpit wide table keeps
+   its own horizontal scroll. */
+html.poker-page { overflow-x: hidden; }
 .poker-grid {
     display: grid;
     grid-template-columns: 320px minmax(0, 1fr) minmax(0, 460px);
@@ -500,9 +509,15 @@ code {
     align-items: start;
     padding: 0 16px 32px;
 }
-.poker-col-left   { grid-column: 1; display: flex; flex-direction: column; gap: 18px; }
-.poker-col-center { grid-column: 2; min-width: 0; }
-.poker-col-right  { grid-column: 3; position: relative; min-width: 0; }
+/* t-587: pin all three to row 1. The columns are placed by grid-column but
+   DOM order is center-first; without an explicit grid-row, sparse
+   auto-placement can't backfill the left column (col 1) into row 1 after the
+   center (col 2) and bumps left+right into an implicit row 2 — which reads as
+   the panes "stacking" below the tall center column. The single-column media
+   query below resets grid-row to auto so the narrow layout stacks normally. */
+.poker-col-left   { grid-column: 1; grid-row: 1; display: flex; flex-direction: column; gap: 18px; }
+.poker-col-center { grid-column: 2; grid-row: 1; min-width: 0; }
+.poker-col-right  { grid-column: 3; grid-row: 1; position: relative; min-width: 0; }
 /* Override the standalone fixed/overlay positioning of left-column widgets
    so they flow in-place inside the grid column. */
 .poker-col-left .activity-panel {
@@ -524,6 +539,8 @@ code {
    right pane, and its existing × control returns to the cockpit. */
 @media (max-width: 1180px) {
     .poker-grid { grid-template-columns: 1fr; }
-    .poker-col-left, .poker-col-center, .poker-col-right { grid-column: 1; }
+    /* grid-row: auto so each pane auto-places into its own row and they
+       stack (t-587) instead of overlapping in the single row-1 cell. */
+    .poker-col-left, .poker-col-center, .poker-col-right { grid-column: 1; grid-row: auto; }
     .cockpit-frame { height: 70vh; }
 }
