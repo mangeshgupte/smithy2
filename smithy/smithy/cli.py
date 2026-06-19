@@ -5921,6 +5921,51 @@ def _comms_patrol_issues(window, session_live, halt_flag,
     return out
 
 
+# --- t-552 (ini-024): ghost-complete reconciliation -------------------
+#
+# The mirror of patrol's zombie-submitted check (#17): a task marked
+# `complete` whose per-task branch never actually landed. t-527 was the
+# motivating incident — status=complete in state.json, branch
+# forge-quench/t-527 unmerged, absent from the assembly queue; the
+# human-requested cockpit polish was silently missing from main until a
+# Forge noticed at h1235. state.json + git are the sources of truth; a
+# `complete` row that git can't corroborate is a lie in the record.
+#
+# Root cause (traced for t-527, cli.py end-heat ~L816): the complete->
+# submitted promotion reads `assembly_enabled` from a state peek taken
+# OUTSIDE the lock. When that peek comes from a stale worktree state.json
+# (the --dir / find_project_root hazard), `assembly_enabled` reads False,
+# so an `--outcome complete` heat terminates as status=complete WITHOUT
+# enqueuing the branch for Assembly — the branch never merges, the work
+# vanishes from main, and nothing flags it. This check is the backstop.
+
+def _ghost_complete_issues(complete_tasks, jsonl_task_ids, primary,
+                           branch_state) -> list:
+    """Pure decision: which `complete` tasks are ghost-completes.
+
+    `branch_state` maps a per-task branch name to one of:
+      - "merged"   — branch tip is an ancestor of main (work landed)
+      - "unmerged" — branch exists but its tip is NOT on main
+      - "gone"     — branch absent (Assembly merged + deleted it; normal)
+
+    A ghost-complete is a `complete` task whose branch is "unmerged" AND
+    has no `.assembly-queue.jsonl` row — the work never landed and nothing
+    is going to merge it. A "gone" branch is the *expected* post-merge
+    state, never a discrepancy. Returns [(task_id, branch, issue_str)].
+    """
+    out = []
+    for ct in complete_tasks:
+        fid = ct.get("assigned_forge") or primary
+        br = f"{fid}/{ct['id']}"
+        if branch_state.get(br, "gone") == "unmerged" \
+                and ct["id"] not in jsonl_task_ids:
+            out.append((ct["id"], br,
+                f"{ct['id']} status=complete but branch {br} is not merged "
+                f"into main and has no assembly-queue row — ghost-complete "
+                f"(work missing from main, never landed)"))
+    return out
+
+
 @cli.command("patrol")
 @click.option("--fix", is_flag=True, help="Auto-fix simple discrepancies")
 @click.pass_context
@@ -6451,6 +6496,33 @@ def patrol(ctx, fix):
                     fixes.append(
                         f"Relaunched comms tmux window '{_comms_window}'")
 
+    # 19. t-552: ghost-complete detector (mirror of #17). For every task
+    # marked `complete` with a still-present per-task branch, verify the
+    # branch tip landed on main OR an assembly-queue row exists; flag the
+    # rest as ghost-completes (state lies; work is missing from main).
+    # No auto-fix — the operator decides whether to resubmit or accept.
+    # A branch that's GONE is the normal post-merge state (Assembly
+    # deletes per-task branches on merge), so it never flags.
+    complete_tasks = [t for t in state.get("queue", [])
+                      if t.get("status") == "complete"]
+    branch_state = {}
+    for ct in complete_tasks:
+        fid = ct.get("assigned_forge") or _primary
+        br = f"{fid}/{ct['id']}"
+        rev = _sp2.run(["git", "rev-parse", "--verify", "--quiet", br],
+                       cwd=str(main_root), capture_output=True, text=True)
+        if rev.returncode != 0 or not rev.stdout.strip():
+            branch_state[br] = "gone"
+            continue
+        tip = rev.stdout.strip()
+        anc = _sp2.run(["git", "merge-base", "--is-ancestor", tip, "main"],
+                       cwd=str(main_root), capture_output=True, text=True)
+        branch_state[br] = "merged" if anc.returncode == 0 else "unmerged"
+    for tid, br, msg in _ghost_complete_issues(
+            complete_tasks, jsonl_task_ids, _primary, branch_state):
+        issues.append(msg)
+        _emit_rig_event(root, "ghost_complete", task_id=tid, branch=br)
+
     # Save fixes if any
     if fix and fixes:
         save_state(root, state)
@@ -6459,7 +6531,7 @@ def patrol(ctx, fix):
         "issues": issues,
         "fixes": fixes,
         "clean": len(issues) == 0,
-        "checks_run": 18,
+        "checks_run": 19,
         "stuck_forges": sorted(set(stuck_forges)),
         "stalled_forges": stalled_forges,
         "starving_forges": starving_forges,
