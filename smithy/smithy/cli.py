@@ -5948,6 +5948,42 @@ def _comms_patrol_issues(window, session_live, halt_flag,
     return out
 
 
+def _bellows_window_name() -> str:
+    """t-589 bellows tmux window name. Empty string = operator opted out,
+    which disables the bellows-window patrol check. Mirrors
+    `_comms_window_name` (t-481)."""
+    import os
+    return os.environ.get("FORGE_BELLOWS_WINDOW", "bellows")
+
+
+def _bellows_patrol_issues(window, session_live, halt_flag,
+                           window_exists) -> list:
+    """Pure decision: surface a bellows-window-health issue. Empty list when
+    bellows is disabled (window=""), the rig is down/halted, or the probe was
+    inconclusive (None). Mirrors `_comms_patrol_issues`; `window_exists` is
+    tri-state (True / False / None) and only an explicit False is an issue.
+
+    Bellows is the human's dashboard AND steering write-path — pins, defers,
+    and reorders land through its API. If its managed tmux window dies while
+    the rig is up, steering silently stops reaching the queue and the rig
+    still looks healthy (t-463 / ini-022): the same blind spot the
+    comms-window check (#18) closes for the Comms narrator. (Re-impl of
+    t-463 check #13, adapted from its HTTP-port probe to the tmux-window
+    shape that mirrors #18 — the original's tmux-layout.sh launcher was
+    superseded by start-smithy.sh.)
+    """
+    if not window or halt_flag or not session_live:
+        return []
+    out = []
+    if window_exists is False:
+        out.append(
+            f"bellows tmux window '{window}' missing while rig is up — the "
+            f"Bellows dashboard/API is down; steering (pin/defer/reorder) "
+            f"won't reach the queue (relaunch via start-smithy.sh)"
+        )
+    return out
+
+
 # --- t-552 (ini-024): ghost-complete reconciliation -------------------
 #
 # The mirror of patrol's zombie-submitted check (#17): a task marked
@@ -6550,6 +6586,22 @@ def patrol(ctx, fix):
         issues.append(msg)
         _emit_rig_event(root, "ghost_complete", task_id=tid, branch=br)
 
+    # 20. t-589 (ini-022): bellows-window health. Mirror of the comms-window
+    # check (#18). When the rig is up (FORGE_SESSION live + halt off) and
+    # bellows is enabled (FORGE_BELLOWS_WINDOW non-empty), the Bellows tmux
+    # window MUST exist — it runs the dashboard + the steering write API, so
+    # if it dies, pins/defers/reorders silently never reach the queue while
+    # the rig still looks healthy. No auto-fix: a bare relaunched tmux window
+    # would NOT restart the uvicorn server (that's start-smithy.sh's job), so
+    # a phantom "fixed" is worse than an honest flag. tmux unavailable (CI,
+    # headless): the probe returns None and `_bellows_patrol_issues` skips
+    # silently. Reuses _halt / _session / _session_live from check #18 above.
+    _bellows_window = _bellows_window_name()
+    if _bellows_window and not _halt and _session_live:
+        _bellows_win_ok = _tmux_window_exists(_session, _bellows_window)
+        issues.extend(_bellows_patrol_issues(
+            _bellows_window, _session_live, _halt, _bellows_win_ok))
+
     # Save fixes if any
     if fix and fixes:
         save_state(root, state)
@@ -6558,7 +6610,7 @@ def patrol(ctx, fix):
         "issues": issues,
         "fixes": fixes,
         "clean": len(issues) == 0,
-        "checks_run": 19,
+        "checks_run": 20,
         "stuck_forges": sorted(set(stuck_forges)),
         "stalled_forges": stalled_forges,
         "starving_forges": starving_forges,
