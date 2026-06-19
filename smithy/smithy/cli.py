@@ -413,11 +413,16 @@ def _detect_starving_forges(state):
       - budget remaining > 0 (otherwise idle is end-of-run)
       - next_tasks is empty (nothing already dispatched and waiting)
       - queue has at least one pending task that this forge could take
-        (unassigned, or assigned to this forge)
+        (unassigned, or assigned to this forge) whose blocked_by deps are
+        ALL complete
 
-    The last clause avoids false positives when the queue contains only
-    tasks pinned to a *different* forge — that forge is the one Marshal
-    should dispatch to, not this one.
+    The assigned_forge clause avoids false positives when the queue
+    contains only tasks pinned to a *different* forge — that forge is the
+    one Marshal should dispatch to, not this one. The blocked_by clause
+    (t-582) avoids the mirror false positive: a pending task gated behind
+    an incomplete blocker is not claimable (claim-task / pick-task skip
+    it), so counting it as available work flags phantom starvation every
+    cycle while held tasks sit legitimately blocked.
 
     Returns a list of dicts: [{forge_id, pending_count, ...}, ...]
     """
@@ -438,7 +443,16 @@ def _detect_starving_forges(state):
         return []
 
     queue = state.get("queue") or []
-    pending = [t for t in queue if t.get("status") == "pending"]
+    # t-582: a pending task whose blocked_by deps aren't all complete is not
+    # claimable (mirror the claim-task/pick-task dispatch filter), so exclude
+    # it from the "available work" count — otherwise patrol nudges Marshal
+    # with phantom starvation every cycle for tasks nothing can pick up.
+    complete_ids = {t["id"] for t in queue if t.get("status") == "complete"}
+    pending = [
+        t for t in queue
+        if t.get("status") == "pending"
+        and all(d in complete_ids for d in (t.get("blocked_by") or []))
+    ]
     if not pending:
         return []
 
