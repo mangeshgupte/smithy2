@@ -62,7 +62,7 @@
         {% for ini in initiatives %}
         {% set weight = '3×' if loop.index == 1 else ('2×' if loop.index == 2 else '1×') %}
         <div class="poker-card status-{{ ini.status }}" draggable="true" data-id="{{ ini.id }}"
-             style="opacity: {{ 1.0 - (loop.index0 * 0.08) }}; transform: scale({{ 1.03 - (loop.index0 * 0.01) }});">
+             style="transform: scale({{ 1.03 - (loop.index0 * 0.01) }});">
             <div class="card-rank">#{{ loop.index }}</div>
             <div class="card-body" onclick="toggleExpand(this.parentElement)">
                 <div class="card-title">
@@ -175,7 +175,7 @@
     <div class="proposed-section">
         <h2>Proposals (need approval)</h2>
         {% for ini in proposed %}
-        <div class="poker-card status-proposed" style="opacity: 0.7;">
+        <div class="poker-card status-proposed">
             <div class="card-rank">?</div>
             <div class="card-body">
                 <div class="card-title"><a href="{{ url_bellows }}/project/{{ project }}/initiative/{{ ini.id }}" class="card-title-link" draggable="false" title="Open in Bellows deep-dive">{{ ini.title }}</a></div>
@@ -352,7 +352,6 @@
                 badge.textContent = weight;
                 badge.className = 'weight-badge weight-' + (i + 1);
             }
-            c.style.opacity = Math.max(0.5, 1.0 - (i * 0.08));
             c.style.transform = 'scale(' + Math.max(0.95, 1.03 - (i * 0.01)) + ')';
         });
 
