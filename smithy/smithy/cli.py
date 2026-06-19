@@ -5948,40 +5948,96 @@ def _comms_patrol_issues(window, session_live, halt_flag,
     return out
 
 
-def _bellows_window_name() -> str:
-    """t-589 bellows tmux window name. Empty string = operator opted out,
-    which disables the bellows-window patrol check. Mirrors
-    `_comms_window_name` (t-481)."""
+def _ui_window_name() -> str:
+    """t-593 ui-window name (FORGE_UI_WINDOW, default 'ui'). The rig runs
+    bellows/poker/intent/timeline as PANES inside this one window, not as
+    dedicated windows. Empty string = operator opted out, disabling the
+    bellows liveness check."""
     import os
-    return os.environ.get("FORGE_BELLOWS_WINDOW", "bellows")
+    return os.environ.get("FORGE_UI_WINDOW", "ui")
 
 
-def _bellows_patrol_issues(window, session_live, halt_flag,
-                           window_exists) -> list:
-    """Pure decision: surface a bellows-window-health issue. Empty list when
-    bellows is disabled (window=""), the rig is down/halted, or the probe was
-    inconclusive (None). Mirrors `_comms_patrol_issues`; `window_exists` is
-    tri-state (True / False / None) and only an explicit False is an issue.
+def _bellows_port() -> int:
+    """t-593 bellows HTTP port (BELLOWS_PORT, default 8080 — restart-ui.sh's
+    _ui_port maps bellows→8080)."""
+    import os
+    try:
+        return int(os.environ.get("BELLOWS_PORT", "8080"))
+    except ValueError:
+        return 8080
 
-    Bellows is the human's dashboard AND steering write-path — pins, defers,
-    and reorders land through its API. If its managed tmux window dies while
-    the rig is up, steering silently stops reaching the queue and the rig
-    still looks healthy (t-463 / ini-022): the same blind spot the
-    comms-window check (#18) closes for the Comms narrator. (Re-impl of
-    t-463 check #13, adapted from its HTTP-port probe to the tmux-window
-    shape that mirrors #18 — the original's tmux-layout.sh launcher was
-    superseded by start-smithy.sh.)
-    """
-    if not window or halt_flag or not session_live:
+
+def _bellows_pane_alive(session, ui_window, root):
+    """Whether a bellows PANE is live in the ui window, resolved by START
+    PATH (…/bellows) exactly as restart-ui.sh's `_resolve_ui_pane` does —
+    bellows is a pane in FORGE_UI_WINDOW, not a dedicated window. Matches
+    `pane_start_path` (stable across cwd flaps) or `pane_current_path`.
+    True if a matching pane exists, False if the window lists panes but none
+    match, None when tmux can't list panes (tmux missing / window gone) —
+    inconclusive. `root` supplies the default FORGE_ROOT for the start path."""
+    import os
+    import subprocess as _sp
+    forge_root = os.environ.get("FORGE_ROOT", str(root))
+    want = str(Path(forge_root) / "bellows")
+    try:
+        r = _sp.run(["tmux", "list-panes", "-t", f"{session}:{ui_window}",
+                     "-F", "#{pane_start_path}\t#{pane_current_path}"],
+                    capture_output=True, text=True, timeout=5)
+    except (OSError, _sp.SubprocessError):
+        return None
+    if r.returncode != 0:
+        return None
+    for line in r.stdout.splitlines():
+        if not line.strip():
+            continue
+        if want in [p.strip() for p in line.split("\t")]:
+            return True
+    return False
+
+
+def _bellows_port_alive(port) -> bool:
+    """Whether the Bellows HTTP server answers on `port`. Bellows is a FastAPI
+    app, so /openapi.json returns 200 when up; ANY HTTP response (even 4xx)
+    proves the server is alive. Connection refused / timeout / unreachable →
+    dead (False). This is the ground-truth liveness signal — the t-589 check
+    looked for a window named 'bellows' and false-flagged a healthy
+    pane-served rig that was answering HTTP 200 the whole time (t-593)."""
+    import urllib.request
+    import urllib.error
+    try:
+        urllib.request.urlopen(
+            f"http://127.0.0.1:{port}/openapi.json", timeout=2)
+        return True
+    except urllib.error.HTTPError:
+        return True  # server responded with a status → it's up
+    except Exception:
+        return False  # refused / timeout / unreachable → down
+
+
+def _bellows_patrol_issues(ui_window, port, session_live, halt_flag,
+                           pane_alive, port_alive) -> list:
+    """Pure decision: surface a bellows-unreachable issue. Empty when bellows
+    is disabled (ui_window=''), the rig is down/halted, or bellows is UP by
+    EITHER signal — a live pane in the ui window OR a responding port.
+
+    Flag ONLY on a definitive double-down: no live pane AND a dead port. The
+    AND is deliberate (t-593): bellows is deployed as a pane in FORGE_UI_WINDOW
+    (not a 'bellows' window), so a transient port blip while the pane is alive
+    must not flag, and a None pane probe (tmux inconclusive) stays quiet.
+    Bellows is the human's dashboard + steering write-path; when it is
+    genuinely unreachable, pins/defers/reorders never reach the queue."""
+    if not ui_window or halt_flag or not session_live:
         return []
-    out = []
-    if window_exists is False:
-        out.append(
-            f"bellows tmux window '{window}' missing while rig is up — the "
-            f"Bellows dashboard/API is down; steering (pin/defer/reorder) "
-            f"won't reach the queue (relaunch via start-smithy.sh)"
-        )
-    return out
+    if pane_alive is True or port_alive is True:
+        return []
+    if pane_alive is False and port_alive is False:
+        return [
+            f"bellows unreachable — no live pane (start-path …/bellows) in "
+            f"the '{ui_window}' window and port {port} is not responding; "
+            f"steering (pin/defer/reorder) won't reach the queue "
+            f"(restart via scripts/restart-ui.sh bellows)"
+        ]
+    return []
 
 
 # --- t-552 (ini-024): ghost-complete reconciliation -------------------
@@ -6586,21 +6642,24 @@ def patrol(ctx, fix):
         issues.append(msg)
         _emit_rig_event(root, "ghost_complete", task_id=tid, branch=br)
 
-    # 20. t-589 (ini-022): bellows-window health. Mirror of the comms-window
-    # check (#18). When the rig is up (FORGE_SESSION live + halt off) and
-    # bellows is enabled (FORGE_BELLOWS_WINDOW non-empty), the Bellows tmux
-    # window MUST exist — it runs the dashboard + the steering write API, so
-    # if it dies, pins/defers/reorders silently never reach the queue while
-    # the rig still looks healthy. No auto-fix: a bare relaunched tmux window
-    # would NOT restart the uvicorn server (that's start-smithy.sh's job), so
-    # a phantom "fixed" is worse than an honest flag. tmux unavailable (CI,
-    # headless): the probe returns None and `_bellows_patrol_issues` skips
-    # silently. Reuses _halt / _session / _session_live from check #18 above.
-    _bellows_window = _bellows_window_name()
-    if _bellows_window and not _halt and _session_live:
-        _bellows_win_ok = _tmux_window_exists(_session, _bellows_window)
+    # 20. t-589 + t-593 (ini-022): bellows liveness. Bellows runs as a PANE in
+    # the ui window (FORGE_UI_WINDOW), alongside poker/intent/timeline — NOT a
+    # dedicated tmux window. t-589 mirrored the comms-WINDOW check and looked
+    # for a window literally named "bellows", which false-flagged a healthy
+    # pane-served rig (bellows answered HTTP 200 the whole time). t-593 detects
+    # it the way it is deployed: a live pane resolved by start path (…/bellows)
+    # in the ui window — mirroring restart-ui.sh's _resolve_ui_pane — OR a
+    # responding port. Flag ONLY on a definitive double-down (no pane AND dead
+    # port). No auto-fix (restart-ui.sh's job; bellows is the human's call).
+    # tmux/HTTP unavailable: probes return None/False and the pure function
+    # stays conservative. Reuses _halt / _session / _session_live from #18.
+    _ui_window = _ui_window_name()
+    if _ui_window and not _halt and _session_live:
+        _bport = _bellows_port()
+        _pane_ok = _bellows_pane_alive(_session, _ui_window, main_root)
+        _port_ok = _bellows_port_alive(_bport)
         issues.extend(_bellows_patrol_issues(
-            _bellows_window, _session_live, _halt, _bellows_win_ok))
+            _ui_window, _bport, _session_live, _halt, _pane_ok, _port_ok))
 
     # Save fixes if any
     if fix and fixes:
