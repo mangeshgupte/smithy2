@@ -3239,20 +3239,33 @@ def queue_show(ctx):
 
 
 def _nudge_queue_path(root, persona):
-    """Return the path to a persona's nudge queue file."""
-    return root / ".smithy-nudge-queue" / f"{persona}.jsonl"
+    """Return the path to a persona's nudge queue file, anchored at the
+    MAIN repo root (t-581).
+
+    The durable nudge fallback is a CACHE shared across worktrees: a Forge
+    in `.worktrees/forge-quench/` queues a nudge for Marshal, who drains it
+    from `.worktrees/marshal/`. Anchoring to the main repo root — like
+    state.json (t-419), .assembly-queue.jsonl (t-422), worklog.tsv (t-454),
+    rig-events.jsonl (t-425), and forge_nudge_queue_path — is what makes
+    that hand-off land in ONE shared file instead of each persona's private
+    worktree copy. Without it, `_queue_nudge(worktree_root, "marshal", …)`
+    writes to the *sender's* worktree while `drain-nudges marshal` reads the
+    *receiver's* worktree: the fallback silently never arrives (the same
+    cross-worktree deadlock t-419 fixed for state.json). `main_repo_root`
+    falls back to `root` when git is unavailable, so non-worktree callers
+    (and non-git test dirs) are unaffected."""
+    return main_repo_root(root) / ".smithy-nudge-queue" / f"{persona}.jsonl"
 
 
 def _queue_nudge(root, persona, message):
     """Append a nudge to the persona's queue file (for when they're mid-heat)."""
     from datetime import datetime
-    queue_dir = root / ".smithy-nudge-queue"
-    queue_dir.mkdir(exist_ok=True)
+    queue_path = _nudge_queue_path(root, persona)
+    queue_path.parent.mkdir(parents=True, exist_ok=True)
     entry = json.dumps({
         "message": message,
         "timestamp": datetime.now().isoformat(),
     })
-    queue_path = _nudge_queue_path(root, persona)
     with open(queue_path, "a") as f:
         f.write(entry + "\n")
     return queue_path
