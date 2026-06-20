@@ -459,10 +459,19 @@ def _max_concurrent(start_times: list[Optional[float]]) -> int:
 
 
 def lifecycle_section(rig_events: list[dict],
+                      assembly_rows: Optional[list[dict]] = None,
                       lo: Optional[float] = None,
                       hi: Optional[float] = None) -> dict:
     """``lifecycle`` — A3 (queue wait), A4 (in-flight), A5 (merge latency), A6
-    (lead time). Distributions as p50/p90/p99 + n."""
+    (lead time). Distributions as p50/p90/p99 + n.
+
+    t-616 (ini-019): merge timestamps come from BOTH the legacy
+    assembly_tick_merged rig-event AND the per-task assembly-log outcome='merged'
+    rows the BATCH model writes (ini-020/t-570), so lead_time closes for the
+    batch era. Per-task merge LATENCY is only recorded on the legacy event
+    (assembly_batch_merged carries a whole-batch latency, not per-task), so
+    merge_latency_ms stays legacy-event-only and reads 0 in a batch-only window.
+    """
     push, pop, started, ended, merged = {}, {}, {}, {}, {}
     merge_latencies: list[float] = []
     for e in rig_events:
@@ -483,6 +492,17 @@ def lifecycle_section(rig_events: list[dict],
             merged[tid] = max(merged.get(tid, t), t)
             if e.get("latency_ms") is not None:
                 merge_latencies.append(e["latency_ms"])
+
+    # t-616: fold batch-merged tasks (per-task assembly-log 'merged' rows) into
+    # the merge timeline — the legacy rig-event above doesn't cover them.
+    for a in assembly_rows or []:
+        if a.get("outcome") != "merged":
+            continue
+        t = _parse_ts(a.get("ts"))
+        if not _ts_in(t, lo, hi):
+            continue
+        tid = a.get("task_id")
+        merged[tid] = max(merged.get(tid, t), t)
 
     queue_wait = [pop[tid] - push[tid] for tid in pop
                   if tid in push and pop[tid] >= push[tid]]
@@ -545,6 +565,16 @@ def issues_section(worklog_rows: list[dict], rig_events: list[dict],
               if e.get("event") == "assembly_tick_merged"}
     rejected_ev = {e.get("task_id") for e in rig_events
                    if e.get("event") == "assembly_tick_rejected"}
+    # t-616 (ini-019): the live Assembly loop is the BATCH model (ini-020/t-570).
+    # Batch merges/rejects emit per-task assembly-log rows (via _do_assembly_merge
+    # / _do_assembly_reject) but NOT the legacy assembly_tick_merged/_rejected
+    # rig-events. Deriving terminal state from the legacy events alone made every
+    # batch-merged task a FALSE ghost-submit AND a FALSE stall. Union the
+    # assembly-log (S3) outcomes so both the legacy and batch eras are seen.
+    merged |= {a.get("task_id") for a in assembly_rows
+               if a.get("outcome") == "merged"}
+    rejected_ev |= {a.get("task_id") for a in assembly_rows
+                    if a.get("outcome") == "rejected"}
     push_ok = {e.get("task_id") for e in rig_events
                if e.get("event") == "assembly_push_ok"}
     # A task still pending/in_progress/submitted in state is legitimately
@@ -554,7 +584,9 @@ def issues_section(worklog_rows: list[dict], rig_events: list[dict],
 
     ghosts = sorted(t for t in submitted if t and t not in merged
                     and t not in rejected_ev and t not in active)
-    stalls = sorted(t for t in push_ok if t and t not in merged)
+    # A pushed task that later merged OR was rejected got a verdict — not a stall.
+    stalls = sorted(t for t in push_ok if t and t not in merged
+                    and t not in rejected_ev)
     thrash = sorted(t for t in _thrash_task_ids(rig_events, assembly_rows) if t)
 
     # C9: repeat pytest node-ids across reject details.
@@ -737,7 +769,7 @@ def build_l2_snapshot(*, heat: int, generated_at: str,
                                  from_heat, to_heat, now_ts=now_ts,
                                  idle_window_s=idle_window_s),
         "initiatives": initiatives_section(state, rig_events, assembly_rows),
-        "lifecycle": lifecycle_section(rig_events, lo, hi),
+        "lifecycle": lifecycle_section(rig_events, assembly_rows, lo, hi),
         "issues": issues_section(worklog_rows, rig_events, assembly_rows, state),
         "queue": queue_section(rig_events, state, lo, hi),
         "thrash_detail": thrash_detail_section(rig_events, assembly_rows),
