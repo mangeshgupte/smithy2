@@ -53,10 +53,16 @@
   // behaviour (standalone → drawer, rail → in-place detail) via delegation, so
   // the markup stays identical across both.
   function line1Html(t) {
+    // t-628 (ini-016): a human-overridden priority gets a pin glyph + the
+    // .c-card-prio--pinned accent so the human can scan which tasks they've
+    // pinned (the override is the cockpit's primary steering lever).
+    const pinned = t.human_priority != null;
+    const prioCls = "c-card-prio" + (pinned ? " c-card-prio--pinned" : "");
+    const prioTxt = (pinned ? "📌 " : "") + esc(prioText(t));
     return '<span class="c-id" data-task-id="' + esc(t.id) + '">' + esc(t.id) +
       "</span>" +
       '<span class="c-card-ini">' + iniHtml(t) + "</span>" +
-      '<span class="c-card-prio">' + esc(prioText(t)) + "</span>" +
+      '<span class="' + prioCls + '">' + prioTxt + "</span>" +
       '<span class="c-card-status" data-st="' + esc(t.status || "") + '">' +
       esc(t.status || "") + "</span>";
   }

@@ -67,8 +67,12 @@ class TestNumericAlignment:
         # t-599: priority moved from a right-aligned c-num table cell to a pill
         # on the card's line 1. t-612 (ini-016): that pill markup now lives in
         # the shared static/cockpit-card.js (rendered by /cockpit + the rail).
+        # t-628 (ini-016): the pill class is now built dynamically (it gains the
+        # --pinned variant for human overrides), so assert the class name rather
+        # than a literal class="..." attribute.
         js = (REPO_ROOT / "ui-priority-poker" / "static" / "cockpit-card.js").read_text()
-        assert 'class="c-card-prio"' in js
+        assert "c-card-prio" in js
+        assert "c-card-prio--pinned" in js          # t-628 pinned-override accent
         assert "t.priority == null" in js
 
     def test_hp_age_heat_right_aligned(self, style_block):
