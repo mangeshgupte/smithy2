@@ -6142,6 +6142,28 @@ def _ghost_complete_issues(complete_tasks, jsonl_task_ids, primary,
     return out
 
 
+# t-637: how long since a forge stamped a heartbeat before we treat it as
+# dead for seam-zombie recovery. Matches patrol's STALE_S / t-386 witness.
+FORGE_DEAD_S = 900  # 15 min
+
+
+def _forge_heartbeat_age_s(state, fid):
+    """Seconds since forge ``fid`` last stamped a heartbeat, or None when the
+    forge is absent / has never stamped one / the stamp is unparseable."""
+    from datetime import datetime, timezone
+    for f in (state.get("parallel") or {}).get("forges") or []:
+        if f.get("id") == fid:
+            hb = f.get("last_heartbeat")
+            if not hb:
+                return None
+            try:
+                return (datetime.now(timezone.utc)
+                        - datetime.fromisoformat(hb)).total_seconds()
+            except Exception:
+                return None
+    return None
+
+
 @cli.command("patrol")
 @click.option("--fix", is_flag=True, help="Auto-fix simple discrepancies")
 @click.pass_context
@@ -6194,7 +6216,24 @@ def patrol(ctx, fix):
             )
             if fix:
                 task["status"] = "pending"
-                fixes.append(f"Reset {task['id']} to pending (orphan reap)")
+                # t-637: this is the queue-pop→start-heat SEAM ZOMBIE — a turn
+                # died after the task went in_progress but before start-heat
+                # wrote a checkpoint. A LIVE forge re-engages by re-claiming
+                # its own pinned task (claim-task / start-heat own-claim,
+                # t-543), so keep the pin. But if the forge isn't provably
+                # alive (stale/absent heartbeat), the pin strands the task —
+                # no sibling can claim a pin to a dead forge — so unpin it so
+                # any forge requeues it.
+                age = _forge_heartbeat_age_s(state, fid)
+                if age is None or age > FORGE_DEAD_S:
+                    task["assigned_forge"] = None
+                    fixes.append(
+                        f"Reset {task['id']} to pending + unpinned from "
+                        f"{fid} (seam-zombie; forge not live, requeued)")
+                else:
+                    fixes.append(
+                        f"Reset {task['id']} to pending (orphan reap; "
+                        f"{fid} live, may re-engage)")
 
     # 3. Check stage heats sum approximately matches budget.used
     stage_sum = sum(s.get("heats", 0) for s in state["stages"].values())
