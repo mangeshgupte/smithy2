@@ -1,0 +1,260 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://the-smithy/ini-019/l2-snapshots.schema.json",
+  "title": "Smithy L2 snapshot (ini-019)",
+  "description": "One archived row per heat in l2-snapshots.jsonl, identical to the metrics.build_l2_snapshot payload that `smithy report --json` emits (minus the report-only `surface` marker). Spec: plans/ini-019-surfaces-plan.md §3.2. schema_version follows §3.3: additive field changes do NOT bump it; renames/removals/semantic changes do.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "heat", "generated_at", "window", "budget",
+               "stages", "forges", "initiatives", "lifecycle", "issues",
+               "queue", "thrash_detail", "gaps"],
+  "properties": {
+    "schema_version": { "const": "ini-019/l2/v1" },
+    "heat": { "type": "integer" },
+    "generated_at": { "type": "string" },
+    "window": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["from_heat", "to_heat"],
+      "properties": {
+        "from_heat": { "type": "integer" },
+        "to_heat": { "type": "integer" }
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["used", "total", "pct", "overall_progress"],
+      "properties": {
+        "used": { "type": ["integer", "null"] },
+        "total": { "type": ["integer", "null"] },
+        "pct": { "type": ["number", "null"] },
+        "overall_progress": { "type": ["number", "null"] }
+      }
+    },
+    "stages": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/stageStat" }
+    },
+    "forges": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/forge" }
+    },
+    "initiatives": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/initiative" }
+    },
+    "lifecycle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["queue_wait", "in_flight", "merge_latency_ms", "lead_time_s"],
+      "properties": {
+        "queue_wait": { "$ref": "#/$defs/percentile" },
+        "in_flight": { "$ref": "#/$defs/percentile" },
+        "merge_latency_ms": { "$ref": "#/$defs/percentile" },
+        "lead_time_s": { "$ref": "#/$defs/percentile" }
+      }
+    },
+    "issues": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ghost_submits", "thrash", "repeat_tests", "stalls",
+                   "orphans_reaped", "rejections", "partial",
+                   "zero_value_heats"],
+      "properties": {
+        "ghost_submits": { "$ref": "#/$defs/idList" },
+        "thrash": { "$ref": "#/$defs/idList" },
+        "repeat_tests": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["count", "nodes"],
+          "properties": {
+            "count": { "type": "integer" },
+            "nodes": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["node", "hits"],
+                "properties": {
+                  "node": { "type": "string" },
+                  "hits": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "stalls": { "$ref": "#/$defs/idList" },
+        "orphans_reaped": { "$ref": "#/$defs/idList" },
+        "rejections": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["total", "by_forge", "by_reason"],
+          "properties": {
+            "total": { "type": "integer" },
+            "by_forge": {
+              "type": "object",
+              "additionalProperties": { "type": "integer" }
+            },
+            "by_reason": {
+              "type": "object",
+              "additionalProperties": { "type": "integer" }
+            }
+          }
+        },
+        "partial": { "$ref": "#/$defs/idList" },
+        "zero_value_heats": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["count", "heat_ids"],
+          "properties": {
+            "count": { "type": "integer" },
+            "heat_ids": { "type": "array", "items": { "type": "integer" } }
+          }
+        }
+      }
+    },
+    "queue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["depth_current", "push_count_window", "pop_count_window",
+                   "set_events_window"],
+      "properties": {
+        "depth_current": { "type": "integer" },
+        "push_count_window": { "type": "integer" },
+        "pop_count_window": { "type": "integer" },
+        "set_events_window": { "type": "integer" }
+      }
+    },
+    "thrash_detail": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["task_id", "attempts", "rejections", "requeues",
+                     "forges", "stages", "time_to_green_s"],
+        "properties": {
+          "task_id": { "type": "string" },
+          "attempts": { "type": "integer" },
+          "rejections": { "type": "integer" },
+          "requeues": { "type": "integer" },
+          "forges": { "type": "array", "items": { "type": "string" } },
+          "stages": { "type": "array", "items": { "type": "string" } },
+          "time_to_green_s": { "type": ["number", "null"] }
+        }
+      }
+    },
+    "gaps": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["legacy_forge_rows", "unbacked_initiatives",
+                   "tool_activity_missing", "human_steering_blind"],
+      "properties": {
+        "legacy_forge_rows": { "type": "integer" },
+        "unbacked_initiatives": { "type": "integer" },
+        "tool_activity_missing": { "type": "boolean" },
+        "human_steering_blind": { "type": "boolean" }
+      }
+    }
+  },
+  "$defs": {
+    "stageStat": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["heats", "value_ema", "integral", "share", "target_share",
+                   "drift"],
+      "properties": {
+        "heats": { "type": "integer" },
+        "value_ema": { "type": ["number", "null"] },
+        "integral": { "type": ["number", "null"] },
+        "share": { "type": "number" },
+        "target_share": { "type": ["number", "null"] },
+        "drift": { "type": ["number", "null"] }
+      }
+    },
+    "signals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["green", "yellow", "red", "reject"],
+      "properties": {
+        "green": { "type": "integer" },
+        "yellow": { "type": "integer" },
+        "red": { "type": "integer" },
+        "reject": { "type": "integer" }
+      }
+    },
+    "byStage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["heats", "mean_value", "signals"],
+      "properties": {
+        "heats": { "type": "integer" },
+        "mean_value": { "type": ["number", "null"] },
+        "signals": { "$ref": "#/$defs/signals" }
+      }
+    },
+    "forge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "heats_total", "heats_window", "idle_pct",
+                   "current_task", "current_heat", "last_heartbeat_age_s",
+                   "by_stage", "rejection_share"],
+      "properties": {
+        "id": { "type": "string" },
+        "heats_total": { "type": "integer" },
+        "heats_window": { "type": "integer" },
+        "idle_pct": { "type": ["number", "null"] },
+        "current_task": { "type": ["string", "null"] },
+        "current_heat": { "type": ["integer", "null"] },
+        "last_heartbeat_age_s": { "type": ["integer", "null"] },
+        "by_stage": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/byStage" }
+        },
+        "rejection_share": { "type": ["number", "null"] }
+      }
+    },
+    "initiative": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "budget_cap", "heats_used", "pct",
+                   "cycle_time_median_s", "success_rate", "tasks_in_flight",
+                   "tasks_total", "thrash_count", "parallelism_declared",
+                   "parallelism_actual_max"],
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": ["string", "null"] },
+        "budget_cap": { "type": ["integer", "null"] },
+        "heats_used": { "type": ["integer", "null"] },
+        "pct": { "type": ["number", "null"] },
+        "cycle_time_median_s": { "type": ["number", "null"] },
+        "success_rate": { "type": ["number", "null"] },
+        "tasks_in_flight": { "type": "integer" },
+        "tasks_total": { "type": "integer" },
+        "thrash_count": { "type": "integer" },
+        "parallelism_declared": { "type": ["string", "null"] },
+        "parallelism_actual_max": { "type": "integer" }
+      }
+    },
+    "percentile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["p50", "p90", "p99", "n"],
+      "properties": {
+        "p50": { "type": ["number", "null"] },
+        "p90": { "type": ["number", "null"] },
+        "p99": { "type": ["number", "null"] },
+        "n": { "type": "integer" }
+      }
+    },
+    "idList": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["count", "task_ids"],
+      "properties": {
+        "count": { "type": "integer" },
+        "task_ids": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}
