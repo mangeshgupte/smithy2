@@ -1038,6 +1038,11 @@ def end_heat(ctx, value, signal, notes, outcome, progress, no_nudge, forge_id,
                     actor=forge_id, forge_id=forge_id, task_id=task_id,
                     stage=stage, heat=heat, value=value, signal=signal)
 
+    # t-603 (ini-019 P1.3): append this heat's L2 metrics snapshot. Runs after
+    # the worklog row + forge_ended event land so the snapshot reflects the heat
+    # just closed. Best-effort — never fails the close (state is already saved).
+    result["l2_snapshot"] = _emit_l2_snapshot(root, heat)
+
     # Auto-nudge marshal so it can re-prioritize and assign next task.
     # t-422: also nudge Assembly when the task was submitted — that's what
     # closes the merge loop without Anvil hand-driving every merge.
@@ -8300,6 +8305,80 @@ def _report_load_sources(main_root):
     rig = metrics.parse_jsonl(_report_read_lines(main_root / "rig-events.jsonl"))
     asm = metrics.parse_jsonl(_report_read_lines(main_root / "assembly-log.jsonl"))
     return worklog, rig, asm
+
+
+# --- t-603 (ini-019 P1.3): L2 snapshot writer ------------------------------
+# end-heat appends one l2-snapshots.jsonl row per heat close, at the MAIN repo
+# root alongside the tracked record (worklog.tsv / state.json). The file is not
+# gitignored, so it rides whatever commits those main-root logs — nothing here
+# commits to main (the Assembly-only-to-main invariant holds). Idempotent keyed
+# by `heat`: re-running end-heat at the same heat overwrites that row (§3.1).
+# Pure aggregation lives in metrics.build_l2_snapshot; this is the load → build →
+# durable-upsert plumbing.
+
+def l2_snapshots_path(root):
+    """Canonical l2-snapshots.jsonl path — always the MAIN repo root, mirroring
+    worklog/rig-events (t-419/t-425). JSONL, one row per heat (§3.4)."""
+    return main_repo_root(root) / "l2-snapshots.jsonl"
+
+
+def _upsert_l2_row(path, snap):
+    """Write one L2 row keyed by `heat`, idempotently (§3.1: re-run at the same
+    heat overwrites). Read-modify-write under an exclusive fcntl lock so
+    concurrent end-heats can't lose a row; rows kept heat-sorted for the
+    binary-search-by-heat reader (§3.4). Returns the resulting row count."""
+    import fcntl
+    import os as _os
+    heat = snap.get("heat")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "a+") as f:
+        try:
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+            f.seek(0)
+            rows = []
+            for line in f.read().splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    obj = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if obj.get("heat") != heat:
+                    rows.append(obj)
+            rows.append(snap)
+            rows.sort(key=lambda o: (o.get("heat") is None, o.get("heat") or 0))
+            f.seek(0)
+            f.truncate()
+            for r in rows:
+                f.write(json.dumps(r, ensure_ascii=False) + "\n")
+            f.flush()
+            try:
+                _os.fsync(f.fileno())
+            except OSError:
+                pass  # fsync may fail on some filesystems; the write still lands.
+        finally:
+            fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+    return len(rows)
+
+
+def _emit_l2_snapshot(root, heat, generated_at=None):
+    """Build + durably upsert this heat's L2 snapshot. BEST-EFFORT: state is
+    already committed by the time end-heat calls this, so a metrics failure must
+    never fail the heat close — it returns a status dict instead of raising."""
+    from . import metrics
+    try:
+        main_root = main_repo_root(root)
+        worklog, rig, asm = _report_load_sources(main_root)
+        state = load_state(root)
+        gen = generated_at or datetime.now(timezone.utc).isoformat()
+        snap = metrics.build_l2_snapshot(
+            heat=heat, generated_at=gen, worklog_rows=worklog,
+            rig_events=rig, assembly_rows=asm, state=state)
+        rows = _upsert_l2_row(l2_snapshots_path(root), snap)
+        return {"written": True, "rows": rows}
+    except Exception as e:  # defensive: a snapshot is never worth a failed close
+        return {"written": False, "error": f"{type(e).__name__}: {e}"}
 
 
 def _report_cutoff_ts(worklog_rows, at_heat):
