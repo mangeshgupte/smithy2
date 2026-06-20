@@ -4867,6 +4867,31 @@ def _detect_bottlenecks(state, root, window_minutes, active_forges=None):
     return out
 
 
+def _autopilot_patrol_snapshot(root):
+    """t-621 (ini-026): live `smithy patrol` JSON for the --once detection
+    snapshot. READ-ONLY — no `--fix`, no state mutation — so the
+    observational tick has zero side effects (acceptance c). A2
+    (detect_starvation → patrol.starving_forges) and A7
+    (detect_stuck_in_progress → patrol.stuck_forges) delegate to patrol;
+    with the old hardcoded ``{}`` they could never fire on the shakedown
+    path. patrol exits 0 even when it finds issues (it only `_err`s), so a
+    non-zero code is a real failure — degrade to ``{}`` ("no patrol
+    anomalies") rather than crash the tick. Mirrors the comms patrol-shell."""
+    import subprocess as _sp
+    import sys as _sys
+    try:
+        r = _sp.run(
+            [_sys.executable, "-m", "smithy.smithy.cli",
+             "--dir", str(root), "patrol"],
+            capture_output=True, text=True, timeout=30,
+        )
+        if r.returncode != 0:
+            return {}
+        return json.loads(r.stdout)
+    except (json.JSONDecodeError, OSError, Exception):
+        return {}
+
+
 @cli.command("autopilot")
 @click.option("--once", is_flag=True, default=False,
               help="Run one detection tick inline (shakedown path).")
@@ -4946,7 +4971,9 @@ def autopilot_cmd(ctx, once):
     snap = {
         "state": state,
         "pane_tails": pane_tails,
-        "patrol": {},
+        # t-621: live read-only patrol so A2/A7 see real starving/stuck
+        # forges instead of the old hardcoded {} (which silenced them).
+        "patrol": _autopilot_patrol_snapshot(root),
         "prior": load_prior_snapshot(root),
         "branches": branches,
         "jsonl_rows": jsonl_rows,
