@@ -237,3 +237,63 @@ class TestAutopilotLivePatrol:
         r = _once(root)
         assert r.exit_code == 0, r.output
         assert (root / "state.json").read_text() == before
+
+
+# --------------- t-633: A7 patrol seam + A11 log_only routing --------------
+
+
+def _stuck_rig(tmp_path):
+    """A forge marked `busy` with no checkpoint on disk → `smithy patrol`
+    reports it in stuck_forges (busy-but-no-checkpoint), feeding A7 through the
+    --once patrol seam. The other half of t-621's fix (A2 had coverage, A7
+    didn't)."""
+    (tmp_path / "state.json").write_text(json.dumps({
+        "project": "x",
+        "budget": {"total_heats": 100, "used": 10},
+        "queue": [{"id": "t-1", "stage": "implementation", "desc": "x",
+                   "status": "in_progress", "priority": 2, "blocked_by": [],
+                   "assigned_forge": "forge-temper", "initiative_id": None}],
+        "next_tasks": [], "themes": [], "initiatives": [], "constraints": [],
+        "ideas": [], "feedback_cursor": 0, "inbox_cursor": 0,
+        "overall_progress": 0, "stages": {}, "allocator": {"integral": {}},
+        "parallel": {"halt_flag": False, "forges": [
+            {"id": "forge-temper", "status": "busy", "current_task": "t-1",
+             "current_heat": 5, "last_heartbeat": None}]},  # busy + no checkpoint
+    }))
+    (tmp_path / "worklog.tsv").write_text(
+        "timestamp\theat\tstage\ttask_id\toutcome\tvalue\tsignal\tnotes\n")
+    return tmp_path
+
+
+class TestAutopilotA7AndA11:
+    def test_once_feeds_live_patrol_so_a7_fires(self, tmp_path):
+        # A7 (stuck_in_progress) reaches the shakedown path via the live patrol
+        # snapshot — impossible while patrol was hardcoded to {} (t-621 seam).
+        root = _stuck_rig(tmp_path)
+        r = _once(root)
+        assert r.exit_code == 0, r.output
+        data = json.loads(r.output)
+        types = [a["type"] for a in data["anomalies"]]
+        assert "A7" in types, types
+        # A7 → defer (moderate severity ⇒ no notify); never log_only.
+        assert "A7" in data["deferred"]
+        # The persisted snapshot carried the live patrol payload, not {}.
+        snap = json.loads((root / ".autopilot-state.json").read_text())
+        if "patrol" in snap:  # write_tick_snapshot may slim the snapshot
+            assert snap["patrol"].get("stuck_forges")
+
+    def test_a11_test_leak_routes_log_only_not_deferred_or_notified(self):
+        # A11 reads tmux pane tails (empty on the CLI test path), so its routing
+        # is locked at the decision-matrix seam: a detected test-leak is
+        # log_only — never deferred, never notified.
+        from smithy.autopilot import (detect_test_leak, decide, decide_all,
+                                       LOG_ONLY, DEFER)
+        snap = {"pane_tails": {"marshal": "Heat 5 forge-01 (no task)",
+                               "assembly": ""}}
+        leaks = detect_test_leak(snap)
+        assert leaks and leaks[0].type == "A11", leaks
+        d = decide(leaks[0])
+        assert d["action"] == LOG_ONLY          # not safe_fix, not defer
+        assert d["notify"] is False             # log-only never notifies
+        assert all(dec["action"] != DEFER and not dec["notify"]
+                   for _, dec in decide_all(leaks))
