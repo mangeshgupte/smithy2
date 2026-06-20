@@ -240,6 +240,37 @@ def _forge_busy_seconds(rig_events: list[dict], forge_id: str,
     return busy, wall
 
 
+def authoring_forge_by_task(worklog_rows: list[dict]) -> dict:
+    """t-623 (ini-019): map task_id -> the FORGE that authored it.
+
+    Forge-written rows (FORGE_OUTCOMES) carry the real forge_id — the Forge
+    wrote them from its own worktree. The Assembly-written merged/rejected rows
+    carry the Assembly pane's forge instead (``_do_assembly_merge`` /
+    ``_do_assembly_reject`` call ``append_worklog`` without ``forge_id``, so it
+    defaults to the pane's cwd → ``primary_forge_id``), which misattributes every
+    cross-forge merge/reject to the primary. This map re-derives the author; it
+    equals the ``<forge-id>/<task-id>`` branch prefix (assembly.branch_name).
+    Latest Forge-written row wins (handles reassignment)."""
+    out: dict = {}
+    for r in worklog_rows:
+        if r.get("outcome") in FORGE_OUTCOMES and r.get("forge_id"):
+            tid = r.get("task_id")
+            if tid:
+                out[tid] = r["forge_id"]
+    return out
+
+
+def effective_forge(row: dict, authoring_by_task: dict) -> str:
+    """t-623: the forge a worklog row should be ATTRIBUTED to. Assembly-written
+    rows (merged/rejected) re-attribute to the authoring forge; all other rows
+    keep their own forge_id (``"legacy"`` when absent)."""
+    if row.get("outcome") in ASSEMBLY_OUTCOMES:
+        author = authoring_by_task.get(row.get("task_id"))
+        if author:
+            return author
+    return row.get("forge_id") or "legacy"
+
+
 def forges_section(worklog_rows: list[dict], rig_events: list[dict],
                    assembly_rows: list[dict], state: dict,
                    from_heat: int, to_heat: int,
@@ -272,20 +303,23 @@ def forges_section(worklog_rows: list[dict], rig_events: list[dict],
         if a.get("outcome") in ("merged", "rejected"):
             sub_by_forge[fid] = sub_by_forge.get(fid, 0) + 1
 
+    # t-623: re-attribute Assembly-written rows (merged/rejected) to the
+    # authoring forge so per-forge signals/filters aren't all dumped on primary.
+    authoring = authoring_forge_by_task(worklog_rows)
+
     forge_meta = {f.get("id"): f
                   for f in (state.get("parallel", {}) or {}).get("forges", []) or []}
     # Every forge id that shows up anywhere, plus the legacy bucket.
     ids: list[str] = list(forge_meta.keys())
     for r in worklog_rows:
-        fid = r.get("forge_id")
-        ids.append(fid if fid else "legacy")
+        ids.append(effective_forge(r, authoring))
     seen: set = set()
     ordered_ids = [i for i in ids if not (i in seen or seen.add(i))]
 
     out: list[dict] = []
     for fid in ordered_ids:
         is_legacy = fid == "legacy"
-        match = (lambda r, _f=fid: (r.get("forge_id") or "legacy") == _f)
+        match = (lambda r, _f=fid: effective_forge(r, authoring) == _f)
         work_all = [r for r in worklog_rows
                     if match(r) and r.get("outcome") in FORGE_OUTCOMES]
         work_win = [r for r in work_all
