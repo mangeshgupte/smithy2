@@ -41,6 +41,23 @@ this, `smithy` on PATH resolves to THIS worktree's CLI, so one Forge's
 
 Read the handoff context notes and next steps if present. Then enter the loop.
 
+## Step 0.5: Warm-up after `/clear` (ini-021 auto-clear, only when enabled)
+
+If your previous heat triggered a `/clear` (the ini-021 context reset — see
+Step 6), this turn begins in a FRESH context: only your persona CLAUDE.md is
+auto-loaded and there are no prior assistant turns. Do NOT re-run the full
+Step 0 session bootstrap — the prior pane already did it and it's expensive.
+Warm up cheaply instead:
+
+1. Read `state.json` (only the fields you need).
+2. Read `memory/<suffix>/MEMORY_DAILY.md` if you rely on recent insights.
+3. Continue at Step 1 (`queue-pop`) — the nudge that woke you says exactly that.
+
+Heuristic for "am I post-`/clear`?": the conversation has no prior assistant
+turns AND you don't recognize the latest commit (`git log --oneline -3`). Skip
+`patrol --fix` / `sync-stages` — they ran in the prior heat. When auto-clear is
+OFF (the default), this step never applies; proceed normally.
+
 ## Step 1: Pop Next Task (fast path + reconciliation backstop)
 
 ### 1a. Fast path — Marshal's push
@@ -161,3 +178,29 @@ smithy memory-write "<consolidated insight>" --heat <N> --stage <stage>
 ```
 
 Then go to **Step 1**.
+
+## Step 6: Context reset after a clean heat (ini-021 — DEFAULT OFF)
+
+Long autonomous runs accrete context (a Forge hit 99% mid-session and
+auto-compacted on t-634). When the kill switch `FORGE_AUTO_CLEAR_ENABLED=1`
+is set, reset context once per clean heat using the proven in-loop `/clear`
+pattern — the same one Comms (`personas/comms/CLAUDE.md`) and
+`scripts/autopilot-tick.sh` already run: emit `/clear` as the first line of a
+turn to wipe context, then re-bootstrap.
+
+**On your NEXT turn after closing a heat (i.e. when the Marshal nudge
+arrives), emit `/clear` as the very first line iff ALL hold:**
+
+1. The heat you just closed ended `complete` or `submitted` — a CLEAN
+   end-heat. (Skip on `partial` / `blocked` / `rejected`: those carry an
+   unfinished debug trail worth more than the token savings.)
+2. `FORGE_AUTO_CLEAR_ENABLED=1` in your environment
+   (`[ "$FORGE_AUTO_CLEAR_ENABLED" = "1" ]`).
+
+After the `/clear`, the same nudge re-lands in fresh context → warm up per
+Step 0.5 → Step 1. Chose the in-loop `/clear` over a PostToolUse hook
+(plans/ini-021-context-reset.md §2) to avoid the hook's tmux send-keys race
+and undocumented Agent-Teams role-binding survival.
+
+**Default OFF.** With `FORGE_AUTO_CLEAR_ENABLED` unset (the default), this step
+is a no-op — zero behavior change. Turning it on is the human's call.

@@ -4,7 +4,17 @@
 - R1 baseline: `research/ini-021-baseline.md` (t-451)
 - R2 mechanism: `research/ini-021-clear-mechanism.md` (t-452)
 
-**Status:** planning complete, tasks ready for Marshal to file.
+**Status:** IMPLEMENTED, default-OFF (t-638, 2026-06-20). Landed via the
+**in-loop `/clear` pattern** — a protocol gate in `protocol/loop.md` (Step 6 +
+Step 0.5 warm-up) and `personas/forge/CLAUDE.md` (Step 7), NOT the PostToolUse
+hook of §2 below. The in-loop pattern is the one Comms and
+`scripts/autopilot-tick.sh` already prove in production; it avoids the §2
+hook's highest risks (tmux send-keys race, undocumented Agent-Teams
+role-binding survival). The kill switch `FORGE_AUTO_CLEAR_ENABLED` (§1 cond. 5)
+defaults OFF, so this is capability-only until the human enables it. §2 below is
+retained as the rejected alternative for the record. (t-638 reverses t-590's
+*unverified* obsolete-ruling on stronger ground — built OFF so activation stays
+the human's call; the trigger rule §1 and rollout plan §4–§7 still apply.)
 **Hypothesis:** Forge session context between tasks is not load-bearing —
 all durable output already persists on disk (worklog, state.json,
 persona memory, checkpoints, branches). Cross-heat context accumulation
