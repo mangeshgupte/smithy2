@@ -527,3 +527,51 @@ class TestForgeAttribution:
         # forge-quench authored nothing here → no re-attributed reject lands on it
         assert q["by_stage"].get("implementation", {}).get(
             "signals", {}).get("reject", 0) == 0
+
+
+# --- t-624 (ini-019): batch lifecycle metrics ----------------------------
+
+class TestBatching:
+    def _ends(self):
+        return [
+            {"event": "assembly_batch_end", "ts": iso(100), "batch_outcome": "green",
+             "batch_latency_ms": 1000, "green_landed": 3, "rejected_count": 0},
+            {"event": "assembly_batch_end", "ts": iso(200),
+             "batch_outcome": "partial_reject", "batch_latency_ms": 3000,
+             "green_landed": 2, "rejected_count": 1},
+            {"event": "assembly_batch_end", "ts": iso(300), "batch_outcome": "green",
+             "batch_latency_ms": 2000, "green_landed": 4, "rejected_count": 0},
+        ]
+
+    def test_batching_section(self):
+        b = metrics.batching_section(self._ends())
+        assert b["batches"] == 3
+        assert b["batch_latency_ms"]["n"] == 3
+        assert b["batch_latency_ms"]["p50"] == 2000          # median of 1000/2000/3000
+        assert b["outcomes"] == {"green": 2, "partial_reject": 1}
+        assert b["outcome_rates"]["green"] == round(2 / 3, 3)
+        assert b["green_landed"] == 9 and b["rejected"] == 1
+
+    def test_batching_empty(self):
+        b = metrics.batching_section([])
+        assert b["batches"] == 0 and b["batch_latency_ms"]["n"] == 0
+        assert b["outcomes"] == {} and b["outcome_rates"] == {}
+        assert b["green_landed"] == 0 and b["rejected"] == 0
+
+    def test_merge_latency_folds_batch_latency(self):
+        # batch era: no assembly_tick_merged, but assembly_batch_end has latency,
+        # so merge_latency_ms must NOT be blank (t-624 fold).
+        rig = [{"event": "assembly_batch_end", "ts": iso(10),
+                "batch_latency_ms": 5000, "batch_outcome": "green"}]
+        lc = metrics.lifecycle_section(rig, [])
+        assert lc["merge_latency_ms"]["n"] == 1
+        assert lc["merge_latency_ms"]["p50"] == 5000
+
+    def test_build_snapshot_includes_batching(self, records):
+        snap = metrics.build_l2_snapshot(
+            heat=14, generated_at=iso(700),
+            worklog_rows=records["worklog"], rig_events=records["rig"],
+            assembly_rows=records["assembly"], state=records["state"])
+        assert "batching" in snap
+        assert "batch_latency_ms" in snap["batching"]
+        assert "outcomes" in snap["batching"]

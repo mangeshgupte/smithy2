@@ -6,8 +6,8 @@
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "heat", "generated_at", "window", "budget",
-               "stages", "forges", "initiatives", "lifecycle", "issues",
-               "queue", "thrash_detail", "gaps"],
+               "stages", "forges", "initiatives", "lifecycle", "batching",
+               "issues", "queue", "thrash_detail", "gaps"],
   "properties": {
     "schema_version": { "const": "ini-019/l2/v1" },
     "heat": { "type": "integer" },
@@ -53,6 +53,20 @@
         "in_flight": { "$ref": "#/$defs/percentile" },
         "merge_latency_ms": { "$ref": "#/$defs/percentile" },
         "lead_time_s": { "$ref": "#/$defs/percentile" }
+      }
+    },
+    "batching": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["batches", "batch_latency_ms", "outcomes",
+                   "outcome_rates", "green_landed", "rejected"],
+      "properties": {
+        "batches": { "type": "integer" },
+        "batch_latency_ms": { "$ref": "#/$defs/percentile" },
+        "outcomes": { "type": "object", "additionalProperties": { "type": "integer" } },
+        "outcome_rates": { "type": "object", "additionalProperties": { "type": "number" } },
+        "green_landed": { "type": "integer" },
+        "rejected": { "type": "integer" }
       }
     },
     "issues": {

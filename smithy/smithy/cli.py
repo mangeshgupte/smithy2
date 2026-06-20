@@ -8326,7 +8326,7 @@ def up(ctx, force, dry_run, session_name):
 # ---------------------------------------------------------------------------
 
 REPORT_ALL_SECTIONS = ["budget", "stages", "forges", "initiatives",
-                       "issues", "thrash"]
+                       "batching", "issues", "thrash"]
 
 
 def _report_read_lines(path):
@@ -8553,6 +8553,24 @@ def _report_render_human(snap, sections, verbose):
             L.append(f"  {i.get('id'):<8} {title:<22} {burn:>8} heats   "
                      f"{_report_bar(i.get('pct'), 6)}  {sr_s}")
         L.append("")
+
+    if "batching" in sections:
+        bt = snap.get("batching") or {}
+        if bt.get("batches"):
+            lat = bt.get("batch_latency_ms") or {}
+
+            def _ms(v):
+                return f"{v / 1000:.0f}s" if v is not None else "—"
+
+            oc = bt.get("outcomes") or {}
+            oc_s = "  ".join(f"{k} {v}" for k, v in sorted(oc.items()))
+            L.append("Batching (Assembly)")
+            L.append(f"  {bt['batches']} batches · latency p50 {_ms(lat.get('p50'))}"
+                     f" / p90 {_ms(lat.get('p90'))} · landed "
+                     f"{bt.get('green_landed', 0)} rejected {bt.get('rejected', 0)}")
+            if oc_s:
+                L.append(f"  outcomes: {oc_s}")
+            L.append("")
 
     if "issues" in sections:
         iss = snap["issues"]
