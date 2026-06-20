@@ -63,10 +63,13 @@ class TestNumericAlignment:
         assert 'id="c-check-all"' in cockpit_html
         assert '<th colspan="9">tasks</th>' in cockpit_html
 
-    def test_priority_cell_tagged(self, cockpit_html):
+    def test_priority_cell_tagged(self):
         # t-599: priority moved from a right-aligned c-num table cell to a pill
-        # on the card's line 1.
-        assert 'c-card-prio">p${t.priority == null' in cockpit_html
+        # on the card's line 1. t-612 (ini-016): that pill markup now lives in
+        # the shared static/cockpit-card.js (rendered by /cockpit + the rail).
+        js = (REPO_ROOT / "ui-priority-poker" / "static" / "cockpit-card.js").read_text()
+        assert 'class="c-card-prio"' in js
+        assert "t.priority == null" in js
 
     def test_hp_age_heat_right_aligned(self, style_block):
         rule = re.search(r"\.cockpit-table \.c-hp,[^}]*\}", style_block, re.S)

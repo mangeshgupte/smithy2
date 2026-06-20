@@ -227,8 +227,7 @@
         }
         .c-desc-row td.c-desc-cell .c-bounce { flex: none; margin-left: 0; }
         .c-desc-row td.c-desc-cell:hover { color: var(--text); }
-        .c-ini-link { color: var(--c-link); text-decoration: none; }
-        .c-ini-link:hover { text-decoration: underline; }
+        /* t-612: .c-ini-link moved to static/style.css (shared with the rail). */
         /* t-599: 2-line card layout (human steer 2026-06-20). Each task is a
            card — LINE 1 = id · initiative · priority · status (+ a trailing
            control), LINE 2 = the description snippet. The dense stage/age/hp/
@@ -240,27 +239,15 @@
            colspan-9 card cell), matching the skeleton/empty/section colspans. */
         .cockpit-table td.c-check { vertical-align: middle; }
         .c-card-cell { vertical-align: middle; }
-        .c-card-line1 { display: flex; align-items: center; gap: 8px;
-                        min-width: 0; }
         /* No divider between a card's two lines; the divider under the desc
            row closes the card and separates it from the next. */
         .cockpit-table tr[data-task-id] > td { border-bottom: none; }
         .cockpit-table tr.c-desc-row > td { border-bottom: 1px solid var(--border); }
         .c-card-line1 .c-expand { width: auto; }
-        .c-card-line1 .c-id { flex: none; }
-        .c-card-line1 .c-card-ini { font-size: var(--fs-sm); white-space: nowrap;
-                                    flex: 0 1 auto; overflow: hidden;
-                                    text-overflow: ellipsis; }
-        /* priority pill + status text — small and muted so the id stays the
-           per-card anchor. */
-        .c-card-prio { font-size: var(--fs-xs); color: var(--text-muted);
-                       background: var(--surface-hover); padding: 2px 8px;
-                       border-radius: 8px; white-space: nowrap; flex: none; }
-        .c-card-status { font-size: var(--fs-xs); text-transform: uppercase;
-                         letter-spacing: 0.04em; color: var(--text-muted);
-                         white-space: nowrap; flex: none; }
-        .c-card-status[data-st="in_progress"] { color: var(--blue); }
-        .c-card-status[data-st="pending"] { color: var(--text); }
+        /* t-612 (ini-016): the card FACE rules (.c-card-line1 flex, .c-id,
+           .c-card-ini, .c-card-prio, .c-card-status, .c-ini-link) moved to
+           static/style.css so the poker right-rail renders the IDENTICAL card.
+           Only table-structure + standalone-chrome rules remain inline. */
         /* pending/deferred cards push the defer kebab to the right edge;
            complete cards push their ship value + sha there instead. */
         .c-card-line1 .c-kebab { margin-left: auto; flex: none; }
@@ -274,6 +261,9 @@
         window.COCKPIT_BELLOWS_URL = {{ url_bellows | tojson }};
         window.COCKPIT_PROJECT_NAME = {{ project | tojson }};
     </script>
+    <!-- t-612 (ini-016): shared cockpit 2-line card renderer (also loaded by
+         index.html's poker right-rail) — single source of the card markup. -->
+    <script src="/static/cockpit-card.js"></script>
 </head>
 <body>
     <!-- t-586: NO .reading wrapper here. The cockpit is a wide multi-column
@@ -556,11 +546,9 @@
     // t-527/t-599: initiative cell — linkifies to Bellows when BELLOWS_URL +
     // PROJECT_NAME are present, else a muted em-dash. Shared by the pending
     // and complete card renderers.
-    function iniCellHtml(t) {
-        return t.initiative_id
-            ? `<a class="c-ini-link" href="${BELLOWS_URL}/project/${encodeURIComponent(PROJECT_NAME)}/initiative/${encodeURIComponent(t.initiative_id)}" target="_blank" rel="noopener">${t.initiative_id}</a>`
-            : '—';
-    }
+    // t-612 (ini-016): route through the shared cockpit-card renderer so the
+    // initiative cell linkifies identically on the standalone and the rail.
+    function iniCellHtml(t) { return CockpitCard.iniHtml(t); }
 
     function renderRow(body, t) {
             if (t.status === 'complete') { renderCompleteRow(body, t); return; }
@@ -591,10 +579,11 @@
                 `<td class="c-check"><input type="checkbox" data-bulk-id="${t.id}" ${checked} onclick="onBulkCheck(event)"></td>` +
                 `<td class="c-card-cell" colspan="9"><div class="c-card-line1">` +
                   `<span class="c-expand ${isOpen ? 'open' : ''}" onclick="toggleInlineExpand(event, '${t.id}')">${isOpen ? '▾' : '▸'}</span>` +
-                  `<span class="c-id"><a href="#" onclick="openDrawer('${t.id}');return false;">${t.id}</a></span>` +
-                  `<span class="c-card-ini">${iniCellHtml(t)}</span>` +
-                  `<span class="c-card-prio">p${t.priority == null ? '?' : t.priority}</span>` +
-                  `<span class="c-card-status" data-st="${t.status}">${t.status}</span>` +
+                  // t-612 (ini-016): the id·initiative·priority·status face comes
+                  // from the shared cockpit-card renderer (same markup the poker
+                  // right-rail uses). The id is now a plain .c-id span; a click on
+                  // it opens the drawer via onRowClickToggle's delegated handler.
+                  CockpitCard.line1Html(t) +
                   `<span class="c-kebab" onclick="toggleDefer('${t.id}', '${t.status}')" title="defer/undefer">${t.status === 'deferred' ? '▶' : '⏸'}</span>` +
                 `</div></td>`;
             // t-546: whole-row click toggles the inline panel (the
@@ -630,6 +619,9 @@
     // or the chevron (which has its own toggle handler that stops
     // propagation — listed here as belt-and-suspenders) is ignored.
     function onRowClickToggle(evt, taskId) {
+        // t-612: the id is now a plain .c-id span (shared card markup); clicking
+        // it opens the full drawer — same affordance the old id <a> link gave.
+        if (evt.target.closest('.c-id')) { openDrawer(taskId); return; }
         if (evt.target.closest(
             'a, button, input, select, textarea, .c-kebab, .c-expand')) return;
         // Selecting text (e.g. copying a desc) ends with a click on the
@@ -681,10 +673,8 @@
     // t-580: collapsed desc preview — FIRST LINE only, fully HTML-escaped,
     // so a multi-line description renders as one truncated line (not a tall
     // pre-wrap blob). Full text stays available in the expanded panel.
-    function descPreview(t) {
-        const first = (t.desc || '(no description)').split(String.fromCharCode(10))[0];
-        return first.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    }
+    // t-612 (ini-016): shared with the rail via the cockpit-card renderer.
+    function descPreview(t) { return CockpitCard.descPreview(t); }
 
     // t-548: compact bounce badge for the primary row — latest
     // (done, rejected) heat pair + total bounce count. Tasks that never

@@ -165,12 +165,16 @@ def test_cockpit_desc_row_click_toggles_inline_panel(cockpit_html):
 # ---------- (3) INITIATIVE clickable -------------------------------------
 
 
-def test_cockpit_template_renders_initiative_as_bellows_link(cockpit_html):
-    assert "c-ini-link" in cockpit_html
-    assert "/project/" in cockpit_html
-    assert "/initiative/" in cockpit_html
-    assert 'target="_blank"' in cockpit_html
-    assert 'rel="noopener"' in cockpit_html
+def test_cockpit_template_renders_initiative_as_bellows_link():
+    # t-612 (ini-016): the initiative-as-Bellows-link markup moved out of
+    # cockpit.html into the shared static/cockpit-card.js (now rendered
+    # identically by both /cockpit and the poker right-rail).
+    js = (REPO_ROOT / "ui-priority-poker" / "static" / "cockpit-card.js").read_text()
+    assert "c-ini-link" in js
+    assert "/project/" in js
+    assert "/initiative/" in js
+    assert 'target="_blank"' in js
+    assert 'rel="noopener"' in js
 
 
 def test_cockpit_injects_bellows_url_and_project_name(cockpit_html):

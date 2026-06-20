@@ -539,18 +539,37 @@ html.poker-page { overflow-x: hidden; }
 .cockpit-rail-tools input { flex: 1; min-width: 0; }
 .cockpit-rail-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column;
     max-height: calc(100vh - 210px); overflow-y: auto; }
-.cockpit-rail-row { display: flex; align-items: center; gap: 7px; padding: 6px 8px;
-    border-bottom: 1px solid var(--surface); cursor: pointer; font-size: 12.5px; }
+/* t-612 (ini-016): the rail row is now a container for the shared 2-line card
+   (was a single-line id·prio·title·dot row; the .cr-* classes retired with it). */
+.cockpit-rail-row { display: block; padding: 7px 8px;
+    border-bottom: 1px solid var(--surface); cursor: pointer; }
 .cockpit-rail-row:hover { background: var(--surface-hover); }
-.cockpit-rail-row .cr-id { color: var(--blue); font-family: ui-monospace, monospace; flex-shrink: 0; }
-.cockpit-rail-row .cr-prio { color: var(--text-muted); font-size: 11px; flex-shrink: 0; }
-.cockpit-rail-row .cr-title { flex: 1; min-width: 0; overflow: hidden;
-    text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
-.cockpit-rail-row .cr-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--text-muted); }
-.cr-dot.s-in_progress { background: var(--blue); }
-.cr-dot.s-submitted { background: var(--yellow); }
-.cr-dot.s-complete { background: var(--green); }
-.cr-dot.s-deferred { background: #555; }
+
+/* t-612 (ini-016): shared cockpit 2-line task-card FACE — the single definition
+   of the card markup's styling, used by BOTH the standalone /cockpit table and
+   the poker right-rail (built in static/cockpit-card.js; reverses t-378). The
+   standalone's table-structure rules (cells, borders, desc-row) stay in
+   cockpit.html's inline <style>; only the card face lives here so both match.
+   Explicit 12/13px (cockpit's --fs-xs/--fs-sm aren't defined in this sheet). */
+.cockpit-card { min-width: 0; }
+.c-card-line1 { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.c-card-line1 .c-id { flex: none; color: var(--yellow);
+    font-family: ui-monospace, monospace; }
+.c-card-ini { font-size: 13px; white-space: nowrap; flex: 0 1 auto;
+    overflow: hidden; text-overflow: ellipsis; }
+.c-ini-link { color: var(--blue); text-decoration: none; }
+.c-ini-link:hover { text-decoration: underline; }
+.c-card-prio { font-size: 12px; color: var(--text-muted);
+    background: var(--surface-hover); padding: 2px 8px; border-radius: 8px;
+    white-space: nowrap; flex: none; }
+.c-card-status { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--text-muted); white-space: nowrap; flex: none; }
+.c-card-status[data-st="in_progress"] { color: var(--blue); }
+.c-card-status[data-st="submitted"] { color: var(--yellow); }
+.c-card-status[data-st="pending"] { color: var(--text); }
+.c-card-l2 { margin-top: 2px; min-width: 0; }
+.c-card-l2 .c-desc-preview { display: block; font-size: 13px; color: var(--text-muted);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cockpit-rail-empty { color: var(--text-muted); font-size: 12px; padding: 12px 8px; }
 
 /* t-592: task detail rendered IN-PLACE in the right pane (no overlay/backdrop).
