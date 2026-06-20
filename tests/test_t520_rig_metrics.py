@@ -251,3 +251,47 @@ class TestQueryParams:
         r = c.get("/api/metrics/heat-rates")
         data = r.json()
         assert len(data["buckets"]) == 10
+
+
+# --- t-609: last-1h wall-clock window --------------------------------
+
+
+class TestLast1hWindow:
+    def test_summary_includes_last_1h(self, client, tmp_path):
+        _seed(tmp_path, used=50, rows=[])
+        c, _ = client
+        data = c.get("/api/metrics/heat-rates").json()
+        assert "last_1h" in data["summary"]
+        s = data["summary"]["last_1h"]
+        assert set(s) == {"merged", "rejected", "ratio"}
+
+    def test_last_1h_windows_tighter_than_24h(self, client, tmp_path):
+        now = datetime.now(timezone.utc)
+        recent_m = (now - timedelta(minutes=30)).isoformat().replace("+00:00", "Z")
+        recent_r = (now - timedelta(minutes=10)).isoformat().replace("+00:00", "Z")
+        older = (now - timedelta(hours=2)).isoformat().replace("+00:00", "Z")
+        _seed(tmp_path, used=100, rows=[
+            {"ts": older, "heat": 80, "task_id": "t-old", "outcome": "merged"},
+            {"ts": recent_m, "heat": 98, "task_id": "t-a", "outcome": "merged"},
+            {"ts": recent_r, "heat": 99, "task_id": "t-b", "outcome": "rejected"},
+        ])
+        c, _ = client
+        s = c.get("/api/metrics/heat-rates").json()["summary"]
+        # 1h window: only the two within-the-hour rows.
+        assert s["last_1h"]["merged"] == 1
+        assert s["last_1h"]["rejected"] == 1
+        assert s["last_1h"]["ratio"] == 0.5
+        # 24h window still includes the 2h-old merge → strictly wider.
+        assert s["last_24h"]["merged"] == 2
+
+    def test_last_1h_ratio_none_when_no_recent_outcomes(self, client, tmp_path):
+        old = (datetime.now(timezone.utc) - timedelta(hours=3)) \
+            .isoformat().replace("+00:00", "Z")
+        _seed(tmp_path, used=50, rows=[
+            {"ts": old, "heat": 40, "task_id": "t-old", "outcome": "merged"},
+        ])
+        c, _ = client
+        s = c.get("/api/metrics/heat-rates").json()["summary"]
+        assert s["last_1h"]["merged"] == 0
+        assert s["last_1h"]["rejected"] == 0
+        assert s["last_1h"]["ratio"] is None
