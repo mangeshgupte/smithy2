@@ -326,3 +326,108 @@ class TestSchemaDefaults:
         assert ini["retro_path"] == "plans/ini-004-retro.md"
         assert ini["closed_at"] == "2026-04-01T00:00:00+00:00"
         assert ini["heat_cost_total"] == 7
+
+
+# --- t-596: rank hygiene on close ------------------------------------
+#
+# BUG: complete_initiative flipped status → done but never re-ran the
+# rank-invariant pass, so the closed initiative kept its stray rank and
+# patrol/validate-ranks later flagged it (ini-015 hit this on 2026-06-20).
+# FIX: call _renumber_ranks(state) after the status flip — it nulls the
+# closed initiative's rank and recompacts the survivors to 1..N.
+
+
+def _ranked_state():
+    """Three rankable initiatives with contiguous ranks 1..3, plus a
+    rejected and an already-done one that correctly carry rank=None."""
+    return _state([
+        _ini("ini-001", status="active", heats_used=12, rank=1),
+        _ini("ini-002", status="approved", heats_used=0, rank=2),
+        _ini("ini-025", status="active", heats_used=3, rank=3),
+        _ini("ini-003", status="rejected", heats_used=0, rank=None),
+        _ini("ini-004", status="done", heats_used=7, rank=None,
+             retro_path="plans/ini-004-retro.md",
+             closed_at="2026-04-01T00:00:00+00:00", heat_cost_total=7),
+    ])
+
+
+@pytest.fixture
+def ranked_project(tmp_path):
+    (tmp_path / "state.json").write_text(json.dumps(_ranked_state()))
+    (tmp_path / "worklog.tsv").write_text(
+        "timestamp\theat\tstage\ttask_id\toutcome\tvalue\tsignal\tnotes\tforge_id\n"
+    )
+    (tmp_path / "feedback.md").write_text("# Feedback\n")
+    (tmp_path / "inbox.md").write_text("# Inbox\n")
+    (tmp_path / "plans").mkdir()
+    (tmp_path / "plans" / "ini-001-retro.md").write_text("# Retro ini-001\n")
+    (tmp_path / "plans" / "ini-002-retro.md").write_text("# Retro ini-002\n")
+    (tmp_path / "plans" / "ini-025-retro.md").write_text("# Retro ini-025\n")
+    subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+    subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True)
+    subprocess.run(["git", "commit", "-m", "init"], cwd=tmp_path,
+                   capture_output=True)
+    return tmp_path
+
+
+def _validate_ranks_run(runner, project):
+    return runner.invoke(
+        cli, ["--dir", str(project), "initiative", "validate-ranks"])
+
+
+class TestRankHygieneOnClose:
+    """t-596: closing a rankable initiative must null its rank and keep the
+    remaining rankable initiatives contiguous 1..N — no manual renumber."""
+
+    def test_closed_initiative_rank_nulled(self, ranked_project, runner):
+        # (a) close rank-1 ini-001 → its rank becomes None.
+        r = _run(runner, ranked_project, "ini-001",
+                 "--retro", "plans/ini-001-retro.md")
+        assert r.exit_code == 0, f"stderr={r.stderr}"
+        ini = _read_ini(ranked_project, "ini-001")
+        assert ini["status"] == "done"
+        assert ini["rank"] is None
+
+    def test_remaining_ranks_contiguous_in_prior_order(self, ranked_project,
+                                                       runner):
+        # (b) closing rank-1 leaves {ini-002(was 2), ini-025(was 3)} →
+        # recompacted to 1,2 preserving prior order.
+        r = _run(runner, ranked_project, "ini-001",
+                 "--retro", "plans/ini-001-retro.md")
+        assert r.exit_code == 0
+        assert _read_ini(ranked_project, "ini-002")["rank"] == 1
+        assert _read_ini(ranked_project, "ini-025")["rank"] == 2
+
+    def test_close_middle_rank_recompacts(self, ranked_project, runner):
+        # Close the middle rank (ini-002, rank=2): ini-001 stays 1, ini-025
+        # drops from 3 → 2.
+        r = _run(runner, ranked_project, "ini-002",
+                 "--retro", "plans/ini-002-retro.md")
+        assert r.exit_code == 0
+        assert _read_ini(ranked_project, "ini-002")["rank"] is None
+        assert _read_ini(ranked_project, "ini-001")["rank"] == 1
+        assert _read_ini(ranked_project, "ini-025")["rank"] == 2
+
+    def test_validate_ranks_clean_after_close(self, ranked_project, runner):
+        # (c) validate-ranks is clean immediately after a close — no manual
+        # `initiative renumber` required.
+        r = _run(runner, ranked_project, "ini-001",
+                 "--retro", "plans/ini-001-retro.md")
+        assert r.exit_code == 0
+        v = _validate_ranks_run(runner, ranked_project)
+        assert v.exit_code == 0, f"validate-ranks not clean: {v.stdout}"
+        data = json.loads(v.stdout)
+        assert data["clean"] is True
+        assert data["issues"] == []
+
+    def test_force_no_retro_close_also_nulls_rank(self, ranked_project, runner):
+        # The --force-no-retro path runs the same mutate block, so it must
+        # null the rank too. Closing the top rank (ini-025=3) leaves 1,2
+        # already contiguous.
+        r = _run(runner, ranked_project, "ini-025", "--force-no-retro")
+        assert r.exit_code == 0
+        assert _read_ini(ranked_project, "ini-025")["rank"] is None
+        assert _read_ini(ranked_project, "ini-001")["rank"] == 1
+        assert _read_ini(ranked_project, "ini-002")["rank"] == 2
+        v = _validate_ranks_run(runner, ranked_project)
+        assert v.exit_code == 0, f"validate-ranks not clean: {v.stdout}"

@@ -7288,6 +7288,11 @@ def complete_initiative(ctx, initiative_id, retro_path, successor_ini,
     target["closed_at"] = datetime.now(timezone.utc).isoformat()
     target["heat_cost_total"] = target.get("heats_used") or 0
     target["successor_ini"] = successor_ini  # None if unspecified
+    # t-596: closing flips status out of RANKABLE_INI_STATUSES, so re-run the
+    # rank-invariant pass before saving — nulls this initiative's stray rank
+    # and recompacts the remaining rankable initiatives to a contiguous 1..N.
+    # Without this, every close left a dangling rank that patrol later flagged.
+    _renumber_ranks(state)
     save_state(root, state)
 
     # --- audit trail ----------------------------------------------------
