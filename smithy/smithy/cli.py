@@ -8270,5 +8270,440 @@ def up(ctx, force, dry_run, session_name):
     sys.exit(result.returncode)
 
 
+# ---------------------------------------------------------------------------
+# ini-019 P1.2 (t-602): `smithy report` — terminal-native rig metrics surface.
+#
+# Pure-read. Loads the four record sources — worklog.tsv (S1), rig-events.jsonl
+# (S2), assembly-log.jsonl (S3), state.json (S4) — assembles the L2 snapshot via
+# metrics.build_l2_snapshot, and renders it as a human summary (default),
+# --json (the L2 schema + a `surface: report` marker), or --tsv. Replay via
+# --at-heat / --at-ts / --at-sha (mutually exclusive). Filters: --initiative,
+# --forge, --window, --sections, --verbose. Spec: plans/ini-019-surfaces-plan.md
+# §1. Exit codes: 0 ok · 1 data missing · 2 usage error.
+# ---------------------------------------------------------------------------
+
+REPORT_ALL_SECTIONS = ["budget", "stages", "forges", "initiatives",
+                       "issues", "thrash"]
+
+
+def _report_read_lines(path):
+    try:
+        return path.read_text().splitlines()
+    except OSError:
+        return []
+
+
+def _report_load_sources(main_root):
+    """Read the 3 log sources (S1/S2/S3) into parsed row lists."""
+    from . import metrics
+    worklog = metrics.parse_worklog(_report_read_lines(main_root / "worklog.tsv"))
+    rig = metrics.parse_jsonl(_report_read_lines(main_root / "rig-events.jsonl"))
+    asm = metrics.parse_jsonl(_report_read_lines(main_root / "assembly-log.jsonl"))
+    return worklog, rig, asm
+
+
+def _report_cutoff_ts(worklog_rows, at_heat):
+    """The 'end of heat N' reference clock (§1.6): the latest worklog timestamp
+    among rows with heat <= N. None if no such row."""
+    from . import metrics
+    cands = [metrics._parse_ts(r.get("timestamp"))
+             for r in worklog_rows if r.get("heat") is not None
+             and r["heat"] <= at_heat]
+    cands = [t for t in cands if t is not None]
+    return max(cands) if cands else None
+
+
+def _report_filter_by_ts(rows, cutoff_ts):
+    """Keep jsonl rows with ts <= cutoff (S2/S3 replay filter, §1.6)."""
+    from . import metrics
+    if cutoff_ts is None:
+        return rows
+    out = []
+    for r in rows:
+        t = metrics._parse_ts(r.get("ts"))
+        if t is None or t <= cutoff_ts:
+            out.append(r)
+    return out
+
+
+def _report_apply_initiative(state, worklog, rig, asm, ini_id):
+    """Restrict the row-derived sections to one initiative's tasks (§1.2).
+    budget/stages stay global (they're not per-task in state)."""
+    task_ini = {t.get("id"): t.get("initiative_id")
+                for t in (state.get("queue", []) or [])}
+    keep = {tid for tid, i in task_ini.items() if i == ini_id}
+    state = dict(state)
+    state["queue"] = [t for t in (state.get("queue", []) or [])
+                      if t.get("initiative_id") == ini_id]
+    worklog = [r for r in worklog if r.get("task_id") in keep]
+    rig = [e for e in rig if e.get("task_id") in keep or e.get("task_id") is None]
+    asm = [a for a in asm if a.get("task_id") in keep]
+    return state, worklog, rig, asm
+
+
+def _report_apply_forge(worklog, rig, asm, forge_id):
+    """Restrict to one forge's rows (§1.2)."""
+    worklog = [r for r in worklog if (r.get("forge_id") or "legacy") == forge_id]
+    rig = [e for e in rig if e.get("forge_id") in (forge_id, None)]
+    asm = [a for a in asm if a.get("forge_id") == forge_id]
+    return worklog, rig, asm
+
+
+def _report_bar(pct, width=14):
+    """Unicode progress bar for a 0..1 fraction (None -> empty)."""
+    if pct is None:
+        return "·" * width
+    filled = max(0, min(width, int(round(pct * width))))
+    return "█" * filled + "░" * (width - filled)
+
+
+def _report_render_human(snap, sections, verbose):
+    """§1.3 default format — six labeled blocks, <=40 lines, no tables wider
+    than ~72 chars."""
+    L = []
+    gen = (snap.get("generated_at") or "")[:16].replace("T", " ")
+    L.append(f"Smithy Report · heat {snap.get('heat')} · {gen}Z")
+    L.append("─" * 48)
+
+    if "budget" in sections:
+        b = snap["budget"]
+        pct = b.get("pct")
+        pct_s = f"{pct*100:.1f}%" if pct is not None else "—"
+        L.append(f"Budget      [{_report_bar(pct)}] "
+                 f"{b.get('used')}/{b.get('total')}  {pct_s}")
+        prog = b.get("overall_progress")
+        L.append(f"Progress     {prog if prog is not None else '—'}")
+        L.append("")
+
+    if "stages" in sections:
+        L.append("Stages (share vs target)")
+        for stage in ["research", "planning", "implementation", "testing",
+                      "editing", "marketing"]:
+            sd = snap["stages"].get(stage)
+            if not sd:
+                continue
+            share = sd.get("share") or 0.0
+            drift = sd.get("drift")
+            drift_s = (f"{drift*100:+.1f}pp vs {sd.get('target_share')}"
+                       if drift is not None else "")
+            L.append(f"  {stage:<15}{sd.get('heats'):>4}  {share*100:>5.1f}%"
+                     f"   ( {drift_s} )")
+        L.append("")
+
+    if "forges" in sections:
+        win = snap.get("window", {})
+        L.append(f"Forges (heats {win.get('from_heat')}–{win.get('to_heat')})")
+        for f in snap["forges"]:
+            if not f.get("heats_total"):
+                continue
+            idle = f.get("idle_pct")
+            idle_s = f"idle {idle*100:.0f}%" if idle is not None else "idle —"
+            g = y = r = 0
+            for sd in (f.get("by_stage") or {}).values():
+                sig = sd.get("signals", {})
+                g += sig.get("green", 0)
+                y += sig.get("yellow", 0)
+                r += sig.get("red", 0)
+            L.append(f"  {f.get('id'):<15}{f.get('heats_total'):>3} heats  "
+                     f"{idle_s:<9} 🟢 {g} 🟡 {y} 🔴 {r}")
+        L.append("")
+
+    if "initiatives" in sections:
+        L.append("Initiatives (by burn)")
+        actives = [i for i in snap["initiatives"]
+                   if (i.get("heats_used") or 0) or i.get("tasks_in_flight")]
+        actives.sort(key=lambda i: (i.get("pct") or 0,
+                                    i.get("heats_used") or 0), reverse=True)
+        for i in actives[:6]:
+            cap = i.get("budget_cap")
+            burn = f"{i.get('heats_used') or 0}/{cap if cap is not None else '∞'}"
+            sr = i.get("success_rate")
+            sr_s = f"success {sr*100:.0f}%" if sr is not None else ""
+            title = (i.get("title") or i.get("id") or "")[:22]
+            L.append(f"  {i.get('id'):<8} {title:<22} {burn:>8} heats   "
+                     f"{_report_bar(i.get('pct'), 6)}  {sr_s}")
+        L.append("")
+
+    if "issues" in sections:
+        iss = snap["issues"]
+        L.append("Issues")
+
+        def _line(label, n, extra=""):
+            dots = "." * max(3, 26 - len(label))
+            L.append(f"  {label} {dots} {n}"
+                     + (f"   {extra}" if extra else ""))
+        _line("Ghost submits", iss["ghost_submits"]["count"],
+              ", ".join(iss["ghost_submits"]["task_ids"][:4]))
+        _line("Thrash >=3 retries", iss["thrash"]["count"],
+              ", ".join(iss["thrash"]["task_ids"][:4]))
+        _line("Repeat failing tests", iss["repeat_tests"]["count"],
+              ", ".join(n["node"].split("::")[-1].split("|")[0][:24]
+                        for n in iss["repeat_tests"]["nodes"][:2]))
+        _line("Assembly stalls", iss["stalls"]["count"],
+              ", ".join(iss["stalls"]["task_ids"][:4]))
+        _line("Orphan in_progress", iss["orphans_reaped"]["count"])
+        _line("Partial heats", iss["partial"]["count"])
+        L.append("")
+
+        L.append("Top failure buckets")
+        by_reason = iss["rejections"]["by_reason"]
+        cells = [f"{k} {v}" for k, v in sorted(by_reason.items(),
+                 key=lambda kv: kv[1], reverse=True) if v]
+        L.append("  " + ("    ".join(cells) if cells else "(none)"))
+
+    if "thrash" in sections and snap.get("thrash_detail"):
+        L.append("")
+        L.append("Thrash detail")
+        for t in snap["thrash_detail"][:5]:
+            L.append(f"  {t.get('task_id')}  attempts {t.get('attempts')}  "
+                     f"rejections {t.get('rejections')}")
+
+    if verbose:
+        gaps = snap.get("gaps") or {}
+        if gaps:
+            L.append("")
+            L.append("Data-quality caveats (--verbose)")
+            for k, v in gaps.items():
+                L.append(f"  {k}: {v}")
+        if snap.get("_replayed"):
+            L.append("  note: --at-heat/--at-ts replay filters S1/S2/S3 and "
+                     "budget; the stages section reflects live state.json "
+                     "(allocator replay is a separate task).")
+    return "\n".join(L)
+
+
+def _report_render_tsv(snap, sections):
+    """§1.5 — one `metric\\tdimension\\tvalue` row per datum. Dimension keys
+    lowercase; list values comma-joined."""
+    rows = []
+
+    def add(metric, dim, val):
+        if val is None:
+            return
+        if isinstance(val, (list, tuple)):
+            val = ",".join(str(x) for x in val)
+        rows.append(f"{metric}\t{dim}\t{val}")
+
+    if "budget" in sections:
+        b = snap["budget"]
+        add("budget.used", "-", b.get("used"))
+        add("budget.total", "-", b.get("total"))
+        add("budget.pct", "-", b.get("pct"))
+        add("budget.progress", "-", b.get("overall_progress"))
+    if "stages" in sections:
+        for stage, sd in snap["stages"].items():
+            add("stages.heats", stage, sd.get("heats"))
+            add("stages.share", stage, sd.get("share"))
+            add("stages.drift", stage, sd.get("drift"))
+    if "forges" in sections:
+        for f in snap["forges"]:
+            fid = f.get("id")
+            add("forges.heats", fid, f.get("heats_total"))
+            add("forges.idle_pct", fid, f.get("idle_pct"))
+            add("forges.rejection_share", fid, f.get("rejection_share"))
+    if "initiatives" in sections:
+        for i in snap["initiatives"]:
+            iid = i.get("id")
+            add("initiatives.heats_used", iid, i.get("heats_used"))
+            add("initiatives.pct", iid, i.get("pct"))
+            add("initiatives.success_rate", iid, i.get("success_rate"))
+    if "issues" in sections:
+        iss = snap["issues"]
+        add("issues.ghost_submits", "count", iss["ghost_submits"]["count"])
+        add("issues.thrash", "count", iss["thrash"]["count"])
+        add("issues.thrash", "task_ids", iss["thrash"]["task_ids"])
+        add("issues.stalls", "count", iss["stalls"]["count"])
+        add("issues.partial", "count", iss["partial"]["count"])
+        for reason, n in iss["rejections"]["by_reason"].items():
+            add("rejections.by_reason", reason, n)
+    return "\n".join(rows)
+
+
+@cli.command("report")
+@click.option("--at-heat", type=int, default=None,
+              help="Replay as of heat N (S1 heat<=N; S2/S3 ts<=row[N].ts).")
+@click.option("--at-ts", default=None,
+              help="Replay as of an ISO8601 timestamp (S1 timestamp<=T).")
+@click.option("--at-sha", default=None,
+              help="Replay from a git commit's state.json + tracked logs.")
+@click.option("--initiative", "initiative_id", default=None,
+              help="Restrict row-derived metrics to one initiative's tasks.")
+@click.option("--forge", "forge_id", default=None,
+              help="Restrict to one forge's rows.")
+@click.option("--window", "window", default=None,
+              help="Rolling window: 'N-heats' or 'N-hours'.")
+@click.option("--json", "as_json", is_flag=True, default=False,
+              help="Emit the L2 snapshot schema (surface=report).")
+@click.option("--tsv", "as_tsv", is_flag=True, default=False,
+              help="Emit per-metric tab-separated rows.")
+@click.option("--sections", "sections_csv", default=None,
+              help="Comma list from budget,stages,forges,initiatives,issues,thrash.")
+@click.option("--verbose", is_flag=True, default=False,
+              help="Add gap-flag notes + data-quality caveats.")
+@click.pass_context
+def report(ctx, at_heat, at_ts, at_sha, initiative_id, forge_id, window,
+           as_json, as_tsv, sections_csv, verbose):
+    """Terminal-native rig metrics — 'how is the rig doing, right now or at
+    heat N?' (ini-019 §1). Pure-read; never writes state or logs."""
+    from datetime import datetime, timezone
+    from . import metrics
+
+    # --- usage validation (exit 2) --------------------------------------
+    at_flags = [f for f in (at_heat is not None, at_ts is not None,
+                            bool(at_sha)) if f]
+    if len(at_flags) > 1:
+        _output({"error": "--at-heat / --at-ts / --at-sha are mutually "
+                          "exclusive"})
+        _err("usage: --at-heat / --at-ts / --at-sha are mutually exclusive")
+        sys.exit(2)
+    if as_json and as_tsv:
+        _output({"error": "--json and --tsv are mutually exclusive"})
+        _err("usage: --json and --tsv are mutually exclusive")
+        sys.exit(2)
+    if sections_csv:
+        sections = [s.strip() for s in sections_csv.split(",") if s.strip()]
+        bad = [s for s in sections if s not in REPORT_ALL_SECTIONS]
+        if bad:
+            _output({"error": f"unknown section(s): {bad}",
+                     "valid": REPORT_ALL_SECTIONS})
+            _err(f"usage: unknown section(s) {bad}")
+            sys.exit(2)
+    else:
+        sections = list(REPORT_ALL_SECTIONS)
+
+    root = ctx.obj["root"]
+    main_root = main_repo_root(root)
+    replayed = False
+
+    # --- source resolution (exit 1 on missing replay data) --------------
+    if at_sha:
+        import subprocess
+        try:
+            txt = subprocess.run(["git", "show", f"{at_sha}:state.json"],
+                                 cwd=str(main_root), capture_output=True,
+                                 text=True, check=True).stdout
+            state = json.loads(txt)
+        except (subprocess.CalledProcessError, json.JSONDecodeError, OSError):
+            _output({"error": f"cannot read state.json at sha {at_sha}"})
+            _err(f"data missing: no state.json at {at_sha}")
+            sys.exit(1)
+
+        def _show(rel):
+            try:
+                return subprocess.run(["git", "show", f"{at_sha}:{rel}"],
+                                      cwd=str(main_root), capture_output=True,
+                                      text=True, check=True).stdout.splitlines()
+            except (subprocess.CalledProcessError, OSError):
+                return None
+        wl = _show("worklog.tsv")
+        live_wl, live_rig, live_asm = _report_load_sources(main_root)
+        worklog = metrics.parse_worklog(wl) if wl is not None else live_wl
+        # rig-events / assembly-log are usually untracked telemetry — fall back
+        # to live filtered by the commit's author time.
+        try:
+            ct = subprocess.run(["git", "show", "-s", "--format=%cI", at_sha],
+                                cwd=str(main_root), capture_output=True,
+                                text=True, check=True).stdout.strip()
+            cutoff = metrics._parse_ts(ct)
+        except (subprocess.CalledProcessError, OSError):
+            cutoff = None
+        rig = _report_filter_by_ts(live_rig, cutoff)
+        asm = _report_filter_by_ts(live_asm, cutoff)
+        heat = (state.get("budget", {}) or {}).get("used") or len(worklog)
+        replayed = True
+    else:
+        state = load_state(root)
+        worklog, rig, asm = _report_load_sources(main_root)
+        if at_heat is not None:
+            if not any(r.get("heat") is not None and r["heat"] >= at_heat
+                       for r in worklog):
+                _output({"error": f"worklog has no heat >= {at_heat}",
+                         "max_heat": max((r["heat"] for r in worklog
+                                          if r.get("heat") is not None),
+                                         default=None)})
+                _err(f"data missing: worklog shorter than --at-heat {at_heat}")
+                sys.exit(1)
+            cutoff = _report_cutoff_ts(worklog, at_heat)
+            worklog = [r for r in worklog if r.get("heat") is not None
+                       and r["heat"] <= at_heat]
+            rig = _report_filter_by_ts(rig, cutoff)
+            asm = _report_filter_by_ts(asm, cutoff)
+            state = dict(state)
+            state["budget"] = {**(state.get("budget") or {}), "used": at_heat}
+            heat = at_heat
+            replayed = True
+        elif at_ts is not None:
+            cutoff = metrics._parse_ts(at_ts)
+            if cutoff is None:
+                _output({"error": f"unparseable --at-ts: {at_ts}"})
+                _err(f"usage: unparseable --at-ts {at_ts}")
+                sys.exit(2)
+            worklog = [r for r in worklog
+                       if (metrics._parse_ts(r.get("timestamp")) or 0) <= cutoff]
+            rig = _report_filter_by_ts(rig, cutoff)
+            asm = _report_filter_by_ts(asm, cutoff)
+            heat = max((r["heat"] for r in worklog
+                        if r.get("heat") is not None), default=0)
+            replayed = True
+        else:
+            heat = (state.get("budget", {}) or {}).get("used") or len(worklog)
+
+    # --- filters --------------------------------------------------------
+    if initiative_id:
+        state, worklog, rig, asm = _report_apply_initiative(
+            state, worklog, rig, asm, initiative_id)
+    if forge_id:
+        worklog, rig, asm = _report_apply_forge(worklog, rig, asm, forge_id)
+
+    # --- window (rolling) ----------------------------------------------
+    from_heat = 1
+    to_heat = heat
+    if window:
+        try:
+            n_str, unit = window.split("-", 1)
+            n = int(n_str)
+        except (ValueError, AttributeError):
+            _output({"error": f"bad --window '{window}' (want N-heats|N-hours)"})
+            _err(f"usage: bad --window '{window}'")
+            sys.exit(2)
+        if unit.startswith("heat"):
+            from_heat = max(1, heat - n + 1)
+        elif unit.startswith("hour"):
+            # Translate the wall-clock window to a from_heat via worklog ts.
+            now_ts = max((metrics._parse_ts(r.get("timestamp")) or 0
+                          for r in worklog), default=None)
+            if now_ts:
+                lo = now_ts - n * 3600
+                in_win = [r["heat"] for r in worklog
+                          if r.get("heat") is not None
+                          and (metrics._parse_ts(r.get("timestamp")) or 0) >= lo]
+                if in_win:
+                    from_heat = min(in_win)
+        else:
+            _output({"error": f"bad --window unit in '{window}'"})
+            _err(f"usage: bad --window unit in '{window}'")
+            sys.exit(2)
+
+    # --- assemble + render ---------------------------------------------
+    generated_at = datetime.now(timezone.utc).isoformat()
+    snap = metrics.build_l2_snapshot(
+        heat=heat, generated_at=generated_at, worklog_rows=worklog,
+        rig_events=rig, assembly_rows=asm, state=state,
+        from_heat=from_heat, to_heat=to_heat)
+    snap["_replayed"] = replayed
+
+    if as_json:
+        # §1.4: --json emits the FULL L2 schema (+ surface marker), never a
+        # --sections subset — the JSON feed is meant to be complete.
+        out = {"surface": "report", **{k: v for k, v in snap.items()
+                                       if k != "_replayed"}}
+        click.echo(json.dumps(out, indent=2, ensure_ascii=False))
+    elif as_tsv:
+        click.echo(_report_render_tsv(snap, sections))
+    else:
+        click.echo(_report_render_human(snap, sections, verbose))
+    sys.exit(0)
+
+
 if __name__ == "__main__":
     cli()
