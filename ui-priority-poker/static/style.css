@@ -118,6 +118,14 @@ header h1 { font-size: 30px; letter-spacing: -0.5px; }
 .card-theme { color: var(--blue); }
 .card-status { text-transform: uppercase; font-weight: 600; }
 
+/* t-635 (ini-010): live budget-share bar — fill width ∝ this card's share of
+   the ranked stack's total weight (top 3× · 2nd 2× · rest 1×). Painted by
+   renderShareBars() on load + every reorder. */
+.card-share { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.card-share-track { flex: 1; min-width: 0; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.card-share-fill { height: 100%; width: 0; background: var(--blue); border-radius: 3px; transition: width 0.25s ease; }
+.card-share-label { flex-shrink: 0; font-size: 13px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+
 .card-summary { font-size: 16px; color: var(--text-muted); line-height: 1.6; }  /* t-598 */
 .card-body { cursor: pointer; }
 
