@@ -190,6 +190,7 @@ async def project_detail(request: Request, project_name: str):
         "tab": "activity",
         "total_decisions": count_all_decisions(projects),
         "steering_links": STEERING_LINKS,
+        "rig_signals": _steering_signals(project_name),  # t-632 (ini-019)
     })
 
 
@@ -794,6 +795,33 @@ def _ops_snapshot(project_dir, at_heat=None):
         worklog_rows=worklog, rig_events=rig, assembly_rows=asm, state=state,
         from_heat=1, to_heat=heat)
     return {"surface": "report", **snap}, None
+
+
+def _steering_signals(project_name):
+    """t-632 (ini-019): compact rig steering signals — idle capacity +
+    thrashing tasks — from the L2 snapshot, for the project landing page (design
+    §3.6 wanted the L2 forges[].idle_pct + issues.thrash surfaced as a steering
+    signal). Best-effort: returns None on any failure so the page never breaks."""
+    try:
+        pdir = _ops_project_dir(project_name)
+        if not pdir:
+            return None
+        snap, err = _ops_snapshot(pdir)
+        if err or not snap:
+            return None
+        forges = [f for f in snap.get("forges", []) if f.get("id") != "legacy"]
+        idle_vals = [f["idle_pct"] for f in forges if f.get("idle_pct") is not None]
+        thrash = (snap.get("issues") or {}).get("thrash") or {}
+        return {
+            "forges_total": len(forges),
+            "forges_idle": sum(1 for f in forges if not f.get("current_task")),
+            "avg_idle_pct": (round(sum(idle_vals) / len(idle_vals), 2)
+                             if idle_vals else None),
+            "thrash_count": thrash.get("count", 0),
+            "thrash_task_ids": thrash.get("task_ids", []),
+        }
+    except Exception:
+        return None
 
 
 @app.get("/api/project/{project_name}/ops")
