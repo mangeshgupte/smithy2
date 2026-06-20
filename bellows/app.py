@@ -439,6 +439,12 @@ def _build_initiative_detail(project: dict, initiative_id: str):
     if not ini:
         return None
 
+    # t-630: this reads state.json raw (no load_state backfill), so pre-t-617
+    # initiatives lack the intent triple. Default it here — otherwise the
+    # page's `{{ ...intent|tojson }}` hits a Jinja Undefined and the render 500s.
+    for _k in ("intent", "intent_source", "intent_updated_at"):
+        ini.setdefault(_k, None)
+
     theme = next((t for t in state.get("themes", [])
                   if t.get("id") == ini.get("theme_id")), None)
 

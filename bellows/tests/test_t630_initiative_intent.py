@@ -86,11 +86,14 @@ class TestIntentRender:
         assert "source: human" in html
         assert "2026-06-19" in html                # updated date (truncated)
 
-    def test_null_intent_falls_back_gracefully(self, client):
+    def test_null_intent_falls_back_to_description(self, client):
         c, _ = client
         html = c.get(f"{P}/ini-002").text
-        assert r"no intent set" in html            # fallback copy
-        # the meta line is hidden when there's no source/date
+        # intent is null → gracefully show the description + a note, rather
+        # than losing the existing context.
+        assert "Has no intent yet" in html          # the description fallback
+        assert "not set; showing description" in html
+        # the meta line stays hidden when there's no source/date.
         assert 'id="intent-meta"' in html and "hidden" in html
 
 

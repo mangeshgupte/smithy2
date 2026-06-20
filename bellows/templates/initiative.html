@@ -34,11 +34,16 @@
        gracefully when no intent is set yet. #}
     <div class="intent-head">
         <span class="intent-label">Intent</span>
+        {% if not detail.initiative.intent and detail.initiative.description %}
+        <span class="intent-fallback-note">— not set; showing description</span>
+        {% endif %}
         <button type="button" class="intent-edit-btn" onclick="startIntentEdit()">edit</button>
     </div>
+    {# intent (the WHY) when set; gracefully falls back to the description, then
+       to a prompt. The editor always edits the intent itself, never the desc. #}
     <p class="intent-text {% if not detail.initiative.intent %}intent-empty{% endif %}"
        id="intent-text" onclick="startIntentEdit()"
-       title="Click to edit — capture the WHY, not the WHAT">{{ detail.initiative.intent or "(no intent set — click to capture the WHY)" }}</p>
+       title="Click to edit — capture the WHY, not the WHAT">{{ detail.initiative.intent or detail.initiative.description or "(no intent set — click to capture the WHY)" }}</p>
     <p class="intent-meta" id="intent-meta"
        {% if not (detail.initiative.intent_source or detail.initiative.intent_updated_at) %}hidden{% endif %}>
         {%- if detail.initiative.intent_source %}source: {{ detail.initiative.intent_source }}{% endif -%}
