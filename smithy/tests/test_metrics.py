@@ -417,3 +417,57 @@ def test_build_l2_snapshot_empty_records():
     assert snap["budget"]["pct"] is None
     assert snap["forges"] == [] and snap["initiatives"] == []
     assert snap["issues"]["rejections"]["total"] == 0
+
+
+# --- t-616 (ini-019): BATCH-merge recognition ----------------------------
+# The live Assembly loop (ini-020/t-570) emits per-task assembly-log
+# outcome='merged' rows but NOT the legacy assembly_tick_merged rig-event, so
+# issues_section + lifecycle_section must treat the assembly-log row as a merge.
+
+class TestBatchMergeRecognition:
+    def test_batch_merged_is_not_ghost_or_stall(self):
+        # forge submitted + Assembly pushed, then BATCH-merged (assembly-log
+        # 'merged', no assembly_tick_merged). Must not be a ghost or a stall.
+        rig = [
+            {"event": "forge_ended_submitted", "task_id": "t-b", "ts": iso(10)},
+            {"event": "assembly_push_ok", "task_id": "t-b", "ts": iso(20)},
+        ]
+        asm = [{"ts": iso(30), "forge_id": "forge-quench", "task_id": "t-b",
+                "outcome": "merged", "detail": "batch ok"}]
+        iss = metrics.issues_section([], rig, asm, {"queue": []})
+        assert "t-b" not in iss["ghost_submits"]["task_ids"]
+        assert iss["ghost_submits"]["count"] == 0
+        assert "t-b" not in iss["stalls"]["task_ids"]
+        assert iss["stalls"]["count"] == 0
+
+    def test_batch_reject_is_not_ghost(self):
+        # A batch-rejected submit (assembly-log 'rejected') is resolved, not a
+        # ghost.
+        rig = [{"event": "forge_ended_submitted", "task_id": "t-r", "ts": iso(10)}]
+        asm = [{"ts": iso(30), "task_id": "t-r", "outcome": "rejected",
+                "detail": "tests failed"}]
+        iss = metrics.issues_section([], rig, asm, {"queue": []})
+        assert iss["ghost_submits"]["count"] == 0
+
+    def test_batch_merge_closes_lead_time(self):
+        # lead_time must close for a batch merge — merged ts from assembly-log.
+        rig = [{"event": "queue_push", "task_id": "t-b", "ts": iso(0)}]
+        asm = [{"ts": iso(120), "task_id": "t-b", "outcome": "merged"}]
+        lc = metrics.lifecycle_section(rig, asm)
+        assert lc["lead_time_s"]["n"] == 1
+        assert lc["lead_time_s"]["p50"] == 120.0
+
+    def test_legacy_tick_merged_still_recognized(self):
+        # acceptance (c): the legacy assembly_tick_merged path still registers a
+        # merge (not ghost) and still records per-task merge latency.
+        rig = [
+            {"event": "forge_ended_submitted", "task_id": "t-L", "ts": iso(10)},
+            {"event": "assembly_tick_merged", "task_id": "t-L", "ts": iso(30),
+             "latency_ms": 50},
+            {"event": "queue_push", "task_id": "t-L", "ts": iso(0)},
+        ]
+        iss = metrics.issues_section([], rig, [], {"queue": []})
+        assert iss["ghost_submits"]["count"] == 0
+        lc = metrics.lifecycle_section(rig, [])
+        assert lc["merge_latency_ms"]["n"] == 1          # legacy latency kept
+        assert lc["lead_time_s"]["n"] == 1               # merged@30 - push@0
