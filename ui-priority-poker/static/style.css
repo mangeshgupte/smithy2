@@ -469,13 +469,12 @@ code {
 .tile-body .t-ratio,
 .tile-body .t-rate { color: #58a6ff; font-weight: 600; }
 
+/* t-600 (ini-010): stack the two throughput charts vertically at full width
+   (was a 2-col grid). SVGs are already width:100% so they widen to fill. */
 .rig-metrics-charts {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
     gap: 16px;
-}
-@media (max-width: 900px) {
-    .rig-metrics-charts { grid-template-columns: 1fr; }
 }
 .chart-block {
     background: #0d1117;
