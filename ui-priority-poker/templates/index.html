@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Priority Poker — {{ project }}</title>
     <link rel="stylesheet" href="/static/style.css">
+    <!-- t-612 (ini-016): expose Bellows URL + project for the shared cockpit-card
+         renderer (initiative cells linkify identically to the standalone /cockpit). -->
+    <script>
+        window.COCKPIT_BELLOWS_URL = {{ url_bellows | tojson }};
+        window.COCKPIT_PROJECT_NAME = {{ project | tojson }};
+    </script>
+    <script src="/static/cockpit-card.js"></script>
 </head>
 <body>
     <nav class="steering-nav">
@@ -489,17 +496,16 @@
                 for (const r of rows) {
                     const li = document.createElement('li');
                     li.className = 'cockpit-rail-row';
-                    li.onclick = (e) => openTaskDetail(e, r.id);
-                    const prio = (r.human_priority != null) ? ('you:p' + r.human_priority)
-                               : (r.priority != null ? ('p' + r.priority) : '');
-                    const title = r.title || r.desc || '';
-                    const mk = (cls, text) => {
-                        const s = document.createElement('span'); s.className = cls;
-                        if (text != null) s.textContent = text; return s;
+                    // t-612 (ini-016): render the SHARED 2-line cockpit card so the
+                    // rail matches the standalone /cockpit (reverses t-378). Whole-
+                    // card click opens detail in-place; the initiative link
+                    // (target=_blank) is excluded so it doesn't also fire detail.
+                    li.innerHTML = CockpitCard.cardHtml(r);
+                    li.title = r.desc || r.title || '';
+                    li.onclick = (e) => {
+                        if (e.target.closest('a')) return;
+                        openTaskDetail(e, r.id);
                     };
-                    const titleSpan = mk('cr-title', title); titleSpan.title = title;
-                    li.append(mk('cr-id', r.id), mk('cr-prio', prio), titleSpan,
-                              mk('cr-dot s-' + (r.status || 'pending')));
                     list.appendChild(li);
                 }
             })
