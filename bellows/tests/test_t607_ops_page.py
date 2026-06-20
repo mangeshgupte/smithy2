@@ -68,6 +68,16 @@ class TestOpsPage:
                     "iss-tabs"):
             assert pid in html, f"missing panel container: {pid}"
 
+    def test_batch_health_panel_present(self, client):
+        # t-631 (ini-019): batch/merge-health panel + renderer, fed by the L2
+        # lifecycle.merge_latency_ms + batching sections (t-624).
+        html = client.get("/project/the-smithy/ops").text
+        assert "Batch Health" in html               # panel heading
+        assert "panel-batch" in html                # panel container
+        assert "renderBatch" in html                # the JS renderer
+        assert "merge_latency_ms" in html           # merge-latency source
+        assert "batching" in html                   # batch-outcome source
+
     def test_replay_scrubber_and_amber_banner(self, client):
         html = client.get("/project/the-smithy/ops").text
         assert 'id="ops-scrub"' in html            # the replay scrubber
