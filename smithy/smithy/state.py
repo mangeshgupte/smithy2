@@ -166,6 +166,15 @@ def _apply_steerability_defaults(state: dict) -> dict:
         # means any state.json touched by a save_state call normalises
         # automatically on the next load→save cycle.
         task.setdefault("initiative_id", None)
+        # t-617 (ini-017 P1): the intent triple — per-task statement of the
+        # high-level intent this work serves, plus its provenance and when it
+        # was last set. All null by default (0/559 tasks carried intent at
+        # introduction); ini-017 follow-ons add validation + an intent-gap CLI
+        # + Bellows render. intent_source ∈ {human, anvil, inferred, …} (free
+        # text for now); intent_updated_at is UTC ISO.
+        task.setdefault("intent", None)
+        task.setdefault("intent_source", None)
+        task.setdefault("intent_updated_at", None)
         # t-455: coerce drifted human_priority (strings like "p1" / "p2"
         # landed on t-444..t-454 via a writer that skipped the Poker
         # UI's int-check) to canonical int on load so the scheduler +
@@ -198,6 +207,13 @@ def _apply_steerability_defaults(state: dict) -> dict:
         ini.setdefault("closed_at", None)
         ini.setdefault("heat_cost_total", None)
         ini.setdefault("successor_ini", None)
+        # t-617 (ini-017 P1): the same intent triple on initiatives. `intent`
+        # already existed ad-hoc on a few (ini-012/ini-016); setdefault keeps
+        # those strings and only normalizes the missing provenance siblings to
+        # null, so every initiative now carries the full triple.
+        ini.setdefault("intent", None)
+        ini.setdefault("intent_source", None)
+        ini.setdefault("intent_updated_at", None)
     # t-396 I1: seed the parallel registry. Default is one idle Forge so
     # existing code paths see `parallel.forges[0].id == "forge-01"` without
     # a migration step. halt_flag from I0 lives under the same umbrella.

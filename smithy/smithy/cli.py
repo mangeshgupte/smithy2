@@ -2678,6 +2678,12 @@ def add_task(ctx, stage, desc, priority, blocked_by, initiative_id, touches):
         # "heats since first worklog mention". Tasks pre-t-527 lack
         # this field; readers MUST treat missing as None.
         "created_at": datetime.now(timezone.utc).isoformat(),
+        # t-617 (ini-017 P1): the intent triple, null at creation. A later
+        # add-task --intent / set-intent path (ini-017 follow-on) will populate
+        # it; for now load_state's backfill guarantees the key on every task.
+        "intent": None,
+        "intent_source": None,
+        "intent_updated_at": None,
     }
 
     task["human_priority"] = None
@@ -7116,6 +7122,11 @@ def propose(ctx, theme_id, title, description, budget_cap, parallelism, affinity
         "parallelism": parallelism,
         "affinity": list(affinity),
         "touches": list(touches),
+        # t-617 (ini-017 P1): intent triple, null at proposal (load_state
+        # backfills it anyway; set explicitly so the created object is uniform).
+        "intent": None,
+        "intent_source": None,
+        "intent_updated_at": None,
     }
     initiatives.append(initiative)
     save_state(root, state)
