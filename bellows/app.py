@@ -7,7 +7,7 @@ import subprocess
 from pathlib import Path
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 sys.path.insert(0, str(Path(__file__).parent.parent / "smithy"))
@@ -30,7 +30,8 @@ except ImportError:
 from fastapi import FastAPI, Request, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import (HTMLResponse, JSONResponse, RedirectResponse,
+                               StreamingResponse)
 
 from forge_reader import (discover_projects, read_project,
                           get_morning_briefing, compute_heat_diff,
@@ -656,6 +657,194 @@ async def api_project_heat_diff(project_name: str, n: int = 1):
     if not project:
         return {"error": "project not found"}
     return compute_heat_diff(project["dir"], n=max(1, n))
+
+
+# ---------------------------------------------------------------------------
+# ini-019 P1.5 (t-604): Forge Ops API — /api/project/{name}/ops/*
+#
+# Pure-read, additive. The /ops payload is the L2 snapshot at byte-parity with
+# `smithy report --json` (same metrics.build_l2_snapshot + `surface: report`
+# marker). No existing endpoint touched, no writes — every route is a pure
+# function of the four record sources (worklog/rig-events/assembly-log/state).
+# Spec: plans/ini-019-surfaces-plan.md §2.8.
+# ---------------------------------------------------------------------------
+
+try:
+    from smithy import metrics as _metrics
+    from smithy.state import (main_repo_root as _main_repo_root,
+                              load_state as _load_state)
+except ImportError:  # pragma: no cover - smithy always importable in the rig
+    _metrics = None
+
+# Panel-5 bucket name → issues-section key (§2.8 / §1.3).
+OPS_ISSUE_BUCKETS = {
+    "ghosts": "ghost_submits",
+    "thrash": "thrash",
+    "repeat-tests": "repeat_tests",
+    "stalls": "stalls",
+    "orphans": "orphans_reaped",
+    "rejections": "rejections",
+}
+
+
+def _ops_project_dir(project_name):
+    """Resolve a project name to its directory, or None if unknown."""
+    project = next((p for p in discover_projects(PROJECTS_DIR)
+                    if p["name"] == project_name), None)
+    return Path(project["dir"]) if project else None
+
+
+def _ops_read_lines(path):
+    try:
+        return path.read_text().splitlines()
+    except OSError:
+        return []
+
+
+def _ops_sources(project_dir):
+    """Parse the three log sources (S1/S2/S3) from the project's main repo root.
+    Returns (main_root, worklog_rows, rig_events, assembly_rows)."""
+    main_root = _main_repo_root(project_dir)
+    worklog = _metrics.parse_worklog(_ops_read_lines(main_root / "worklog.tsv"))
+    rig = _metrics.parse_jsonl(_ops_read_lines(main_root / "rig-events.jsonl"))
+    asm = _metrics.parse_jsonl(_ops_read_lines(main_root / "assembly-log.jsonl"))
+    return main_root, worklog, rig, asm
+
+
+def _ops_snapshot(project_dir, at_heat=None):
+    """Build the L2 snapshot (parity with `smithy report --json`). Returns
+    (payload, error) where error is (message, status_code) or None."""
+    state = _load_state(project_dir)
+    _, worklog, rig, asm = _ops_sources(project_dir)
+    if at_heat is not None:
+        if not any(r.get("heat") is not None and r["heat"] >= at_heat
+                   for r in worklog):
+            return None, (f"worklog has no heat >= {at_heat}", 400)
+        cands = [_metrics._parse_ts(r.get("timestamp")) for r in worklog
+                 if r.get("heat") is not None and r["heat"] <= at_heat]
+        cutoff = max([t for t in cands if t is not None], default=None)
+
+        def _le(ts):
+            t = _metrics._parse_ts(ts)
+            return t is None or cutoff is None or t <= cutoff
+        worklog = [r for r in worklog
+                   if r.get("heat") is not None and r["heat"] <= at_heat]
+        rig = [e for e in rig if _le(e.get("ts"))]
+        asm = [a for a in asm if _le(a.get("ts"))]
+        state = {**state, "budget": {**(state.get("budget") or {}),
+                                     "used": at_heat}}
+        heat = at_heat
+    else:
+        heat = (state.get("budget", {}) or {}).get("used") or len(worklog)
+    snap = _metrics.build_l2_snapshot(
+        heat=heat, generated_at=datetime.now(timezone.utc).isoformat(),
+        worklog_rows=worklog, rig_events=rig, assembly_rows=asm, state=state,
+        from_heat=1, to_heat=heat)
+    return {"surface": "report", **snap}, None
+
+
+@app.get("/api/project/{project_name}/ops")
+async def api_project_ops(project_name: str, at_heat: int = None):
+    """L2 snapshot for a project — parity with `smithy report --json`.
+    Optional ?at_heat=N replays as of heat N (§2.8). Pure-read."""
+    if _metrics is None:
+        return JSONResponse({"error": "metrics unavailable"}, status_code=500)
+    project_dir = _ops_project_dir(project_name)
+    if project_dir is None:
+        return JSONResponse({"error": "project not found"}, status_code=404)
+    payload, err = _ops_snapshot(project_dir, at_heat=at_heat)
+    if err:
+        return JSONResponse({"error": err[0]}, status_code=err[1])
+    return payload
+
+
+@app.get("/api/project/{project_name}/ops/issues/{bucket}")
+async def api_project_ops_issues(project_name: str, bucket: str):
+    """Panel-5 bucket list — bucket ∈ ghosts|thrash|repeat-tests|stalls|
+    orphans|rejections (§2.8)."""
+    if _metrics is None:
+        return JSONResponse({"error": "metrics unavailable"}, status_code=500)
+    if bucket not in OPS_ISSUE_BUCKETS:
+        return JSONResponse({"error": f"unknown bucket '{bucket}'",
+                             "valid": sorted(OPS_ISSUE_BUCKETS)},
+                            status_code=400)
+    project_dir = _ops_project_dir(project_name)
+    if project_dir is None:
+        return JSONResponse({"error": "project not found"}, status_code=404)
+    payload, err = _ops_snapshot(project_dir)
+    if err:
+        return JSONResponse({"error": err[0]}, status_code=err[1])
+    return {"project": project_name, "bucket": bucket,
+            "detail": payload["issues"][OPS_ISSUE_BUCKETS[bucket]]}
+
+
+@app.get("/api/project/{project_name}/ops/task/{task_id}")
+async def api_project_ops_task(project_name: str, task_id: str):
+    """Panel-3 drill-down — task life + its per-heat worklog rows + assembly
+    refs (merge/reject outcomes) (§2.8). Pure-read."""
+    project_dir = _ops_project_dir(project_name)
+    if project_dir is None:
+        return JSONResponse({"error": "project not found"}, status_code=404)
+    if TaskDetail is None:
+        return JSONResponse({"error": "TaskDetail unavailable"}, status_code=500)
+    detail = TaskDetail.resolve(str(project_dir), task_id)
+    if detail is None:
+        return JSONResponse({"error": "task not found"}, status_code=404)
+    payload = detail.to_api_dict()
+    if _metrics is not None:
+        _, worklog, _rig, asm = _ops_sources(project_dir)
+        payload["heat_rows"] = [r for r in worklog
+                                if r.get("task_id") == task_id]
+        payload["assembly_rows"] = [a for a in asm
+                                    if a.get("task_id") == task_id]
+    return payload
+
+
+@app.get("/api/project/{project_name}/ops/stream")
+async def api_project_ops_stream(project_name: str, request: Request,
+                                 backlog: int = 25, once: bool = False):
+    """SSE tail of rig-events.jsonl — one `data:` event per line (§2.8).
+
+    Emits the last `backlog` existing lines, then streams appended lines as
+    they land. `?once=1` returns after the backlog (+ an `eof` event) instead
+    of tailing — handy for snapshot consumers and bounded test reads. Runs
+    until the client disconnects (with a ~1h idle safety cap)."""
+    project_dir = _ops_project_dir(project_name)
+    if project_dir is None:
+        return JSONResponse({"error": "project not found"}, status_code=404)
+    import asyncio
+    main_root = _main_repo_root(project_dir) if _metrics else project_dir
+    path = main_root / "rig-events.jsonl"
+
+    async def gen():
+        lines = _ops_read_lines(path)
+        start = max(0, len(lines) - backlog) if backlog else 0
+        for ln in lines[start:]:
+            if ln.strip():
+                yield f"data: {ln}\n\n"
+        pos = len(lines)
+        if once:
+            yield "event: eof\ndata: end\n\n"
+            return
+        idle = 0
+        while True:
+            if await request.is_disconnected():
+                return
+            cur = _ops_read_lines(path)
+            if len(cur) > pos:
+                for ln in cur[pos:]:
+                    if ln.strip():
+                        yield f"data: {ln}\n\n"
+                pos = len(cur)
+                idle = 0
+            else:
+                idle += 1
+                if idle > 3600:  # ~1h with no activity — let the socket go
+                    return
+                yield ": keep-alive\n\n"
+            await asyncio.sleep(1)
+
+    return StreamingResponse(gen(), media_type="text/event-stream")
 
 
 @app.get("/inbox", response_class=HTMLResponse)
