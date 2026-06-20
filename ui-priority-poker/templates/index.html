@@ -208,13 +208,18 @@
             <h2>Rig throughput</h2>
             <span class="muted" id="rig-metrics-updated">loading…</span>
         </div>
-        {# t-594 (ini-010): single card, three stacked labeled rows.
-           ids #tile-current/#tile-24h/#tile-all + span classes
-           .t-merged/.t-rejected/.t-ratio/.t-rate preserved so
-           renderRigMetrics()/setTile() needs zero changes. #}
+        {# t-594 (ini-010): single card, stacked labeled rows. ids
+           #tile-current/#tile-1h/#tile-24h/#tile-all + span classes
+           .t-merged/.t-rejected/.t-ratio/.t-rate, populated by
+           renderRigMetrics()/setTile(). t-609 added the #tile-1h
+           wall-clock row (ratio, not /hr — meaningless over 1h). #}
         <div class="rig-metrics-tiles">
             <div class="metric-tile" id="tile-current">
                 <span class="tile-label">Current bucket (last 10 heats):</span>
+                <span class="tile-body"><span class="t-merged">–</span> merged · <span class="t-rejected">–</span> rejected · <span class="t-ratio">–</span></span>
+            </div>
+            <div class="metric-tile" id="tile-1h">
+                <span class="tile-label">Last 1 hour (wall-clock):</span>
                 <span class="tile-body"><span class="t-merged">–</span> merged · <span class="t-rejected">–</span> rejected · <span class="t-ratio">–</span></span>
             </div>
             <div class="metric-tile" id="tile-24h">
@@ -855,6 +860,7 @@
     function renderRigMetrics(data) {
         // Summary tiles
         const current = data.summary.current_bucket;
+        const t1h = data.summary.last_1h;
         const t24 = data.summary.last_24h;
         const ta = data.summary.all_time;
 
@@ -870,6 +876,11 @@
             '.t-merged': current.merged,
             '.t-rejected': current.rejected,
             '.t-ratio': current.ratio == null ? '—' : (current.ratio * 100).toFixed(0) + '%',
+        });
+        setTile('tile-1h', {
+            '.t-merged': t1h.merged,
+            '.t-rejected': t1h.rejected,
+            '.t-ratio': t1h.ratio == null ? '—' : (t1h.ratio * 100).toFixed(0) + '%',
         });
         setTile('tile-24h', {
             '.t-merged': t24.merged,

@@ -813,6 +813,7 @@ async def api_metrics_heat_rates(buckets: int = 10, bucket_size: int = 10):
         ],
         "summary": {
           "current_bucket":   {"merged": N, "rejected": N, "ratio": f | null},
+          "last_1h":          {"merged": N, "rejected": N, "ratio": f | null},
           "last_24h":         {"merged": N, "rejected": N, "hourly_avg": f},
           "all_time":         {"merged": N, "rejected": N, "ratio": f | null},
         },
@@ -915,12 +916,26 @@ async def api_metrics_heat_rates(buckets: int = 10, bucket_size: int = 10):
     all_time_merged = sum(1 for r in rows if r["outcome"] == "merged")
     all_time_rejected = sum(1 for r in rows if r["outcome"] == "rejected")
 
+    # t-609: last-1h wall-clock window. Mirrors last_24h's windowing but
+    # reports a success ratio rather than a /hr rate — a per-hour rate is
+    # meaningless over a 1h span.
+    one_hour_cutoff = now - timedelta(hours=1)
+    last_1h_merged = sum(1 for r in rows
+                         if r["outcome"] == "merged" and r["ts"] >= one_hour_cutoff)
+    last_1h_rejected = sum(1 for r in rows
+                           if r["outcome"] == "rejected" and r["ts"] >= one_hour_cutoff)
+
     summary = {
         "current_bucket": {
             "merged": current_bucket["merged"],
             "rejected": current_bucket["rejected"],
             "ratio": _ratio(current_bucket["merged"],
                             current_bucket["rejected"]),
+        },
+        "last_1h": {
+            "merged": last_1h_merged,
+            "rejected": last_1h_rejected,
+            "ratio": _ratio(last_1h_merged, last_1h_rejected),
         },
         "last_24h": {
             "merged": last_24h_merged,
