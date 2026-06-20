@@ -462,6 +462,16 @@
                 if (data[id]) {
                     bar.dataset.heats = data[id].heats_used;
                     if (data[id].budget_cap) bar.dataset.cap = data[id].budget_cap;
+                    // t-629: reposition when planned dates change (another
+                    // browser's drag / allocator edit). Guard null so a
+                    // never-dragged bar keeps its server-rendered position.
+                    const ps = data[id].planned_start, pe = data[id].planned_end;
+                    if (ps != null) bar.dataset.start = ps;
+                    if (pe != null) bar.dataset.end = pe;
+                    if (ps != null && pe != null) {
+                        const txt = bar.querySelector('.bar-text');
+                        if (txt) txt.textContent = (pe - ps) + 'h';
+                    }
                 }
             });
             updateBars();  // re-apply layout in place (keeps current zoom/pan)

@@ -192,6 +192,13 @@ async def api_state():
                 "heats_used": ini.get("heats_used", 0),
                 "budget_cap": ini.get("budget_cap"),
                 "status": ini["status"],
+                # t-629 (ini-014): drag-to-allocate (/update) persists these;
+                # returning them lets the 5s poll / SSE refresh reposition a
+                # bar when ANOTHER browser drags or the allocator edits the
+                # dates, instead of needing a full reload. Raw (may be absent
+                # on never-dragged initiatives) — the client guards null.
+                "planned_start": ini.get("planned_start"),
+                "planned_end": ini.get("planned_end"),
             }
     return JSONResponse(data)
 
