@@ -25,6 +25,19 @@
     {% endfor %}
 </nav>
 
+<!-- t-632 (ini-019): rig steering signals — idle capacity + thrash — from the
+     L2 snapshot (design §3.6). Inline styles use the base theme vars so no
+     shared CSS edit is needed; absent only if the snapshot can't be built. -->
+{% if rig_signals %}
+<div class="rig-signals" title="Rig steering signals — from the L2 observability snapshot (ini-019)"
+     style="display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin:10px 0; padding:8px 12px; background:var(--surface); border:1px solid var(--border); border-radius:8px; font-size:13px;">
+    <span style="text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); font-size:11px;">Rig signals</span>
+    <span style="color:var(--text);">{{ rig_signals.forges_idle }}/{{ rig_signals.forges_total }} forges idle{% if rig_signals.avg_idle_pct is not none %} · avg idle {{ (rig_signals.avg_idle_pct * 100)|int }}%{% endif %}</span>
+    <span style="color:{% if rig_signals.thrash_count %}var(--yellow){% else %}var(--text-muted){% endif %};">{% if rig_signals.thrash_count %}⚠ {% endif %}{{ rig_signals.thrash_count }} thrashing{% if rig_signals.thrash_task_ids %} ({{ rig_signals.thrash_task_ids[:5]|join(', ') }}{% if rig_signals.thrash_task_ids|length > 5 %}…{% endif %}){% endif %}</span>
+    <a href="/project/{{ project.name }}/ops" style="margin-left:auto; color:var(--blue); text-decoration:none;">ops →</a>
+</div>
+{% endif %}
+
 <!-- Stage progress -->
 <div class="stage-bars detail-bars">
     {% for stage_name in ['research', 'planning', 'implementation', 'testing', 'editing', 'marketing'] %}
