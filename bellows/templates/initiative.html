@@ -28,8 +28,22 @@
     </p>
 </header>
 
-<section class="initiative-intent">
-    <p>{{ detail.initiative.description or "(no description)" }}</p>
+<section class="initiative-intent" id="intent-section">
+    {# ini-017 (t-630): the initiative's INTENT (the WHY), not its description.
+       Inline-editable; persists to .../initiative/{id}/intent. Falls back
+       gracefully when no intent is set yet. #}
+    <div class="intent-head">
+        <span class="intent-label">Intent</span>
+        <button type="button" class="intent-edit-btn" onclick="startIntentEdit()">edit</button>
+    </div>
+    <p class="intent-text {% if not detail.initiative.intent %}intent-empty{% endif %}"
+       id="intent-text" onclick="startIntentEdit()"
+       title="Click to edit — capture the WHY, not the WHAT">{{ detail.initiative.intent or "(no intent set — click to capture the WHY)" }}</p>
+    <p class="intent-meta" id="intent-meta"
+       {% if not (detail.initiative.intent_source or detail.initiative.intent_updated_at) %}hidden{% endif %}>
+        {%- if detail.initiative.intent_source %}source: {{ detail.initiative.intent_source }}{% endif -%}
+        {%- if detail.initiative.intent_updated_at %} · updated {{ detail.initiative.intent_updated_at[:10] }}{% endif -%}
+    </p>
 </section>
 
 <section class="initiative-tasks">
@@ -148,6 +162,52 @@
 <script>
 const PROJECT_NAME = {{ project.name|tojson }};
 const POKER_URL = {{ poker_url|tojson }};
+
+// ini-017 (t-630): inline-edit the initiative intent → POST .../intent.
+const INI_ID = {{ detail.initiative.id|tojson }};
+const INTENT_CURRENT = {{ detail.initiative.intent|tojson }};
+const INTENT_MAX = 300;
+function startIntentEdit() {
+    const sec = document.getElementById('intent-section');
+    if (sec.querySelector('textarea')) return;        // already editing
+    const p = document.getElementById('intent-text');
+    const ta = document.createElement('textarea');
+    ta.className = 'intent-editbox';
+    ta.value = INTENT_CURRENT || '';
+    ta.rows = 3; ta.maxLength = INTENT_MAX;
+    ta.style.cssText = 'width:100%;box-sizing:border-box;font:inherit;';
+    const bar = document.createElement('div');
+    bar.id = 'intent-editbar';
+    bar.style.cssText = 'margin-top:6px;display:flex;gap:8px;align-items:center;';
+    const save = document.createElement('button');
+    save.type = 'button'; save.textContent = 'Save';
+    const cancel = document.createElement('button');
+    cancel.type = 'button'; cancel.textContent = 'Cancel';
+    const hint = document.createElement('span');
+    hint.style.cssText = 'color:var(--text-muted);font-size:12px;';
+    const upd = () => { hint.textContent = ta.value.length + '/' + INTENT_MAX; };
+    ta.addEventListener('input', upd); upd();
+    save.onclick = () => saveIntent(ta.value);
+    cancel.onclick = () => location.reload();
+    ta.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { location.reload(); }
+        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { saveIntent(ta.value); }
+    });
+    p.replaceWith(ta);
+    bar.append(save, cancel, hint);
+    sec.appendChild(bar);
+    ta.focus();
+}
+function saveIntent(value) {
+    fetch(`/api/project/${encodeURIComponent(PROJECT_NAME)}/initiative/${encodeURIComponent(INI_ID)}/intent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ intent: value.trim() }),
+    }).then(r => r.json()).then(d => {
+        if (d.ok) { location.reload(); }
+        else { alert('Save failed: ' + (d.error || 'unknown')); }
+    }).catch(() => alert('Save failed'));
+}
 
 function openTaskDrawer(taskId) {
     const drawer = document.getElementById('task-drawer');

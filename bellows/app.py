@@ -587,6 +587,53 @@ async def api_project_initiative(project_name: str, initiative_id: str):
     return detail
 
 
+@app.post("/api/project/{project_name}/initiative/{initiative_id}/intent")
+async def api_project_initiative_intent(request: Request, project_name: str,
+                                        initiative_id: str):
+    """ini-017 (t-630): persist a human-edited initiative intent (the WHY).
+
+    Sets intent_source='human' + intent_updated_at=now. An empty body clears
+    the intent back to null. Concurrency-checked save (409 on a racing write).
+    The initiative page edits inline against this route.
+    """
+    try:
+        from smithy.state import INTENT_MAX_LEN as _max
+    except ImportError:
+        _max = 300
+    project = next((p for p in discover_projects(PROJECTS_DIR)
+                    if p["name"] == project_name), None)
+    if not project:
+        return JSONResponse({"ok": False, "error": "project not found"},
+                            status_code=404)
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    new_intent = body.get("intent")
+    if new_intent is not None:
+        new_intent = str(new_intent).strip() or None
+    if isinstance(new_intent, str) and len(new_intent) > _max:
+        return JSONResponse({"ok": False,
+                             "error": f"intent too long (max {_max} chars)"},
+                            status_code=400)
+
+    state_path = Path(project["dir"]) / "state.json"
+    state, mtime = _load_project_state_with_mtime(state_path)
+    ini = next((i for i in state.get("initiatives", [])
+                if i.get("id") == initiative_id), None)
+    if not ini:
+        return JSONResponse({"ok": False, "error": "initiative not found"},
+                            status_code=404)
+    ini["intent"] = new_intent
+    ini["intent_source"] = "human" if new_intent else None
+    ini["intent_updated_at"] = (datetime.now(timezone.utc).isoformat()
+                                if new_intent else None)
+    _save_project_state_checked(state_path, state, mtime)
+    return JSONResponse({"ok": True, "intent": ini["intent"],
+                         "intent_source": ini["intent_source"],
+                         "intent_updated_at": ini["intent_updated_at"]})
+
+
 @app.get("/project/{project_name}/initiative/{initiative_id}",
          response_class=HTMLResponse)
 async def project_initiative_detail(request: Request, project_name: str,
