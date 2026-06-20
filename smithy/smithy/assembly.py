@@ -935,3 +935,120 @@ def bisect_batch(wt: Path, merged: list, run_tests=None) -> dict:
     return {"status": "isolated", "offender_index": bad,
             "offender": merged[bad], "green_prefix": merged[:bad],
             "probes": probes}
+
+
+# ---------------------------------------------------------------------------
+# t-620 (patrol #19): ghost forge-*/t-* branch reconciliation.
+#
+# Assembly's rebase-merge rewrites a branch's commit shas, so a landed branch is
+# never a fast-forward ancestor of main — `git branch -d` won't recognise it and
+# the per-task branches pile up (the "ghost-complete" set). Classification rule,
+# proven in plans/ghost-branch-reconciliation.md:
+#
+#   landed       = `git cherry main <branch>` is all '-' (every commit's PATCH-ID
+#                  is present in main) AND a work/merge commit referencing the
+#                  task exists in main's log.
+#   no-commits   = cherry is empty (the branch tip is already an ancestor of
+#                  main) — fully merged.
+#   needs-review = any '+' line (a patch absent from main) — could be a
+#                  false-complete (lost work) or superseded-differently. NEVER
+#                  pruned automatically.
+#
+# `--prune` deletes ONLY the landed + no-commits set; a branch carrying an
+# unconfirmed diff is never touched. That guardrail is the whole point.
+# ---------------------------------------------------------------------------
+
+GHOST_BRANCH_GLOB = "forge-*/t-*"
+BRANCH_LANDED = "landed"
+BRANCH_ANCESTOR = "no-commits"
+BRANCH_NEEDS_REVIEW = "needs-review"
+PRUNABLE_CLASSES = {BRANCH_LANDED, BRANCH_ANCESTOR}
+
+
+def classify_branch(plus_count: int, minus_count: int,
+                    main_has_task_commit: bool) -> str:
+    """Pure classification of a ghost branch from its `git cherry` counts plus
+    whether main's log references the task. See the module note for the rule."""
+    if plus_count == 0 and minus_count == 0:
+        return BRANCH_ANCESTOR            # nothing unique vs main → merged
+    if plus_count == 0:                   # minus >= 1: all patches in main
+        return BRANCH_LANDED if main_has_task_commit else BRANCH_NEEDS_REVIEW
+    return BRANCH_NEEDS_REVIEW            # >=1 patch absent from main
+
+
+def _cherry_counts(repo: Path, branch: str, base: str) -> tuple:
+    """Return (plus, minus): '+' = commit absent from base, '-' = patch in base."""
+    r = _git(repo, "cherry", base, branch)
+    plus = minus = 0
+    for line in r.stdout.splitlines():
+        s = line.strip()
+        if s.startswith("+"):
+            plus += 1
+        elif s.startswith("-"):
+            minus += 1
+    return plus, minus
+
+
+def _main_references_task(repo: Path, task_id: str, base: str) -> bool:
+    """True if a commit reachable from base mentions the task id. Anchored so
+    't-59' does not match 't-590' (the trailing digits must end the token)."""
+    r = _git(repo, "log", base, "-E", "--oneline", "--max-count=1",
+             f"--grep=(^|[^A-Za-z0-9-]){task_id}([^0-9]|$)")
+    return bool(r.stdout.strip())
+
+
+def list_ghost_branches(repo: Path) -> list:
+    r = _git(repo, "branch", "--list", GHOST_BRANCH_GLOB,
+             "--format=%(refname:short)")
+    return [b.strip() for b in r.stdout.splitlines() if b.strip()]
+
+
+def checked_out_branches(repo: Path) -> set:
+    """Branches currently checked out in ANY worktree — never prune these. A
+    freshly-created branch (forge mid-heat, no commits yet) classifies prunable,
+    but an active Forge is sitting on it. Parsed from `git worktree list`."""
+    out = set()
+    r = _git(repo, "worktree", "list", "--porcelain")
+    for line in r.stdout.splitlines():
+        if line.startswith("branch "):
+            out.add(line.split(None, 1)[1].strip().replace("refs/heads/", "", 1))
+    return out
+
+
+def reconcile_branches(repo: Path, prune: bool = False,
+                       base: str = "main") -> dict:
+    """Classify every ghost forge-*/t-* branch; optionally prune the confirmed-
+    landed set. Read-only unless ``prune=True``. Never deletes a branch checked
+    out in any worktree, nor any branch carrying an unconfirmed diff
+    (classification guardrail)."""
+    active = checked_out_branches(repo)
+    results = []
+    pruned = []
+    for br in list_ghost_branches(repo):
+        task_id = br.rsplit("/", 1)[-1]
+        plus, minus = _cherry_counts(repo, br, base)
+        has_commit = _main_references_task(repo, task_id, base)
+        cls = classify_branch(plus, minus, has_commit)
+        entry = {
+            "branch": br, "task_id": task_id, "classification": cls,
+            "commits_ahead": plus, "commits_landed": minus,
+            "main_has_task_commit": has_commit, "pruned": False,
+        }
+        if br in active:
+            entry["checked_out"] = True
+        if prune and cls in PRUNABLE_CLASSES and br not in active:
+            d = _git(repo, "branch", "-D", br)
+            if d.returncode == 0:
+                entry["pruned"] = True
+                pruned.append(br)
+            else:
+                entry["prune_error"] = d.stderr.strip()
+        results.append(entry)
+    counts = {}
+    for e in results:
+        counts[e["classification"]] = counts.get(e["classification"], 0) + 1
+    return {
+        "base": base, "total": len(results), "counts": counts,
+        "prune_requested": prune, "pruned": pruned,
+        "checked_out": sorted(active), "branches": results,
+    }
