@@ -8869,5 +8869,50 @@ def reconcile_branches_cmd(ctx, prune, base):
             _err(f"{prunable} branch(es) safe to prune — re-run with --prune")
 
 
+@cli.command("intent-gap")
+@click.option("--json", "as_json", is_flag=True, default=False,
+              help="Emit the gap list as JSON.")
+@click.option("--limit", type=int, default=None,
+              help="Show only the top N units (default: all).")
+@click.pass_context
+def intent_gap_cmd(ctx, as_json, limit):
+    """t-626 (ini-017): list tasks + initiatives with NO stated intent, ranked
+    by recent worklog activity — the gap-audit view (which work lacks a WHY).
+
+    Read-only. research/intents-as-primitives.md candidate #3. Most-recently
+    active gaps surface first (cheapest, highest-value to annotate).
+    """
+    from .worklog_agg import worklog_latest_per_task, intent_gap_units
+    root = ctx.obj["root"]
+    state = load_state(root)
+    latest = worklog_latest_per_task(main_repo_root(root))
+    units = intent_gap_units(state, latest)
+    if limit is not None and limit >= 0:
+        units = units[:limit]
+
+    if as_json:
+        _output({"intent_gap": units, "count": len(units)})
+        return
+
+    if not units:
+        click.echo("No intent gaps — every task and initiative states an intent.")
+        return
+    n_task = sum(1 for u in units if u["kind"] == "task")
+    n_ini = len(units) - n_task
+    click.echo(f"Intent gaps: {len(units)} unit(s) — {n_task} task(s), "
+               f"{n_ini} initiative(s), ranked by recent activity:")
+    for u in units:
+        act = (u.get("last_activity") or "—")[:16].replace("T", " ")
+        if u["kind"] == "task":
+            ident = (f"{u['id']:8} {(u.get('stage') or '?'):14} "
+                     f"[{u.get('status') or '?'}]")
+            first = (u.get("desc") or "").splitlines()
+            extra = first[0][:48] if first else ""
+        else:
+            ident = f"{u['id']:8} {'initiative':14} [{u.get('status') or '?'}]"
+            extra = (u.get("title") or "")[:48]
+        click.echo(f"  {act:16}  {ident}  {extra}")
+
+
 if __name__ == "__main__":
     cli()
