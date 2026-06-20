@@ -88,11 +88,12 @@ class TestCockpitAPIAge:
 class TestCockpitTemplatePolish:
     def test_age_column_header(self, poker):
         html = poker.get("/cockpit").text
-        # t-527: age column title changed from "Heats since first worklog
-        # mention" to "Minutes since task was filed" when semantics shifted
-        # from heats-based to created_at-based.
-        # t-556 added class="c-num" for right-alignment.
-        assert "<th class=\"c-num\" title=\"Minutes since task was filed\">age</th>" in html
+        # t-599: task rows became 2-line cards and the dense per-column
+        # headers (incl. age) were dropped from the card face. age is no
+        # longer a column header — it now surfaces in the expanded inline
+        # panel's detail list, so it stays reachable without crowding line 1.
+        assert "<th class=\"c-num\" title=\"Minutes since task was filed\">age</th>" not in html
+        assert "<dt>age</dt>" in html
 
     def test_empty_state_copy(self, poker):
         html = poker.get("/cockpit").text

@@ -157,7 +157,9 @@ def test_cockpit_desc_row_click_toggles_inline_panel(cockpit_html):
     assert "toggleInlineExpand" in cockpit_html
     # Desc cell specifically points at toggleInlineExpand with the task id.
     # Look for the combination in the template.
-    assert 'c-desc-cell" colspan="8" onclick="toggleInlineExpand' in cockpit_html
+    # t-599: card layout — the desc cell now spans 9 (1 leading empty cell
+    # for the checkbox column, was 2 leading empties + colspan-8).
+    assert 'c-desc-cell" colspan="9" onclick="toggleInlineExpand' in cockpit_html
 
 
 # ---------- (3) INITIATIVE clickable -------------------------------------
@@ -209,10 +211,12 @@ def test_cockpit_age_cell_uses_formatAge(cockpit_html):
 def test_cockpit_primary_row_is_10_cells_wide(cockpit_html):
     """Header + skeleton + empty-state rows all use colspan=10 post-t-527."""
     # At least one occurrence of colspan="10" (skeleton + section-head +
-    # empty-state + desc-cell all at 8 or 10).
+    # empty-state still span the full 10-column table width).
     assert 'colspan="10"' in cockpit_html
-    # c-desc-cell spans 8 (sits under the 2 leading empty cells).
-    assert 'c-desc-cell" colspan="8"' in cockpit_html
+    # t-599: the card cell + desc cell now span 9 (1 leading checkbox cell +
+    # colspan-9 = 10), so the table stays a consistent 10-column grid.
+    assert 'c-desc-cell" colspan="9"' in cockpit_html
+    assert 'c-card-cell" colspan="9"' in cockpit_html
 
 
 # ---------- regression guard ------------------------------------------------

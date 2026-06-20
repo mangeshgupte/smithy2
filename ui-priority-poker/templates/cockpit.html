@@ -229,6 +229,44 @@
         .c-desc-row td.c-desc-cell:hover { color: var(--text); }
         .c-ini-link { color: var(--c-link); text-decoration: none; }
         .c-ini-link:hover { text-decoration: underline; }
+        /* t-599: 2-line card layout (human steer 2026-06-20). Each task is a
+           card — LINE 1 = id · initiative · priority · status (+ a trailing
+           control), LINE 2 = the description snippet. The dense stage/age/hp/
+           heat columns are dropped from the card face (still reachable in the
+           expanded inline panel and the drawer). The table + two-<tr>-per-task
+           structure is preserved, so drag-reorder, bulk-select, keyboard nav,
+           section collapse, and the inline panel keep working unchanged — only
+           the per-row cell shape changed. Column total stays 10 (check + a
+           colspan-9 card cell), matching the skeleton/empty/section colspans. */
+        .cockpit-table td.c-check { vertical-align: middle; }
+        .c-card-cell { vertical-align: middle; }
+        .c-card-line1 { display: flex; align-items: center; gap: 8px;
+                        min-width: 0; }
+        /* No divider between a card's two lines; the divider under the desc
+           row closes the card and separates it from the next. */
+        .cockpit-table tr[data-task-id] > td { border-bottom: none; }
+        .cockpit-table tr.c-desc-row > td { border-bottom: 1px solid var(--border); }
+        .c-card-line1 .c-expand { width: auto; }
+        .c-card-line1 .c-id { flex: none; }
+        .c-card-line1 .c-card-ini { font-size: var(--fs-sm); white-space: nowrap;
+                                    flex: 0 1 auto; overflow: hidden;
+                                    text-overflow: ellipsis; }
+        /* priority pill + status text — small and muted so the id stays the
+           per-card anchor. */
+        .c-card-prio { font-size: var(--fs-xs); color: var(--text-muted);
+                       background: var(--surface-hover); padding: 2px 8px;
+                       border-radius: 8px; white-space: nowrap; flex: none; }
+        .c-card-status { font-size: var(--fs-xs); text-transform: uppercase;
+                         letter-spacing: 0.04em; color: var(--text-muted);
+                         white-space: nowrap; flex: none; }
+        .c-card-status[data-st="in_progress"] { color: var(--blue); }
+        .c-card-status[data-st="pending"] { color: var(--text); }
+        /* pending/deferred cards push the defer kebab to the right edge;
+           complete cards push their ship value + sha there instead. */
+        .c-card-line1 .c-kebab { margin-left: auto; flex: none; }
+        .c-card-line1 .c-ship-val { margin-left: auto; flex: none;
+                                    font-size: var(--fs-sm); }
+        .c-card-line1 .c-ship-sha { flex: none; font-size: var(--fs-sm); }
     </style>
     <script>
         // t-527: surface cross-service Bellows URL + project name so
@@ -298,19 +336,12 @@
         <table class="cockpit-table">
             <thead>
                 <tr>
+                    <!-- t-599: card layout drops the per-column headers (id ·
+                         initiative · priority · status now render inline on
+                         each card's line 1). The select-all checkbox stays;
+                         the rest is a single label cell spanning the card. -->
                     <th class="c-check"><input type="checkbox" id="c-check-all" onclick="toggleSelectAllVisible(this.checked)"></th>
-                    <th></th>
-                    <th>id</th>
-                    <th>stage</th>
-                    <th>status</th>
-                    <th class="c-num">M</th>
-                    <th class="c-num">you</th>
-                    <!-- t-527: reason column dropped from the primary
-                         row (still rendered inside the inline panel);
-                         desc now lives in a second tr per task. -->
-                    <th>initiative</th>
-                    <th class="c-num" title="Minutes since task was filed">age</th>
-                    <th></th>
+                    <th colspan="9">tasks</th>
                 </tr>
             </thead>
             <tbody id="rows"></tbody>
@@ -522,6 +553,15 @@
         refreshBulkBar();
     }
 
+    // t-527/t-599: initiative cell — linkifies to Bellows when BELLOWS_URL +
+    // PROJECT_NAME are present, else a muted em-dash. Shared by the pending
+    // and complete card renderers.
+    function iniCellHtml(t) {
+        return t.initiative_id
+            ? `<a class="c-ini-link" href="${BELLOWS_URL}/project/${encodeURIComponent(PROJECT_NAME)}/initiative/${encodeURIComponent(t.initiative_id)}" target="_blank" rel="noopener">${t.initiative_id}</a>`
+            : '—';
+    }
+
     function renderRow(body, t) {
             if (t.status === 'complete') { renderCompleteRow(body, t); return; }
             const tr = document.createElement('tr');
@@ -538,32 +578,25 @@
                 tr.addEventListener('drop', onRowDrop);
                 tr.addEventListener('dragend', onRowDragEnd);
             }
-            const hp = (t.human_priority == null) ? '—' : ('p' + t.human_priority);
             const isOpen = expanded.has(t.id);
             const checked = bulkSelected.has(t.id) ? 'checked' : '';
-            // t-527: primary row drops reason + desc columns. desc
-            // now lives in a second <tr.c-desc-row> below; reason stays
-            // in the inline panel only. initiative_id linkifies to
-            // Bellows when BELLOWS_URL + PROJECT_NAME are present.
-            const iniCell = t.initiative_id
-                ? `<a class="c-ini-link" href="${BELLOWS_URL}/project/${encodeURIComponent(PROJECT_NAME)}/initiative/${encodeURIComponent(t.initiative_id)}" target="_blank" rel="noopener">${t.initiative_id}</a>`
-                : '—';
+            // t-599: 2-line card. Line 1 = id · initiative · priority · status
+            // with the defer kebab pushed to the right edge; the desc snippet
+            // renders on line 2 (the c-desc-row below). stage/age/hp are
+            // dropped from the card face — hp lives in the drawer, stage/age
+            // in the inline panel. The bulk checkbox and the expand chevron
+            // (open-state affordance) stay. Two cells span 10 columns (check +
+            // colspan-9 card cell) so the section/skeleton colspans still match.
             tr.innerHTML =
                 `<td class="c-check"><input type="checkbox" data-bulk-id="${t.id}" ${checked} onclick="onBulkCheck(event)"></td>` +
-                `<td class="c-expand ${isOpen ? 'open' : ''}" onclick="toggleInlineExpand(event, '${t.id}')">${isOpen ? '▾' : '▸'}</td>` +
-                `<td class="c-id"><a href="#" onclick="openDrawer('${t.id}');return false;">${t.id}</a></td>` +
-                `<td class="c-stage-cell"><span class="c-stage stage-${t.stage}">${t.stage}</span></td>` +
-                `<td>${t.status}</td>` +
-                `<td class="c-num">p${t.priority == null ? '?' : t.priority}</td>` +
-                `<td class="c-hp">` +
-                  `<button title="priority up" onclick="bumpHP('${t.id}', -1)">↑</button>` +
-                  `<span>${hp}</span>` +
-                  `<button title="priority down" onclick="bumpHP('${t.id}', 1)">↓</button>` +
-                  `<button title="clear" onclick="clearHP('${t.id}')">✕</button>` +
-                `</td>` +
-                `<td>${iniCell}</td>` +
-                `<td class="c-age">${formatAge(t.age_minutes)}</td>` +
-                `<td><span class="c-kebab" onclick="toggleDefer('${t.id}', '${t.status}')" title="defer/undefer">${t.status === 'deferred' ? '▶' : '⏸'}</span></td>`;
+                `<td class="c-card-cell" colspan="9"><div class="c-card-line1">` +
+                  `<span class="c-expand ${isOpen ? 'open' : ''}" onclick="toggleInlineExpand(event, '${t.id}')">${isOpen ? '▾' : '▸'}</span>` +
+                  `<span class="c-id"><a href="#" onclick="openDrawer('${t.id}');return false;">${t.id}</a></span>` +
+                  `<span class="c-card-ini">${iniCellHtml(t)}</span>` +
+                  `<span class="c-card-prio">p${t.priority == null ? '?' : t.priority}</span>` +
+                  `<span class="c-card-status" data-st="${t.status}">${t.status}</span>` +
+                  `<span class="c-kebab" onclick="toggleDefer('${t.id}', '${t.status}')" title="defer/undefer">${t.status === 'deferred' ? '▶' : '⏸'}</span>` +
+                `</div></td>`;
             // t-546: whole-row click toggles the inline panel (the
             // chevron alone was a 16px target). Guard in the handler
             // keeps links/buttons/checkbox/kebab working unchanged.
@@ -580,8 +613,8 @@
             // t-565: the t-548 bounce badge lives here now — t-527's
             // refinements dropped the reason column it used to ride in.
             descRow.innerHTML =
-                `<td></td><td></td>` +
-                `<td class="c-desc-cell" colspan="8" onclick="toggleInlineExpand(event, '${t.id}')">` +
+                `<td></td>` +
+                `<td class="c-desc-cell" colspan="9" onclick="toggleInlineExpand(event, '${t.id}')">` +
                 `<span class="c-desc-line"><span class="c-desc-preview">${descPreview(t)}</span>${formatBounce(t)}</span>` +
                 `</td>`;
             body.appendChild(descRow);
@@ -616,28 +649,29 @@
         const isOpen = expanded.has(t.id);
         const signal = t.ship_signal || '';
         const valTxt = t.ship_value ? (signal + ' ' + t.ship_value) : (signal || '—');
-        const heat = t.ship_heat ? ('h' + t.ship_heat) : '—';
         const sha = t.commit_sha ? `<code class="c-sha">${t.commit_sha}</code>` : '—';
-        // t-527: complete row shape — id + stage + ship metrics, desc
-        // in a second tr below the primary row (same pattern as
-        // pending/deferred rows). Primary row now has 10 cells to match
-        // the new header.
+        // t-599: complete cards mirror the pending shape — id · initiative ·
+        // status on the left, ship value + commit sha pushed to the right
+        // edge. stage + ship-heat are dropped from the card face (heat per the
+        // t-599 steer; stage is in the inline panel). desc renders on line 2.
         tr.innerHTML =
             `<td class="c-check"></td>` +
-            `<td class="c-expand ${isOpen ? 'open' : ''}" onclick="toggleInlineExpand(event, '${t.id}')">${isOpen ? '▾' : '▸'}</td>` +
-            `<td class="c-id"><a href="#" onclick="openDrawer('${t.id}');return false;">${t.id}</a></td>` +
-            `<td class="c-stage-cell"><span class="c-stage stage-${t.stage}">${t.stage}</span></td>` +
-            `<td class="c-ship-val" title="outcome signal + value">${valTxt}</td>` +
-            `<td class="c-ship-heat">${heat}</td>` +
-            `<td class="c-ship-sha" colspan="4">${sha}</td>`;
+            `<td class="c-card-cell" colspan="9"><div class="c-card-line1">` +
+              `<span class="c-expand ${isOpen ? 'open' : ''}" onclick="toggleInlineExpand(event, '${t.id}')">${isOpen ? '▾' : '▸'}</span>` +
+              `<span class="c-id"><a href="#" onclick="openDrawer('${t.id}');return false;">${t.id}</a></span>` +
+              `<span class="c-card-ini">${iniCellHtml(t)}</span>` +
+              `<span class="c-card-status" data-st="${t.status}">${t.status}</span>` +
+              `<span class="c-ship-val" title="outcome signal + value">${valTxt}</span>` +
+              `<span class="c-ship-sha">${sha}</span>` +
+            `</div></td>`;
         tr.addEventListener('click', e => onRowClickToggle(e, t.id));  // t-546
         body.appendChild(tr);
         const descRow = document.createElement('tr');
         descRow.className = 'c-desc-row';
         descRow.dataset.descFor = t.id;  // not data-task-id — see renderRow
         descRow.innerHTML =
-            `<td></td><td></td>` +
-            `<td class="c-desc-cell" colspan="8" onclick="toggleInlineExpand(event, '${t.id}')">` +
+            `<td></td>` +
+            `<td class="c-desc-cell" colspan="9" onclick="toggleInlineExpand(event, '${t.id}')">` +
             `<span class="c-desc-line"><span class="c-desc-preview">${descPreview(t)}</span></span>` +
             `</td>`;
         body.appendChild(descRow);
@@ -679,12 +713,13 @@
         const tr = document.createElement('tr');
         tr.className = 'c-inline-panel';
         tr.dataset.panelFor = t.id;
-        // t-527: inline-panel colspan updated to 8 (primary row is now
-        // 10 cells = 2 leading empties + 8-wide body).
+        // t-599: inline-panel aligns under the card body — one empty cell
+        // for the checkbox column, then a colspan-9 body (total span 10).
         tr.innerHTML =
-            `<td></td><td></td><td colspan="8" class="c-inline-body">
+            `<td></td><td colspan="9" class="c-inline-body">
                 <div class="c-inline-desc"></div>
                 <dl class="c-inline-dl">
+                    <dt>stage</dt><dd>${t.stage || '—'}</dd>
                     <dt>reason</dt><dd>${t.priority_reason || '—'}</dd>
                     <dt>initiative</dt><dd>${t.initiative_id || '—'}</dd>
                     <dt>blocked by</dt><dd>${(t.blocked_by || []).join(', ') || '—'}</dd>
