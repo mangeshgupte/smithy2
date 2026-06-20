@@ -434,25 +434,30 @@ code {
 }
 .rig-metrics-header .muted { color: #8b949e; font-size: 11px; }
 
+/* t-594 (ini-010): one bordered card with three divider-separated rows
+   (was three side-by-side tiles, too cramped in the 320px left column). */
 .rig-metrics-tiles {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 6px;
     margin-bottom: 16px;
 }
 
 .metric-tile {
-    background: #0d1117;
-    border: 1px solid #30363d;
-    border-radius: 6px;
-    padding: 10px 12px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 2px 12px;
+    padding: 9px 12px;
+    border-top: 1px solid #21262d;
 }
+.metric-tile:first-child { border-top: none; }
 .tile-label {
     font-size: 11px;
     color: #8b949e;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    margin-bottom: 4px;
 }
 .tile-body {
     font-size: 13px;
@@ -470,7 +475,6 @@ code {
     gap: 16px;
 }
 @media (max-width: 900px) {
-    .rig-metrics-tiles { grid-template-columns: 1fr; }
     .rig-metrics-charts { grid-template-columns: 1fr; }
 }
 .chart-block {

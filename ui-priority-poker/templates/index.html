@@ -208,18 +208,22 @@
             <h2>Rig throughput</h2>
             <span class="muted" id="rig-metrics-updated">loading…</span>
         </div>
+        {# t-594 (ini-010): single card, three stacked labeled rows.
+           ids #tile-current/#tile-24h/#tile-all + span classes
+           .t-merged/.t-rejected/.t-ratio/.t-rate preserved so
+           renderRigMetrics()/setTile() needs zero changes. #}
         <div class="rig-metrics-tiles">
             <div class="metric-tile" id="tile-current">
-                <div class="tile-label">Current bucket (last 10 heats)</div>
-                <div class="tile-body"><span class="t-merged">–</span> merged · <span class="t-rejected">–</span> rejected · <span class="t-ratio">–</span></div>
+                <span class="tile-label">Current bucket (last 10 heats):</span>
+                <span class="tile-body"><span class="t-merged">–</span> merged · <span class="t-rejected">–</span> rejected · <span class="t-ratio">–</span></span>
             </div>
             <div class="metric-tile" id="tile-24h">
-                <div class="tile-label">Last 24h (wall-clock)</div>
-                <div class="tile-body"><span class="t-merged">–</span> merged · <span class="t-rejected">–</span> rejected · <span class="t-rate">–</span>/hr avg</div>
+                <span class="tile-label">Last 24h (wall-clock):</span>
+                <span class="tile-body"><span class="t-merged">–</span> merged · <span class="t-rejected">–</span> rejected · <span class="t-rate">–</span>/hr avg</span>
             </div>
             <div class="metric-tile" id="tile-all">
-                <div class="tile-label">All-time</div>
-                <div class="tile-body"><span class="t-merged">–</span> merged · <span class="t-rejected">–</span> rejected · <span class="t-ratio">–</span></div>
+                <span class="tile-label">All-time:</span>
+                <span class="tile-body"><span class="t-merged">–</span> merged · <span class="t-rejected">–</span> rejected · <span class="t-ratio">–</span></span>
             </div>
         </div>
         <div class="rig-metrics-charts">
