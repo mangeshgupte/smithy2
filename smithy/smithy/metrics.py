@@ -502,9 +502,10 @@ def lifecycle_section(rig_events: list[dict],
     t-616 (ini-019): merge timestamps come from BOTH the legacy
     assembly_tick_merged rig-event AND the per-task assembly-log outcome='merged'
     rows the BATCH model writes (ini-020/t-570), so lead_time closes for the
-    batch era. Per-task merge LATENCY is only recorded on the legacy event
-    (assembly_batch_merged carries a whole-batch latency, not per-task), so
-    merge_latency_ms stays legacy-event-only and reads 0 in a batch-only window.
+    batch era. t-624: merge_latency_ms folds in the whole-batch latency from
+    assembly_batch_end (the batch era has no per-task latency) so the percentile
+    isn't blank — it mixes legacy per-task and batch per-batch latencies, with
+    the per-batch distribution also reported standalone in batching_section.
     """
     push, pop, started, ended, merged = {}, {}, {}, {}, {}
     merge_latencies: list[float] = []
@@ -526,6 +527,11 @@ def lifecycle_section(rig_events: list[dict],
             merged[tid] = max(merged.get(tid, t), t)
             if e.get("latency_ms") is not None:
                 merge_latencies.append(e["latency_ms"])
+        elif ev == "assembly_batch_end":
+            # t-624: fold the whole-batch latency in so merge_latency_ms isn't
+            # blank in the batch era (no per-task latency is emitted there).
+            if e.get("batch_latency_ms") is not None:
+                merge_latencies.append(e["batch_latency_ms"])
 
     # t-616: fold batch-merged tasks (per-task assembly-log 'merged' rows) into
     # the merge timeline — the legacy rig-event above doesn't cover them.
@@ -550,6 +556,36 @@ def lifecycle_section(rig_events: list[dict],
         "in_flight": _percentiles(in_flight, ndigits=1),
         "merge_latency_ms": _percentiles(merge_latencies, ndigits=0),
         "lead_time_s": _percentiles(lead_time, ndigits=1),
+    }
+
+
+def batching_section(rig_events: list[dict],
+                     lo: Optional[float] = None,
+                     hi: Optional[float] = None) -> dict:
+    """``batching`` — batch-Assembly health (ini-020 §(j); t-624). From
+    assembly_batch_end events: whole-batch latency distribution + outcome counts
+    and rates (green / bisect / partial_reject) + landed/rejected task totals.
+    The 'smithy stats' batching panel (t-514) surfaced these; this puts them in
+    the L2 snapshot so smithy report + Bellows ops consume them too."""
+    ends = [e for e in rig_events
+            if e.get("event") == "assembly_batch_end"
+            and _ts_in(_parse_ts(e.get("ts")), lo, hi)]
+    latencies = [e["batch_latency_ms"] for e in ends
+                 if e.get("batch_latency_ms") is not None]
+    outcomes: dict = {}
+    for e in ends:
+        oc = e.get("batch_outcome")
+        if oc:
+            outcomes[oc] = outcomes.get(oc, 0) + 1
+    n = len(ends)
+    return {
+        "batches": n,
+        "batch_latency_ms": _percentiles(latencies, ndigits=0),
+        "outcomes": outcomes,
+        "outcome_rates": ({k: round(v / n, 3) for k, v in outcomes.items()}
+                          if n else {}),
+        "green_landed": sum(e.get("green_landed", 0) or 0 for e in ends),
+        "rejected": sum(e.get("rejected_count", 0) or 0 for e in ends),
     }
 
 
@@ -804,6 +840,7 @@ def build_l2_snapshot(*, heat: int, generated_at: str,
                                  idle_window_s=idle_window_s),
         "initiatives": initiatives_section(state, rig_events, assembly_rows),
         "lifecycle": lifecycle_section(rig_events, assembly_rows, lo, hi),
+        "batching": batching_section(rig_events, lo, hi),  # t-624 (additive, no schema bump)
         "issues": issues_section(worklog_rows, rig_events, assembly_rows, state),
         "queue": queue_section(rig_events, state, lo, hi),
         "thrash_detail": thrash_detail_section(rig_events, assembly_rows),
