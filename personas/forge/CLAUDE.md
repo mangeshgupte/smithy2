@@ -220,6 +220,24 @@ smithy memory-write "<consolidated insight>" --heat <N> --stage <stage>
 
 This appends to `./memory/<your-suffix>/MEMORY_DAILY.md` (t-458: auto-detected from cwd's worktree).
 
+### Step 7 — Context reset after a clean heat (ini-021, DEFAULT OFF)
+
+Long runs accrete context — forge-quench hit 99% and auto-compacted mid-heat
+(t-634). When the kill switch `FORGE_AUTO_CLEAR_ENABLED=1` is set, reset
+context once per clean heat with the proven in-loop `/clear` pattern (the same
+one Comms and `scripts/autopilot-tick.sh` use). On your NEXT turn after closing
+a heat (the Marshal nudge), emit `/clear` as the very first line **iff**:
+
+1. the heat you just closed ended `complete` or `submitted` (a CLEAN end-heat —
+   never on `partial`/`blocked`/`rejected`, whose debug trail outweighs the
+   token savings); AND
+2. `FORGE_AUTO_CLEAR_ENABLED=1` (`[ "$FORGE_AUTO_CLEAR_ENABLED" = "1" ]`).
+
+After the `/clear`, warm up cheaply (don't re-run full bootstrap) and continue
+the loop — see `../../protocol/loop.md` Step 0.5 (warm-up) + Step 6 (the gate).
+**Default OFF:** with the env var unset, this never fires — pure capability,
+no behavior change. Activation is the human's call.
+
 ## Coordination via SendMessage
 
 You talk to exactly two teammates:
