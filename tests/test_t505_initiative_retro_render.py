@@ -85,7 +85,7 @@ def _get(client_tuple, project, ini_id="ini-1"):
 
 class TestRetroRenders:
     def test_retro_content_present(self, client, tmp_path):
-        _seed(tmp_path, retro_path="plans/ini-1-retro.md",
+        _seed(tmp_path, retro_path="plans/retro/ini-1-retro.md",
               retro_content="# Retro\n\nWhat worked: everything.")
         r = _get(client, "proj-retro")
         assert r.status_code == 200
@@ -124,9 +124,9 @@ class TestMissingFileOmits:
 
     def test_directory_not_file(self, client, tmp_path):
         """retro_path pointing at a directory must not leak content."""
-        _seed(tmp_path, retro_path="plans", retro_content=None)
-        # Create plans/ as a directory but don't put a file at retro_path.
-        (tmp_path / "proj-retro" / "plans").mkdir(exist_ok=True)
+        _seed(tmp_path, retro_path="plans/retro", retro_content=None)
+        # Create plans/retro/ as a directory but don't put a file at retro_path.
+        (tmp_path / "proj-retro" / "plans" / "retro").mkdir(parents=True, exist_ok=True)
         r = _get(client, "proj-retro")
         assert r.status_code == 200
         assert "Retrospective" not in r.text

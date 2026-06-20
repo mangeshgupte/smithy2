@@ -66,7 +66,7 @@ within an approved initiative.
 2. **Anvil drafts the retro prose.** Anvil reads the record (worklog
    filtered to the ini's task ids, git log of merged shas, memories
    tagged with ini context, `plans/` docs referencing it) and produces
-   `plans/ini-XXX-retro.md` from `plans/TEMPLATE-initiative-retro.md`,
+   `plans/retro/ini-XXX-retro.md` from `plans/retro/TEMPLATE-initiative-retro.md`,
    filling the prose sections and leaving data sections marked for a
    Forge. The drafting steps are in `personas/anvil/CLAUDE.md`
    §"Closing Initiatives".
@@ -77,7 +77,7 @@ within an approved initiative.
 5. **Human reviews + closes.** The retro renders on the Bellows
    initiative detail page. The human edits prose if needed (directly on
    main — retros are human territory, no gate) and runs
-   `smithy complete-initiative <id> --retro plans/ini-XXX-retro.md
+   `smithy complete-initiative <id> --retro plans/retro/ini-XXX-retro.md
    [--successor <ini-id>]`. The CLI validates the path and writes the
    state.json closure fields (`retro_path`, `closed_at`,
    `heat_cost_total`, `successor_ini`). `--force-no-retro` is the
@@ -92,7 +92,7 @@ initiative may start while a prior one's retro is still in flight;
 closure never gates new work.
 
 Design contract: `plans/initiative-retros-design.md`. Template:
-`plans/TEMPLATE-initiative-retro.md`.
+`plans/retro/TEMPLATE-initiative-retro.md`.
 
 ## Created
 

@@ -7198,7 +7198,7 @@ def reject_initiative(ctx, initiative_id):
 @click.argument("initiative_id")
 @click.option("--retro", "retro_path", default=None,
               help="Path to the retro document (REQUIRED unless "
-                   "--force-no-retro). Convention: plans/ini-<id>-retro.md. "
+                   "--force-no-retro). Convention: plans/retro/ini-<id>-retro.md. "
                    "File must exist at close time.")
 @click.option("--successor", "successor_ini", default=None,
               help="Optional follow-on initiative id — must already exist "
@@ -7256,7 +7256,7 @@ def complete_initiative(ctx, initiative_id, retro_path, successor_ini,
             _output({"error": f"retro file not found: {retro_path}"})
             _err(f"retro file not found: {retro_path}")
             sys.exit(1)
-        expected = f"plans/ini-{initiative_id.split('-')[-1]}-retro.md"
+        expected = f"plans/retro/ini-{initiative_id.split('-')[-1]}-retro.md"
         # Convention warning — just stderr, doesn't block closure.
         if not retro_path.endswith(expected.split("/")[-1]) \
                 and expected not in str(retro_path):

@@ -73,7 +73,7 @@ Threshold `confidence ≥ 0.20` to propose at all; below that, task stays null.
 | Ambiguous | 18 | top-2 scored within 0.10 — deliberate no-op |
 | No confident match | 155 | infrastructure / pre-initiative era tasks |
 
-Dry-run file: `plans/ini-019-retro-map.md` (written by this heat).
+Dry-run file: `plans/retro/ini-019-retro-map.md` (written by this heat).
 
 **Observation:** the low high-confidence count is expected. The initiative
 framework landed around t-183 (ini-009); ~140 earlier tasks existed before
@@ -82,7 +82,7 @@ leave them null rather than force-fit.
 
 ## 5. Operator review flow (t-447)
 
-1. Run with no flags → inspect `plans/ini-019-retro-map.md`.
+1. Run with no flags → inspect `plans/retro/ini-019-retro-map.md`.
 2. Manually annotate the markdown for any medium-confidence rows that
    look wrong or the ambiguous/no-match rows that clearly belong somewhere.
 3. For edits, either patch `state.json` by hand (single-edit, reviewable
@@ -122,7 +122,7 @@ cleanup is opportunistic, not a blocker).
 ## 8. Deliverables (this heat)
 
 - `scripts/ini-019-backfill-initiative-id.py` — the migration tool.
-- `plans/ini-019-retro-map.md` — the dry-run mapping for t-447 review.
+- `plans/retro/ini-019-retro-map.md` — the dry-run mapping for t-447 review.
 - `research/ini-019-r2-backfill-design.md` — this document.
 
 State.json is **not** modified in this heat. `--apply-schema` and

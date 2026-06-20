@@ -10,7 +10,7 @@
 
 Turned `smithy complete-initiative` from a bare status-flip into a closure
 *ritual* that captures what was learned. Every closed initiative now produces a
-`plans/ini-<id>-retro.md` artifact — Anvil-authored prose (what worked, what
+`plans/retro/ini-<id>-retro.md` artifact — Anvil-authored prose (what worked, what
 didn't, what carries forward) plus a Forge-filled metrics appendix — and four
 queryable state.json fields (`retro_path`, `closed_at`, `heat_cost_total`,
 `successor_ini`) the CLI writes and Bellows renders. The system was proven by
@@ -83,7 +83,7 @@ to close initiatives was the one initiative left open. (This retro fixes it.)
 ## Carry-forward
 
 - **Contract:** `plans/initiative-retros-design.md` — locked decisions, goals/non-goals, closure flow.
-- **Template:** `plans/TEMPLATE-initiative-retro.md` — copy on every closure (canonical, from t-504).
+- **Template:** `plans/retro/TEMPLATE-initiative-retro.md` — copy on every closure (canonical, from t-504).
 - **Lifecycle doc:** `identity.md` §"Initiative Lifecycle" — where closure fits end-to-end.
 - **Drafting steps:** `personas/anvil/CLAUDE.md` §"Closing Initiatives" — Anvil's part of the flow (the documented T3 procedure; could become a `/retro-draft` skill later).
 - **CLI:** `complete-initiative --retro/--successor/--force-no-retro` is the sole writer of closure fields; `heat_cost_total` always from state.json.
@@ -98,7 +98,7 @@ by a real closure (ini-015). The one explicitly-deferred follow-up is the
 CLAUDE.md documentation"); it files as a new task when the manual procedure
 proves worth automating. Adjacent loose end (belongs to *ini-019's* closure, not
 this one): design open-question #3 — back-fill `retro_path` on ini-019, whose
-retro docs (`plans/ini-019-retro-applied.md`, `-map.md`) exist on disk but were
+retro docs (`plans/retro/ini-019-retro-applied.md`, `-map.md`) exist on disk but were
 never wired into state. Future retro-system maintenance files as a theme task or
 new initiative per the locked succession decision.
 
@@ -119,4 +119,4 @@ new initiative per the locked succession decision.
 - Calendar span: **~54 days** (2026-04-19 → 2026-06-12) — but the machinery was front-loaded: t-503 (schema) and t-505 (Bellows render) both built *and* merged on **2026-04-19**. The entire long tail is t-504, the pure-docs task that bounced ~7 weeks on environment (see "What didn't"), with t-506 (the ini-015 shakedown) gated behind the finished machinery and landing the same day t-504 finally did.
 - Reject cycles: **3** total across 4 tasks — t-503 ×1 (h912, staging-venv namespace), t-504 ×2 (h936 namespace, h953 collection-error); t-505 and t-506 clean. No task exceeded 2 reject cycles; every reject rolled into a merged retry (0 abandoned).
 
-> **Data-fill note (t-595).** Figures match current `state.json`: ini-025 `heats_used=7`, `status=approved`, 4 complete tasks; `closed_at`/`heat_cost_total`/`retro_path` still null — hence the *(pending `smithy complete-initiative`)* marker on the Closed line. Per-task `heats` counts distinct Forge work-heat worklog rows (val>0 submissions; reject and merge bookkeeping rows excluded), so it absorbs each reject-and-retry: t-503=2 (1 reject → 1 retry), t-504=3 (2 rejects → 2 retries), t-505=1, t-506=1. Appendix sum **7** equals the initiative's charged `heats_used` (**7**) *exactly* — unlike ini-015's pre-per-task-branch approximation, every ini-025 task ran in the per-task-branch era, so attribution is precise. The remaining closure step is the human running `smithy complete-initiative ini-025 --retro plans/ini-025-retro.md`.
+> **Data-fill note (t-595).** Figures match current `state.json`: ini-025 `heats_used=7`, `status=approved`, 4 complete tasks; `closed_at`/`heat_cost_total`/`retro_path` still null — hence the *(pending `smithy complete-initiative`)* marker on the Closed line. Per-task `heats` counts distinct Forge work-heat worklog rows (val>0 submissions; reject and merge bookkeeping rows excluded), so it absorbs each reject-and-retry: t-503=2 (1 reject → 1 retry), t-504=3 (2 rejects → 2 retries), t-505=1, t-506=1. Appendix sum **7** equals the initiative's charged `heats_used` (**7**) *exactly* — unlike ini-015's pre-per-task-branch approximation, every ini-025 task ran in the per-task-branch era, so attribution is precise. The remaining closure step is the human running `smithy complete-initiative ini-025 --retro plans/retro/ini-025-retro.md`.
