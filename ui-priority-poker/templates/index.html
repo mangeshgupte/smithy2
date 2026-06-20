@@ -865,10 +865,7 @@
 
     function renderRigMetrics(data) {
         // Summary tiles
-        const current = data.summary.current_bucket;
-        const t1h = data.summary.last_1h;
-        const t24 = data.summary.last_24h;
-        const ta = data.summary.all_time;
+        const summary = (data && data.summary) || {};
 
         function setTile(id, cfg) {
             const tile = document.getElementById(id);
@@ -878,26 +875,35 @@
                 if (el) el.textContent = val;
             }
         }
-        setTile('tile-current', {
-            '.t-merged': current.merged,
-            '.t-rejected': current.rejected,
-            '.t-ratio': current.ratio == null ? '—' : (current.ratio * 100).toFixed(0) + '%',
+
+        // t-615 (ini-010): each tile renders INDEPENDENTLY and DEFENSIVELY.
+        // A missing summary window — e.g. a stale server returning an older
+        // shape without `last_1h`, which blanked ALL FOUR cards on 2026-06-20
+        // when the undefined access threw and aborted the whole function —
+        // must degrade only THAT tile to en-dashes, never the rest (or the
+        // charts below). The cfg builders tolerate an absent/partial window
+        // (each field guarded), and each setTile is wrapped so one tile's
+        // throw can't abort the loop.
+        const DASH = '—';
+        const num = (v) => (v == null ? DASH : v);
+        const pct = (r) => (r == null ? DASH : (r * 100).toFixed(0) + '%');
+        const ratioCfg = (w) => ({
+            '.t-merged': num(w && w.merged), '.t-rejected': num(w && w.rejected),
+            '.t-ratio': pct(w && w.ratio),
         });
-        setTile('tile-1h', {
-            '.t-merged': t1h.merged,
-            '.t-rejected': t1h.rejected,
-            '.t-ratio': t1h.ratio == null ? '—' : (t1h.ratio * 100).toFixed(0) + '%',
+        const rateCfg = (w) => ({
+            '.t-merged': num(w && w.merged), '.t-rejected': num(w && w.rejected),
+            '.t-rate': num(w && w.hourly_avg),
         });
-        setTile('tile-24h', {
-            '.t-merged': t24.merged,
-            '.t-rejected': t24.rejected,
-            '.t-rate': t24.hourly_avg,
-        });
-        setTile('tile-all', {
-            '.t-merged': ta.merged,
-            '.t-rejected': ta.rejected,
-            '.t-ratio': ta.ratio == null ? '—' : (ta.ratio * 100).toFixed(0) + '%',
-        });
+        const tiles = [
+            ['tile-current', ratioCfg(summary.current_bucket)],
+            ['tile-1h', ratioCfg(summary.last_1h)],
+            ['tile-24h', rateCfg(summary.last_24h)],
+            ['tile-all', ratioCfg(summary.all_time)],
+        ];
+        for (const [id, cfg] of tiles) {
+            try { setTile(id, cfg); } catch (e) { /* isolate per-tile failures */ }
+        }
 
         // Bucketed stacked bar chart
         const svgB = document.getElementById('chart-buckets');
