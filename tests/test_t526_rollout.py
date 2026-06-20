@@ -297,3 +297,37 @@ class TestAutopilotA7AndA11:
         assert d["notify"] is False             # log-only never notifies
         assert all(dec["action"] != DEFER and not dec["notify"]
                    for _, dec in decide_all(leaks))
+
+
+# --- t-634 (ini-026): forge pane tails in the --once snapshot -------------
+
+class TestAutopilotForgePanes:
+    def test_pane_targets_enumerate_forges_then_marshal_assembly(self):
+        from smithy.cli import _autopilot_pane_targets
+        state = {"parallel": {"forges": [
+            {"id": "forge-quench"}, {"id": "forge-temper"}, {"id": "forge-anneal"}]}}
+        targets = _autopilot_pane_targets(state)
+        assert targets[:3] == ["forge-quench", "forge-temper", "forge-anneal"]
+        assert targets[-2:] == ["marshal", "assembly"]   # always captured
+
+    def test_pane_targets_no_forges(self):
+        from smithy.cli import _autopilot_pane_targets
+        assert _autopilot_pane_targets({}) == ["marshal", "assembly"]
+
+    def test_pane_targets_dedup_and_skip_blank(self):
+        from smithy.cli import _autopilot_pane_targets
+        state = {"parallel": {"forges": [
+            {"id": "marshal"}, {"id": None}, {"id": "forge-quench"}, {"id": ""}]}}
+        t = _autopilot_pane_targets(state)
+        assert t.count("marshal") == 1 and t.count("assembly") == 1
+        assert "forge-quench" in t and None not in t and "" not in t
+
+    def test_once_runs_and_targets_cover_rig_forge(self, tmp_path):
+        # End-to-end: --once on a rig with a forge runs clean, and that forge is
+        # among the captured pane targets (the snapshot now reads forge panes).
+        from smithy.cli import _autopilot_pane_targets
+        root = _stuck_rig(tmp_path)                  # has forge-temper
+        r = _once(root)
+        assert r.exit_code == 0, r.output
+        state = json.loads((root / "state.json").read_text())
+        assert "forge-temper" in _autopilot_pane_targets(state)

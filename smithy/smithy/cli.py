@@ -4892,6 +4892,22 @@ def _autopilot_patrol_snapshot(root):
         return {}
 
 
+def _autopilot_pane_targets(state):
+    """t-634 (ini-026): the tmux panes the `autopilot --once` snapshot captures —
+    every forge (from state.parallel.forges) plus marshal + assembly. The
+    design's detector table reads each forge pane tail; capturing only
+    marshal/assembly left forge-pane signals unreadable on the shakedown path.
+    Forge panes first (capture order), then marshal/assembly; deduped, skipping
+    blank ids."""
+    forge_ids = [f.get("id") for f in
+                 (state.get("parallel") or {}).get("forges") or [] if f.get("id")]
+    targets = []
+    for p in forge_ids + ["marshal", "assembly"]:
+        if p and p not in targets:
+            targets.append(p)
+    return targets
+
+
 @cli.command("autopilot")
 @click.option("--once", is_flag=True, default=False,
               help="Run one detection tick inline (shakedown path).")
@@ -4956,10 +4972,13 @@ def autopilot_cmd(ctx, once):
     session = os.environ.get("FORGE_SESSION", "forge")
     sessions = [s for s in
                 _tmux("ls", "-F", "#{session_name}").splitlines() if s]
+    # t-634 (ini-026): capture EACH forge pane + marshal + assembly. Capturing
+    # only marshal/assembly left forge-pane signals unreadable on the shakedown
+    # path — a latent no-op like A2/A7 were before t-621's live-patrol fix.
     pane_tails = {
         pane: _tmux("capture-pane", "-p", "-t",
                     f"{session}:{pane}")[-2000:]
-        for pane in ("marshal", "assembly")
+        for pane in _autopilot_pane_targets(state)
     }
 
     rows = []
