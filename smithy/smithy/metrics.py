@@ -243,12 +243,24 @@ def _forge_busy_seconds(rig_events: list[dict], forge_id: str,
 def forges_section(worklog_rows: list[dict], rig_events: list[dict],
                    assembly_rows: list[dict], state: dict,
                    from_heat: int, to_heat: int,
-                   now_ts: Optional[float] = None) -> list[dict]:
+                   now_ts: Optional[float] = None,
+                   idle_window_s: Optional[float] = 86400.0) -> list[dict]:
     """``forges`` — A10 (idle%), E1 (heats/forge/stage), E2 (mean value), E3
     (signal mix), E4 (rejection share), E6 (heartbeat age). Emits one object per
     registered forge plus a ``"legacy"`` bucket for pre-t-409 rows with no
-    ``forge_id`` (R1 gap H.1 — never dropped)."""
+    ``forge_id`` (R1 gap H.1 — never dropped).
+
+    t-611 BUG 1: idle% (A10) is measured over a trailing ``idle_window_s``
+    window (default 24h) anchored to the report cutoff ``hi`` — the to_heat
+    timestamp — NOT wall-clock ``now()``. That keeps ``--at-heat N`` replay
+    byte-deterministic (t-605) while stopping a lifetime ``from_heat=1`` report
+    from diluting idle% with months of calendar dormancy (all forges showed
+    "idle 99%"). Pass ``idle_window_s=None`` to fall back to the full
+    ``from_heat..to_heat`` span."""
     lo, hi = _heat_window_ts(worklog_rows, from_heat, to_heat)
+    # Recent window for busy/idle, anchored to the cutoff (hi), not now().
+    idle_lo = (hi - idle_window_s) if (idle_window_s is not None
+                                       and hi is not None) else lo
 
     # assembly-log rejection/submission counts per forge (E4).
     rej_by_forge: dict[str, int] = {}
@@ -310,7 +322,7 @@ def forges_section(worklog_rows: list[dict], rig_events: list[dict],
 
         idle_pct = None
         if not is_legacy:
-            busy, wall = _forge_busy_seconds(rig_events, fid, lo, hi)
+            busy, wall = _forge_busy_seconds(rig_events, fid, idle_lo, hi)
             if wall:
                 idle_pct = round(max(0.0, 1.0 - busy / wall), 3)
 
@@ -637,10 +649,16 @@ def thrash_detail_section(rig_events: list[dict],
 
     reject_ts: dict = {}
     rejections: dict = {}
+    asm_attempts: dict = {}
     for a in assembly_rows:
         tid = a.get("task_id")
         if tid not in ids:
             continue
+        # t-611 BUG 2: each Assembly processing (merge or reject) is a gate
+        # attempt. Used as the attempts fallback below for thrash tasks that
+        # predate forge_started logging (e.g. t-411: 2 rejects, zero rig-events).
+        if a.get("outcome") in ("merged", "rejected"):
+            asm_attempts[tid] = asm_attempts.get(tid, 0) + 1
         if a.get("outcome") == "rejected":
             rejections[tid] = rejections.get(tid, 0) + 1
             t = _parse_ts(a.get("ts"))
@@ -660,7 +678,10 @@ def thrash_detail_section(rig_events: list[dict],
             ttg = round(merge_ts[tid] - reject_ts[tid], 1)
         out.append({
             "task_id": tid,
-            "attempts": attempts.get(tid, 0),
+            # forge_started count, or the assembly-processing count when the
+            # task predates forge_started logging (t-611 BUG 2) — never a
+            # misleading 0 for a task flagged on rejections alone.
+            "attempts": max(attempts.get(tid, 0), asm_attempts.get(tid, 0)),
             "rejections": rejections.get(tid, 0),
             "requeues": max(0, requeues.get(tid, 0) - 1),
             "forges": forges.get(tid, []),
@@ -692,7 +713,8 @@ def build_l2_snapshot(*, heat: int, generated_at: str,
                       worklog_rows: list[dict], rig_events: list[dict],
                       assembly_rows: list[dict], state: dict,
                       from_heat: int = 1,
-                      to_heat: Optional[int] = None) -> dict:
+                      to_heat: Optional[int] = None,
+                      idle_window_s: float = 86400.0) -> dict:
     """Assemble the full L2 dict (§3.2 v1) from parsed records + a state snapshot.
 
     Pure: ``generated_at`` is supplied by the caller (not read from the clock) so
@@ -712,7 +734,8 @@ def build_l2_snapshot(*, heat: int, generated_at: str,
         "budget": budget_section(state),
         "stages": stages_section(state),
         "forges": forges_section(worklog_rows, rig_events, assembly_rows, state,
-                                 from_heat, to_heat, now_ts=now_ts),
+                                 from_heat, to_heat, now_ts=now_ts,
+                                 idle_window_s=idle_window_s),
         "initiatives": initiatives_section(state, rig_events, assembly_rows),
         "lifecycle": lifecycle_section(rig_events, lo, hi),
         "issues": issues_section(worklog_rows, rig_events, assembly_rows, state),

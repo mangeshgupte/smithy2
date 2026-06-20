@@ -243,6 +243,53 @@ def test_forges_window_subset(records):
     assert q["heats_total"] == 2 and q["heats_window"] == 1
 
 
+# t-611 BUG 1: idle% over a trailing window anchored to the cutoff -----------
+
+def _idle_fixture():
+    """One forge, two busy intervals: an OLD one >24h before the cutoff and a
+    RECENT one inside it. Worklog heat 1 @ iso(0), heat 5 @ iso(100000) so the
+    cutoff (hi) = iso(100000) and the default 24h window starts at iso(13600)."""
+    wl = metrics.parse_worklog([
+        "\t".join(metrics.WORKLOG_COLUMNS[:8]),
+        f"{iso(0)}\t1\timplementation\tt-a\tsubmitted\t0.8\t🟢\tn\tforge-quench",
+        f"{iso(100000)}\t5\timplementation\tt-x\tsubmitted\t0.8\t🟢\tn\tforge-quench",
+    ])
+    rig = [
+        # OLD: busy 400s, before the 24h window → excluded by default.
+        {"event": "forge_started", "forge_id": "forge-quench", "ts": iso(0)},
+        {"event": "forge_ended_submitted", "forge_id": "forge-quench", "ts": iso(400)},
+        # RECENT: busy 100s, inside the window.
+        {"event": "forge_started", "forge_id": "forge-quench", "ts": iso(99000)},
+        {"event": "forge_ended_submitted", "forge_id": "forge-quench", "ts": iso(99100)},
+    ]
+    state = {"parallel": {"forges": [{"id": "forge-quench"}]}}
+    return wl, rig, state
+
+
+def test_forges_idle_window_excludes_dormant_lifetime():
+    wl, rig, state = _idle_fixture()
+    by24 = {f["id"]: f for f in metrics.forges_section(
+        wl, rig, [], state, 1, 5)}["forge-quench"]          # default 24h
+    byall = {f["id"]: f for f in metrics.forges_section(
+        wl, rig, [], state, 1, 5, idle_window_s=None)}["forge-quench"]  # full span
+    # Default 24h: only the recent interval → busy 100 over wall 100 → idle 0.
+    assert by24["idle_pct"] == 0.0
+    # Lifetime span: the long dormant gap dilutes idle% toward ~1 (the BUG).
+    assert byall["idle_pct"] > 0.9
+    assert by24["idle_pct"] != byall["idle_pct"]
+
+
+def test_forges_idle_pct_independent_of_now_ts():
+    # Anchored to the cutoff (hi), not now() → identical across now_ts values,
+    # which is what keeps --at-heat replay byte-deterministic (t-605).
+    wl, rig, state = _idle_fixture()
+    a = {f["id"]: f for f in metrics.forges_section(
+        wl, rig, [], state, 1, 5, now_ts=metrics._parse_ts(iso(99200)))}["forge-quench"]
+    b = {f["id"]: f for f in metrics.forges_section(
+        wl, rig, [], state, 1, 5, now_ts=metrics._parse_ts(iso(500000)))}["forge-quench"]
+    assert a["idle_pct"] == b["idle_pct"]
+
+
 def test_initiatives_section(records):
     inis = metrics.initiatives_section(
         records["state"], records["rig"], records["assembly"])
@@ -300,6 +347,25 @@ def test_thrash_detail_section(records):
     assert row["forges"] == ["forge-temper"]
     assert row["stages"] == ["implementation"] * 3
     assert row["time_to_green_s"] == 170.0                 # merge600 - lastReject430
+
+
+def test_thrash_attempts_fallback_to_assembly_processings():
+    # t-611 BUG 2: a task flagged on rejections alone, with ZERO forge_started
+    # events (predates rig-event logging — e.g. live t-411), must still report
+    # attempts>0, sourced from the assembly processing count.
+    rig: list = []  # no rig-events at all
+    asm = [
+        {"ts": iso(10), "task_id": "t-old", "outcome": "rejected", "forge_id": "f"},
+        {"ts": iso(20), "task_id": "t-old", "outcome": "rejected", "forge_id": "f"},
+        {"ts": iso(30), "task_id": "t-old", "outcome": "merged", "forge_id": "f"},
+    ]
+    td = metrics.thrash_detail_section(rig, asm)
+    assert len(td) == 1
+    row = td[0]
+    assert row["task_id"] == "t-old"
+    # 3 gate processings (2 rejects + 1 merge); forge_started count was 0.
+    assert row["attempts"] == 3
+    assert row["rejections"] == 2
 
 
 def test_gaps_section(records):

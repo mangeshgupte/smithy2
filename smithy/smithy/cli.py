@@ -8471,7 +8471,14 @@ def _report_render_human(snap, sections, verbose):
 
     if "forges" in sections:
         win = snap.get("window", {})
-        L.append(f"Forges (heats {win.get('from_heat')}–{win.get('to_heat')})")
+        iw = snap.get("_idle_window_s")
+        if iw:
+            hrs = iw / 3600
+            wlabel = f"{hrs:.0f}h" if hrs >= 1 else f"{iw / 60:.0f}m"
+            L.append(f"Forges (heats {win.get('from_heat')}–{win.get('to_heat')}"
+                     f" · idle% last {wlabel})")
+        else:
+            L.append(f"Forges (heats {win.get('from_heat')}–{win.get('to_heat')})")
         for f in snap["forges"]:
             if not f.get("heats_total"):
                 continue
@@ -8737,6 +8744,9 @@ def report(ctx, at_heat, at_ts, at_sha, initiative_id, forge_id, window,
     # --- window (rolling) ----------------------------------------------
     from_heat = 1
     to_heat = heat
+    # t-611: trailing window for the Forges idle% (A10). Default 24h; honor
+    # --window so the report's idle% matches the requested span.
+    idle_window_s = 86400.0
     if window:
         try:
             n_str, unit = window.split("-", 1)
@@ -8747,7 +8757,11 @@ def report(ctx, at_heat, at_ts, at_sha, initiative_id, forge_id, window,
             sys.exit(2)
         if unit.startswith("heat"):
             from_heat = max(1, heat - n + 1)
+            lo_w, hi_w = metrics._heat_window_ts(worklog, from_heat, to_heat)
+            if lo_w is not None and hi_w is not None and hi_w > lo_w:
+                idle_window_s = hi_w - lo_w
         elif unit.startswith("hour"):
+            idle_window_s = n * 3600
             # Translate the wall-clock window to a from_heat via worklog ts.
             now_ts = max((metrics._parse_ts(r.get("timestamp")) or 0
                           for r in worklog), default=None)
@@ -8768,14 +8782,15 @@ def report(ctx, at_heat, at_ts, at_sha, initiative_id, forge_id, window,
     snap = metrics.build_l2_snapshot(
         heat=heat, generated_at=generated_at, worklog_rows=worklog,
         rig_events=rig, assembly_rows=asm, state=state,
-        from_heat=from_heat, to_heat=to_heat)
+        from_heat=from_heat, to_heat=to_heat, idle_window_s=idle_window_s)
     snap["_replayed"] = replayed
+    snap["_idle_window_s"] = idle_window_s  # for the human label; stripped from JSON
 
     if as_json:
         # §1.4: --json emits the FULL L2 schema (+ surface marker), never a
         # --sections subset — the JSON feed is meant to be complete.
         out = {"surface": "report", **{k: v for k, v in snap.items()
-                                       if k != "_replayed"}}
+                                       if k not in ("_replayed", "_idle_window_s")}}
         click.echo(json.dumps(out, indent=2, ensure_ascii=False))
     elif as_tsv:
         click.echo(_report_render_tsv(snap, sections))
