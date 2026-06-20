@@ -8810,5 +8810,37 @@ def report(ctx, at_heat, at_ts, at_sha, initiative_id, forge_id, window,
     sys.exit(0)
 
 
+@cli.command("reconcile-branches")
+@click.option("--prune", is_flag=True, default=False,
+              help="Delete ONLY the confirmed-landed branches. Never touches a "
+                   "branch carrying an unconfirmed diff (needs-review).")
+@click.option("--base", default="main", help="Base ref to reconcile against.")
+@click.pass_context
+def reconcile_branches_cmd(ctx, prune, base):
+    """Classify ghost forge-*/t-* branches (patrol #19 automation).
+
+    Read-only report by default: each branch is classified `landed`
+    (cherry all '-' + a work/merge commit in main), `no-commits` (already an
+    ancestor of main), or `needs-review` (a patch absent from main — possibly a
+    false-complete or superseded-differently). `--prune` deletes ONLY the
+    landed + no-commits set; needs-review branches are never auto-deleted.
+    Rule: plans/ghost-branch-reconciliation.md.
+    """
+    from . import assembly
+    root = ctx.obj["root"]
+    repo = main_repo_root(root)
+    report = assembly.reconcile_branches(repo, prune=prune, base=base)
+    _output(report)
+    c = report["counts"]
+    summary = ", ".join(f"{k}={v}" for k, v in sorted(c.items())) or "none"
+    _err(f"reconcile-branches: {report['total']} ghost branch(es) — {summary}")
+    if prune:
+        _err(f"pruned {len(report['pruned'])} confirmed-landed branch(es)")
+    else:
+        prunable = sum(c.get(k, 0) for k in ("landed", "no-commits"))
+        if prunable:
+            _err(f"{prunable} branch(es) safe to prune — re-run with --prune")
+
+
 if __name__ == "__main__":
     cli()
