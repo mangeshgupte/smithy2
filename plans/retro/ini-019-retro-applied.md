@@ -30,7 +30,7 @@ idempotent:
 | — ambiguous (tie / near-tie) | 19 |
 | — no confident match (<0.20) | 155 |
 
-Refreshed dry-run: `plans/ini-019-retro-map.md`.
+Refreshed dry-run: `plans/retro/ini-019-retro-map.md`.
 
 ## Validation
 

@@ -76,7 +76,7 @@ def project(tmp_path):
         _ini("ini-002", status="approved", heats_used=0),
         _ini("ini-003", status="rejected", heats_used=0),
         _ini("ini-004", status="done", heats_used=7,
-             retro_path="plans/ini-004-retro.md",
+             retro_path="plans/retro/ini-004-retro.md",
              closed_at="2026-04-01T00:00:00+00:00",
              heat_cost_total=7),
         _ini("ini-025", status="active", heats_used=3),
@@ -86,10 +86,10 @@ def project(tmp_path):
     )
     (tmp_path / "feedback.md").write_text("# Feedback\n")
     (tmp_path / "inbox.md").write_text("# Inbox\n")
-    (tmp_path / "plans").mkdir()
-    (tmp_path / "plans" / "ini-001-retro.md").write_text("# Retro ini-001\nWhat worked.\n")
-    (tmp_path / "plans" / "ini-025-retro.md").write_text("# Retro ini-025\n")
-    (tmp_path / "plans" / "ini-004-retro.md").write_text("# Retro ini-004\n")
+    (tmp_path / "plans" / "retro").mkdir(parents=True)
+    (tmp_path / "plans" / "retro" / "ini-001-retro.md").write_text("# Retro ini-001\nWhat worked.\n")
+    (tmp_path / "plans" / "retro" / "ini-025-retro.md").write_text("# Retro ini-025\n")
+    (tmp_path / "plans" / "retro" / "ini-004-retro.md").write_text("# Retro ini-004\n")
     subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
     subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True)
     subprocess.run(["git", "commit", "-m", "init"], cwd=tmp_path,
@@ -115,11 +115,11 @@ def _read_ini(project, iid):
 class TestHappyPath:
     def test_valid_retro_closes(self, project, runner):
         r = _run(runner, project, "ini-001",
-                 "--retro", "plans/ini-001-retro.md")
+                 "--retro", "plans/retro/ini-001-retro.md")
         assert r.exit_code == 0, f"stderr={r.stderr}\nstdout={r.stdout}"
         ini = _read_ini(project, "ini-001")
         assert ini["status"] == "done"
-        assert ini["retro_path"] == "plans/ini-001-retro.md"
+        assert ini["retro_path"] == "plans/retro/ini-001-retro.md"
         assert ini["closed_at"] is not None
         assert ini["heat_cost_total"] == 12  # snapshot from heats_used
         assert ini["successor_ini"] is None
@@ -146,7 +146,7 @@ class TestMissingRetro:
 
     def test_both_retro_and_force_mutually_exclusive(self, project, runner):
         r = _run(runner, project, "ini-001",
-                 "--retro", "plans/ini-001-retro.md",
+                 "--retro", "plans/retro/ini-001-retro.md",
                  "--force-no-retro")
         assert r.exit_code == 2
         data = json.loads(r.stdout)
@@ -183,21 +183,21 @@ class TestForceNoRetro:
 class TestSuccessor:
     def test_successor_to_active_succeeds(self, project, runner):
         r = _run(runner, project, "ini-001",
-                 "--retro", "plans/ini-001-retro.md",
+                 "--retro", "plans/retro/ini-001-retro.md",
                  "--successor", "ini-025")
         assert r.exit_code == 0, f"stderr={r.stderr}"
         assert _read_ini(project, "ini-001")["successor_ini"] == "ini-025"
 
     def test_successor_to_approved_succeeds(self, project, runner):
         r = _run(runner, project, "ini-001",
-                 "--retro", "plans/ini-001-retro.md",
+                 "--retro", "plans/retro/ini-001-retro.md",
                  "--successor", "ini-002")
         assert r.exit_code == 0
         assert _read_ini(project, "ini-001")["successor_ini"] == "ini-002"
 
     def test_successor_to_rejected_errors(self, project, runner):
         r = _run(runner, project, "ini-001",
-                 "--retro", "plans/ini-001-retro.md",
+                 "--retro", "plans/retro/ini-001-retro.md",
                  "--successor", "ini-003")
         assert r.exit_code == 1
         data = json.loads(r.stdout)
@@ -207,13 +207,13 @@ class TestSuccessor:
 
     def test_successor_to_done_errors(self, project, runner):
         r = _run(runner, project, "ini-001",
-                 "--retro", "plans/ini-001-retro.md",
+                 "--retro", "plans/retro/ini-001-retro.md",
                  "--successor", "ini-004")
         assert r.exit_code == 1
 
     def test_successor_self_reference_errors(self, project, runner):
         r = _run(runner, project, "ini-001",
-                 "--retro", "plans/ini-001-retro.md",
+                 "--retro", "plans/retro/ini-001-retro.md",
                  "--successor", "ini-001")
         assert r.exit_code == 1
         data = json.loads(r.stdout)
@@ -221,7 +221,7 @@ class TestSuccessor:
 
     def test_successor_unknown_id_errors(self, project, runner):
         r = _run(runner, project, "ini-001",
-                 "--retro", "plans/ini-001-retro.md",
+                 "--retro", "plans/retro/ini-001-retro.md",
                  "--successor", "ini-999")
         assert r.exit_code == 1
         data = json.loads(r.stdout)
@@ -234,7 +234,7 @@ class TestSuccessor:
 class TestTimestamp:
     def test_closed_at_is_utc_iso(self, project, runner):
         r = _run(runner, project, "ini-001",
-                 "--retro", "plans/ini-001-retro.md")
+                 "--retro", "plans/retro/ini-001-retro.md")
         assert r.exit_code == 0
         ts = _read_ini(project, "ini-001")["closed_at"]
         # Parses as aware-UTC datetime.
@@ -279,7 +279,7 @@ class TestIdempotency:
         # Existing closed_at preserved (not clobbered).
         ini = _read_ini(project, "ini-004")
         assert ini["closed_at"] == "2026-04-01T00:00:00+00:00"
-        assert ini["retro_path"] == "plans/ini-004-retro.md"
+        assert ini["retro_path"] == "plans/retro/ini-004-retro.md"
 
 
 # --- unknown-id + schema defaults -----------------------------------
@@ -323,7 +323,7 @@ class TestSchemaDefaults:
         from smithy.state import load_state
         loaded = load_state(project)
         ini = next(i for i in loaded["initiatives"] if i["id"] == "ini-004")
-        assert ini["retro_path"] == "plans/ini-004-retro.md"
+        assert ini["retro_path"] == "plans/retro/ini-004-retro.md"
         assert ini["closed_at"] == "2026-04-01T00:00:00+00:00"
         assert ini["heat_cost_total"] == 7
 
@@ -346,7 +346,7 @@ def _ranked_state():
         _ini("ini-025", status="active", heats_used=3, rank=3),
         _ini("ini-003", status="rejected", heats_used=0, rank=None),
         _ini("ini-004", status="done", heats_used=7, rank=None,
-             retro_path="plans/ini-004-retro.md",
+             retro_path="plans/retro/ini-004-retro.md",
              closed_at="2026-04-01T00:00:00+00:00", heat_cost_total=7),
     ])
 
@@ -359,10 +359,10 @@ def ranked_project(tmp_path):
     )
     (tmp_path / "feedback.md").write_text("# Feedback\n")
     (tmp_path / "inbox.md").write_text("# Inbox\n")
-    (tmp_path / "plans").mkdir()
-    (tmp_path / "plans" / "ini-001-retro.md").write_text("# Retro ini-001\n")
-    (tmp_path / "plans" / "ini-002-retro.md").write_text("# Retro ini-002\n")
-    (tmp_path / "plans" / "ini-025-retro.md").write_text("# Retro ini-025\n")
+    (tmp_path / "plans" / "retro").mkdir(parents=True)
+    (tmp_path / "plans" / "retro" / "ini-001-retro.md").write_text("# Retro ini-001\n")
+    (tmp_path / "plans" / "retro" / "ini-002-retro.md").write_text("# Retro ini-002\n")
+    (tmp_path / "plans" / "retro" / "ini-025-retro.md").write_text("# Retro ini-025\n")
     subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
     subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True)
     subprocess.run(["git", "commit", "-m", "init"], cwd=tmp_path,
@@ -382,7 +382,7 @@ class TestRankHygieneOnClose:
     def test_closed_initiative_rank_nulled(self, ranked_project, runner):
         # (a) close rank-1 ini-001 → its rank becomes None.
         r = _run(runner, ranked_project, "ini-001",
-                 "--retro", "plans/ini-001-retro.md")
+                 "--retro", "plans/retro/ini-001-retro.md")
         assert r.exit_code == 0, f"stderr={r.stderr}"
         ini = _read_ini(ranked_project, "ini-001")
         assert ini["status"] == "done"
@@ -393,7 +393,7 @@ class TestRankHygieneOnClose:
         # (b) closing rank-1 leaves {ini-002(was 2), ini-025(was 3)} →
         # recompacted to 1,2 preserving prior order.
         r = _run(runner, ranked_project, "ini-001",
-                 "--retro", "plans/ini-001-retro.md")
+                 "--retro", "plans/retro/ini-001-retro.md")
         assert r.exit_code == 0
         assert _read_ini(ranked_project, "ini-002")["rank"] == 1
         assert _read_ini(ranked_project, "ini-025")["rank"] == 2
@@ -402,7 +402,7 @@ class TestRankHygieneOnClose:
         # Close the middle rank (ini-002, rank=2): ini-001 stays 1, ini-025
         # drops from 3 → 2.
         r = _run(runner, ranked_project, "ini-002",
-                 "--retro", "plans/ini-002-retro.md")
+                 "--retro", "plans/retro/ini-002-retro.md")
         assert r.exit_code == 0
         assert _read_ini(ranked_project, "ini-002")["rank"] is None
         assert _read_ini(ranked_project, "ini-001")["rank"] == 1
@@ -412,7 +412,7 @@ class TestRankHygieneOnClose:
         # (c) validate-ranks is clean immediately after a close — no manual
         # `initiative renumber` required.
         r = _run(runner, ranked_project, "ini-001",
-                 "--retro", "plans/ini-001-retro.md")
+                 "--retro", "plans/retro/ini-001-retro.md")
         assert r.exit_code == 0
         v = _validate_ranks_run(runner, ranked_project)
         assert v.exit_code == 0, f"validate-ranks not clean: {v.stdout}"

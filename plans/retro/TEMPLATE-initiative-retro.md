@@ -1,7 +1,7 @@
 <!--
   Canonical initiative-retro template (ini-025 T2).
 
-  Copy this file to plans/ini-<id>-retro.md when closing an initiative.
+  Copy this file to plans/retro/ini-<id>-retro.md when closing an initiative.
   Anvil fills the prose sections (Summary, What worked, What didn't,
   Carry-forward, What's next); a Forge "editing" task fills the data
   sections (What shipped, Metrics appendix) from the record. The header

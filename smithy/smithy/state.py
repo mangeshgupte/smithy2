@@ -189,7 +189,7 @@ def _apply_steerability_defaults(state: dict) -> dict:
         ini.setdefault("touches", [])
         # t-503 (ini-025): retro + closure fields. All default null on
         # proposal/approval; set by `smithy complete-initiative` at
-        # closure time. retro_path is the path to plans/ini-<id>-retro.md
+        # closure time. retro_path is the path to plans/retro/ini-<id>-retro.md
         # (or explicitly null when closed with --force-no-retro);
         # closed_at is UTC ISO; heat_cost_total snapshots heats_used at
         # close time (protects against later edits); successor_ini names

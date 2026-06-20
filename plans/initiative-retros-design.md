@@ -5,13 +5,13 @@
 
 ## What this is
 
-A structured way to close initiatives with captured learnings. Today `smithy complete-initiative <id>` flips status to `complete` and nothing else — any retrospective is ad-hoc (only ini-019 has retros so far, hand-written as `plans/ini-019-retro-*.md`). This formalizes the pattern: every closure produces a retro artifact with prose (what we learned) and queryable metrics (heat cost, merge ratio, successor pointer).
+A structured way to close initiatives with captured learnings. Today `smithy complete-initiative <id>` flips status to `complete` and nothing else — any retrospective is ad-hoc (only ini-019 has retros so far, hand-written as `plans/retro/ini-019-retro-*.md`). This formalizes the pattern: every closure produces a retro artifact with prose (what we learned) and queryable metrics (heat cost, merge ratio, successor pointer).
 
 First use case: **ini-015 (Marshal agent)** — 32/32 tasks complete, 28 heats vs 25 budgeted, Marshal fully operational. Ready to close and capture what we learned about replacing the wavefront allocator with an AI persona.
 
 ## Locked decisions (from brainstorm)
 
-1. **Artifact shape**: markdown retro at `plans/ini-<id>-retro.md` + queryable fields in state.json (pointer, closure_date, heat_cost_total, successor_ini optional)
+1. **Artifact shape**: markdown retro at `plans/retro/ini-<id>-retro.md` + queryable fields in state.json (pointer, closure_date, heat_cost_total, successor_ini optional)
 2. **Authorship**: Anvil drafts the prose skeleton (strategic synthesis); a Forge "editing" task populates the mechanical data sections (merge shas, task counts, heat metrics); human reviews + flips status via CLI
 3. **Succession**: binary `status=complete`; optional `successor_ini` pointer when there's a direct continuation (e.g. ini-018 → ini-024); no `maintenance` status — future maintenance work gets its own new initiative when substantial
 
@@ -32,7 +32,7 @@ First use case: **ini-015 (Marshal agent)** — 32/32 tasks complete, 28 heats v
 
 ## Artifact structure
 
-### `plans/ini-<id>-retro.md` template
+### `plans/retro/ini-<id>-retro.md` template
 
 ```markdown
 # <ini-id>: <title> — Retrospective
@@ -80,7 +80,7 @@ Under each initiative object:
 {
   "id": "ini-015",
   "status": "complete",
-  "retro_path": "plans/ini-015-retro.md",
+  "retro_path": "plans/retro/ini-015-retro.md",
   "closed_at": "2026-04-19T00:00:00Z",
   "heat_cost_total": 28,
   "successor_ini": null
@@ -92,12 +92,12 @@ Fields added: `retro_path`, `closed_at`, `heat_cost_total`, `successor_ini`. All
 ## Closure flow
 
 1. **Decide to close** — human signals (e.g., "ini-015 is done, let's close it"). Anvil verifies: all tasks under the ini are `complete`, no open pending/in_progress/submitted rows. If any open, either flip them to obsolete/reject explicitly or hold off.
-2. **Anvil drafts prose skeleton** — reads the record (worklog filtered to this ini, git log of merged shas, memories tagged with ini context, plans/ docs referencing this ini). Produces `plans/ini-<id>-retro.md` with all prose sections filled and data sections marked `<TODO: Forge data fill>`.
-3. **Anvil files a Forge retro-data task** — stage `editing`, description: "fill metrics + task-by-task appendix in plans/ini-<id>-retro.md per retro template". Anvil includes a pointer to which state.json queries the Forge should run.
+2. **Anvil drafts prose skeleton** — reads the record (worklog filtered to this ini, git log of merged shas, memories tagged with ini context, plans/ docs referencing this ini). Produces `plans/retro/ini-<id>-retro.md` with all prose sections filled and data sections marked `<TODO: Forge data fill>`.
+3. **Anvil files a Forge retro-data task** — stage `editing`, description: "fill metrics + task-by-task appendix in plans/retro/ini-<id>-retro.md per retro template". Anvil includes a pointer to which state.json queries the Forge should run.
 4. **Forge completes the data fill** — runs the queries, fills the metrics sections, submits.
 5. **Assembly merges** the retro into main via standard flow.
 6. **Human reviews** — reads the merged retro in Bellows (renders on initiative detail page via t-501 markdown). Edits prose if needed (commits directly to main — retros are human territory, no Assembly gate needed for edits).
-7. **Human closes** — `smithy complete-initiative <id> --retro plans/ini-<id>-retro.md [--successor <other-id>]`. CLI validates: file exists, path matches convention, status was `active`/`approved`; writes state.json fields.
+7. **Human closes** — `smithy complete-initiative <id> --retro plans/retro/ini-<id>-retro.md [--successor <other-id>]`. CLI validates: file exists, path matches convention, status was `active`/`approved`; writes state.json fields.
 
 ## CLI changes
 
@@ -115,13 +115,13 @@ Current `smithy complete-initiative <id>` signature is preserved as `--force-no-
 
 T1. **Schema + CLI** — add `retro_path`, `closed_at`, `heat_cost_total`, `successor_ini` to state.json initiative schema; extend `complete-initiative` with `--retro` (required), `--successor` (optional validated against roster), `--force-no-retro` (escape). Tests for each flag + validation path. *(1 heat, implementation, under ini-025)*
 
-T2. **Retro template + docs** — drop `plans/TEMPLATE-initiative-retro.md` (canonical template; new closures copy it). Document the flow in `identity.md` and `personas/anvil/CLAUDE.md`. *(1 heat, planning)*
+T2. **Retro template + docs** — drop `plans/retro/TEMPLATE-initiative-retro.md` (canonical template; new closures copy it). Document the flow in `identity.md` and `personas/anvil/CLAUDE.md`. *(1 heat, planning)*
 
 T3. **Anvil retro-drafting procedure** — documented steps Anvil follows (not code): read state.json for ini scope, grep worklog for task IDs, git log merged shas, scan memories for tagged learnings, produce prose skeleton. Could be a skill (`/retro-draft <ini-id>`) later; for v1 just CLAUDE.md documentation. *(0 heats — docs included in T2)*
 
 T4. **Bellows retro rendering** — initiative detail page renders `retro_path` file below the existing sections. Blocked on t-501 (markdown rendering). Graceful degrade: if t-501 not merged, render as `<pre>` with t-500's whitespace preservation. *(1 heat, editing, blocked on t-500)*
 
-T5. **Shakedown on ini-015** — first real use. Anvil drafts `plans/ini-015-retro.md` prose (this session or next). Files the data-fill task. Assembly merges. Human closes via new CLI. Validates the template + flow end-to-end. Any template revisions from the shakedown land as T6. *(Anvil + 1 Forge heat)*
+T5. **Shakedown on ini-015** — first real use. Anvil drafts `plans/retro/ini-015-retro.md` prose (this session or next). Files the data-fill task. Assembly merges. Human closes via new CLI. Validates the template + flow end-to-end. Any template revisions from the shakedown land as T6. *(Anvil + 1 Forge heat)*
 
 T6. **Template v2 based on shakedown** — optional follow-up if shakedown reveals template issues. *(may be 0 heats)*
 
@@ -131,5 +131,5 @@ T6. **Template v2 based on shakedown** — optional follow-up if shakedown revea
 
 1. **Initiative for this work** — new ini-025, or fold under ini-016 (Queue Cockpit)? My recommendation: new ini-025. Retros aren't a UI feature, they're a process/protocol feature.
 2. **Retro required for `rejected` initiatives?** — if an initiative is explicitly rejected, is there value in a retro? My take: optional. Rejection already implies "we decided not to pursue"; the reason lives in the rejection action itself. But `--retro` could be *allowed* (not required) on reject for cases like ini-001 (rejected after exploration) where the lessons matter.
-3. **Backfill for ini-019** — it already has retros at `plans/ini-019-retro-*.md`. One-off migration: set `retro_path` on ini-019 pointing at whichever of the existing docs is canonical. 5-minute task, tack onto T1.
+3. **Backfill for ini-019** — it already has retros at `plans/retro/ini-019-retro-*.md`. One-off migration: set `retro_path` on ini-019 pointing at whichever of the existing docs is canonical. 5-minute task, tack onto T1.
 4. **Ini-018 and ini-022 also effectively done?** — ini-018 (Parallel Forges) has shipped 50+ heats; ini-022 (Rig Startup & Lifecycle) has the ui window + venv pre-boot. Worth considering parallel closure shakedowns. Humans's call.

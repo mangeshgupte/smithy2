@@ -85,7 +85,7 @@ For explaining state and history, read:
 When an initiative is done, it produces a **retro** — a closure artifact
 with prose (what we learned) and queryable metrics. The full contract is
 `plans/initiative-retros-design.md`; the canonical template is
-`plans/TEMPLATE-initiative-retro.md`; the end-to-end flow lives in
+`plans/retro/TEMPLATE-initiative-retro.md`; the end-to-end flow lives in
 `../../identity.md` §"Initiative Lifecycle". This section is YOUR part:
 drafting the prose skeleton from the record.
 
@@ -122,15 +122,15 @@ the only writer of the state.json closure fields.
      notes, earlier retros. They hold the original intent to measure the
      outcome against (did we build what we set out to?).
 
-3. **Produce the skeleton.** Copy `plans/TEMPLATE-initiative-retro.md` to
-   `plans/ini-XXX-retro.md`. Fill every prose section (Summary, What
+3. **Produce the skeleton.** Copy `plans/retro/TEMPLATE-initiative-retro.md` to
+   `plans/retro/ini-XXX-retro.md`. Fill every prose section (Summary, What
    worked, What didn't, Carry-forward, What's next). Leave the data
    sections (What shipped, Metrics appendix) as their `<TODO: Forge data
    fill>` markers. Fill the header metrics from `state.json`
    (`heat_cost_total`, task counts) — not from memory.
 
 4. **File the Forge data-fill task.** `smithy add-task editing "fill
-   metrics + task-by-task appendix in plans/ini-XXX-retro.md per retro
+   metrics + task-by-task appendix in plans/retro/ini-XXX-retro.md per retro
    template"` — include in the description which `state.json`/worklog
    queries the Forge should run (the task-id list + the merged-sha grep).
    Assembly merges it through the standard flow.
