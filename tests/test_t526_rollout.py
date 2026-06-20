@@ -188,3 +188,52 @@ class TestAutopilotOnce:
         assert data["anomalies"] == []
         assert "0 fixed · 0 deferred · 0 urgent" in data["log_line"]
         assert not (root / "deferred.md").exists()
+
+
+# --------------- t-621: live patrol wired into --once ----------------------
+
+
+def _starving_rig(tmp_path):
+    """Idle forge + a claimable pending task + empty next_tasks + budget
+    remaining + halt off → `smithy patrol` flags the forge as starving.
+    With the old hardcoded ``patrol: {}`` the A2 detector could never see it."""
+    (tmp_path / "state.json").write_text(json.dumps({
+        "project": "x",
+        "budget": {"total_heats": 100, "used": 10},
+        "queue": [{"id": "t-1", "stage": "implementation", "desc": "x",
+                   "status": "pending", "priority": 2, "blocked_by": [],
+                   "assigned_forge": None, "initiative_id": None}],
+        "next_tasks": [], "themes": [], "initiatives": [], "constraints": [],
+        "ideas": [], "feedback_cursor": 0, "inbox_cursor": 0,
+        "overall_progress": 0, "stages": {}, "allocator": {"integral": {}},
+        "parallel": {"halt_flag": False, "forges": [
+            {"id": "forge-temper", "status": "idle", "current_task": None,
+             "current_heat": None, "last_heartbeat": None}]},
+    }))
+    (tmp_path / "worklog.tsv").write_text(
+        "timestamp\theat\tstage\ttask_id\toutcome\tvalue\tsignal\tnotes\n")
+    return tmp_path
+
+
+class TestAutopilotLivePatrol:
+    def test_once_feeds_live_patrol_so_a2_can_fire(self, tmp_path):
+        # (a) snapshot has live patrol data + (b) A2 (starvation) fires on the
+        # shakedown path — impossible while patrol was hardcoded to {}.
+        root = _starving_rig(tmp_path)
+        r = _once(root)
+        assert r.exit_code == 0, r.output
+        types = [a["type"] for a in json.loads(r.output)["anomalies"]]
+        assert "A2" in types, types
+        # The persisted snapshot carried the live patrol payload, not {}.
+        snap = json.loads((root / ".autopilot-state.json").read_text())
+        if "patrol" in snap:  # write_tick_snapshot may slim the snapshot
+            assert snap["patrol"].get("starving_forges")
+
+    def test_once_patrol_call_has_no_fix_side_effects(self, tmp_path):
+        # (c) the patrol shell is read-only — state.json is byte-identical
+        # after the tick (no --fix mutation leaks through).
+        root = _starving_rig(tmp_path)
+        before = (root / "state.json").read_text()
+        r = _once(root)
+        assert r.exit_code == 0, r.output
+        assert (root / "state.json").read_text() == before
