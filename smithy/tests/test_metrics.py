@@ -471,3 +471,59 @@ class TestBatchMergeRecognition:
         lc = metrics.lifecycle_section(rig, [])
         assert lc["merge_latency_ms"]["n"] == 1          # legacy latency kept
         assert lc["lead_time_s"]["n"] == 1               # merged@30 - push@0
+
+
+# --- t-623 (ini-019): authoring-forge attribution ------------------------
+# Assembly-written merged/rejected worklog rows carry the Assembly pane's forge
+# (primary), not the author — so per-forge stats must re-attribute by the
+# authoring forge (= the <forge-id>/<task-id> branch prefix).
+
+class TestForgeAttribution:
+    def test_authoring_forge_by_task(self):
+        rows = [
+            {"task_id": "t-1", "outcome": "submitted", "forge_id": "forge-temper"},
+            {"task_id": "t-1", "outcome": "rejected", "forge_id": "forge-quench"},
+            {"task_id": "t-2", "outcome": "complete", "forge_id": "forge-anneal"},
+            {"task_id": "t-3", "outcome": "submitted", "forge_id": None},  # legacy
+        ]
+        assert metrics.authoring_forge_by_task(rows) == {
+            "t-1": "forge-temper", "t-2": "forge-anneal"}
+
+    def test_effective_forge(self):
+        authoring = {"t-1": "forge-temper"}
+        # Assembly-written rows re-attribute to the author
+        for oc in ("merged", "rejected"):
+            assert metrics.effective_forge(
+                {"task_id": "t-1", "outcome": oc, "forge_id": "forge-quench"},
+                authoring) == "forge-temper"
+        # Forge-written rows keep their own forge
+        assert metrics.effective_forge(
+            {"task_id": "t-1", "outcome": "submitted", "forge_id": "forge-quench"},
+            authoring) == "forge-quench"
+        # unknown author + Assembly row → fall back to the row's forge
+        assert metrics.effective_forge(
+            {"task_id": "t-x", "outcome": "merged", "forge_id": "forge-quench"},
+            {}) == "forge-quench"
+        # missing forge_id → legacy bucket
+        assert metrics.effective_forge(
+            {"task_id": "t-y", "outcome": "submitted", "forge_id": None},
+            {}) == "legacy"
+
+    def test_forges_section_reattributes_reject_signal(self):
+        # forge-temper authored t-1 (🟢 submitted); Assembly wrote the reject row
+        # stamped forge-quench (🚫). The 🚫 must count under forge-temper, NOT
+        # forge-quench (the §2.1 misattribution this fixes).
+        wl_text = "\t".join(metrics.WORKLOG_COLUMNS[:8]) + "\n" + "\n".join([
+            f"{iso(10)}\t5\timplementation\tt-1\tsubmitted\t0.7\t🟢\twork\tforge-temper",
+            f"{iso(20)}\t5\timplementation\tt-1\trejected\t0.0\t🚫\trej\tforge-quench",
+        ])
+        wl = metrics.parse_worklog(wl_text.splitlines())
+        state = {"parallel": {"forges": [{"id": "forge-quench"},
+                                         {"id": "forge-temper"}]}}
+        by_id = {f["id"]: f for f in metrics.forges_section(wl, [], [], state, 1, 5)}
+        temper = by_id["forge-temper"]["by_stage"]["implementation"]["signals"]
+        assert temper["green"] == 1 and temper["reject"] == 1   # author gets both
+        q = by_id["forge-quench"]
+        # forge-quench authored nothing here → no re-attributed reject lands on it
+        assert q["by_stage"].get("implementation", {}).get(
+            "signals", {}).get("reject", 0) == 0

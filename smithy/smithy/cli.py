@@ -8459,8 +8459,14 @@ def _report_apply_initiative(state, worklog, rig, asm, ini_id):
 
 
 def _report_apply_forge(worklog, rig, asm, forge_id):
-    """Restrict to one forge's rows (§1.2)."""
-    worklog = [r for r in worklog if (r.get("forge_id") or "legacy") == forge_id]
+    """Restrict to one forge's rows (§1.2). t-623: attribute by the AUTHORING
+    forge — the Assembly-written merged/rejected worklog rows carry the Assembly
+    pane's forge, so re-derive the author (= branch prefix) before filtering, or
+    a forge's merges/rejects vanish (and pile onto primary)."""
+    from . import metrics
+    authoring = metrics.authoring_forge_by_task(worklog)
+    worklog = [r for r in worklog
+               if metrics.effective_forge(r, authoring) == forge_id]
     rig = [e for e in rig if e.get("forge_id") in (forge_id, None)]
     asm = [a for a in asm if a.get("forge_id") == forge_id]
     return worklog, rig, asm
