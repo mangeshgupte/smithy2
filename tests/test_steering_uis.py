@@ -435,6 +435,16 @@ class TestTimeline:
         assert r.status_code == 200
         assert "Timeline" in r.text
 
+    def test_sse_live_refresh_wired(self, timeline_client):
+        """t-622 (ini-014): the page opens an EventSource on /events and
+        re-renders in place on 'state-changed' (no full reload — preserves
+        the zoom/pan)."""
+        c, _ = timeline_client
+        html = c.get("/").text
+        assert "new EventSource('/events')" in html
+        assert "addEventListener('state-changed'" in html
+        assert "refreshTimeline" in html  # the in-place re-render path
+
     def test_shows_approved_initiatives(self, timeline_client):
         """Approved initiatives appear on the timeline."""
         c, _ = timeline_client
@@ -674,6 +684,17 @@ class TestIntentEditor:
         r = c.get("/")
         assert r.status_code == 200
         assert "Intent Editor" in r.text
+
+    def test_sse_live_refresh_wired(self, intent_client):
+        """t-622 (ini-014): opens an EventSource on /events; on 'state-changed'
+        it guards an in-progress edit (banner) and otherwise reloads to show
+        fresh state — never clobbering the user's unsaved intent text."""
+        c, _ = intent_client
+        html = c.get("/").text
+        assert "new EventSource('/events')" in html
+        assert "addEventListener('state-changed'" in html
+        assert "_intentEditing" in html        # the edit-in-progress guard
+        assert "sse-stale-banner" in html       # the non-destructive banner
 
     def test_renders_intent_text(self, intent_client):
         """Intent textarea shows current intent from identity.md."""

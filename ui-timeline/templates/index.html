@@ -453,8 +453,9 @@
         tooltip.style.display = 'none';
     }
 
-    // --- Auto-refresh: poll progress every 5s ---
-    setInterval(() => {
+    // --- Auto-refresh: re-pull progress + now-marker. Driven by the SSE
+    // stream below (instant) and a 5s interval as a fallback. ---
+    function refreshTimeline() {
         fetch('/api/state').then(r => r.json()).then(data => {
             document.querySelectorAll('.bar-fill').forEach(bar => {
                 const id = bar.dataset.id;
@@ -463,6 +464,7 @@
                     if (data[id].budget_cap) bar.dataset.cap = data[id].budget_cap;
                 }
             });
+            updateBars();  // re-apply layout in place (keeps current zoom/pan)
         }).catch(() => {});
         fetch('/api/current-heat').then(r => r.json()).then(data => {
             if (typeof data.current_heat === 'number' && data.current_heat !== CURRENT_HEAT) {
@@ -470,7 +472,8 @@
                 updateNowMarker();
             }
         }).catch(() => {});
-    }, 5000);
+    }
+    setInterval(refreshTimeline, 5000);
 
     // --- Steering markers: populate lane from /api/steering-log ---
     function renderSteeringMarkers() {
@@ -498,6 +501,19 @@
     }
     renderSteeringMarkers();
     setInterval(renderSteeringMarkers, 7000);
+
+    // Live refresh via the app's /events SSE stream (ini-014). 'state-changed'
+    // fires whenever state.json is rewritten; re-pull progress + steering
+    // markers in place — NO full reload, so the current zoom/pan survives.
+    // EventSource auto-reconnects on a dropped connection; the interval polls
+    // above remain the fallback when SSE is unavailable.
+    try {
+        const _sse = new EventSource('/events');
+        _sse.addEventListener('state-changed', () => {
+            refreshTimeline();
+            renderSteeringMarkers();
+        });
+    } catch (e) { /* SSE unavailable — interval polls are the fallback */ }
 
     function refreshPage() {
         const btn = document.querySelector('.refresh-btn');
