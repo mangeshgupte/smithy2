@@ -92,6 +92,14 @@
                     <span>{{ ini.heats_used }}h{% if ini.budget_cap %}/{{ ini.budget_cap }}{% endif %}</span>
                     <span>{{ ini.task_count }} tasks</span>
                 </div>
+                {# t-635 (ini-010): live budget-share bar — share = this card's
+                   rank weight (top 3× · 2nd 2× · rest 1×) ÷ total across the
+                   ranked stack. Filled by renderShareBars() on load + reorder. #}
+                <div class="card-share"
+                     title="Live budget share — this card's weight ÷ total weight across the ranked stack (top 3× · 2nd 2× · rest 1×)">
+                    <div class="card-share-track"><div class="card-share-fill"></div></div>
+                    <span class="card-share-label"></span>
+                </div>
                 {# t-443: advisory steering chips — parallelism / affinity / touches #}
                 {% set p = ini.parallelism or 'parallel' %}
                 {% set aff = ini.affinity or [] %}
@@ -400,6 +408,7 @@
             }
             c.style.transform = 'scale(' + Math.max(0.95, 1.03 - (i * 0.01)) + ')';
         });
+        renderShareBars();  // t-635: keep budget-share live with the new ranks
 
         fetch('/reorder', {
             method: 'POST',
@@ -412,6 +421,24 @@
             showError();
         });
     }
+
+    // t-635 (ini-010): paint each card's live budget-share bar. Weight is
+    // rank-based — top 3× · 2nd 2× · rest 1×, matching the badge — and share is
+    // that weight ÷ the total across the ranked stack, so the human sees what
+    // their ordering actually allocates. Pure client-side from DOM order.
+    function renderShareBars() {
+        const cards = [...list.querySelectorAll('.poker-card')];
+        const weights = cards.map((_, i) => (i === 0 ? 3 : (i === 1 ? 2 : 1)));
+        const total = weights.reduce((a, b) => a + b, 0) || 1;
+        cards.forEach((c, i) => {
+            const pct = weights[i] / total * 100;
+            const fill = c.querySelector('.card-share-fill');
+            const label = c.querySelector('.card-share-label');
+            if (fill) fill.style.width = pct.toFixed(1) + '%';
+            if (label) label.textContent = pct.toFixed(0) + '% budget share';
+        });
+    }
+    renderShareBars();  // initial paint (script runs after the cards parse)
 
     function showSaved() {
         const h1 = document.querySelector('header h1');
