@@ -297,6 +297,27 @@ class TaskDetail:
 
         if order == "scheduler":
             rows.sort(key=scheduler_key)
+        elif order == "cockpit":
+            # t-614 (ini-016, human steer 2026-06-20): status-tiered cockpit
+            # order. This INTENTIONALLY revises research/queue-cockpit.md §Q5
+            # ("cockpit must not re-sort") for the cockpit view only — the
+            # 'scheduler' default is left untouched because Marshal, Poker, and
+            # queue-pop all depend on it. Tiers: (1) ACTIVE work (in_progress /
+            # pending / submitted) first, by the scheduler key so top-priority
+            # stays on top; (2) COMPLETE next, newest completion first via the
+            # t-390 last_worklog_ts; (3) deferred / obsolete / rejected at the
+            # bottom. Partition-and-concat (not one sort key) so each tier keeps
+            # its own secondary ordering.
+            _active = {"pending", "in_progress", "submitted"}
+            tier_active = sorted((r for r in rows if r.status in _active),
+                                 key=scheduler_key)
+            tier_complete = sorted((r for r in rows if r.status == "complete"),
+                                   key=lambda r: r.last_worklog_ts or "",
+                                   reverse=True)
+            tier_other = sorted((r for r in rows if r.status not in _active
+                                 and r.status != "complete"),
+                                key=scheduler_key)
+            rows = tier_active + tier_complete + tier_other
         return rows
 
     # ---- Serialization for HTTP consumers ----
