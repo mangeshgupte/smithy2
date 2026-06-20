@@ -402,17 +402,71 @@
                 bar.dataset.start = newStart;
                 bar.dataset.end = newEnd;
 
-                fetch('/update', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ updates: [{ id: bar.dataset.id, start: newStart, end: newEnd }] })
-                });
+                saveBarUpdate(bar.dataset.id, newStart, newEnd, 0);
             };
 
             document.addEventListener('mousemove', onMove);
             document.addEventListener('mouseup', onUp);
         });
     });
+
+    // ini-012 (t-636): the rig rewrites state.json every heat, so a drag save
+    // can race it and /update returns 409 (mtime-checked write). Never drop the
+    // drag silently — reconcile the fresh state and retry the move once (it's
+    // still valid), and if it STILL conflicts, show a clear toast the human can
+    // act on instead of losing the change.
+    function saveBarUpdate(barId, start, end, attempt) {
+        fetch('/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ updates: [{ id: barId, start: start, end: end }] }),
+        }).then(r => {
+            if (r.ok) { showTimelineToast('saved', 'ok'); return; }
+            if (r.status === 409 && (attempt || 0) < 1) {
+                // Concurrent write — pull the latest state into the other bars,
+                // then retry this move once against it.
+                if (typeof refreshTimeline === 'function') refreshTimeline();
+                setTimeout(() => saveBarUpdate(barId, start, end, (attempt || 0) + 1), 200);
+                return;
+            }
+            showTimelineToast('Timeline changed elsewhere — reload to sync. '
+                + 'Your move was not saved.', 'conflict');
+        }).catch(() => showTimelineToast('Save failed — check your connection.',
+                                         'conflict'));
+    }
+
+    function showTimelineToast(msg, kind) {
+        let el = document.getElementById('tl-toast');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'tl-toast';
+            Object.assign(el.style, {
+                position: 'fixed', bottom: '16px', right: '16px', zIndex: '1000',
+                padding: '10px 14px', borderRadius: '6px', fontSize: '13px',
+                maxWidth: '340px', boxShadow: '0 4px 14px rgba(0,0,0,0.4)',
+            });
+            document.body.appendChild(el);
+        }
+        clearTimeout(el._timer);
+        el.onclick = null;
+        if (kind === 'conflict') {
+            el.textContent = '⚠ ' + msg + ' (click to reload)';
+            el.style.background = 'var(--red, #f85149)';
+            el.style.color = '#000';
+            el.style.border = 'none';
+            el.style.cursor = 'pointer';
+            el.onclick = () => location.reload();
+            el._timer = setTimeout(() => { el.style.display = 'none'; }, 9000);
+        } else {
+            el.textContent = msg;
+            el.style.background = 'var(--surface, #161b22)';
+            el.style.color = 'var(--text, #e6edf3)';
+            el.style.border = '1px solid var(--border, #30363d)';
+            el.style.cursor = 'default';
+            el._timer = setTimeout(() => { el.style.display = 'none'; }, 1800);
+        }
+        el.style.display = 'block';
+    }
 
     // Init
     updateRangeControl();

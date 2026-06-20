@@ -448,6 +448,19 @@ class TestTimeline:
         assert r.status_code == 200
         assert "Timeline" in r.text
 
+    def test_drag_save_retries_on_409(self, timeline_client):
+        """t-636 (ini-012): a drag save races the rig's per-heat state.json
+        write → /update can 409. The drag handler must re-read + retry once,
+        then surface a clear conflict toast — never drop the move silently."""
+        c, _ = timeline_client
+        html = c.get("/").text
+        assert "saveBarUpdate" in html               # the retrying save fn
+        assert "status === 409" in html              # 409 branch
+        assert "showTimelineToast" in html           # visible conflict toast
+        assert "click to reload" in html             # actionable conflict copy
+        # the move is no longer a fire-and-forget POST.
+        assert "saveBarUpdate(bar.dataset.id" in html
+
     def test_sse_live_refresh_wired(self, timeline_client):
         """t-622 (ini-014): the page opens an EventSource on /events and
         re-renders in place on 'state-changed' (no full reload — preserves
