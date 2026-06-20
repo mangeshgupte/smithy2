@@ -55,12 +55,18 @@ class TestNumericAlignment:
         assert "text-align: right" in style_block
 
     def test_headers_tagged(self, cockpit_html):
-        assert '<th class="c-num">M</th>' in cockpit_html
-        assert '<th class="c-num">you</th>' in cockpit_html
-        assert '<th class="c-num" title="Minutes since task was filed">age</th>' in cockpit_html
+        # t-599: the 2-line card layout dropped the per-column numeric headers
+        # (M/you/age). The header row is now the select-all checkbox plus a
+        # single label cell spanning the card.
+        assert '<th class="c-num">M</th>' not in cockpit_html
+        assert '<th class="c-num">you</th>' not in cockpit_html
+        assert 'id="c-check-all"' in cockpit_html
+        assert '<th colspan="9">tasks</th>' in cockpit_html
 
     def test_priority_cell_tagged(self, cockpit_html):
-        assert 'c-num">p${t.priority == null' in cockpit_html
+        # t-599: priority moved from a right-aligned c-num table cell to a pill
+        # on the card's line 1.
+        assert 'c-card-prio">p${t.priority == null' in cockpit_html
 
     def test_hp_age_heat_right_aligned(self, style_block):
         rule = re.search(r"\.cockpit-table \.c-hp,[^}]*\}", style_block, re.S)
@@ -79,8 +85,10 @@ class TestVerticalCentering:
         assert "td.c-stage-cell" in body
 
     def test_stage_cells_carry_class(self, cockpit_html):
-        # Both renderRow and renderCompleteRow wrap the stage badge.
-        assert cockpit_html.count('class="c-stage-cell"') >= 2
+        # t-599: the stage badge was dropped from the card face (renderRow /
+        # renderCompleteRow no longer emit a c-stage-cell). The stage value now
+        # surfaces in the expanded inline panel's detail list instead.
+        assert "<dt>stage</dt>" in cockpit_html
 
 
 class TestInlinePanelGutter:
