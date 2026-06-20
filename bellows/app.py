@@ -847,6 +847,24 @@ async def api_project_ops_stream(project_name: str, request: Request,
     return StreamingResponse(gen(), media_type="text/event-stream")
 
 
+@app.get("/project/{project_name}/ops", response_class=HTMLResponse)
+async def project_ops(request: Request, project_name: str):
+    """ini-019 P1.6 (t-607): Forge Ops view — 5 panels (rig strip, initiatives,
+    drill-down, persona heatmap, issues) over the L2 snapshot, live via SSE with
+    a replay scrubber. Pure-read; the page fetches /api/project/{name}/ops.
+    Spec: plans/ini-019-surfaces-plan.md §2."""
+    projects = discover_projects(PROJECTS_DIR)
+    project = next((p for p in projects if p["name"] == project_name), None)
+    if not project:
+        return HTMLResponse("<h1>Project not found</h1>", status_code=404)
+    return templates.TemplateResponse(request=request, name="ops.html", context={
+        "project": project,
+        "tab": "ops",
+        "total_decisions": count_all_decisions(projects),
+        "steering_links": STEERING_LINKS,
+    })
+
+
 @app.get("/inbox", response_class=HTMLResponse)
 async def inbox(request: Request):
     projects = discover_projects(PROJECTS_DIR)
