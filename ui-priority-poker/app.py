@@ -386,13 +386,18 @@ async def events():
 @app.get("/api/cockpit")
 async def api_cockpit(stage: str = None, status: str = None,
                       initiative: str = None, q: str = None):
-    """Queue Cockpit aggregator (t-376). Returns TaskSummary rows in scheduler order
-    with optional filters. Client never re-sorts — research/queue-cockpit.md §Q5.
+    """Queue Cockpit aggregator (t-376). Returns TaskSummary rows in the
+    status-tiered 'cockpit' order (t-614, ini-016): active work first by the
+    scheduler key, then completed newest-first, then deferred/obsolete/rejected.
+    This intentionally revises research/queue-cockpit.md §Q5's "client never
+    re-sorts" for the cockpit view; the server owns the order so the standalone
+    /cockpit and the poker right-rail (both consume this since t-612) stay
+    consistent. The client still does not re-sort. Optional filters apply first.
     """
     if TaskDetail is None:
         return JSONResponse({"error": "TaskDetail unavailable"}, status_code=500)
     rows = TaskDetail.list(STATE_DIR, stage=stage, status=status,
-                           initiative=initiative, q=q)
+                           initiative=initiative, q=q, order="cockpit")
     total = 0
     try:
         total = len(_load_state().get("queue", []))
