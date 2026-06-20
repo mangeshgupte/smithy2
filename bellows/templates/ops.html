@@ -1,0 +1,435 @@
+{% extends "base.html" %}
+{% block title_suffix %} · Ops · {{ project.name }}{% endblock %}
+{% block content %}
+{#
+  ini-019 P1.6 (t-607): Forge Ops view. Five panels over the L2 snapshot
+  (plans/ini-019-surfaces-plan.md §2.2-2.7), live via SSE on
+  /api/project/{name}/ops/stream, with a replay scrubber that re-renders from
+  /ops?at_heat=N. Pure-read. Reuses the base.html GitHub-dark theme tokens.
+#}
+<style>
+  .ops-wrap { --gap: 12px; }
+  .ops-topbar {
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    padding: 12px 16px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    margin-bottom: var(--gap);
+  }
+  .ops-title { font-size: 18px; font-weight: 600; color: var(--text); }
+  .ops-clock { color: var(--text-muted); font-size: 13px;
+               font-family: ui-monospace, monospace; }
+  .ops-live-dot { color: var(--green); }
+  .ops-replay { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+  .ops-replay input[type=range] { width: 240px; accent-color: var(--blue); }
+  .ops-btn { background: var(--surface-hover); color: var(--text);
+             border: 1px solid var(--border); border-radius: var(--radius-sm);
+             padding: 4px 10px; cursor: pointer; font: inherit; font-size: 12px; }
+  .ops-btn:hover { border-color: var(--blue); }
+  /* Amber not-live banner (§2.2). */
+  .ops-banner { display: none; padding: 8px 16px; margin-bottom: var(--gap);
+                background: rgba(210,153,34,0.15); border: 1px solid var(--yellow);
+                color: var(--yellow); border-radius: var(--radius-sm);
+                font-size: 13px; font-weight: 500; }
+  .ops-banner.show { display: block; }
+
+  .ops-panel { background: var(--surface); border: 1px solid var(--border);
+               border-radius: var(--radius-sm); padding: 12px 14px;
+               margin-bottom: var(--gap); }
+  .ops-panel h2 { font-size: 12px; text-transform: uppercase;
+                  letter-spacing: 0.06em; color: var(--text-muted);
+                  margin: 0 0 10px 0; font-weight: 600; }
+  .ops-grid { display: grid; grid-template-columns: 2fr 3fr; gap: var(--gap); }
+  @media (max-width: 900px) { .ops-grid { grid-template-columns: 1fr; } }
+  .ops-panel.scroll { max-height: 360px; overflow-y: auto; }
+
+  /* Panel 1 — Rig Strip */
+  .rig-row { display: flex; align-items: center; gap: 12px; padding: 8px 4px;
+             border-bottom: 1px solid var(--surface-hover);
+             font-family: ui-monospace, monospace; font-size: 13px;
+             cursor: pointer; }
+  .rig-row:last-child { border-bottom: none; }
+  .rig-row:hover { background: var(--surface-hover); }
+  .rig-dot { font-size: 11px; }
+  .rig-id { color: var(--text); font-weight: 500; min-width: 120px; }
+  .rig-task { color: var(--blue); min-width: 90px; }
+  .rig-meta { color: var(--text-muted); }
+  .rig-spacer { margin-left: auto; }
+
+  /* Panel 2 — Initiatives */
+  .ini-card { padding: 8px 4px; border-bottom: 1px solid var(--surface-hover);
+              cursor: pointer; }
+  .ini-card:hover { background: var(--surface-hover); }
+  .ini-head { display: flex; justify-content: space-between; gap: 8px; }
+  .ini-id { color: var(--yellow); font-weight: 500; font-family: ui-monospace, monospace; }
+  .ini-title { color: var(--text); }
+  .ini-bar { height: 8px; background: var(--surface-hover); border-radius: 4px;
+             overflow: hidden; margin: 6px 0; }
+  .ini-bar > span { display: block; height: 100%; background: var(--blue); }
+  .ini-meta { color: var(--text-muted); font-size: 12px; }
+  .ini-thrash { color: var(--red); }
+
+  /* Panel 3 — Drill-down */
+  .dd-empty { color: var(--text-muted); font-size: 13px; }
+  .ov-bar-row { display: flex; align-items: center; gap: 8px; margin: 4px 0;
+                font-family: ui-monospace, monospace; font-size: 12px; }
+  .ov-bar-label { min-width: 120px; color: var(--text-muted); }
+  .ov-bar { height: 14px; border-radius: 3px; }
+  .dd-head { font-weight: 600; color: var(--text); margin-bottom: 8px; }
+  .dd-row { display: flex; gap: 12px; font-family: ui-monospace, monospace;
+            font-size: 12px; padding: 3px 0; border-bottom: 1px solid var(--surface-hover); }
+  .dd-row .k { color: var(--text-muted); min-width: 70px; }
+  .sig-green { color: var(--green); } .sig-yellow { color: var(--yellow); }
+  .sig-red { color: var(--red); }
+
+  /* Panel 4 — Persona Heatmap */
+  .heat-table { width: 100%; border-collapse: collapse; font-size: 12px;
+                font-family: ui-monospace, monospace; }
+  .heat-table th { color: var(--text-muted); text-align: right; padding: 4px 6px;
+                   font-weight: normal; }
+  .heat-table th:first-child { text-align: left; }
+  .heat-table td { text-align: right; padding: 4px 6px; }
+  .heat-fid { text-align: left; color: var(--text); }
+  .heat-cell { border-radius: 3px; }
+  .heat-count { color: var(--text); }
+  .heat-val { font-size: 10px; }
+
+  /* Panel 5 — Issues */
+  .iss-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .iss-tab { background: var(--surface-hover); color: var(--text-muted);
+             border: 1px solid var(--border); border-radius: 12px;
+             padding: 3px 10px; cursor: pointer; font-size: 12px; }
+  .iss-tab.active { color: var(--text); border-color: var(--blue); }
+  .iss-tab .n { color: var(--yellow); font-weight: 600; }
+  .iss-list { font-family: ui-monospace, monospace; font-size: 12px;
+              max-height: 320px; overflow-y: auto; }
+  .iss-item { padding: 4px 0; border-bottom: 1px solid var(--surface-hover);
+              cursor: pointer; color: var(--text); }
+  .iss-item:hover { color: var(--blue); }
+  .iss-empty { color: var(--text-muted); font-size: 12px; }
+</style>
+
+<div class="ops-wrap" data-project="{{ project.name }}">
+  <div class="ops-topbar">
+    <span class="ops-title">⚙ Forge Ops · {{ project.name }}</span>
+    <span class="ops-clock" id="ops-clock">loading…</span>
+    <div class="ops-replay">
+      <span class="ops-live-dot" id="ops-mode">● LIVE</span>
+      <input type="range" id="ops-scrub" min="1" max="1" value="1" title="Replay scrubber — drag to any heat">
+      <span class="ops-clock" id="ops-scrub-val"></span>
+      <button class="ops-btn" id="ops-live-btn">Live ▶▶</button>
+    </div>
+  </div>
+
+  <div class="ops-banner" id="ops-banner"></div>
+
+  <!-- Panel 1 — Rig Strip -->
+  <div class="ops-panel">
+    <h2>Rig Strip</h2>
+    <div id="panel-rig"><span class="dd-empty">…</span></div>
+  </div>
+
+  <div class="ops-grid">
+    <!-- Panel 2 — Initiatives -->
+    <div class="ops-panel scroll">
+      <h2>Initiatives</h2>
+      <div id="panel-ini"><span class="dd-empty">…</span></div>
+    </div>
+    <!-- Panel 3 — Drill-down -->
+    <div class="ops-panel scroll">
+      <h2>Drill-down</h2>
+      <div id="panel-dd"><span class="dd-empty">…</span></div>
+    </div>
+  </div>
+
+  <div class="ops-grid">
+    <!-- Panel 4 — Persona Heatmap -->
+    <div class="ops-panel scroll">
+      <h2>Persona Heatmap</h2>
+      <div id="panel-heat"><span class="dd-empty">…</span></div>
+    </div>
+    <!-- Panel 5 — Issues -->
+    <div class="ops-panel">
+      <h2>Issues</h2>
+      <div class="iss-tabs" id="iss-tabs"></div>
+      <div class="iss-list" id="iss-list"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const PROJECT = {{ project.name | tojson }};
+const API = "/api/project/" + encodeURIComponent(PROJECT) + "/ops";
+const STAGES = ["research","planning","implementation","testing","editing","marketing"];
+
+let snap = null;        // current L2 snapshot
+let liveMode = true;    // false during replay
+let evtSource = null;
+let refreshTimer = null;
+let issueTab = "thrash";
+const esc = s => String(s == null ? "" : s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+function fetchSnap(atHeat) {
+  const url = atHeat ? (API + "?at_heat=" + atHeat) : API;
+  return fetch(url).then(r => r.ok ? r.json() : Promise.reject(r.status));
+}
+
+// value 0..1 → red→green hue ramp (§2.6).
+function valColor(v) {
+  if (v == null) return "var(--surface-hover)";
+  const hue = Math.max(0, Math.min(120, v * 120));
+  return `hsl(${hue}, 55%, 32%)`;
+}
+
+function renderClock() {
+  const gen = (snap.generated_at || "").slice(0, 16).replace("T", " ");
+  document.getElementById("ops-clock").textContent =
+    `heat ${snap.heat} · ${gen}Z`;
+}
+
+function renderRig() {
+  const el = document.getElementById("panel-rig");
+  const forges = (snap.forges || []).filter(f => f.id !== "legacy");
+  if (!forges.length) { el.innerHTML = '<span class="dd-empty">no forge activity</span>'; return; }
+  el.innerHTML = forges.map(f => {
+    const age = f.last_heartbeat_age_s;
+    let dot = "○", color = "var(--text-muted)";
+    if (f.current_task) { dot = "●"; color = "var(--green)"; }
+    if (age != null && age > 480) { dot = "◐"; color = "var(--yellow)"; }
+    let g=0,y=0,r=0;
+    for (const sd of Object.values(f.by_stage || {})) {
+      g += (sd.signals||{}).green||0; y += (sd.signals||{}).yellow||0; r += (sd.signals||{}).red||0;
+    }
+    const idle = f.idle_pct != null ? `idle ${Math.round(f.idle_pct*100)}%` : "idle —";
+    const task = f.current_task ? `${esc(f.current_task)}` : "idle";
+    return `<div class="rig-row" data-task="${esc(f.current_task||"")}">
+      <span class="rig-dot" style="color:${color}">${dot}</span>
+      <span class="rig-id">${esc(f.id)}</span>
+      <span class="rig-task">${task}</span>
+      <span class="rig-meta">${f.heats_total} heats · ${idle}</span>
+      <span class="rig-spacer rig-meta"><span class="sig-green">🟢${g}</span> <span class="sig-yellow">🟡${y}</span> <span class="sig-red">🔴${r}</span></span>
+    </div>`;
+  }).join("");
+  el.querySelectorAll(".rig-row").forEach(row => row.addEventListener("click", () => {
+    const t = row.dataset.task; if (t) drillTask(t);
+  }));
+}
+
+function renderInitiatives() {
+  const el = document.getElementById("panel-ini");
+  const inis = (snap.initiatives || []).filter(i => i.id !== "unknown" &&
+    ((i.heats_used||0) > 0 || i.tasks_in_flight || i.budget_cap));
+  inis.sort((a,b) => (b.pct||0) - (a.pct||0));
+  if (!inis.length) { el.innerHTML = '<span class="dd-empty">no active initiatives</span>'; return; }
+  el.innerHTML = inis.map(i => {
+    const pct = i.pct != null ? Math.round(i.pct*100) : null;
+    const cap = i.budget_cap != null ? i.budget_cap : "∞";
+    const sr = i.success_rate != null ? `success ${Math.round(i.success_rate*100)}%` : "success —";
+    const ct = i.cycle_time_median_s != null ? `cycle ${Math.round(i.cycle_time_median_s/60)}m` : "cycle —";
+    const thrash = i.thrash_count ? `<span class="ini-thrash">⚠ ${i.thrash_count} thrash</span>` : "";
+    return `<div class="ini-card" data-ini="${esc(i.id)}">
+      <div class="ini-head"><span class="ini-id">${esc(i.id)}</span><span class="ini-meta">${i.heats_used||0}/${cap}${pct!=null?" · "+pct+"%":""}</span></div>
+      <div class="ini-title">${esc(i.title || "")}</div>
+      <div class="ini-bar"><span style="width:${pct||0}%"></span></div>
+      <div class="ini-meta">${sr} · ${ct} · ${i.tasks_in_flight||0} in-flight ${thrash}</div>
+    </div>`;
+  }).join("");
+  el.querySelectorAll(".ini-card").forEach(c => c.addEventListener("click", () => drillInitiative(c.dataset.ini)));
+}
+
+function renderDrillEmpty() {
+  const el = document.getElementById("panel-dd");
+  const total = STAGES.reduce((s,st) => s + ((snap.stages[st]||{}).heats||0), 0) || 1;
+  el.innerHTML = '<div class="dd-empty">Click a forge, initiative, or issue to drill in.</div>' +
+    '<div style="margin-top:10px">' + STAGES.map(st => {
+      const sd = snap.stages[st] || {}; const h = sd.heats||0;
+      const w = Math.round(h/total*100);
+      return `<div class="ov-bar-row"><span class="ov-bar-label">${st}</span>
+        <span class="ov-bar" style="width:${Math.max(2,w)}%;background:var(--stage-${st})"></span>
+        <span>${h}</span></div>`;
+    }).join("") + '</div>';
+}
+
+function drillTask(taskId) {
+  const el = document.getElementById("panel-dd");
+  el.innerHTML = '<span class="dd-empty">loading ' + esc(taskId) + '…</span>';
+  fetch("/api/project/" + encodeURIComponent(PROJECT) + "/ops/task/" + encodeURIComponent(taskId))
+    .then(r => r.ok ? r.json() : Promise.reject(r.status))
+    .then(d => {
+      const t = d.task || {};
+      const heats = (d.heat_rows || []).map(r =>
+        `<div class="dd-row"><span class="k">h${esc(r.heat)}</span><span>${esc(r.stage)}</span>
+         <span class="sig-${r.outcome==='rejected'?'red':'green'}">${esc(r.signal||"")} ${esc(r.value)}</span>
+         <span>${esc(r.outcome)}</span></div>`).join("");
+      const asm = (d.assembly_rows || []).map(a =>
+        `<div class="dd-row"><span class="k">${esc(a.outcome)}</span><span>${esc((a.detail||"").slice(0,60))}</span></div>`).join("");
+      el.innerHTML = `<div class="dd-head">${esc(t.id||taskId)} · ${esc(t.stage||"")} · ${esc(t.initiative_id||"—")}</div>
+        <div>${esc(t.desc||"")}</div>
+        <div style="margin-top:8px"><span class="k">Heat rows</span>${heats || '<div class="dd-empty">none</div>'}</div>
+        <div style="margin-top:8px"><span class="k">Assembly</span>${asm || '<div class="dd-empty">none</div>'}</div>`;
+    })
+    .catch(() => { el.innerHTML = '<span class="dd-empty">no detail for ' + esc(taskId) + '</span>'; });
+}
+
+function drillInitiative(iniId) {
+  const el = document.getElementById("panel-dd");
+  const i = (snap.initiatives || []).find(x => x.id === iniId);
+  if (!i) { renderDrillEmpty(); return; }
+  el.innerHTML = `<div class="dd-head">${esc(i.id)} · ${esc(i.title||"")}</div>
+    <div class="dd-row"><span class="k">burn</span><span>${i.heats_used||0}/${i.budget_cap!=null?i.budget_cap:"∞"}</span></div>
+    <div class="dd-row"><span class="k">success</span><span>${i.success_rate!=null?Math.round(i.success_rate*100)+"%":"—"}</span></div>
+    <div class="dd-row"><span class="k">tasks</span><span>${i.tasks_in_flight||0} in-flight · ${i.tasks_total||0} total</span></div>
+    <div class="dd-row"><span class="k">thrash</span><span>${i.thrash_count||0}</span></div>`;
+}
+
+function renderHeatmap() {
+  const el = document.getElementById("panel-heat");
+  const forges = (snap.forges || []);
+  if (!forges.length) { el.innerHTML = '<span class="dd-empty">no data</span>'; return; }
+  let h = '<table class="heat-table"><thead><tr><th>forge</th>' +
+    STAGES.map(s => `<th>${s.slice(0,4)}</th>`).join("") + '</tr></thead><tbody>';
+  for (const f of forges) {
+    h += `<tr><td class="heat-fid">${esc(f.id)}</td>` + STAGES.map(st => {
+      const sd = (f.by_stage||{})[st];
+      if (!sd) return '<td>·</td>';
+      const v = sd.mean_value;
+      return `<td class="heat-cell" style="background:${valColor(v)}" title="${st}: ${sd.heats} heats, mean ${v==null?"—":v}">
+        <span class="heat-count">${sd.heats}</span><br><span class="heat-val">${v==null?"—":v}</span></td>`;
+    }).join("") + '</tr>';
+  }
+  el.innerHTML = h + '</tbody></table>';
+}
+
+const ISSUE_BUCKETS = [
+  ["ghosts","Ghosts","ghost_submits","task_ids"],
+  ["thrash","Thrash","thrash","task_ids"],
+  ["repeat-tests","Repeat-tests","repeat_tests","nodes"],
+  ["stalls","Stalls","stalls","task_ids"],
+  ["orphans","Orphans","orphans_reaped","task_ids"],
+  ["rejections","Rejections","rejections","total"],
+];
+
+function issueCount(key) {
+  const o = (snap.issues || {})[key] || {};
+  return o.count != null ? o.count : (o.total != null ? o.total : 0);
+}
+
+function renderIssues() {
+  const tabs = document.getElementById("iss-tabs");
+  tabs.innerHTML = ISSUE_BUCKETS.map(([slug,label,key]) =>
+    `<span class="iss-tab ${slug===issueTab?'active':''}" data-tab="${slug}" data-key="${key}">
+       ${label} <span class="n">${issueCount(key)}</span></span>`).join("");
+  tabs.querySelectorAll(".iss-tab").forEach(t => t.addEventListener("click", () => {
+    issueTab = t.dataset.tab; renderIssues();
+  }));
+  renderIssueList();
+}
+
+function renderIssueList() {
+  const el = document.getElementById("iss-list");
+  const spec = ISSUE_BUCKETS.find(b => b[0] === issueTab);
+  const o = (snap.issues || {})[spec[2]] || {};
+  let items = [];
+  if (issueTab === "repeat-tests") {
+    items = (o.nodes || []).map(n => ({label: `${n.node} (×${n.hits})`, task: null}));
+  } else if (issueTab === "rejections") {
+    const br = o.by_reason || {};
+    items = Object.entries(br).filter(([,v]) => v).map(([k,v]) => ({label: `${k}: ${v}`, task: null}));
+  } else {
+    items = (o.task_ids || []).map(t => ({label: t, task: t}));
+  }
+  if (!items.length) { el.innerHTML = '<div class="iss-empty">none in this bucket</div>'; return; }
+  el.innerHTML = items.map(it =>
+    `<div class="iss-item" ${it.task?`data-task="${esc(it.task)}"`:""}>${esc(it.label)}</div>`).join("");
+  el.querySelectorAll(".iss-item[data-task]").forEach(i =>
+    i.addEventListener("click", () => drillTask(i.dataset.task)));
+}
+
+function renderAll() {
+  if (!snap) return;
+  renderClock();
+  renderRig();
+  renderInitiatives();
+  renderDrillEmpty();
+  renderHeatmap();
+  renderIssues();
+}
+
+function setReplay(on, heat) {
+  liveMode = !on;
+  const banner = document.getElementById("ops-banner");
+  const mode = document.getElementById("ops-mode");
+  if (on) {
+    banner.classList.add("show");
+    banner.textContent = `⏸ REPLAY · heat ${heat} — read-only, not live. Press “Live” to resume.`;
+    mode.textContent = "⏸ REPLAY"; mode.style.color = "var(--yellow)";
+    if (evtSource) { evtSource.close(); evtSource = null; }
+  } else {
+    banner.classList.remove("show");
+    mode.textContent = "● LIVE"; mode.style.color = "var(--green)";
+    connectSSE();
+  }
+}
+
+function loadLive() {
+  fetchSnap(null).then(d => {
+    snap = d;
+    const scrub = document.getElementById("ops-scrub");
+    scrub.max = Math.max(1, snap.heat); scrub.value = snap.heat;
+    document.getElementById("ops-scrub-val").textContent = "";
+    renderAll();
+  }).catch(() => {
+    document.getElementById("ops-clock").textContent = "failed to load /ops";
+  });
+}
+
+function loadReplay(heat) {
+  fetchSnap(heat).then(d => {
+    snap = d; setReplay(true, heat);
+    document.getElementById("ops-scrub-val").textContent = "@" + heat;
+    renderAll();
+  }).catch(() => {});
+}
+
+function connectSSE() {
+  if (evtSource) return;
+  try {
+    evtSource = new EventSource("/api/project/" + encodeURIComponent(PROJECT) + "/ops/stream");
+    evtSource.onmessage = () => {
+      if (!liveMode) return;
+      clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(loadLive, 400);  // debounce bursts
+    };
+    evtSource.onerror = () => { /* browser auto-reconnects */ };
+  } catch (e) { /* SSE unsupported — page stays static after first load */ }
+}
+
+document.getElementById("ops-scrub").addEventListener("input", e => {
+  const h = parseInt(e.target.value, 10);
+  document.getElementById("ops-scrub-val").textContent = "@" + h;
+});
+document.getElementById("ops-scrub").addEventListener("change", e => {
+  const h = parseInt(e.target.value, 10);
+  if (h >= (snap ? snap.heat : 1) && liveMode) return;  // already live at top
+  loadReplay(h);
+});
+document.getElementById("ops-live-btn").addEventListener("click", () => {
+  setReplay(false);
+  loadLive();
+});
+
+// Deep-linkable replay: ?at_heat=N opens straight into a read-only replay at
+// heat N (the scrubber + Live button still work). Otherwise start live + SSE.
+const _atParam = parseInt(new URLSearchParams(location.search).get("at_heat"), 10);
+if (Number.isFinite(_atParam) && _atParam > 0) {
+  loadLive();  // seed the scrubber range from the live heat first…
+  setTimeout(() => {
+    document.getElementById("ops-scrub").value = _atParam;
+    document.getElementById("ops-scrub-val").textContent = "@" + _atParam;
+    loadReplay(_atParam);
+  }, 300);
+} else {
+  loadLive();
+  connectSSE();
+}
+</script>
+{% endblock %}
