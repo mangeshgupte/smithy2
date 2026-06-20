@@ -54,6 +54,19 @@ class TestPriorityPoker:
         assert r.status_code == 200
         assert "Build X" in r.text
 
+    def test_keyboard_reorder_wired(self, poker_client):
+        """t-627 (ini-010): j/k move focus, Alt-Up/Down reorder the focused
+        card — persisted via the existing saveOrder() -> POST /reorder, so the
+        card stack reaches keyboard/a11y parity with drag."""
+        c, _ = poker_client
+        html = c.get("/").text
+        assert "kbFocus" in html and "kbMove" in html   # focus + move helpers
+        assert "'j'" in html and "'k'" in html           # focus keys
+        assert "altKey" in html
+        assert "ArrowUp" in html and "ArrowDown" in html  # reorder keys
+        assert "saveOrder()" in html      # reorder persists via the drag path
+        assert "kb-focused" in html       # the focus ring
+
     def test_renders_weight_badges(self, poker_client):
         """Top card shows 3×, second shows 2×, rest show 1×."""
         c, tmp = poker_client
