@@ -231,6 +231,42 @@
         el.classList.add('focus-flash');
         setTimeout(() => el.classList.remove('focus-flash'), 2000);
     })();
+
+    // Live refresh via the app's /events SSE stream (ini-014). 'state-changed'
+    // fires when another actor rewrites state.json. This is an EDITOR, so we
+    // must never clobber an in-progress edit: if the user is typing (a focused
+    // input/textarea, or composed-but-unsubmitted intent text), surface a
+    // dismissible banner instead of reloading; otherwise auto-reload to show
+    // the fresh themes/initiatives. EventSource auto-reconnects on drop.
+    // The intent textarea is pre-filled with the saved intent, so "non-empty"
+    // doesn't mean "editing". Snapshot the loaded value and treat the user as
+    // editing only when a field is focused or they've CHANGED the textarea.
+    const _initialIntent = (document.getElementById('intent') || {}).value || '';
+    function _intentEditing() {
+        const ae = document.activeElement;
+        if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return true;
+        const intent = document.getElementById('intent');
+        return !!(intent && intent.value !== _initialIntent);
+    }
+    function _showStaleBanner() {
+        if (document.getElementById('sse-stale-banner')) return;
+        const b = document.createElement('div');
+        b.id = 'sse-stale-banner';
+        b.textContent = '⟳ State changed elsewhere — click to refresh';
+        b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;' +
+            'padding:8px 12px;background:#d29922;color:#000;text-align:center;' +
+            'cursor:pointer;font-weight:600;';
+        b.title = 'Your edits are preserved — refresh when ready';
+        b.onclick = () => location.reload();
+        document.body.appendChild(b);
+    }
+    try {
+        const _sse = new EventSource('/events');
+        _sse.addEventListener('state-changed', () => {
+            if (_intentEditing()) _showStaleBanner();
+            else location.reload();
+        });
+    } catch (e) { /* SSE unavailable — the manual Refresh button still works */ }
     </script>
 </body>
 </html>
