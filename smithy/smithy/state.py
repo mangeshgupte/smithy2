@@ -5,6 +5,7 @@ from __future__ import annotations
 import contextlib
 import fcntl
 import json
+import re
 import time
 from pathlib import Path
 from datetime import datetime
@@ -368,8 +369,62 @@ def check_schema_version(state: dict) -> None:
         )
 
 
+# t-625 (ini-017): intent triple validation. Vocabulary per
+# research/intents-as-primitives.md §3 — intent_source is a task id (t-XXX),
+# "human", or "auto"; intent is free prose capped at INTENT_MAX_LEN.
+INTENT_MAX_LEN = 300
+_INTENT_SOURCE_TASK_RE = re.compile(r"^t-\d+$")
+INTENT_OVERLAP_THRESHOLD = 0.80
+
+
+def _intent_desc_overlap(intent: str, desc: Optional[str]) -> float:
+    """Fraction of the intent's distinct words that also appear in the
+    description — a proxy for the 'description-as-intent' guardrail
+    (research/intents-as-primitives.md §3: restating WHAT instead of WHY).
+    Returns 0.0 when the intent has no word content."""
+    iw = set(re.findall(r"[a-z0-9]+", intent.lower()))
+    if not iw:
+        return 0.0
+    dw = set(re.findall(r"[a-z0-9]+", (desc or "").lower()))
+    return len(iw & dw) / len(iw)
+
+
+def _validate_intent(entity: dict, label: str, desc: Optional[str]) -> list:
+    """Validate the intent triple on a task/initiative (t-625, ini-017).
+
+    Hard errors: `intent` must be str|null and <= INTENT_MAX_LEN chars;
+    `intent_source` must be null or one of {t-XXX, human, auto}. The
+    description-as-intent finding is a NON-BLOCKING `lint:`-prefixed warning
+    (flags restating WHAT instead of WHY, never blocks). Returns error strings.
+    """
+    out = []
+    intent = entity.get("intent")
+    if intent is not None and not isinstance(intent, str):
+        out.append(f"{label} intent must be str or null "
+                   f"(got {type(intent).__name__})")
+        intent = None  # skip string checks on a non-string
+    if isinstance(intent, str) and len(intent) > INTENT_MAX_LEN:
+        out.append(f"{label} intent too long "
+                   f"({len(intent)} > {INTENT_MAX_LEN} chars)")
+    src = entity.get("intent_source")
+    if src is not None and not (src in ("human", "auto")
+                                or _INTENT_SOURCE_TASK_RE.match(str(src))):
+        out.append(f"{label} invalid intent_source {src!r} "
+                   f"(expect t-XXX | human | auto)")
+    if isinstance(intent, str) and intent.strip():
+        overlap = _intent_desc_overlap(intent, desc)
+        if overlap >= INTENT_OVERLAP_THRESHOLD:
+            out.append(f"lint: {label} intent restates description "
+                       f"({overlap:.0%} word overlap — capture WHY, not WHAT)")
+    return out
+
+
 def validate_state(state: dict) -> list[str]:
-    """Validate state consistency. Returns list of errors (empty = valid)."""
+    """Validate state consistency. Returns list of errors (empty = valid).
+
+    Most entries are hard consistency errors; t-625 intent-overlap findings are
+    `lint:`-prefixed, non-blocking warnings (see _validate_intent).
+    """
     errors = []
 
     budget = state.get("budget", {})
@@ -434,6 +489,15 @@ def validate_state(state: dict) -> list[str]:
         ini_ref = task.get("initiative_id")
         if ini_ref is not None and ini_ref not in ini_id_set:
             errors.append(f"task {task['id']} references unknown initiative: {ini_ref}")
+
+    # t-625 (ini-017): intent triple validation + description-as-intent lint,
+    # on both tasks (vs desc) and initiatives (vs description).
+    for task in queue:
+        errors.extend(_validate_intent(task, f"task {task['id']}",
+                                       task.get("desc")))
+    for ini in initiatives:
+        errors.extend(_validate_intent(ini, f"initiative {ini['id']}",
+                                       ini.get("description")))
 
     # Marshal next_tasks validation (optional field)
     next_tasks = state.get("next_tasks", [])
