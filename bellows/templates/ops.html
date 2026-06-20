@@ -42,6 +42,14 @@
   @media (max-width: 900px) { .ops-grid { grid-template-columns: 1fr; } }
   .ops-panel.scroll { max-height: 360px; overflow-y: auto; }
 
+  /* Batch Health (t-631) — label/value rows */
+  .bh-row { display: flex; gap: 12px; padding: 6px 4px;
+            border-bottom: 1px solid var(--surface-hover);
+            font-family: ui-monospace, monospace; font-size: 13px; }
+  .bh-row:last-child { border-bottom: none; }
+  .bh-label { color: var(--text-muted); min-width: 120px; }
+  .bh-val { color: var(--text); }
+
   /* Panel 1 — Rig Strip */
   .rig-row { display: flex; align-items: center; gap: 12px; padding: 8px 4px;
              border-bottom: 1px solid var(--surface-hover);
@@ -128,6 +136,13 @@
     <div id="panel-rig"><span class="dd-empty">…</span></div>
   </div>
 
+  <!-- Panel 1b — Batch Health (t-631, ini-019): merge latency + batch outcomes
+       from the L2 lifecycle.merge_latency_ms + batching sections (D2/t-624). -->
+  <div class="ops-panel">
+    <h2>Batch Health</h2>
+    <div id="panel-batch"><span class="dd-empty">…</span></div>
+  </div>
+
   <div class="ops-grid">
     <!-- Panel 2 — Initiatives -->
     <div class="ops-panel scroll">
@@ -212,6 +227,33 @@ function renderRig() {
   el.querySelectorAll(".rig-row").forEach(row => row.addEventListener("click", () => {
     const t = row.dataset.task; if (t) drillTask(t);
   }));
+}
+
+// t-631 (ini-019): batch/merge-health panel. Merge latency p50/p90/p99 (from
+// lifecycle.merge_latency_ms — folds batch latency since t-624), green/bisect/
+// reject outcome rates + batch totals (from the batching section).
+function renderBatch() {
+  const el = document.getElementById("panel-batch");
+  const bt = snap.batching || {};
+  const lat = (snap.lifecycle || {}).merge_latency_ms || {};
+  if (!bt.batches && !(lat.n)) {
+    el.innerHTML = '<span class="dd-empty">no batch activity</span>'; return;
+  }
+  const ms = v => v == null ? "—" : (v / 1000).toFixed(0) + "s";
+  const rates = bt.outcome_rates || {};
+  const rateStr = Object.keys(rates).length
+    ? Object.keys(rates).sort().map(k =>
+        `${esc(k)} ${Math.round(rates[k] * 100)}%`).join(" · ")
+    : "—";
+  el.innerHTML =
+    `<div class="bh-row"><span class="bh-label">merge latency</span>` +
+    `<span class="bh-val">p50 ${ms(lat.p50)} · p90 ${ms(lat.p90)} · ` +
+    `p99 ${ms(lat.p99)} · n=${lat.n || 0}</span></div>` +
+    `<div class="bh-row"><span class="bh-label">batches</span>` +
+    `<span class="bh-val">${bt.batches || 0} · landed ${bt.green_landed || 0}` +
+    ` · rejected ${bt.rejected || 0}</span></div>` +
+    `<div class="bh-row"><span class="bh-label">outcomes</span>` +
+    `<span class="bh-val">${rateStr}</span></div>`;
 }
 
 function renderInitiatives() {
@@ -348,6 +390,7 @@ function renderAll() {
   if (!snap) return;
   renderClock();
   renderRig();
+  renderBatch();
   renderInitiatives();
   renderDrillEmpty();
   renderHeatmap();
